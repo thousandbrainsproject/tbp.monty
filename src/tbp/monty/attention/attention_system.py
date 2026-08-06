@@ -21,12 +21,6 @@ from tbp.monty.memento import Memento
 
 
 def empty_voxel_grid() -> pd.DataFrame:
-    """Build the frame the attention system holds when no voxels are occupied.
-
-    Returns:
-        A frame with no rows, an (x, y, z) MultiIndex, and age/count columns.
-
-    """
     return pd.DataFrame(
         {
             "age": pd.Series(dtype=np.int32),
@@ -37,16 +31,15 @@ def empty_voxel_grid() -> pd.DataFrame:
 
 
 class AttentionSystem:
-    """Global attention over the regions of space proposed by SMs and LMs.
+    """Persisteng, LM and SM informed global attention space.
 
-    Each step, sensor and learning modules propose regions -- lists of goals
-    whose locations trace out the surface they are attending to. Those locations
-    are voxelized into a persistent grid, and only goals that land in an
-    occupied voxel of the updated grid are passed on toward the motor system.
+    Each step, sensor and learning modules propose regions in space as a set of
+    locations. Those locations are voxelized into voxels which are used to update
+    a persistent voxel grid.
 
-    The grid is a memory rather than a snapshot of the latest look: a
-    re-observed voxel is refreshed to a full age with its count accumulated, one
-    that was not seen ages by a step, and one whose age runs out is dropped.
+    At present, the voxel grid is used to filter out goals that do not fall within
+    the voxel grid. Voxels that have not been re-observed for a number of steps
+    (i.e., the voxel_lifetime) are expired from the grid.
     """
 
     def __init__(
@@ -91,18 +84,12 @@ class AttentionSystem:
         return self._voxel_grid
 
     def step(self, goals: list[Goal], regions: list[list[Goal]]) -> list[Goal]:
-        """Update the attention system with new goals and regions.
-
-        Each region's goal locations are voxelized and merged into the grid,
-        which then ages and expires as a whole. Goals are filtered against the
-        updated grid: only those whose location falls in an occupied voxel are
-        returned. Goals without a location pass through, since they cannot be
-        spatially filtered. While the grid is empty -- no module has proposed a
-        region yet -- goals pass through unfiltered.
+        """Update the attention system with new regions and filter goals.
 
         Args:
-            goals: A list of goals to update the attention system with.
-            regions: A list of regions, where each region is a list of goals.
+            goals: SM- and LM-derived goals to filter.
+            regions: SM- and LM-derived regions which are used to update the
+                attention system's persistent voxel grid.
 
         Returns:
             Filtered list of goals.
@@ -118,9 +105,10 @@ class AttentionSystem:
         return self._filter(goals)
 
     def contains_points(
-        self, points: npt.NDArray[np.floating]
+        self,
+        points: npt.NDArray[np.floating],
     ) -> npt.NDArray[np.bool_]:
-        """Test which locations fall within an occupied voxel.
+        """Test which locations fall within the voxel grid.
 
         Args:
             points: a (N, 3) array of points.
@@ -144,12 +132,6 @@ class AttentionSystem:
         self._telemetry.reset()
 
     def state_dict(self) -> Memento:
-        """Export the recorded telemetry.
-
-        Returns:
-            The telemetry's state dict, alongside the grid's voxel size and
-            lifetime so consumers can place voxels in world coordinates.
-        """
         return dict(
             voxel_size=self._voxel_size,
             voxel_lifetime=self._voxel_lifetime,
@@ -158,11 +140,6 @@ class AttentionSystem:
 
     def _observe(self, regions: list[list[Goal]]) -> pd.DataFrame:
         """Voxelize this step's regions into a fresh grid.
-
-        Every observed voxel starts with a full lifetime. Its count is the number
-        of regions that saw it this step, so regions from different modules each
-        contribute a sighting; ageing and tallying against what is already held
-        happen in _merge.
 
         Args:
             regions: A list of regions, where each region is a list of goals.
@@ -216,13 +193,7 @@ class AttentionSystem:
         return aged
 
     def _merge(self, remembered: pd.DataFrame, observed: pd.DataFrame) -> pd.DataFrame:
-        """Fold this step's observations into the voxels already held.
-
-        A re-observed voxel is replaced wholesale by its fresh row, so its age
-        returns to a full lifetime. Its ``count`` is the exception: sightings
-        accumulate, so the fresh tally is added to the one already held. A voxel
-        that was not seen this step is carried through untouched, keeping
-        whatever age it arrived with.
+        """Merge this step's observations into the voxels already held.
 
         Args:
             remembered: The voxels held from earlier steps, already aged.
@@ -253,7 +224,7 @@ class AttentionSystem:
 
     @staticmethod
     def _expire(data: pd.DataFrame) -> pd.DataFrame:
-        """Drop voxels whose age has run out.
+        """Drop voxels that haven't been seen in a while.
 
         Args:
             data: A merged frame, possibly holding voxels aged past their end.
