@@ -21,7 +21,9 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: 4 # > len(eval_rotations)
     model_name_or_path: ""
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     logging:

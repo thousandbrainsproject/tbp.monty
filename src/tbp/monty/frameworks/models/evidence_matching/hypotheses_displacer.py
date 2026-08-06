@@ -232,19 +232,21 @@ class DefaultHypothesesDisplacer:
             channel_features,
             channel_possible_poses,
         )
-        # Get max_nneighbors nearest nodes to search locations.
+        # Get up to max_nneighbors nearest nodes to search locations.
+        channel_locations = self.graph_memory.get_locations_in_graph(
+            graph_id, input_channel
+        )
+        num_neighbors = min(self.max_nneighbors, channel_locations.shape[0])
         nearest_node_ids = self.graph_memory.get_graph(
             graph_id, input_channel
         ).find_nearest_neighbors(
             search_locations,
-            num_neighbors=self.max_nneighbors,
+            num_neighbors=num_neighbors,
         )
-        if self.max_nneighbors == 1:
+        if num_neighbors == 1:
             nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
-        nearest_node_locs = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel
-        )[nearest_node_ids]
+        nearest_node_locs = channel_locations[nearest_node_ids]
         max_abs_curvature = get_relevant_curvature(channel_features)
         custom_nearest_node_dists = get_custom_distances(
             nearest_node_locs,
