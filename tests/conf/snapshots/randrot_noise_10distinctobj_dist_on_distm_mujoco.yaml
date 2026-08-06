@@ -31,12 +31,12 @@ experiment:
               - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
-              rotation_degrees: 10.0
+              rotation_degrees: 5.0
       learning_modules:
         learning_module_0:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
-            max_nneighbors: 5
+            max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           feature_weights:
             patch:
@@ -68,26 +68,23 @@ experiment:
           - pose_vectors
           - pose_fully_defined
           - on_object
-          - object_coverage
           - hsv
           - principal_curvatures_log
           delta_thresholds:
             on_object: 0
-            n_steps: 20
-            hsv:
-            - 0.1
-            - 0.1
-            - 0.1
-            pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
-            principal_curvatures_log:
-            - 2
-            - 2
             distance: 0.01
           save_raw_obs: false
+          noise_params:
+            features:
+              pose_vectors: 2
+              hsv: 0.1
+              principal_curvatures_log: 0.1
+              pose_fully_defined: 0.01
+            location: 0.002
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          save_raw_obs: false
+          save_raw_obs: true
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -97,55 +94,30 @@ experiment:
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
-        objects:
-        - name: coneSolid
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+        agents:
+        - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
+          _partial_: true
+          agent_id: agent_id_0
+          sensor_configs:
+            patch:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              zoom: 10.0
+            view_finder:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              zoom: 1.0
           position:
           - 0.0
           - 1.5
-          - -0.1
-        scene_id: null
-        seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
-        agents:
-          agent_args:
-            agent_id: agent_id_0
-            sensor_ids:
-            - patch
-            - view_finder
-            height: 0.0
-            position:
-            - 0.0
-            - 1.5
-            - 0.2
-            resolutions:
-            - - 64
-              - 64
-            - - 64
-              - 64
-            positions:
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.0
-            rotations:
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            semantics:
-            - true
-            - true
-            zooms:
-            - 10.0
-            - 1.0
-          agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
-      env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+          - 0.2
+        raise_actuate_missing: false
+      env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
@@ -165,46 +137,31 @@ experiment:
         - 10.0
         - 1.0
         get_all_points: true
-        use_semantic_sensor: true
+        use_semantic_sensor: false
     eval_env_interface_args:
+      parent_to_child_mapping: null
       object_names:
-        targets_list:
-        - mug
-        - bowl
-        - potted_meat_can
-        - spoon
-        - strawberry
-        - mustard_bottle
-        - dice
-        - golf_ball
-        - c_lego_duplo
-        - banana
-        source_object_list:
-        - mug
-        - bowl
-        - potted_meat_can
-        - spoon
-        - strawberry
-        - mustard_bottle
-        - dice
-        - golf_ball
-        - c_lego_duplo
-        - banana
-        num_distractors: 10
+      - mug
+      - bowl
+      - potted_meat_can
+      - spoon
+      - strawberry
+      - mustard_bottle
+      - dice
+      - golf_ball
+      - c_lego_duplo
+      - banana
       object_init_sampler:
-        _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations: ${constants.rotations_all}
+        _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
       positioning_procedures:
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
         sensor_id: view_finder
-        multiple_objects_present: true
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
         sensor_id: patch
         allow_translation: false
         max_orientation_attempts: 3
-        multiple_objects_present: true
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
     logging:
       monty_log_level: BASIC
@@ -221,15 +178,17 @@ experiment:
       wandb_id:
         _target_: wandb.util.generate_id
       wandb_group: benchmark_experiments
-      run_name: base_10multi_distinctobj_dist_agent
+      run_name: randrot_noise_10distinctobj_dist_on_distm_mujoco
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-    n_eval_epochs: ${constants.rotations_all_count}
-    min_lms_match: 1
+    model_name_or_path: ${constants.pretrained_dir}/supervised_pre_training_base/pretrained/
+    n_eval_epochs: 10
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG

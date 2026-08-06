@@ -13,7 +13,6 @@ from __future__ import annotations
 import logging
 
 import numpy as np
-import scipy
 import torch
 from numpy.typing import ArrayLike
 
@@ -436,10 +435,15 @@ def surface_normal_total_least_squares(
 
         try:
             # Find eigenvector of M with the minimum eigenvalue
-
-            # Because `m_mat` is real and symmetric, we can use `eigh` to return
-            # real results and avoid having to handle complex values.
-            eig_val, eig_vec = np.linalg.eigh(m_mat)
+            eig_val, eig_vec = np.linalg.eig(m_mat)
+            # We know `m_mat` is real and symmetric because both `x_mat.T @ x_mat`
+            # and `p_mean @ p_mean.T` are real symmetric matrices. By the
+            # spectral theorem, its eigenvalues are real, and it admits an
+            # orthonormal basis of real eigenvectors, so discarding the zero
+            # imaginary components is safe.
+            assert np.isreal(eig_val).all() and np.isreal(eig_vec).all()
+            eig_val = np.real(eig_val)
+            eig_vec = np.real(eig_vec)
 
             # The eigenvector with the smallest eigenvalue is the direction of
             # minimum point-cloud variation: the normal to the best-fit plane.
@@ -700,6 +704,8 @@ def principal_curvatures(
             buv[1, 1] = 2 * params[1]
 
             # Step 4) compute the principle curvatures and directions:
+            # TODO: here convex PCs are negative but I think they should be positive
+            m = np.linalg.inv(guv).dot(buv)
 
             # Solve the symmetric-definite generalized eigenvalue problem:
             #
@@ -708,14 +714,15 @@ def principal_curvatures(
             # `buv` is real symmetric and `guv` is real symmetric positive
             # definite, so the generalized spectral theorem guarantees real
             # eigenvalues and a complete basis of real eigenvectors.
-            eigval, eigvec = scipy.linalg.eigh(buv, guv)
-            eigvec[:, 0] = normalize(eigvec[:, 0])
-            eigvec[:, 1] = normalize(eigvec[:, 1])
+            eigval, eigvec = np.linalg.eig(m)
 
-            # `eigh` returns eigenvalues in ascending order. Preserve the existing
-            # convention of ordering principal curvatures from largest to smallest.
-            eigval_sorted = eigval[::-1]
-            eigvec_sorted = eigvec[:, ::-1]
+            # Order principal curvatures from largest to smallest.
+            assert np.isreal(eigval).all() and np.isreal(eigvec).all()
+            eigval = np.real(eigval)
+            eigvec = np.real(eigvec)
+            idx = eigval.argsort()[::-1]
+            eigval_sorted = eigval[idx]
+            eigvec_sorted = eigvec[:, idx]
 
             k1 = eigval_sorted[0]
             k2 = eigval_sorted[1]

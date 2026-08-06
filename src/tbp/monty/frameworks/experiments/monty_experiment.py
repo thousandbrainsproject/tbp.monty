@@ -29,6 +29,7 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
 )
+from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
@@ -69,6 +70,7 @@ class MontyExperiment:
     model: MontyBase
     env_interface: Interface | None
 
+    _match_criterion: MatchCriterion
     _recreation_mode: bool
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
@@ -84,6 +86,7 @@ class MontyExperiment:
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
+        logger.warning(f"_recreation_mode = {self._recreation_mode}")
         self._monty_cfg = None
         self._monty_memo = {}
 
@@ -101,7 +104,7 @@ class MontyExperiment:
             self.model_path = Path(config["model_name_or_path"])
         else:
             self.model_path = None
-        self.min_lms_match = config["min_lms_match"]
+        self._match_criterion = config["match_criterion"]
         self.show_sensor_output = config["show_sensor_output"]
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
@@ -441,6 +444,8 @@ class MontyExperiment:
         learning_modules = instantiate(config.pop("learning_modules"))
         for lm_id, lm in learning_modules.items():
             lm.learning_module_id = lm_id
+            if self._recreation_mode:
+                lm.init_from_ltm()  # TODO: init should have already done everything
 
         sensor_modules = instantiate(config.pop("sensor_modules"))
         motor_system = instantiate(config.pop("motor_system_config"))
@@ -466,7 +471,7 @@ class MontyExperiment:
             **config,
             **monty_args,
         )
-        model.min_lms_match = self.min_lms_match
+        model._match_criterion = self._match_criterion
 
         if monty_args["num_exploratory_steps"] > self.max_total_steps:
             new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
@@ -485,8 +490,9 @@ class MontyExperiment:
     def _restore_monty(self) -> None:
         """Recreate episodic state of Monty model."""
         if self._recreation_mode:
-            self._create_monty()
+            # TODO: we _should_ be able to create Monty _outside_ this condition
             if self._monty_memo:
+                self._create_monty()
                 self.model.restore(self._monty_memo)
             self.logger_handler.model = self.model
         else:
