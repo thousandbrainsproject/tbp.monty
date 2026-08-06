@@ -86,10 +86,6 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
         """Update hypothesis evidence from sensed features (and initialize as needed).
 
-        Assumes hypotheses have already been displaced for this step. Initializes a new
-        hypothesis space if one does not exist, computes evidence for existing
-        hypotheses, and initializes hypotheses for newly available channels.
-
         Args:
             hypotheses: Hypothesis space for the graph.
             features: Input features keyed by channel name.
