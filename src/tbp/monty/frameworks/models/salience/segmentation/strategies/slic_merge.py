@@ -41,7 +41,7 @@ class SlicMerge(SegmentationStrategy):
 
         Args:
             n_seeds: Number of superpixels to generate, though this is approximate.
-                SLIC initializes seeds on a reglar lattice, so the actual number of
+                SLIC initializes seeds on a regular lattice, so the actual number of
                 superpixels may be larger.
             compactness: Balances color proximity and space proximity. Higher values
                 give more weight to space proximity, resulting in more square
@@ -49,8 +49,11 @@ class SlicMerge(SegmentationStrategy):
             max_iter: Maximum number of iterations for SLIC.
             sigma: Width of Gaussian smoothing kernel for pre-processing.
             enforce_connectivity: Whether to enforce connectivity of superpixels.
-            min_size_factor: Minimum size of superpixels as a fraction of average size.
-            max_size_factor: Maximum size of superpixels as a fraction of average size.
+            min_size_factor: Minimum superpixel size, as a fraction of the
+                nominal size `image_pixels / n_seeds`. Smaller connected
+                fragments are merged into an adjacent superpixel.
+            max_size_factor: Maximum superpixel size, as a fraction of the
+                nominal size. Larger connected regions are split.
             segment_in_lab: Whether to perform segmentation in LAB color space.
             merge_threshold: Color distance threshold for merging superpixels,
                 where "color distance" refers to the CIE76. Standard values:
