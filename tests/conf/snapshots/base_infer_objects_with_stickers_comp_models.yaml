@@ -230,30 +230,18 @@ experiment:
       parent_to_child_mapping:
         001_cube:
         - 001_cube
-        002_cube_tbp_horz:
+        002_cube_tbp:
         - 001_cube
         - 021_logo_tbp
-        003_cube_tbp_vert:
-        - 001_cube
-        - 021_logo_tbp
-        004_cube_numenta_horz:
-        - 001_cube
-        - 022_logo_numenta
-        005_cube_numenta_vert:
+        004_cube_numenta:
         - 001_cube
         - 022_logo_numenta
         006_disk:
         - 006_disk
-        007_disk_tbp_horz:
+        007_disk_tbp:
         - 006_disk
         - 021_logo_tbp
-        008_disk_tbp_vert:
-        - 006_disk
-        - 021_logo_tbp
-        009_disk_numenta_horz:
-        - 006_disk
-        - 022_logo_numenta
-        010_disk_numenta_vert:
+        009_disk_numenta:
         - 006_disk
         - 022_logo_numenta
         011_cylinder:
@@ -272,16 +260,10 @@ experiment:
         - 022_logo_numenta
         016_sphere:
         - 016_sphere
-        017_sphere_tbp_horz:
+        017_sphere_tbp:
         - 016_sphere
         - 021_logo_tbp
-        018_sphere_tbp_vert:
-        - 016_sphere
-        - 021_logo_tbp
-        019_sphere_numenta_horz:
-        - 016_sphere
-        - 022_logo_numenta
-        020_sphere_numenta_vert:
+        019_sphere_numenta:
         - 016_sphere
         - 022_logo_numenta
         021_logo_tbp:
@@ -308,27 +290,21 @@ experiment:
       object_names:
       - 001_cube
       - 006_disk
-      - 002_cube_tbp_horz
-      - 004_cube_numenta_horz
-      - 007_disk_tbp_horz
-      - 009_disk_numenta_horz
+      - 002_cube_tbp
+      - 004_cube_numenta
+      - 007_disk_tbp
+      - 009_disk_numenta
       - 011_cylinder
       - 016_sphere
       - 023_mug
       - 012_cylinder_tbp_horz
       - 014_cylinder_numenta_horz
-      - 017_sphere_tbp_horz
-      - 019_sphere_numenta_horz
+      - 017_sphere_tbp
+      - 019_sphere_numenta
       - 024_mug_tbp_horz
       - 026_mug_numenta_horz
-      - 003_cube_tbp_vert
-      - 005_cube_numenta_vert
-      - 008_disk_tbp_vert
-      - 010_disk_numenta_vert
       - 013_cylinder_tbp_vert
       - 015_cylinder_numenta_vert
-      - 018_sphere_tbp_vert
-      - 020_sphere_numenta_vert
       - 025_mug_tbp_vert
       - 027_mug_numenta_vert
       object_init_sampler:
@@ -395,7 +371,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v4}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v5}
   rotations_all_count: 14
   rotations_all:
   - - 0
