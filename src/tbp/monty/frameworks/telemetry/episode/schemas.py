@@ -38,7 +38,11 @@ class TerminalState(Enum):
 
     @classmethod
     def from_graph_lm(cls, lm: GraphLM) -> Self:
-        """Extracts the LM terminal state and turns it into an enum value."""
+        """Extracts the LM terminal state and turns it into an enum value.
+
+        Returns:
+            The enum value.
+        """
         # TODO: maybe unneeded, do directly in set_individual_ts?
         try:
             return cls(lm.terminal_state)
