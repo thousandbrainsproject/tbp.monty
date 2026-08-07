@@ -736,7 +736,7 @@ def add_pose_lm_episode_stats(lm, stats):
     return stats
 
 
-def get_stats_per_lm(model, target, episode_seed: int):
+def get_stats_per_lm(model, target, episode_seed: int) -> dict:
     """Loop through lms and get stats.
 
     Args:
