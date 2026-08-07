@@ -147,7 +147,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             if lm.learning_module_id in self.supervised_lm_ids:
                 lm.detected_object = target["object"]
                 lm.buffer.stats["possible_matches"] = [target["object"]]
-                lm.buffer.stats["detected_location_on_model"] = (
+                lm.buffer.stats["detected_location_on_model"] = np.array(
                     self.first_epoch_object_location[target["object"]]
                 )
                 lm.buffer.stats["detected_location_rel_body"] = np.array(
