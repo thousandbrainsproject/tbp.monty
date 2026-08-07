@@ -453,6 +453,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "episode/goal_states_attempted": stats["goal_states_attempted"],
             "episode/goal_state_success_rate": stats["goal_state_success_rate"],
             "episode/avg_prediction_error": stats["episode_avg_prediction_error"],
+            "episode/num_bursts": stats["episode_num_bursts"],
         }
 
         for p in self.performance_options:
