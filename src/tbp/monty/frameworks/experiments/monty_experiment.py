@@ -30,6 +30,7 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -49,6 +50,7 @@ from tbp.monty.memento import Memento
 __all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
+telemeter = telemetry.getTelemeter("tbp.monty")
 
 
 class MontyExperiment:
