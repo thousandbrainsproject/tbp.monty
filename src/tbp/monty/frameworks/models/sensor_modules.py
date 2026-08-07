@@ -240,18 +240,13 @@ class ObservationProcessor:
             morphological_features["on_object"] = float(on_object)
 
         # Sensor module returns features at a location in the form of a Message class.
-        # use_state is a bool indicating whether the input is "interesting",
-        # which indicates that it merits processing by the learning module; by default
-        # it will always be True so long as the surface normal and principal curvature
-        # directions were valid; certain SMs and policies used separately can also set
-        # it to False under appropriate conditions
-
         percept = Message(
             location=np.array([x, y, z]),
             morphological_features=morphological_features,
             non_morphological_features=features,
             confidence=1.0,
-            use_state=on_object and valid_signals,
+            pass_message=True,
+            process_features_in_lm=on_object and valid_signals,
             sender_id=self._sensor_module_id,
             sender_type="SM",
         )
@@ -647,7 +642,7 @@ class CameraSM(SensorModule):
 
         Returns:
             Percept with features and morphological features. Noise may be
-            added. The `use_state` flag may be set.
+            added. The `pass_message` and `process_features_in_lm` flags may be set.
         """
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
@@ -655,12 +650,10 @@ class CameraSM(SensorModule):
             )
 
         percept = self._observation_processor.process(observation)
-
-        if percept.use_state:
-            percept = self._message_noise(percept, rng=ctx.rng)
+        percept = self._message_noise(percept, rng=ctx.rng)
 
         if motor_only_step:
-            percept.use_state = False
+            percept.pass_message = False
 
         percept = self._percept_filter(percept)
 
@@ -677,7 +670,7 @@ class PerceptFilter(Protocol):
 
 class PassthroughPerceptFilter(PerceptFilter):
     def __call__(self, percept: Message) -> Message:
-        """Passthrough percept filter. Never sets `percept.use_state` to False.
+        """Passthrough percept filter.
 
         Returns:
             Percept unchanged.
@@ -698,7 +691,7 @@ class FeatureChangeFilter(PerceptFilter):
         """Reset buffer and is_exploring flag."""
         self._last_percept = None
 
-    def _check_feature_change(self, percept: Message) -> bool:
+    def _feature_changes_are_significant(self, percept: Message) -> bool:
         """Check feature change between last transmitted observation.
 
         Args:
@@ -769,19 +762,24 @@ class FeatureChangeFilter(PerceptFilter):
         return False
 
     def __call__(self, percept: Message) -> Message:
-        """Sets `percept.use_state` to False if features haven't changed significantly.
+        """Labels each percept as containing features or location-only.
+
+        Sets `process_features_in_lm` to `True` when feature changes are significant
+        compared to the previous `percept`.
 
         Args:
             percept: Percept to check for feature change.
 
         Returns:
-            Percept with `percept.use_state` set to False if features haven't
-            changed significantly.
+            Percept with `process_features_in_lm` set to whether the features changed
+            significantly.
         """
-        if not percept.use_state:
-            # If we already know the features are uninteresting (e.g. invalid surface
-            # normal due to <3/4 of the object in view, or motor only-step), then
-            # don't bother with the below
+        if not percept.pass_message:
+            return percept
+
+        if not percept.process_features_in_lm:
+            # The features are uninteresting (e.g. off object, or invalid surface
+            # normal due to <3/4 of the object in view).
             return percept
 
         if not self._last_percept:  # first step
@@ -789,14 +787,9 @@ class FeatureChangeFilter(PerceptFilter):
             self._last_sent_n_steps_ago = 0
             return percept
 
-        significant_feature_change = self._check_feature_change(percept)
-
-        # Save bool which will tell us whether to pass the information to LMs
-        percept.use_state = significant_feature_change
-
+        significant_feature_change = self._feature_changes_are_significant(percept)
+        percept.process_features_in_lm = significant_feature_change
         if significant_feature_change:
-            # As per original implementation : only update the "last feature" when a
-            # significant change has taken place
             self._last_percept = percept
             self._last_sent_n_steps_ago = 0
         else:

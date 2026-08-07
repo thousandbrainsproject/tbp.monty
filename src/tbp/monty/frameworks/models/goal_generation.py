@@ -134,28 +134,8 @@ class GraphGoalGenerator(GoalGenerator):
         > plan : set the default driving Goal to a meaningful, non-None value
         that is compatible with the current method for checking convergence of an
         LM, such that achieving the driving Goal can be used as a test for Monty
-        convergence. This might be something like the below.
+        convergence.
         """
-        # if goal is None:
-        #     # The current default Goal, which is to reduce uncertainty; this is
-        #     # defined by having a high-confidence in the Goal, and an arbitrary
-        #     # single object ID.
-        #     self.driving_goal = Goal(
-        #         location=None,
-        #         morphological_features=None,
-        #         non_morphological_features={
-        #             "object_id": "*",  # Match any object so long as it is described
-        #             # by a single ID
-        #             "location_rel_model": None
-        #         },
-        #         confidence=1.0,  # Should have high confidence
-        #         use_state=False,
-        #         sender_id=self.parent_lm.learning_module_id,
-        #         sender_type="GSG",
-        #         goal_tolerances=None,
-        #     )
-        # else:
-
         self.driving_goal = goal
 
     def output_goals(self) -> list[Goal]:
@@ -729,7 +709,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             A dictionary containing the hypothesis to test, the target location and
             surface normal of the target point on the object.
         """
-        mlh = self.parent_lm.get_current_mlh()
+        mlh = self.parent_lm._get_current_mlh()
         mlh_id = mlh["graph_id"]
 
         target_object = self.parent_lm.get_graph(mlh_id)
@@ -839,9 +819,10 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             },
             non_morphological_features=None,
             confidence=goal_confidence,
-            use_state=True,
+            pass_message=True,
             sender_id=self.parent_lm.learning_module_id,
             sender_type="GSG",
+            process_features_in_lm=True,
             goal_tolerances=None,
             info=info,
         )
@@ -924,7 +905,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             return True
 
         # Used to check if pose for top MLH has changed
-        top_mlh = self.parent_lm.get_current_mlh()
+        top_mlh = self.parent_lm._get_current_mlh()
 
         # If the MLH evidence is significantly above the second MLH (where "significant"
         # is determined by x_percent_scale_factor below), then focus on discriminating

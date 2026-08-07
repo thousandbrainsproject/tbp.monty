@@ -15,7 +15,7 @@ from typing import Any, ClassVar, Collection, Sequence
 import numpy as np
 import torch
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -36,6 +36,7 @@ from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
+from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
@@ -246,8 +247,9 @@ class MontyForGraphMatching(MontyBase):
                 lm_step_method(ctx, sensory_inputs)
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
+
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=True
+                    lm_processed=not is_location_only_step(sensory_inputs)
                 )
             else:
                 if self.step_type == "matching_step":
@@ -603,6 +605,9 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
+        if is_location_only_step(percepts):
+            return
+
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
@@ -613,15 +618,17 @@ class GraphLM(LearningModule):
         else:
             logger.debug("we have not moved yet.")
 
+        feature_percepts = [p for p in percepts if p.process_features_in_lm]
+
         self._compute_possible_matches(
-            ctx, percepts, first_movement_detected=first_movement_detected
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(ctx, percepts)
+            self.gsg.step(ctx, feature_percepts)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
@@ -632,6 +639,9 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
+        if is_location_only_step(percepts):
+            return
+
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
@@ -713,7 +723,7 @@ class GraphLM(LearningModule):
                 self.buffer.get_num_observations_on_object() > 0
             ):  # lm has gotten input during episode
                 self.buffer.stats["detected_location_rel_body"] = (
-                    self.buffer.get_current_location(input_channel="first")
+                    self.buffer.current_location()
                 )
         # 1 possible match
         elif (
@@ -1026,9 +1036,12 @@ class GraphLM(LearningModule):
         Returns:
             Percepts with displacements.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         if self.buffer.last_location is not None:
-            current_location = np.mean([p.location for p in sm_percepts], axis=0)
             displacement = current_location - self.buffer.last_location
         else:
             displacement = np.zeros(3)
@@ -1142,7 +1155,7 @@ class GraphMemory(LMMemory):
                     input_channel_features,
                     input_channel_locations,
                 ) = self._extract_entries_with_content(
-                    features[input_channel], locations[input_channel]
+                    features[input_channel], locations
                 )
                 # Update graph
                 if (
