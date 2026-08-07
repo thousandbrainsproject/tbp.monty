@@ -179,7 +179,7 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > ```plaintext
 > mkdir -p ~/tbp/data/habitat/objects/
 >
-> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.1 ~/tbp/data/habitat/objects/compositional_objects
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
