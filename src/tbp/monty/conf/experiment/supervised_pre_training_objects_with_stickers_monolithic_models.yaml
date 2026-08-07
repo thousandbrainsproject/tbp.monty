@@ -26,6 +26,7 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     seed: 42
-    supervised_lm_ids: all
+    supervised_lm_ids:
+      - learning_module_1
     logging:
       run_name: supervised_pre_training_objects_with_stickers_monolithic_models

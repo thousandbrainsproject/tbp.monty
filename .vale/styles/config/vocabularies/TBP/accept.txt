@@ -224,3 +224,6 @@
 \b[Oo]pponency\b
 \bExcalidraw\b
 \blazyconfigs\b
+\bLoughborough\b
+\bMaixsense\b
+\bUfactory\b
