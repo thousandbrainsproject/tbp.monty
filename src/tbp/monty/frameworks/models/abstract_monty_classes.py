@@ -448,6 +448,9 @@ class LearningModule(
     def load_state_dict(self, memento: Memento) -> None:
         pass
 
+    def propose_region(self) -> list[Goal]:
+        return []
+
 
 class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
     """Like a long-term memory storing all the knowledge an LM has."""
@@ -576,3 +579,6 @@ class SensorModule(RuntimeSensorModule, ExperimentSensorModule, metaclass=abc.AB
     @abc.abstractmethod
     def reset(self) -> None:
         pass
+
+    def propose_region(self) -> list[Goal]:
+        return []
