@@ -339,7 +339,6 @@ experiment:
       python_log_level: DEBUG
       python_log_to_file: true
       python_log_to_stderr: true
-      output_dir: /Users/scott/tbp/projects/comp_benefits_figures/experiment_output
       run_name: infer_comp_lvl3_seg_slic
       resume_wandb_run: false
       wandb_id:
