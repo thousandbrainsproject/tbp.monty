@@ -609,7 +609,7 @@ class EvidenceGraphLM(GraphLM):
             for graph_id, hyps in self._hypotheses.items()
             for hyp_id in np.flatnonzero(hyps.possible)
         }
-        symmetry_detected = self._check_for_symmetry(
+        persistence_detected = self._check_for_persistence(
             last_possible_hypotheses=previous,
             possible_hypotheses=current,
             # Don't increment symmetry counter if LM didn't process observation
@@ -622,7 +622,7 @@ class EvidenceGraphLM(GraphLM):
             if graph_id in selected:
                 hyps.possible[selected[graph_id]] = True
 
-        if not symmetry_detected:
+        if not persistence_detected:
             return {}
         return {
             graph_id: Hypotheses(
@@ -1014,7 +1014,7 @@ class EvidenceGraphLM(GraphLM):
 
         return location_unique and rotation_unique
 
-    def _check_for_symmetry(
+    def _check_for_persistence(
         self,
         last_possible_hypotheses: set[tuple[str, int]],
         possible_hypotheses: set[tuple[str, int]],
@@ -1025,7 +1025,9 @@ class EvidenceGraphLM(GraphLM):
         We check the set overlap here and see if at least 90% of the current hypotheses
         were also possible on the last step. The hypotheses are identified globally by
         `(graph_id, hyp_id)` pairs so that persistence is measured across all objects
-        rather than within one object.
+        rather than within one object. This is not yet symmetry: only once the
+        persistent set is narrowed to a single object with a non-unique pose (in
+        update_terminal_condition) is it classified as symmetry.
 
         Args:
             last_possible_hypotheses: Set of `(graph_id, hyp_id)` pairs of all
@@ -1037,12 +1039,12 @@ class EvidenceGraphLM(GraphLM):
                 observation.
 
         Returns:
-            Whether symmetry was detected.
+            Whether the hypothesis set has persisted for long enough.
         """
         if len(last_possible_hypotheses) == 0:
-            return False  # need more steps to meet symmetry condition
+            return False  # need more steps to meet persistence condition
         logger.debug(
-            f"\n\nchecking for symmetry for hyps {possible_hypotheses}"
+            f"\n\nchecking for persistence for hyps {possible_hypotheses}"
             f" with last hyps {last_possible_hypotheses}"
         )
         if increment_evidence:
@@ -1057,7 +1059,7 @@ class EvidenceGraphLM(GraphLM):
                 self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():
-            logger.info(f"Symmetry detected for hypotheses {possible_hypotheses}")
+            logger.info(f"Persistence detected for hypotheses {possible_hypotheses}")
             return True
 
         return False
