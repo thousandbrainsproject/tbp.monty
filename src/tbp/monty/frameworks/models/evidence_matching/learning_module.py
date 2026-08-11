@@ -1087,66 +1087,54 @@ class EvidenceGraphLM(GraphLM):
             persistent_object_ids: IDs of the graphs to merge.
         """
         # All graphs must have the same input channels to be merged.
-        available_channels = None
-        for object_id in persistent_object_ids:
-            channels = self.graph_memory.get_input_channels_in_graph(object_id)
-            if available_channels is None:
-                available_channels = channels
-            else:
-                assert available_channels == channels, (
-                    "All objects must have the same input channels"
-                )
+        first_id = persistent_object_ids[0]
+        channels = set(self.graph_memory.get_input_channels_in_graph(first_id))
+        for object_id in persistent_object_ids[1:]:
+            other = set(self.graph_memory.get_input_channels_in_graph(object_id))
+            if other != channels:
+                logger.info("Objects have different input channels; skipping merge.")
+                return
 
+        # Ensure the merged id does not collide with an existing graph so that
+        # registration cannot silently extend an existing entry.
         new_graph_id = "_".join(persistent_object_ids)
+        while new_graph_id in self.graph_memory.get_memory_ids():
+            new_graph_id += "_merged"
 
-        for channel in available_channels:
-            for index, object_id in enumerate(persistent_object_ids):
-                current_locations = self.graph_memory.get_locations_in_graph(
-                    object_id, channel
-                )
-                current_features = self.graph_memory.get_features_by_name(
-                    object_id, channel
-                )
+        # Compute each object's MLH pose once (not per channel). The MLH rotation
+        # is the rotation required to match a displacement to a model, so it is
+        # the *inverse* of e.g. the ground-truth rotation.
+        first_mlh = self.get_mlh_for_object(first_id)
 
-                if index == 0:
-                    all_locations = current_locations
-                    all_features = current_features
-                    first_mlh = self.get_mlh_for_object(object_id)
-                    continue
-
-                current_mlh = self.get_mlh_for_object(object_id)
-
-                # Transform the current object's locations into the reference frame
-                # the first object's graph was learned in. Note the MLH rotation is
-                # the rotation required to match a displacement to a model, so it is
-                # the *inverse* of e.g. the ground-truth rotation.
-                # TODO: See if apply_rf_transform_to_points could be used here
-                normalized_locations = (
-                    current_mlh["rotation"]
-                    .inv()
-                    .apply(current_locations - current_mlh["location"])
-                )
-                corrected_locations = (
-                    first_mlh["rotation"].apply(normalized_locations)
-                    + first_mlh["location"]
-                )
-
-                all_locations = np.concatenate(
-                    [all_locations, corrected_locations], axis=0
-                )
-                for feature_name in all_features:
-                    all_features[feature_name] = np.concatenate(
-                        [all_features[feature_name], current_features[feature_name]],
-                        axis=0,
+        # Per channel, collect the transform inputs for each non-first object.
+        # object_rotation is expressed in the update_model convention so that
+        # object_rotation.inv() = R_net = first_rotation * current_rotation.inv(),
+        # reducing the transform to p_0 = loc_0 + R_net * (p_i - loc_i).
+        merge_data = {channel: [] for channel in channels}
+        for object_id in persistent_object_ids[1:]:
+            current_mlh = self.get_mlh_for_object(object_id)
+            object_rotation = current_mlh["rotation"] * first_mlh["rotation"].inv()
+            for channel in channels:
+                merge_data[channel].append(
+                    (
+                        np.asarray(
+                            self.graph_memory.get_locations_in_graph(
+                                object_id, channel
+                            )
+                        ),
+                        self.graph_memory.get_features_by_name(object_id, channel),
+                        object_rotation,
+                        current_mlh["location"],
                     )
+                )
 
-            self.graph_memory._merge_graphs(
-                locations=all_locations,
-                features=all_features,
-                graph_id=new_graph_id,
-                input_channel=channel,
-                old_graph_ids=persistent_object_ids,
-            )
+        self.graph_memory._merge_graphs(
+            first_graph_id=first_id,
+            merge_data=merge_data,
+            new_graph_id=new_graph_id,
+            old_graph_ids=persistent_object_ids,
+            location_rel_model=first_mlh["location"],
+        )
 
     def _set_detected_pose_stats(self, mlh, hypotheses, symmetric):
         """Set detected pose LM variables and log pose stats to the buffer.
