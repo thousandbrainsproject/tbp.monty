@@ -16,7 +16,7 @@ import pandas as pd
 
 from tbp.monty.attention.telemetry import AttentionSystemTelemetry
 from tbp.monty.attention.voxels import VOXEL_LEVELS, voxelize_and_bin_points
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import AttentionWeight, Goal
 from tbp.monty.memento import Memento
 
 
@@ -83,7 +83,9 @@ class AttentionSystem:
         """The voxel grid: (x, y, z) MultiIndex rows with age/count columns."""
         return self._voxel_grid
 
-    def step(self, goals: list[Goal], regions: list[list[Goal]]) -> list[Goal]:
+    def step(
+        self, goals: list[Goal], regions: list[list[AttentionWeight]]
+    ) -> list[Goal]:
         """Update the attention system with new regions and filter goals.
 
         Args:
@@ -140,7 +142,7 @@ class AttentionSystem:
             **self._telemetry.state_dict(),
         )
 
-    def _voxelize_regions(self, regions: list[list[Goal]]) -> pd.DataFrame:
+    def _voxelize_regions(self, regions: list[list[AttentionWeight]]) -> pd.DataFrame:
         """Voxelize this step's regions into a fresh grid.
 
         Args:
@@ -152,7 +154,7 @@ class AttentionSystem:
         """
         per_region_voxels = []
         for region in regions:
-            locations = [g.location for g in region if g.location is not None]
+            locations = [aw.location for aw in region if aw.location is not None]
             if not locations:
                 continue
             per_region_voxels.extend(

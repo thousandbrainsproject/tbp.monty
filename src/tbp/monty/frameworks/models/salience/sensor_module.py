@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import AttentionWeight, Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -62,7 +62,7 @@ class SalienceSM(SensorModule):
         self._segmentation_strategy = segmentation_strategy
 
         self._goals: list[Goal] = []
-        self._region: list[Goal] = []
+        self._region: list[AttentionWeight] = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
@@ -82,7 +82,7 @@ class SalienceSM(SensorModule):
             rotation=agent.rotation * sensor.rotation,
         )
 
-    def propose_region(self) -> list[Goal]:
+    def propose_region(self) -> list[AttentionWeight]:
         return self._region
 
     def step(
@@ -147,7 +147,7 @@ class SalienceSM(SensorModule):
         observation: SensorObservation,
         on_object: OnObjectObservation,
         salience: np.ndarray,
-    ) -> tuple[np.ndarray | None, list[Goal]]:
+    ) -> tuple[np.ndarray | None, list[AttentionWeight]]:
         """Segment the surface under fixation into a region proposal.
 
         The region is the set of on-object locations inside the segmented
@@ -181,15 +181,11 @@ class SalienceSM(SensorModule):
         surface_salience = salience_map[surface_mask]
 
         return segmentation_map, [
-            Goal(
+            AttentionWeight(
                 location=surface_locations[i],
-                morphological_features=None,
-                non_morphological_features=None,
-                confidence=surface_salience[i],
-                use_state=False,
+                weight=1,
                 sender_id=self._sensor_module_id,
                 sender_type="SM",
-                goal_tolerances=None,
             )
             for i in range(len(surface_locations))
         ]

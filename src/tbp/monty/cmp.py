@@ -240,6 +240,9 @@ class AttentionWeight(Message):
         )
         self.weight = weight
 
+    def _check_all_attributes(self):
+        pass
+
 
 class Goal(Message):
     """Specialization of :class:`Message` for goals with null (None) values allowed.
