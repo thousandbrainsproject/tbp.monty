@@ -12,19 +12,27 @@ import logging
 from pathlib import Path
 from typing import Callable, Sequence
 
-from arc_agi import Arcade, OperationMode
-from tbp.monty.frameworks.environments.environment import SimulatedEnvironment
+from arcengine import GameAction
+
+from arc_agi import Arcade, EnvironmentWrapper, OperationMode
+from tbp.monty.frameworks.environments.environment import (
+    ObjectID,
+    ObjectInfo,
+    SemanticID,
+    SimulatedObjectEnvironment,
+)
 
 __all__ = ["ArcAgiSimulator"]
 
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 from tbp.monty.simulators.arc_agi.agents import ArcAgent
 
 logger = logging.getLogger(__name__)
 
 
-class ArcAgiSimulator(SimulatedEnvironment):
+class ArcAgiSimulator(SimulatedObjectEnvironment):
     """Expose live ARC games through Monty's frozen patch-sensor contract.
 
     Monty's ``reset`` and ``step`` only reset or move the patch sensor. Use
@@ -53,9 +61,13 @@ class ArcAgiSimulator(SimulatedEnvironment):
             self._agents[agent.id] = agent
 
         self.game_id = game_id
-        self.env = self._arcade.make(game_id=game_id)
-        assert self.env
+        self._env = self._arcade.make(game_id=game_id)
         self._current_frame = self.env.observation_space
+
+    @property
+    def env(self) -> EnvironmentWrapper:
+        assert self._env
+        return self._env
 
     @property
     def observations(self) -> Observations:
@@ -78,5 +90,21 @@ class ArcAgiSimulator(SimulatedEnvironment):
 
         return self.observations, self.states
 
-    def reset(self):
+    def add_object(
+        self,
+        name: str,
+        position: VectorXYZ = (0.0, 0.0, 0.0),  # noqa: ARG002
+        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),  # noqa: ARG002
+        scale: VectorXYZ = (1.0, 1.0, 1.0),  # noqa: ARG002
+        semantic_id: SemanticID | None = None,  # noqa: ARG002
+        primary_target_object: ObjectID | None = None,  # noqa: ARG002
+    ) -> ObjectInfo:
+        self.game_id = name
+        self._env = self._arcade.make(game_id=name)
+        return ObjectInfo(semantic_id=SemanticID(0), object_id=ObjectID(0))
+
+    def remove_all_objects(self) -> None:
         pass
+
+    def reset(self):
+        self.env.step(GameAction.RESET)

@@ -80,7 +80,7 @@ class ArcAgent:
         return obs
 
     def reset(self):
-        pass
+        self._sensor_position = ZERO_VECTOR
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(id={self.id}"
