@@ -10,21 +10,21 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Callable, Sequence
 
-from arcengine import FrameDataRaw, GameAction
-
-from arc_agi import Arcade, EnvironmentWrapper, OperationMode
-from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environments.arc import ArcFrameEnvironment
-from tbp.monty.frameworks.sensors import SensorID
+from arc_agi import Arcade, OperationMode
+from tbp.monty.frameworks.environments.environment import SimulatedEnvironment
 
 __all__ = ["ArcAgiSimulator"]
+
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+from tbp.monty.simulators.arc_agi.agents import ArcAgent
 
 logger = logging.getLogger(__name__)
 
 
-class ArcAgiSimulator(ArcFrameEnvironment):
+class ArcAgiSimulator(SimulatedEnvironment):
     """Expose live ARC games through Monty's frozen patch-sensor contract.
 
     Monty's ``reset`` and ``step`` only reset or move the patch sensor. Use
@@ -34,99 +34,49 @@ class ArcAgiSimulator(ArcFrameEnvironment):
     def __init__(
         self,
         game_id: str,
+        agents: Sequence[Callable[[ArcAgiSimulator], ArcAgent]],
         data_path: str | Path | None = None,
-        seed: int = 0,
-        agent_id: AgentID | str = "agent_id_0",
-        sensor_id: SensorID | str = "patch",
-        frame_size: int = 64,
-        patch_size: int = 8,
     ) -> None:
-        super().__init__(
-            agent_id=agent_id,
-            sensor_id=sensor_id,
-            frame_size=frame_size,
-            patch_size=patch_size,
-        )
-        self.data_path = None if data_path is None else Path(data_path).expanduser()
-        if self.data_path is not None:
+        self.data_path = data_path
+        if data_path:
+            data_path = Path(data_path).expanduser()
             self._arcade = Arcade(
-                environments_dir=str(self.data_path),
+                environments_dir=str(data_path),
                 operation_mode=OperationMode.OFFLINE,
             )
         else:
-            self._arcade = Arcade()
+            self._arcade = Arcade(operation_mode=OperationMode.OFFLINE)
 
-        self.seed = seed
-        self.game_id = ""
-        self._env: EnvironmentWrapper
-        self.switch_to_game(game_id)
+        self._agents = {}
+        for agent_partial in agents:
+            agent = agent_partial(self)
+            self._agents[agent.id] = agent
+
+        self.game_id = game_id
+        self.env = self._arcade.make(game_id=game_id)
+        assert self.env
+        self._current_frame = self.env.observation_space
 
     @property
-    def action_space(self) -> list[GameAction]:
-        """Return the actions available in the current game state."""
-        return self._env.action_space
+    def observations(self) -> Observations:
+        obs = Observations()
+        for agent in self._agents.values():
+            obs[agent.id] = agent.observations
+        return obs
 
-    def switch_to_game(self, game_id: str, seed: int | None = None) -> FrameDataRaw:
-        """Create and reset a game, then freeze its final response frame.
+    @property
+    def states(self) -> ProprioceptiveState:
+        states = ProprioceptiveState()
+        for agent in self._agents.values():
+            states[agent.id] = agent.state
+        return states
 
-        Returns:
-            The raw ARC reset response.
+    def step(self, actions) -> tuple[Observations, ProprioceptiveState]:
+        for action in actions:
+            agent = self._agents[action.agent_id]
+            action.act(agent)
 
-        Raises:
-            ValueError: If ``game_id`` is empty.
-            RuntimeError: If ARC-AGI cannot create the requested game.
-        """
-        if not game_id:
-            raise ValueError("game_id must not be empty")
+        return self.observations, self.states
 
-        next_seed = self.seed if seed is None else seed
-        environment = self._arcade.make(game_id=game_id, seed=next_seed)
-        if environment is None:
-            raise RuntimeError(f"Could not create ARC environment {game_id}")
-        response = environment.reset()
-        if response is None:
-            raise RuntimeError(f"ARC reset failed for {game_id}")
-
-        self._set_frames(response.frame)
-        self.game_id = game_id
-        self.seed = next_seed
-        self._env = environment
-        self.frame_data = response
-        return response
-
-    def step_game(
-        self,
-        action: GameAction,
-        data: dict[str, Any] | None = None,
-        reasoning: dict[str, Any] | None = None,
-    ) -> FrameDataRaw:
-        """Apply one ARC game action and return its raw frame response.
-
-        Returns:
-            The updated raw ARC frame data.
-
-        Raises:
-            RuntimeError: If ARC-AGI fails to apply the action.
-        """
-        response = self._env.step(action, data=data, reasoning=reasoning)
-        if response is None:
-            raise RuntimeError(f"ARC step failed for {self.game_id}")
-        self._set_frames(response.frame)
-        self.frame_data = response
-        return response
-
-    def reset_game(self) -> FrameDataRaw:
-        """Reset the current ARC game and return its raw frame response.
-
-        Returns:
-            The initial raw ARC frame data.
-
-        Raises:
-            RuntimeError: If ARC-AGI fails to reset the game.
-        """
-        response = self._env.reset()
-        if response is None:
-            raise RuntimeError(f"ARC reset failed for {self.game_id}")
-        self._set_frames(response.frame)
-        self.frame_data = response
-        return response
+    def reset(self):
+        pass
