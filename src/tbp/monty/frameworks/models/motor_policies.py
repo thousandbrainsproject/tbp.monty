@@ -40,6 +40,7 @@ from tbp.monty.frameworks.actions.actions import (
     OrientHorizontal,
     OrientVertical,
     SetAgentPose,
+    SetSensorPose,
     SetSensorRotation,
     TurnLeft,
     TurnRight,
@@ -53,7 +54,7 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSyst
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.geometry import Rotation
-from tbp.monty.math import VectorXYZ
+from tbp.monty.math import IDENTITY_QUATERNION, VectorXYZ
 from tbp.monty.memento import Memento, Snapshotable
 
 if TYPE_CHECKING:
@@ -67,6 +68,7 @@ __all__ = [
     "NaiveScanPolicy",
     "NoGoalProvided",
     "RuntimeMotorPolicy",
+    "SnakeScanPolicy",
     "SurfacePolicy",
     "SurfacePolicyCurvatureInformed",
 ]
@@ -985,6 +987,113 @@ class InformedPolicy(BasePolicy):
                 state[self.agent_id].sensors[current_sensor].rotation,
                 self._pre_jump_state.sensors[current_sensor].rotation,
             ), "Failed to return sensor to orientation"
+
+
+class SnakeScanPolicy(MotorPolicy):
+    """Move a square sensor patch over a square frame in a snake pattern."""
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID | str = "patch",
+        frame_size: int = 64,
+        patch_size: int = 8,
+        stride: int = 8,
+    ) -> None:
+        for name, value in (
+            ("frame_size", frame_size),
+            ("patch_size", patch_size),
+            ("stride", stride),
+        ):
+            if not isinstance(value, int):
+                raise TypeError(f"{name} must be an integer")
+            if value <= 0:
+                raise ValueError(f"{name} must be positive")
+        if patch_size > frame_size:
+            raise ValueError("patch_size must not exceed frame_size")
+        if stride > patch_size:
+            raise ValueError("stride must not exceed patch_size")
+
+        self.agent_id = AgentID(agent_id)
+        self.sensor_id = SensorID(sensor_id)
+        self.frame_size = frame_size
+        self.patch_size = patch_size
+        self.stride = stride
+        self._scan_locations = self._make_scan_locations()
+        self.reset()
+
+    def _make_scan_locations(self) -> list[VectorXYZ]:
+        max_start = self.frame_size - self.patch_size
+        starts = list(range(0, max_start + 1, self.stride))
+        if starts[-1] != max_start:
+            starts.append(max_start)
+        centers = [start + self.patch_size // 2 for start in starts]
+
+        locations: list[VectorXYZ] = []
+        for row, y in enumerate(centers):
+            xs = centers if row % 2 == 0 else reversed(centers)
+            locations.extend((float(x), float(y), 0.0) for x in xs)
+        return locations
+
+    def _validate_sensor_location(self, state: MotorSystemState) -> None:
+        try:
+            actual = np.asarray(
+                state[self.agent_id].sensors[self.sensor_id].position,
+                dtype=float,
+            )
+        except KeyError as error:
+            raise RuntimeError(
+                f"Missing state for {self.agent_id}/{self.sensor_id}"
+            ) from error
+
+        expected = np.asarray(
+            self._scan_locations[self._next_location_index - 1],
+            dtype=float,
+        )
+        if actual.shape != (3,) or not np.allclose(actual, expected):
+            raise RuntimeError(
+                f"Sensor {self.sensor_id} is at {actual}, expected {expected}"
+            )
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState,
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
+    ) -> MotorPolicyResult:
+        self._validate_sensor_location(state)
+        if self._next_location_index == len(self._scan_locations):
+            raise StopIteration
+
+        location = self._scan_locations[self._next_location_index]
+        self._next_location_index += 1
+        return MotorPolicyResult(
+            [
+                SetSensorPose(
+                    agent_id=self.agent_id,
+                    location=location,
+                    rotation_quat=IDENTITY_QUATERNION,
+                )
+            ]
+        )
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        # The simulator's reset observation is the first scan location.
+        self._next_location_index = 1
+
+    def state_dict(self) -> Memento:
+        return {"next_location_index": self._next_location_index}
+
+    def load_state_dict(self, memento: Memento) -> None:
+        next_location_index = memento["next_location_index"]
+        if not 1 <= next_location_index <= len(self._scan_locations):
+            raise ValueError("next_location_index is outside the scan")
+        self._next_location_index = next_location_index
 
 
 class NaiveScanPolicy(InformedPolicy):

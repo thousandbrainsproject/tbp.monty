@@ -1,0 +1,8 @@
+# @package experiment.config.monty_config.motor_system_config.policy_selector.policy
+
+_target_: tbp.monty.frameworks.models.motor_policies.SnakeScanPolicy
+agent_id: agent_id_0
+sensor_id: patch
+frame_size: 64
+patch_size: 8
+stride: 8
