@@ -218,7 +218,10 @@ class EvidenceGraphMemory(GraphMemory):
             f"({len(locations)} points)."
         )
         self._build_graph(locations, features, graph_id, input_channel)
+        num_points = self.get_num_nodes_in_graph(graph_id, input_channel)
+        logger.info(f"New graph {graph_id} built, contains {num_points} points.")
 
         for old_graph_id in old_graph_ids:
             self.remove_graph_from_memory(old_graph_id)
+            logger.info(f"Removed graph {old_graph_id} from memory.")
             # TODO: check if this also clears the features and locations from memory
