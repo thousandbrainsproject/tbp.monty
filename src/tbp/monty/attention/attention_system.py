@@ -102,7 +102,9 @@ class AttentionSystem:
         merged = self._merge(aged, proposed)
         self._voxel_grid = self._expire(merged)
         self._telemetry.voxel_grid(self._voxel_grid)
-        return self._filter(goals)
+        filtered = self._filter(goals)
+        self._telemetry.goal_filtering(goals, filtered)
+        return filtered
 
     def contains_points(
         self,
