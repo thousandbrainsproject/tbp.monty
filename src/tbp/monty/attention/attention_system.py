@@ -211,6 +211,7 @@ class AttentionSystem:
         fresh = proposed.copy()
         seen_before = fresh.index.intersection(remembered.index)
         if len(seen_before):
+            fresh.loc[seen_before, "age"] = self._voxel_lifetime
             fresh.loc[seen_before, "count"] = (
                 fresh.loc[seen_before, "count"].to_numpy()
                 + remembered.loc[seen_before, "count"].to_numpy()
