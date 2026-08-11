@@ -328,6 +328,7 @@ class EvidenceGraphLM(GraphLM):
     def _init_EvidenceGraphLM(self) -> None:  # noqa: N802
         self.symmetry_evidence = 0
         self._hypotheses = {}
+        self._persistent_object_ids: list[str] = []
 
         self.hypotheses_updater.reset()  # FIXME: move reset() logic to __init__()
 
@@ -562,7 +563,7 @@ class EvidenceGraphLM(GraphLM):
                 graph_id = "new_object" + str(len(self.graph_memory))
 
         elif terminal_state == "match":
-            graph_id = self.get_possible_matches()[0]
+            graph_id = self._persistent_object_ids[0]
         # If we are evaluating and reach a time out, we set the object to the
         # most likely hypothesis (if evidence for it is above object_evidence_threshold)
         elif self.mode is ExperimentMode.EVAL and terminal_state in {
@@ -579,77 +580,59 @@ class EvidenceGraphLM(GraphLM):
             graph_id = None
         self.detected_object = graph_id
 
-    def get_unique_pose_if_available(self, object_id):
-        """Get the most likely pose of an object if narrowed down.
+    def get_persistent_hypotheses(self) -> dict[str, Hypotheses]:
+        """Return the persistent hypotheses across all objects, keyed by object id.
 
-        If there is not one unique possible pose or symmetry detected, return None
+        Persistence is established when the set of hypotheses within x% of the global
+        max evidence stays >90% stable for required_symmetry_evidence consecutive
+        observed steps. Returns {} until then.
 
         Returns:
-            The pose and scale if a unique pose is available, otherwise None.
+            The persistent hypotheses per object, or an empty dict if persistence
+            has not yet been established.
         """
-        possible_object_hypotheses_ids = self.get_possible_hypothesis_ids(object_id)
-        # Only try to determine object pose if the evidence for it is high enough.
-        print("Length of possible hypotheses:", len(possible_object_hypotheses_ids))
-        if len(possible_object_hypotheses_ids) > 0:
-            mlh = self.get_current_mlh()
+        selected = self._get_global_possible_hypothesis_ids()
+        if not selected:
+            # Nothing above threshold: clear all masks (previous persistent set is
+            # forgotten, mirroring the old per-object implementation).
+            for hyps in self._hypotheses.values():
+                hyps.possible[:] = False
+            return {}
 
-            # Check if all possible poses are similar
-            pose_is_unique = self._check_for_unique_poses(
-                object_id, possible_object_hypotheses_ids, mlh["rotation"]
+        current = {
+            (graph_id, int(hyp_id))
+            for graph_id, ids in selected.items()
+            for hyp_id in ids
+        }
+        previous = {
+            (graph_id, int(hyp_id))
+            for graph_id, hyps in self._hypotheses.items()
+            for hyp_id in np.flatnonzero(hyps.possible)
+        }
+        persistence_detected = self._check_for_persistence(
+            last_possible_hypotheses=previous,
+            possible_hypotheses=current,
+            # Don't increment symmetry counter if LM didn't process observation
+            increment_evidence=self.buffer.get_last_obs_processed(),
+        )
+
+        # Store current set for the next step's comparison.
+        for graph_id, hyps in self._hypotheses.items():
+            hyps.possible[:] = False
+            if graph_id in selected:
+                hyps.possible[selected[graph_id]] = True
+
+        if not persistence_detected:
+            return {}
+        return {
+            graph_id: Hypotheses(
+                evidence=self._hypotheses[graph_id].evidence[ids],
+                locations=self._hypotheses[graph_id].locations[ids],
+                poses=self._hypotheses[graph_id].poses[ids],
+                possible=np.ones(len(ids), dtype=np.bool_),
             )
-
-            # Check for symmetry
-            object_hyps = self._hypotheses[object_id]
-            last_possible_object_hypotheses_ids = np.flatnonzero(object_hyps.possible)
-            symmetry_detected = self._check_for_symmetry(
-                last_possible_object_hypotheses_ids=last_possible_object_hypotheses_ids,
-                possible_object_hypotheses_ids=possible_object_hypotheses_ids,
-                # Don't increment symmetry counter if LM didn't process observation
-                increment_evidence=self.buffer.get_last_obs_processed(),
-            )
-            object_hyps.possible[:] = False
-            object_hyps.possible[possible_object_hypotheses_ids] = True
-
-            if pose_is_unique or symmetry_detected:
-                r_inv = mlh["rotation"].inv()
-                r_euler = mlh["rotation"].inv().as_euler("xyz", degrees=True)
-                r_euler = np.round(r_euler, 3) % 360
-
-                pose_and_scale = np.concatenate(
-                    [mlh["location"], r_euler, [mlh["scale"]]]
-                )
-                logger.debug(f"(location, rotation, scale): {pose_and_scale}")
-                # Set LM variables to detected object & pose
-                self.detected_pose = pose_and_scale
-                self.detected_rotation_r = mlh["rotation"]
-                # Log stats to buffer
-                lm_episode_stats = {
-                    "detected_path": mlh["location"],
-                    "detected_location_on_model": mlh["location"],
-                    "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel="first"
-                    ),
-                    "detected_rotation": r_euler,
-                    "detected_rotation_quat": r_inv.as_quat(),
-                    "detected_scale": 1,  # TODO: scale doesn't work yet
-                }
-                self.buffer.add_overall_stats(lm_episode_stats)
-                if symmetry_detected:
-                    symmetry_stats = {
-                        "symmetric_rotations": np.array(object_hyps.poses)[
-                            possible_object_hypotheses_ids
-                        ],
-                        "symmetric_locations": object_hyps.locations[
-                            possible_object_hypotheses_ids
-                        ],
-                    }
-                    self.buffer.add_overall_stats(symmetry_stats)
-                return pose_and_scale
-            logger.debug(f"object {object_id} detected but pose not resolved yet.")
-            return None
-
-        self._hypotheses[object_id].possible[:] = False
-        return None
+            for graph_id, ids in selected.items()
+        }
 
     def get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
@@ -746,23 +729,40 @@ class EvidenceGraphLM(GraphLM):
             }
         return all_poses
 
-    def get_possible_hypothesis_ids(self, object_id: str) -> npt.NDArray[np.int64]:
-        object_evidence_scores = self._hypotheses[object_id].evidence
-        max_obj_evidence = np.max(object_evidence_scores)
+    def _get_global_possible_hypothesis_ids(self) -> dict[str, npt.NDArray[np.int64]]:
+        """Ids of hypotheses (per object) within x% of the global max evidence.
+
+        The evidence gate and x-percent band are computed over the union of all
+        objects' hypotheses (global max evidence, not per-object max), so a
+        hypothesis on object B survives selection if its evidence is within x% of
+        the global max even when the global max is on object A.
+
+        Returns:
+            Dict mapping graph_id to the ids of its hypotheses within the global
+            x-percent band. Empty dict if the global max evidence does not exceed
+            object_evidence_threshold.
+        """
+        per_object_max = {
+            graph_id: np.max(hyps.evidence)
+            for graph_id, hyps in self._hypotheses.items()
+            if hyps.evidence.shape[0] > 0
+        }
+        if not per_object_max:
+            return {}
+        global_max = max(per_object_max.values())
         # TODO: Try out different ways to adapt object_evidence_threshold to number of
         # steps taken so far and number of objects in memory
-        if max_obj_evidence > self.object_evidence_threshold:
-            x_percent_of_max = max_obj_evidence / 100 * self.x_percent_threshold
+        if global_max <= self.object_evidence_threshold:
+            return {}
+        x_percent_of_max = global_max / 100 * self.x_percent_threshold
+        threshold = global_max - x_percent_of_max
+        selected = {}
+        for graph_id, hyps in self._hypotheses.items():
             # Get all pose IDs that have an evidence in the top n%
-            possible_object_hypotheses_ids = np.where(
-                object_evidence_scores > max_obj_evidence - x_percent_of_max
-            )[0]
-            logger.debug(
-                f"possible hpids: {possible_object_hypotheses_ids} for {object_id}"
-            )
-            logger.debug(f"hpid evidence is > {max_obj_evidence} - {x_percent_of_max}")
-            return possible_object_hypotheses_ids
-        return np.empty((0,), dtype=np.int64)
+            ids = np.where(hyps.evidence > threshold)[0]
+            if len(ids) > 0:
+                selected[graph_id] = ids
+        return selected
 
     def evidence_for_each_graph(
         self,
@@ -965,8 +965,7 @@ class EvidenceGraphLM(GraphLM):
 
     def _check_for_unique_poses(
         self,
-        graph_id,
-        possible_object_hypotheses_ids,
+        hypotheses: Hypotheses,
         most_likely_r,
     ):
         """Check if we have the pose of an object narrowed down.
@@ -977,13 +976,15 @@ class EvidenceGraphLM(GraphLM):
           each other
         If both are True, return True, else False
 
+        Args:
+            hypotheses: The (already filtered) persistent hypotheses of a single
+                object whose pose uniqueness is being checked.
+            most_likely_r: The most likely rotation of the object.
+
         Returns:
             Whether the pose is unique.
         """
-        graph_hyps = self._hypotheses[graph_id]
-        possible_locations = np.array(
-            graph_hyps.locations[possible_object_hypotheses_ids]
-        )
+        possible_locations = np.array(hypotheses.locations)
         logger.debug(f"{possible_locations.shape[0]} possible locations")
 
         center_location = np.mean(possible_locations, axis=0)
@@ -997,7 +998,7 @@ class EvidenceGraphLM(GraphLM):
                 f"{self.path_similarity_threshold} of {center_location}"
             )
 
-        possible_rotations = np.array(graph_hyps.poses)[possible_object_hypotheses_ids]
+        possible_rotations = np.array(hypotheses.poses)
         logger.debug(f"{possible_rotations.shape[0]} possible rotations")
 
         # Compute the difference between each rotation matrix in the list of possible
@@ -1013,52 +1014,52 @@ class EvidenceGraphLM(GraphLM):
 
         return location_unique and rotation_unique
 
-    def _check_for_symmetry(
+    def _check_for_persistence(
         self,
-        last_possible_object_hypotheses_ids: npt.NDArray[np.int64],
-        possible_object_hypotheses_ids: npt.NDArray[np.int64],
+        last_possible_hypotheses: set[tuple[str, int]],
+        possible_hypotheses: set[tuple[str, int]],
         increment_evidence: bool,
     ):
-        """Check whether the most likely hypotheses stayed the same over the past steps.
+        """Check whether the possible hypotheses stayed the same over the past steps.
 
-        Since the definition of possible_object_hypotheses is a bit murky and depends
-        on how we set an evidence threshold we check the set overlap here and see if at
-        least 90% of the current hypotheses were also possible on the last step. I'm
-        not sure if this is the best way to check for symmetry...
+        We check the set overlap here and see if at least 90% of the current hypotheses
+        were also possible on the last step. The hypotheses are identified globally by
+        `(graph_id, hyp_id)` pairs so that persistence is measured across all objects
+        rather than within one object. This is not yet symmetry: only once the
+        persistent set is narrowed to a single object with a non-unique pose (in
+        update_terminal_condition) is it classified as symmetry.
 
         Args:
-            last_possible_object_hypotheses_ids: List of IDs of all possible hypotheses
-                from the previous step.
-            possible_object_hypotheses_ids: List of IDs of all possible hypotheses at
-                the current step.
+            last_possible_hypotheses: Set of `(graph_id, hyp_id)` pairs of all
+                possible hypotheses from the previous step.
+            possible_hypotheses: Set of `(graph_id, hyp_id)` pairs of all possible
+                hypotheses at the current step.
             increment_evidence: Whether to increment symmetry evidence or not. We
                 may want this to be False for example if we did not receive a new
                 observation.
 
         Returns:
-            Whether symmetry was detected.
+            Whether the hypothesis set has persisted for long enough.
         """
-        if len(last_possible_object_hypotheses_ids) == 0:
-            return False  # need more steps to meet symmetry condition
+        if len(last_possible_hypotheses) == 0:
+            return False  # need more steps to meet persistence condition
         logger.debug(
-            f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
-            f" with last ids {last_possible_object_hypotheses_ids}"
+            f"\n\nchecking for persistence for hyps {possible_hypotheses}"
+            f" with last hyps {last_possible_hypotheses}"
         )
         if increment_evidence:
-            previous_hyps = set(last_possible_object_hypotheses_ids)
-            current_hyps = set(possible_object_hypotheses_ids)
-            hypothesis_overlap = previous_hyps.intersection(current_hyps)
-            if len(hypothesis_overlap) / len(current_hyps) > 0.9:
-                # at least 90% of current possible ids were also in previous ids
+            hypothesis_overlap = last_possible_hypotheses.intersection(
+                possible_hypotheses
+            )
+            if len(hypothesis_overlap) / len(possible_hypotheses) > 0.9:
+                # at least 90% of current possible hyps were also in previous hyps
                 logger.info("added symmetry evidence")
                 self.symmetry_evidence += 1
             else:  # has to be consecutive
                 self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():
-            logger.info(
-                f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}"
-            )
+            logger.info(f"Persistence detected for hypotheses {possible_hypotheses}")
             return True
 
         return False
@@ -1074,17 +1075,91 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
+    def _set_detected_pose_stats(self, mlh, hypotheses, symmetric):
+        """Set detected pose LM variables and log pose stats to the buffer.
+
+        Args:
+            mlh: The most likely hypothesis dict for the recognized object.
+            hypotheses: The persistent hypotheses of the recognized object (already
+                filtered), used to log symmetric poses/locations when symmetric.
+            symmetric: Whether the object was recognized as symmetric (i.e. the pose
+                is not unique).
+        """
+        r_inv = mlh["rotation"].inv()
+        r_euler = np.round(r_inv.as_euler("xyz", degrees=True), 3) % 360
+        pose_and_scale = np.concatenate([mlh["location"], r_euler, [mlh["scale"]]])
+        logger.debug(f"(location, rotation, scale): {pose_and_scale}")
+        # Set LM variables to detected object & pose
+        self.detected_pose = pose_and_scale
+        self.detected_rotation_r = mlh["rotation"]
+        # Log stats to buffer
+        self.buffer.add_overall_stats(
+            {
+                "detected_path": mlh["location"],
+                "detected_location_on_model": mlh["location"],
+                "detected_location_rel_body": self.buffer.get_current_location(
+                    input_channel="first"
+                ),
+                "detected_rotation": r_euler,
+                "detected_rotation_quat": r_inv.as_quat(),
+                "detected_scale": 1,  # TODO: scale doesn't work yet
+            }
+        )
+        if symmetric:
+            self.buffer.add_overall_stats(
+                {
+                    "symmetric_rotations": hypotheses.poses,
+                    "symmetric_locations": hypotheses.locations,
+                }
+            )
+
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
+
+        Unlike the base GraphLM implementation, this does not require narrowing
+        possible matches down to one object. Persistence of hypotheses across all
+        objects (see get_persistent_hypotheses) gates termination.
 
         Returns:
             Terminal state of the LM.
         """
-        if len(self.get_possible_matches()) != 1:
-            # Clears the possible hypotheses by setting all hypotheses values to False.
-            for hyp in self._hypotheses.values():
-                hyp.possible[:] = False
-        return super().update_terminal_condition()
+        possible_matches = self.get_possible_matches()
+        if len(possible_matches) == 0:
+            self.set_individual_ts("no_match")
+            if self.buffer.get_num_observations_on_object() > 0:
+                self.buffer.stats["detected_location_rel_body"] = (
+                    self.buffer.get_current_location(input_channel="first")
+                )
+        elif self.buffer.get_num_observations_on_object() > 0:
+            persistent = self.get_persistent_hypotheses()
+            self._persistent_object_ids = list(persistent.keys())
+            if not persistent:
+                if self.terminal_state == "match":
+                    self.set_individual_ts(None)
+                logger.info(
+                    f"{self.learning_module_id} has no persistent hypotheses yet."
+                )
+            elif len(persistent) > 1:
+                # TODO: merge the persistent hypotheses of multiple objects into
+                # one object representation. Placeholder - stays non-terminal.
+                if self.terminal_state == "match":
+                    self.set_individual_ts(None)
+                logger.info(
+                    f"{self.learning_module_id}: persistent hypotheses span "
+                    f"{list(persistent.keys())} -> merging not implemented yet."
+                )
+            else:
+                graph_id, hypotheses = next(iter(persistent.items()))
+                mlh = self._calculate_most_likely_hypothesis(graph_id)
+                pose_is_unique = self._check_for_unique_poses(
+                    hypotheses, mlh["rotation"]
+                )
+                self._set_detected_pose_stats(
+                    mlh, hypotheses, symmetric=not pose_is_unique
+                )
+                self.set_individual_ts("match")
+                logger.info(f"{self.learning_module_id} recognized object {graph_id}")
+        return self.terminal_state
 
     def _object_pose_to_features(self, pose):
         """Turn object rotation into pose feature like vectors.
