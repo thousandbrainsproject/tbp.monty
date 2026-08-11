@@ -702,7 +702,7 @@ class FateAttenzioneInterface(Interface):
 
         primary_target = self.env.add_object(
             name="potted_meat_can",
-            position=np.array([0, 1.5, 0]),
+            position=np.array([0, 1.5, 0.1]),
             rotation=(1.0, 0.0, 0.0, 0.0),
         )
         self.primary_target = {
@@ -713,3 +713,15 @@ class FateAttenzioneInterface(Interface):
             "position": np.array([0, 1.5, 0]),
             "scale": [1.0, 1.0, 1.0],
         }
+
+        # totally not distractors
+        self.env.add_object(
+            name="mug",
+            position=np.array([0.2, 1.5, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+        )
+        self.env.add_object(
+            name="master_chef_can",
+            position=np.array([-0.2, 1.4, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+        )
