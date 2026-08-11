@@ -1328,6 +1328,8 @@ class GraphMemory(LMMemory):
 
     def remove_graph_from_memory(self, graph_id):
         self.models_in_memory.pop(graph_id)
+        self.feature_array.pop(graph_id, None)
+        self.feature_order.pop(graph_id, None)
 
     def _build_graph(self, locations, features, graph_id, input_channel):
         """Build a graph from a list of features at locations and add to memory.

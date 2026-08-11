@@ -1128,13 +1128,55 @@ class EvidenceGraphLM(GraphLM):
                     )
                 )
 
-        self.graph_memory._merge_graphs(
+        merged = self.graph_memory._merge_graphs(
             first_graph_id=first_id,
             merge_data=merge_data,
             new_graph_id=new_graph_id,
             old_graph_ids=persistent_object_ids,
             location_rel_model=first_mlh["location"],
         )
+        if merged:
+            self._cleanup_after_merge(persistent_object_ids, new_graph_id)
+
+    def _cleanup_after_merge(
+        self, old_ids: list[str], new_graph_id: str
+    ) -> None:
+        """Remove all stale references to the deleted graphs.
+
+        Args:
+            old_ids: IDs of the graphs that were merged away and deleted.
+            new_graph_id: ID of the resulting merged graph.
+        """
+        old_id_set = set(old_ids)
+        for old_id in old_ids:
+            self._hypotheses.pop(old_id, None)
+            self.hypotheses_updater_telemetry.pop(old_id, None)
+        self.symmetry_evidence = 0
+        self._persistent_object_ids = []
+
+        # Rebuild matching caches so the merged graph can accumulate evidence.
+        self.graph_memory.initialize_feature_arrays()
+
+        # The merged graph inherits the ground-truth target labels of its sources.
+        merged_targets = set()
+        for old_id in old_ids:
+            merged_targets.update(self.graph_id_to_target.pop(old_id, set()))
+        if merged_targets:
+            self.graph_id_to_target[new_graph_id] = merged_targets
+        for target, graph_ids in self.target_to_graph_id.items():
+            if graph_ids.intersection(old_id_set):
+                remaining_ids = graph_ids.difference(old_id_set)
+                remaining_ids.add(new_graph_id)
+                self.target_to_graph_id[target] = remaining_ids
+
+        # TODO: The merged graph starts from an empty hypothesis space, so the
+        # evidence and locations accumulated on the source graphs are discarded
+        # and rebuilt from scratch on the next step. Decide whether to instead
+        # merge the source graphs' hypothesis spaces into a new hypothesis space
+        # to preserve that evidence.
+        self._hypotheses[new_graph_id] = Hypotheses.empty()
+        self.possible_matches = self._threshold_possible_matches()
+        self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def _set_detected_pose_stats(self, mlh, hypotheses, symmetric):
         """Set detected pose LM variables and log pose stats to the buffer.
@@ -1205,10 +1247,6 @@ class EvidenceGraphLM(GraphLM):
 
                 if self.terminal_state == "match":
                     self.set_individual_ts(None)
-                logger.info(
-                    f"{self.learning_module_id}: persistent hypotheses span "
-                    f"{list(persistent.keys())} -> merging not implemented yet."
-                )
             else:
                 graph_id, hypotheses = next(iter(persistent.items()))
                 mlh = self._calculate_most_likely_hypothesis(graph_id)
