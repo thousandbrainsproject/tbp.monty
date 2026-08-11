@@ -416,9 +416,9 @@ class DistantAgent(Agent):
         rotation = action.rotation_quat
         if isinstance(rotation, qt.quaternion):
             # TODO: Fix all the places SetAgentPose is created
-            logger.warning(
-                "SetAgentPose rotation is a qt.quaternion and not a QuaternionWXYZ."
-            )
+            # logger.warning(
+            #     "SetAgentPose rotation is a qt.quaternion and not a QuaternionWXYZ."
+            # )
             rotation = cast("QuaternionWXYZ", tuple(qt.as_float_array(rotation)))
         self._embodiment.set_pose(action.location, rotation)
 
@@ -427,10 +427,10 @@ class DistantAgent(Agent):
         rotation = action.rotation_quat
         if isinstance(rotation, qt.quaternion):
             # TODO: Fix all the places SetSensorRotation is created
-            logger.warning(
-                "SetSensorRotation rotation is a qt.quaternion and "
-                "not a QuaternionWXYZ."
-            )
+            # logger.warning(
+            #     "SetSensorRotation rotation is a qt.quaternion and "
+            #     "not a QuaternionWXYZ."
+            # )
             rotation = cast("QuaternionWXYZ", tuple(qt.as_float_array(rotation)))
         self._embodiment.set_sensor_rotation(rotation)
 
@@ -587,9 +587,9 @@ class SurfaceAgent(Agent):
         rotation = action.rotation_quat
         if isinstance(rotation, qt.quaternion):
             # TODO: Fix all the places SetSensorRotation is created
-            logger.warning(
-                "SetSensorRotation rotation is a qt.quaternion and "
-                "not a QuaternionWXYZ."
-            )
+            # logger.warning(
+            #     "SetSensorRotation rotation is a qt.quaternion and "
+            #     "not a QuaternionWXYZ."
+            # )
             rotation = cast("QuaternionWXYZ", tuple(qt.as_float_array(rotation)))
         self._embodiment.set_sensor_rotation(rotation)
