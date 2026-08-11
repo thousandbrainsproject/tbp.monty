@@ -31,6 +31,18 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# LLMs
+CLAUDE.md
+AGENTS.md
+.claude/
+.agents/
+.codex/
+.cursor/
+.cursorrules
+.aider*
+.windsurfrules
+.github/copilot-instructions.md
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
