@@ -1,0 +1,19 @@
+{
+  "game_id": "tn36-ef4dde99",
+  "title": "TN36",
+  "default_fps": 3,
+  "tags": [
+    "click"
+  ],
+  "baseline_actions": [
+    32,
+    72,
+    26,
+    40,
+    30,
+    55,
+    62
+  ],
+  "local_dir": "environment_files/tn36/ef4dde99",
+  "date_downloaded": "2026-08-10T16:09:52.261449+00:00"
+}
