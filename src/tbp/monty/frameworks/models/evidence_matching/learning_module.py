@@ -1134,17 +1134,15 @@ class EvidenceGraphLM(GraphLM):
                     # Note the MLH rotation is the rotation required to match a displacement to
                     # a model, so it is the *inverse* of e.g. the ground-truth rotation
                     # TODO: See if apply_rf_transform_to_points could be used here
-                    rotated_locations = (
-                        current_mlh["rotation"].inv().apply(current_locations)
-                    )
-                    corrected_mlh_location = (
-                        current_mlh["rotation"].inv().apply(current_mlh["location"])
+
+                    normalized_locations = current_locations - current_mlh["location"]
+                    rotated_normalized_locations = (
+                        current_mlh["rotation"].inv().apply(normalized_locations)
                     )
 
-                    normalized_locations = rotated_locations - corrected_mlh_location
                     # Convert from normalized coordinates to the learned coordinate of 1st object
                     corrected_locations = (
-                        first_mlh["rotation"].apply(normalized_locations)
+                        first_mlh["rotation"].apply(rotated_normalized_locations)
                         + first_mlh["location"]
                     )
 
