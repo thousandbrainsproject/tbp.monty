@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 class ArcAgiSimulator(SimulatedObjectEnvironment):
     """Expose live ARC games through Monty's frozen patch-sensor contract.
 
-    Monty's ``reset`` and ``step`` only reset or move the patch sensor. Use
-    ``reset_game`` and ``step_game`` to advance the underlying ARC game.
+    ``reset`` resets the ARC game and patch sensors. ``step`` only advances the
+    game when it receives an ARC game action; ``SetSensorPose`` moves the patch.
     """
 
     def __init__(
@@ -108,4 +108,6 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
 
     def reset(self):
         self.env.step(GameAction.RESET)
+        for agent in self._agents.values():
+            agent.reset()
         return self.observations, self.states

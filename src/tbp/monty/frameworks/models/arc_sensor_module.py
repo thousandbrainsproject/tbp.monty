@@ -39,8 +39,8 @@ class ArcPatchSensorModule(SensorModule):
     """Convert one square ARC palette-index crop into a CMP message.
 
     The simulator supplies the crop as ``observation["raw"]`` and exposes its
-    center as the patch sensor's pixel-space position. Transition density is ordered
-    as changes across columns followed by changes across rows.
+    top-left corner as the patch sensor's pixel-space position. Transition density is
+    ordered as changes across columns followed by changes across rows.
     """
 
     def __init__(self, sensor_module_id: str, patch_size: int = 8) -> None:

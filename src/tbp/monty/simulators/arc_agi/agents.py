@@ -10,7 +10,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import quaternion as qt
+from arc_agi.rendering import COLOR_MAP
 
 from tbp.monty.frameworks.actions.actions import SetSensorPose
 from tbp.monty.frameworks.models.abstract_monty_classes import (
@@ -35,6 +37,12 @@ if TYPE_CHECKING:
     from tbp.monty.simulators.arc_agi import ArcAgiSimulator
 
 
+_ARC_RGBA_PALETTE = np.array(
+    [tuple(bytes.fromhex(COLOR_MAP[index][1:])) for index in range(len(COLOR_MAP))],
+    dtype=np.uint8,
+)
+
+
 class ArcAgent:
     VIEWPORT = SensorID("view_finder")
     PATCH = SensorID("patch")
@@ -44,11 +52,11 @@ class ArcAgent:
         simulator: ArcAgiSimulator,
         agent_id: str,
         patch_resolution: Resolution2D,
-        sensor_configs,
+        sensor_configs,  # noqa: ARG002
     ):
         self.id = agent_id
         self._sim = simulator
-        self._sensor_position = ZERO_VECTOR
+        self._sensor_position = ZERO_VECTOR  # top-left corner of the patch crop
         self._patch_res = patch_resolution
 
     @property
@@ -71,18 +79,22 @@ class ArcAgent:
     @property
     def observations(self) -> AgentObservations:
         obs = AgentObservations()
-        frame_raw = self._sim.env.observation_space.frame[-1]
-        obs[self.VIEWPORT] = SensorObservation(raw=frame_raw)
+        frame_raw = np.asarray(self._sim.env.observation_space.frame[-1])
+        frame_rgba = _ARC_RGBA_PALETTE[frame_raw]
+        obs[self.VIEWPORT] = SensorObservation(raw=frame_raw, rgba=frame_rgba)
         x, y, _ = self._sensor_position
         x = int(x)
         y = int(y)
         patch_raw = frame_raw[
             y : y + self._patch_res.height, x : x + self._patch_res.width
         ]
-        obs[self.PATCH] = SensorObservation(raw=patch_raw)
+        patch_rgba = frame_rgba[
+            y : y + self._patch_res.height, x : x + self._patch_res.width
+        ]
+        obs[self.PATCH] = SensorObservation(raw=patch_raw, rgba=patch_rgba)
         return obs
 
-    def reset(self):
+    def reset(self) -> None:
         self._sensor_position = ZERO_VECTOR
 
     def __repr__(self) -> str:

@@ -990,7 +990,7 @@ class InformedPolicy(BasePolicy):
 
 
 class SnakeScanPolicy(MotorPolicy):
-    """Move a square sensor patch over a square frame in a snake pattern."""
+    """Scan in a snake pattern using top-left patch-crop coordinates."""
 
     def __init__(
         self,
@@ -1034,18 +1034,14 @@ class SnakeScanPolicy(MotorPolicy):
             locations.extend((float(x), float(y), 0.0) for x in xs)
         return locations
 
-    def _validate_sensor_location(self, state: MotorSystemState) -> None:
-        pass
-
     def __call__(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
         observations: Observations,  # noqa: ARG002
-        state: MotorSystemState,
+        state: MotorSystemState,  # noqa: ARG002
         percept: Message,  # noqa: ARG002
         goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
-        self._validate_sensor_location(state)
         if self._next_location_index == len(self._scan_locations):
             raise StopIteration
 
