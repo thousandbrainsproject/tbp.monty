@@ -1,0 +1,18 @@
+{
+  "game_id": "sc25-635fd71a",
+  "title": "SC25",
+  "default_fps": 20,
+  "tags": [
+    "keyboard_click"
+  ],
+  "baseline_actions": [
+    36,
+    6,
+    32,
+    83,
+    143,
+    50
+  ],
+  "local_dir": "environment_files/sc25/635fd71a",
+  "date_downloaded": "2026-08-10T16:09:57.279734+00:00"
+}
