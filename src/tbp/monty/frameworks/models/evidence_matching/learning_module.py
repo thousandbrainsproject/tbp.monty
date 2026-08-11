@@ -1076,113 +1076,72 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
-    def _merge_memory(self, objects_with_unique_poses):
-        """Merge memory associated with a set of self-consistent objects.
+    def _merge_memory(self, objects_with_unique_poses: list[str]) -> None:
+        """Merge the graphs of a set of self-consistent objects into one graph.
 
-        Transform their stored locations so that they can be merged together.
+        The first object's learned reference frame is used (arbitrarily) as the
+        reference frame of the merged graph. Locations of every other object are
+        transformed into that frame using the most likely hypothesis (MLH) poses
+        of the first and current object.
+
+        Args:
+            objects_with_unique_poses: IDs of the graphs to merge.
         """
-
-        # First check that all the graphs have the same input channels
+        # All graphs must have the same input channels to be merged.
         available_channels = None
         for object_id in objects_with_unique_poses:
+            channels = self.graph_memory.get_input_channels_in_graph(object_id)
             if available_channels is None:
-                available_channels = self.graph_memory.get_input_channels_in_graph(
-                    object_id
-                )
+                available_channels = channels
             else:
-                assert (
-                    available_channels
-                    == self.graph_memory.get_input_channels_in_graph(object_id)
-                ), "All objects must have the same input channels"
+                assert available_channels == channels, (
+                    "All objects must have the same input channels"
+                )
 
-        print("\n\nPerforming memory merge...")
-        print(f"available channels: {available_channels}")
+        new_graph_id = "_".join(objects_with_unique_poses)
 
-        # Iterate through the different channels
-        for current_channel in available_channels:
-            index = 0
-            # Iterate through the different objects
-            for object_id in objects_with_unique_poses:
+        for channel in available_channels:
+            for index, object_id in enumerate(objects_with_unique_poses):
                 current_locations = self.graph_memory.get_locations_in_graph(
-                    object_id, current_channel
+                    object_id, channel
                 )
                 current_features = self.graph_memory.get_feature_array(object_id)
 
-                print(f"location shape: {np.shape(current_locations)}")
-                print(f"locations type: {type(current_locations)}")
-                print(f"feature keys: {current_features.keys()}")
-                print(
-                    f"feature channel keys: {np.shape(current_features[current_channel])}"
-                )
-
                 if index == 0:
-                    # The first object is used as the reference frame (although this
-                    # choice is arbitrary)
                     all_locations = current_locations
                     all_features = copy.deepcopy(current_features)
                     first_mlh = self.get_mlh_for_object(object_id)
-                else:
-                    # Get the MLH
-                    current_mlh = self.get_mlh_for_object(object_id)
+                    continue
 
-                    # == Corrective transformation ==
-                    # Fully correct the origin and rotation of the current object's graph so it is in
-                    # the same reference frame that the first object's graph was learned in
+                current_mlh = self.get_mlh_for_object(object_id)
 
-                    # Convert to environmental coordinates, and normalize by current MLH location
-                    # Note the MLH rotation is the rotation required to match a displacement to
-                    # a model, so it is the *inverse* of e.g. the ground-truth rotation
-                    # TODO: See if apply_rf_transform_to_points could be used here
+                # Transform the current object's locations into the reference frame
+                # the first object's graph was learned in. Note the MLH rotation is
+                # the rotation required to match a displacement to a model, so it is
+                # the *inverse* of e.g. the ground-truth rotation.
+                # TODO: See if apply_rf_transform_to_points could be used here
+                normalized_locations = (
+                    current_mlh["rotation"]
+                    .inv()
+                    .apply(current_locations - current_mlh["location"])
+                )
+                corrected_locations = (
+                    first_mlh["rotation"].apply(normalized_locations)
+                    + first_mlh["location"]
+                )
 
-                    normalized_locations = current_locations - current_mlh["location"]
-                    rotated_normalized_locations = (
-                        current_mlh["rotation"].inv().apply(normalized_locations)
-                    )
+                all_locations = np.concatenate(
+                    [all_locations, corrected_locations], axis=0
+                )
+                all_features[channel] = np.concatenate(
+                    [all_features[channel], current_features[channel]], axis=0
+                )
 
-                    # Convert from normalized coordinates to the learned coordinate of 1st object
-                    corrected_locations = (
-                        first_mlh["rotation"].apply(rotated_normalized_locations)
-                        + first_mlh["location"]
-                    )
-
-                    # jitter = np.random.normal(0, 0.001, corrected_locations.shape)
-                    # corrected_locations = corrected_locations + jitter
-
-                    # Concatenate the locations and features
-                    all_locations = np.concatenate(
-                        [
-                            all_locations,
-                            corrected_locations,
-                        ],
-                        axis=0,
-                    )
-
-                    all_features[current_channel] = np.concatenate(
-                        [
-                            all_features[current_channel],
-                            current_features[current_channel],
-                        ],
-                        axis=0,
-                    )
-
-                    print(
-                        f"\nCombined all_features[channel] shape: {np.shape(all_features[current_channel])}"
-                    )
-                    print(f"Combined all_locations shape: {np.shape(all_locations)}")
-
-                index += 1
-
-            # For now, call the graph ID the concatenation of the existing graph IDs
-            # and the current channel
-            new_graph_id = "_".join(objects_with_unique_poses)
-
-            # For each channel, call _merge_graphs with the concatenated locations and
-            # features
             self.graph_memory._merge_graphs(
                 locations=all_locations,
                 features=all_features,
                 graph_id=new_graph_id,
-                input_channel=current_channel,
+                input_channel=channel,
                 old_graph_ids=objects_with_unique_poses,
             )
 

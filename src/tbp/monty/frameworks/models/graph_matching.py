@@ -995,9 +995,9 @@ class GraphLM(LearningModule):
             args["object_rotation"] = args["object_rotation"].inv()
         self.graph_memory.update_memory(**args)
 
-    def _merge_memory(self, objects_with_unique_poses):
-        """No-op for base GraphLM."""
-        logger.info("Merging memory is not supported for base GraphLM.")
+    def _merge_memory(self, objects_with_unique_poses: list[str]) -> None:
+        """No-op for base GraphLM. We can consider addressing this after the hackathon."""
+        logger.info("Merging model memories is not supported for the base GraphLM.")
 
     def _update_target_graph_mapping(self, detected_object, target_object):
         """Update dicts that keep track which graphs were built from which objects."""
