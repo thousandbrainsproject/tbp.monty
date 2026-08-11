@@ -24,6 +24,7 @@ from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
+    FateAttenzioneInterface,
     Interface,
     OneObjectPerEpisodeInterface,
     SaccadeOnImageFromStreamInterface,
@@ -252,6 +253,10 @@ class MontyExperiment:
                 target.update(
                     consistent_child_objects=self.env_interface.consistent_child_objects
                 )
+            args.update(target=target)
+        elif isinstance(self.env_interface, FateAttenzioneInterface):
+            target = self.env_interface.primary_target
+            target.update(consistent_child_objects=[])
             args.update(target=target)
         return args
 

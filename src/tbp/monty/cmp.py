@@ -212,6 +212,37 @@ class Message:
             f"sender_type must be SM or LM but is {self.sender_type}"
         )
 
+class AttentionWeight(Message):
+    """Attention weight assigning weight to a location.
+
+    Attributes:
+        location: The location of the attention.
+        weight: The weight of the attention.
+    """
+
+    weight: float
+
+    def __init__(
+        self,
+        location: npt.NDArray[np.float64] | None,
+        weight: float,
+        sender_id: str,
+        sender_type: Literal["SM", "LM"],
+    ) -> None:
+        super().__init__(
+            location=location,
+            morphological_features={},
+            non_morphological_features={},
+            confidence=1.0,
+            use_state=True,
+            sender_id=sender_id,
+            sender_type=sender_type,
+        )
+        self.weight = weight
+
+    def _check_all_attributes(self):
+        pass
+
 
 class Goal(Message):
     """Specialization of :class:`Message` for goals with null (None) values allowed.

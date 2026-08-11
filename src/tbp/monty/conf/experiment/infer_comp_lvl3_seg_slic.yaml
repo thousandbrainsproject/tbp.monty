@@ -31,7 +31,6 @@ experiment:
     logging:
       run_name: infer_comp_lvl3_seg_slic
       detailed_save_per_episode: true
-      output_dir: /Users/scott/tbp/projects/comp_benefits_figures/experiment_output
     monty_config:
       sensor_modules:
         sensor_module_0:
