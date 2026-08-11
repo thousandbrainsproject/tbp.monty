@@ -1100,17 +1100,19 @@ class EvidenceGraphLM(GraphLM):
         print(f"available channels: {available_channels}")
 
         # Iterate through the different channels
-        for channel in available_channels:
+        for current_channel in available_channels:
             index = 0
             # Iterate through the different objects
             for object_id in objects_with_unique_poses:
-                locations = self.graph_memory.get_locations_in_graph(object_id, channel)
+                locations = self.graph_memory.get_locations_in_graph(
+                    object_id, current_channel
+                )
                 features = self.graph_memory.get_feature_array(object_id)
 
                 print(f"location shape: {np.shape(locations)}")
                 print(f"locations type: {type(locations)}")
                 print(f"feature keys: {features.keys()}")
-                print(f"feature channel keys: {np.shape(features[channel])}")
+                print(f"feature channel keys: {np.shape(features[current_channel])}")
 
                 if index == 0:
                     # The first object is used as the reference frame (although this
@@ -1130,7 +1132,10 @@ class EvidenceGraphLM(GraphLM):
                     # Add some small amount of jitter to the locations so that w
 
                     # Concatenate the locations and features
-                    # jitter = np.random.normal(0, 0.003, locations.shape)
+                    # TODO REMOVE TEMPORARY JITTER
+                    jitter = np.random.normal(0, 0.001, locations.shape)
+                    locations = locations + jitter
+
                     all_locations = np.concatenate(
                         [
                             all_locations,
@@ -1139,94 +1144,34 @@ class EvidenceGraphLM(GraphLM):
                         axis=0,
                     )
 
-                    all_features[channel] = np.concatenate(
+                    all_features[current_channel] = np.concatenate(
                         [
-                            all_features[channel],
-                            features[channel],
+                            all_features[current_channel],
+                            features[current_channel],
                         ],
                         axis=0,
                     )
 
                     print(
-                        f"Combined all_features[channel] shape: {np.shape(all_features[channel])}"
+                        f"\nCombined all_features[channel] shape: {np.shape(all_features[current_channel])}"
                     )
                     print(f"Combined all_locations shape: {np.shape(all_locations)}")
 
-                    # # Ensure proper 3D scatter plots of the locations before and after combination, with equal axis sizes
-                    # from mpl_toolkits.mplot3d import Axes3D
-
-                    # fig = plt.figure(figsize=(12, 6))
-
-                    # # First subplot: Before combination
-                    # ax1 = fig.add_subplot(1, 2, 1, projection="3d")
-                    # before_points = locations.shape[0]
-                    # scatter1 = ax1.scatter(
-                    #     locations[:, 0],
-                    #     locations[:, 1],
-                    #     locations[:, 2],
-                    #     color="red",
-                    #     label=f"Before combination (N={before_points})",
-                    #     alpha=0.5,
-                    # )
-                    # ax1.set_xlabel("X")
-                    # ax1.set_ylabel("Y")
-                    # ax1.set_zlabel("Z")
-                    # ax1.set_title(
-                    #     f"Locations Before Combination\n(N={before_points} points)"
-                    # )
-                    # ax1.legend()
-
-                    # # Second subplot: After combination
-                    # ax2 = fig.add_subplot(1, 2, 2, projection="3d")
-                    # after_points = all_locations.shape[0]
-                    # scatter2 = ax2.scatter(
-                    #     all_locations[:, 0],
-                    #     all_locations[:, 1],
-                    #     all_locations[:, 2],
-                    #     color="blue",
-                    #     label=f"After combination (N={after_points})",
-                    #     alpha=0.5,
-                    # )
-                    # ax2.set_xlabel("X")
-                    # ax2.set_ylabel("Y")
-                    # ax2.set_zlabel("Z")
-                    # ax2.set_title(
-                    #     f"Locations After Combination\n(N={after_points} points)"
-                    # )
-                    # ax2.legend()
-
-                    # def set_axes_equal(ax):
-                    #     """Make axes of 3D plot have equal scale so that spheres appear as spheres,
-                    #     cubes as cubes, etc. This is one possible solution to Matplotlib's
-                    #     ax.set_aspect('equal') and ax.axis('equal') not working for 3D."""
-                    #     import numpy as np
-
-                    #     x_limits = ax.get_xlim3d()
-                    #     y_limits = ax.get_ylim3d()
-                    #     z_limits = ax.get_zlim3d()
-
-                    #     x_range = abs(x_limits[1] - x_limits[0])
-                    #     x_middle = np.mean(x_limits)
-                    #     y_range = abs(y_limits[1] - y_limits[0])
-                    #     y_middle = np.mean(y_limits)
-                    #     z_range = abs(z_limits[1] - z_limits[0])
-                    #     z_middle = np.mean(z_limits)
-
-                    #     plot_radius = 0.5 * max([x_range, y_range, z_range])
-
-                    #     ax.set_xlim3d([x_middle - plot_radius, x_middle + plot_radius])
-                    #     ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
-                    #     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
-
-                    # set_axes_equal(ax1)
-                    # set_axes_equal(ax2)
-                    # plt.tight_layout()
-                    # plt.show()
-
                 index += 1
 
-            # For each channel, call _merge_graph with the concatenated locations and
+            # For now, call the graph ID the concatenation of the existing graph IDs
+            # and the current channel
+            new_graph_id = "_".join(objects_with_unique_poses)
+
+            # For each channel, call _merge_graphs with the concatenated locations and
             # features
+            self.graph_memory._merge_graphs(
+                locations=all_locations,
+                features=all_features,
+                graph_id=new_graph_id,
+                input_channel=current_channel,
+                old_graph_ids=objects_with_unique_poses,
+            )
 
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.

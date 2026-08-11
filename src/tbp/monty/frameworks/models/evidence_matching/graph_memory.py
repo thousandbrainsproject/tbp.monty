@@ -196,9 +196,20 @@ class EvidenceGraphMemory(GraphMemory):
     ):
         """ """
 
+        print(f"\n\nMerging graphs into new graph with name: {graph_id}")
+
+        print(f"Total number of points used to inform the new graph: {len(locations)}")
+
         self._build_graph(locations, features, graph_id, input_channel)
 
+        # Check the number of points in the new graph
+        new_graph_points = self.get_locations_in_graph(graph_id, input_channel)
+        print(f"New graph total points: {len(new_graph_points)}")
+
         # Remove the old graphs from memory
+        print(f"Removing old graphs: {old_graph_ids}")
         for old_graph_id in old_graph_ids:
             self.remove_graph_from_memory(old_graph_id)
             # TODO check if this also clears the features and locations from memory
+
+        assert False, "Stop here"
