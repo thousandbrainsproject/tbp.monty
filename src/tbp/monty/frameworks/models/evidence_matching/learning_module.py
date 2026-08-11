@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import threading
 import time
@@ -1079,6 +1080,9 @@ class EvidenceGraphLM(GraphLM):
 
         Transform their stored locations so that they can be merged together.
         """
+
+        # import matplotlib.pyplot as plt
+
         # First check that all the graphs have the same input channels
         available_channels = None
         for object_id in objects_with_unique_poses:
@@ -1092,26 +1096,27 @@ class EvidenceGraphLM(GraphLM):
                     == self.graph_memory.get_input_channels_in_graph(object_id)
                 ), "All objects must have the same input channels"
 
+        print("\n\nPerforming memory merge...")
+        print(f"available channels: {available_channels}")
+
         # Iterate through the different channels
         for channel in available_channels:
             index = 0
             # Iterate through the different objects
             for object_id in objects_with_unique_poses:
                 locations = self.graph_memory.get_locations_in_graph(object_id, channel)
-                features = self.graph_memory.get_feature_array(object_id, channel)
+                features = self.graph_memory.get_feature_array(object_id)
 
-                print(
-                    f"location shape: {locations.shape}, features shape: {features.shape}"
-                )
-                print(
-                    f"locations type: {type(locations)}, features type: {type(features)}"
-                )
+                print(f"location shape: {np.shape(locations)}")
+                print(f"locations type: {type(locations)}")
+                print(f"feature keys: {features.keys()}")
+                print(f"feature channel keys: {np.shape(features[channel])}")
 
                 if index == 0:
                     # The first object is used as the reference frame (although this
                     # choice is arbitrary)
                     all_locations = locations
-                    all_features = features
+                    all_features = copy.deepcopy(features)
                 else:
                     # Get the MLH
                     mlh = self.get_mlh_for_object(object_id)
@@ -1122,13 +1127,101 @@ class EvidenceGraphLM(GraphLM):
                     # SKIPPING THIS FOR NOW AS WE ARE TESTING WHERE THE GRAPHS
                     # ARE IDENTICAL
 
-                    # add some small amount of jitter to the locations so that we
-                    # can see they are different
-                    locations = locations + np.random.normal(0, 0.01, locations.shape)
+                    # Add some small amount of jitter to the locations so that w
 
                     # Concatenate the locations and features
-                    all_locations = np.concatenate([all_locations, locations], axis=0)
-                    all_features = np.concatenate([all_features, features], axis=0)
+                    # jitter = np.random.normal(0, 0.003, locations.shape)
+                    all_locations = np.concatenate(
+                        [
+                            all_locations,
+                            locations,
+                        ],
+                        axis=0,
+                    )
+
+                    all_features[channel] = np.concatenate(
+                        [
+                            all_features[channel],
+                            features[channel],
+                        ],
+                        axis=0,
+                    )
+
+                    print(
+                        f"Combined all_features[channel] shape: {np.shape(all_features[channel])}"
+                    )
+                    print(f"Combined all_locations shape: {np.shape(all_locations)}")
+
+                    # # Ensure proper 3D scatter plots of the locations before and after combination, with equal axis sizes
+                    # from mpl_toolkits.mplot3d import Axes3D
+
+                    # fig = plt.figure(figsize=(12, 6))
+
+                    # # First subplot: Before combination
+                    # ax1 = fig.add_subplot(1, 2, 1, projection="3d")
+                    # before_points = locations.shape[0]
+                    # scatter1 = ax1.scatter(
+                    #     locations[:, 0],
+                    #     locations[:, 1],
+                    #     locations[:, 2],
+                    #     color="red",
+                    #     label=f"Before combination (N={before_points})",
+                    #     alpha=0.5,
+                    # )
+                    # ax1.set_xlabel("X")
+                    # ax1.set_ylabel("Y")
+                    # ax1.set_zlabel("Z")
+                    # ax1.set_title(
+                    #     f"Locations Before Combination\n(N={before_points} points)"
+                    # )
+                    # ax1.legend()
+
+                    # # Second subplot: After combination
+                    # ax2 = fig.add_subplot(1, 2, 2, projection="3d")
+                    # after_points = all_locations.shape[0]
+                    # scatter2 = ax2.scatter(
+                    #     all_locations[:, 0],
+                    #     all_locations[:, 1],
+                    #     all_locations[:, 2],
+                    #     color="blue",
+                    #     label=f"After combination (N={after_points})",
+                    #     alpha=0.5,
+                    # )
+                    # ax2.set_xlabel("X")
+                    # ax2.set_ylabel("Y")
+                    # ax2.set_zlabel("Z")
+                    # ax2.set_title(
+                    #     f"Locations After Combination\n(N={after_points} points)"
+                    # )
+                    # ax2.legend()
+
+                    # def set_axes_equal(ax):
+                    #     """Make axes of 3D plot have equal scale so that spheres appear as spheres,
+                    #     cubes as cubes, etc. This is one possible solution to Matplotlib's
+                    #     ax.set_aspect('equal') and ax.axis('equal') not working for 3D."""
+                    #     import numpy as np
+
+                    #     x_limits = ax.get_xlim3d()
+                    #     y_limits = ax.get_ylim3d()
+                    #     z_limits = ax.get_zlim3d()
+
+                    #     x_range = abs(x_limits[1] - x_limits[0])
+                    #     x_middle = np.mean(x_limits)
+                    #     y_range = abs(y_limits[1] - y_limits[0])
+                    #     y_middle = np.mean(y_limits)
+                    #     z_range = abs(z_limits[1] - z_limits[0])
+                    #     z_middle = np.mean(z_limits)
+
+                    #     plot_radius = 0.5 * max([x_range, y_range, z_range])
+
+                    #     ax.set_xlim3d([x_middle - plot_radius, x_middle + plot_radius])
+                    #     ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
+                    #     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
+
+                    # set_axes_equal(ax1)
+                    # set_axes_equal(ax2)
+                    # plt.tight_layout()
+                    # plt.show()
 
                 index += 1
 
