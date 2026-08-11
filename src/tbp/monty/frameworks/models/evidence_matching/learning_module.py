@@ -583,7 +583,7 @@ class EvidenceGraphLM(GraphLM):
     def get_persistent_hypotheses(self) -> dict[str, Hypotheses]:
         """Return the persistent hypotheses across all objects, keyed by object id.
 
-        persistence is established when the set of hypotheses within x% of the global
+        Persistence is established when the set of hypotheses within x% of the global
         max evidence stays >90% stable for required_symmetry_evidence consecutive
         observed steps. Returns {} until then.
 
