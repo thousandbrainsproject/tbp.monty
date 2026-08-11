@@ -1,0 +1,15 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  object_names:
+  - ls20
+  - ft09
+  - vc33
+  - sm00
+  - sm01
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations:
+      - [0, 0, 0]
+train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

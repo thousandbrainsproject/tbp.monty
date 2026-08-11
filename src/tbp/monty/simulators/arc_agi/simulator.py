@@ -108,3 +108,4 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
 
     def reset(self):
         self.env.step(GameAction.RESET)
+        return self.observations, self.states

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import quaternion as qt
+
 from tbp.monty.frameworks.actions.actions import SetSensorPose
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
@@ -34,7 +36,7 @@ if TYPE_CHECKING:
 
 
 class ArcAgent:
-    VIEWPORT = SensorID("viewport")
+    VIEWPORT = SensorID("view_finder")
     PATCH = SensorID("patch")
 
     def __init__(
@@ -42,6 +44,7 @@ class ArcAgent:
         simulator: ArcAgiSimulator,
         agent_id: str,
         patch_resolution: Resolution2D,
+        sensor_configs,
     ):
         self.id = agent_id
         self._sim = simulator
@@ -54,15 +57,15 @@ class ArcAgent:
             sensors={
                 self.VIEWPORT: SensorState(
                     position=ZERO_VECTOR,
-                    rotation=IDENTITY_QUATERNION,
+                    rotation=qt.quaternion(*IDENTITY_QUATERNION),
                 ),
                 self.PATCH: SensorState(
                     position=self._sensor_position,
-                    rotation=IDENTITY_QUATERNION,
+                    rotation=qt.quaternion(*IDENTITY_QUATERNION),
                 ),
             },
             position=ZERO_VECTOR,
-            rotation=IDENTITY_QUATERNION,
+            rotation=qt.quaternion(*IDENTITY_QUATERNION),
         )
 
     @property
