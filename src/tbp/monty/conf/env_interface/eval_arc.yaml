@@ -3,11 +3,33 @@
 do_eval: true
 eval_env_interface_args:
   object_names:
-  - ls20
-  - ft09
-  - vc33
   - sm00
   - sm01
+  - ar25
+  - bp35
+  - cd82
+  - cn04
+  - dc22
+  - ft09
+  - g50t
+  - ka59
+  - lf52
+  - lp85
+  - ls20
+  - m0r0
+  - r11l
+  - re86
+  - s5i5
+  - sb26
+  - sc25
+  - sk48
+  - sp80
+  - su15
+  - tn36
+  - tr87
+  - tu93
+  - vc33
+  - wa30
   object_init_sampler:
     _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
     rotations:
