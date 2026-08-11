@@ -26,6 +26,7 @@ from tbp.monty.frameworks.environment_utils.transforms import (
 )
 from tbp.monty.frameworks.environments.environment import (
     ObjectID,
+    ObjectInfo,
     SemanticID,
     SimulatedObjectEnvironment,
 )
@@ -674,5 +675,41 @@ class SaccadeOnImageFromStreamInterface(SaccadeOnImageInterface):
             "euler_rotation": np.array([0, 0, 0]),
             "quat_rotation": [1, 0, 0, 0],
             "position": np.array([0, 0, 0]),
+            "scale": [1.0, 1.0, 1.0],
+        }
+
+class FateAttenzioneInterface(Interface):
+    """Environment interface for FateAttenzione."""
+
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.primary_target = {
+            "object": "no_label",
+            "rotation": (1.0, 0.0, 0.0, 0.0),
+            "euler_rotation": np.array([0, 0, 0]),
+            "quat_rotation": [1, 0, 0, 0],
+            "position": np.array([0, 0, 0]),
+            "scale": [1.0, 1.0, 1.0],
+        }
+
+    def pre_episode(self, rng: np.random.RandomState):  # noqa: ARG002
+        # not calling super, because not using rng
+        self.env.remove_all_objects()
+
+        primary_target = self.env.add_object(
+            name="potted_meat_can",
+            position=np.array([0, 1.5, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+        )
+        self.primary_target = {
+            "object": primary_target.object_id,
+            "rotation": (1.0, 0.0, 0.0, 0.0),
+            "euler_rotation": np.array([0, 0, 0]),
+            "quat_rotation": [1, 0, 0, 0],
+            "position": np.array([0, 1.5, 0]),
             "scale": [1.0, 1.0, 1.0],
         }
