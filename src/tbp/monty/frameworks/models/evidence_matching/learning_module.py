@@ -589,6 +589,7 @@ class EvidenceGraphLM(GraphLM):
         """
         possible_object_hypotheses_ids = self.get_possible_hypothesis_ids(object_id)
         # Only try to determine object pose if the evidence for it is high enough.
+        print("Length of possible hypotheses:", len(possible_object_hypotheses_ids))
         if len(possible_object_hypotheses_ids) > 0:
             mlh = self.get_current_mlh()
 

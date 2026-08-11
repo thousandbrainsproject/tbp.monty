@@ -733,6 +733,25 @@ class GraphLM(LearningModule):
                 logger.info(f"{self.learning_module_id} recognized object {object_id}")
         # > 1 possible match
         else:
+            print("\n\nMultiple possible matches")
+            print(possible_matches)
+            print(len(possible_matches))
+            objects_with_unique_poses = []
+            for current_possible_id in possible_matches:
+                print("\n\nCurrent possible match:")
+                print(current_possible_id)
+                current_pose = self.get_unique_pose_if_available(current_possible_id)
+                print("Current pose")
+                print(current_pose)
+                if current_pose is not None:
+                    objects_with_unique_poses.append(current_possible_id)
+
+            if len(objects_with_unique_poses) > 1:
+                print("\n\nWe have more than 1 object with a unique pose")
+                print(objects_with_unique_poses)
+
+                # Perform merging
+
             if self.terminal_state == "match":
                 self.set_individual_ts(None)
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
