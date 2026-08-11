@@ -1081,8 +1081,6 @@ class EvidenceGraphLM(GraphLM):
         Transform their stored locations so that they can be merged together.
         """
 
-        # import matplotlib.pyplot as plt
-
         # First check that all the graphs have the same input channels
         available_channels = None
         for object_id in objects_with_unique_poses:
