@@ -1074,6 +1074,67 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
+    def _merge_memory(self, objects_with_unique_poses):
+        """Merge memory associated with a set of self-consistent objects.
+
+        Transform their stored locations so that they can be merged together.
+        """
+        # First check that all the graphs have the same input channels
+        available_channels = None
+        for object_id in objects_with_unique_poses:
+            if available_channels is None:
+                available_channels = self.graph_memory.get_input_channels_in_graph(
+                    object_id
+                )
+            else:
+                assert (
+                    available_channels
+                    == self.graph_memory.get_input_channels_in_graph(object_id)
+                ), "All objects must have the same input channels"
+
+        # Iterate through the different channels
+        for channel in available_channels:
+            index = 0
+            # Iterate through the different objects
+            for object_id in objects_with_unique_poses:
+                locations = self.graph_memory.get_locations_in_graph(object_id, channel)
+                features = self.graph_memory.get_feature_array(object_id, channel)
+
+                print(
+                    f"location shape: {locations.shape}, features shape: {features.shape}"
+                )
+                print(
+                    f"locations type: {type(locations)}, features type: {type(features)}"
+                )
+
+                if index == 0:
+                    # The first object is used as the reference frame (although this
+                    # choice is arbitrary)
+                    all_locations = locations
+                    all_features = features
+                else:
+                    # Get the MLH
+                    mlh = self.get_mlh_for_object(object_id)
+
+                    # Transform the locations such that they align with the reference frame of
+                    # the first object. This is the same transformation that is applied in
+                    # _compute_mismatch
+                    # SKIPPING THIS FOR NOW AS WE ARE TESTING WHERE THE GRAPHS
+                    # ARE IDENTICAL
+
+                    # add some small amount of jitter to the locations so that we
+                    # can see they are different
+                    locations = locations + np.random.normal(0, 0.01, locations.shape)
+
+                    # Concatenate the locations and features
+                    all_locations = np.concatenate([all_locations, locations], axis=0)
+                    all_features = np.concatenate([all_features, features], axis=0)
+
+                index += 1
+
+            # For each channel, call _merge_graph with the concatenated locations and
+            # features
+
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
 

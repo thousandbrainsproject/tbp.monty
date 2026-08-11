@@ -751,6 +751,7 @@ class GraphLM(LearningModule):
                 print(objects_with_unique_poses)
 
                 # Perform merging
+                self._merge_memory(objects_with_unique_poses)
 
             if self.terminal_state == "match":
                 self.set_individual_ts(None)
@@ -1013,6 +1014,10 @@ class GraphLM(LearningModule):
             # the model or rel environment.
             args["object_rotation"] = args["object_rotation"].inv()
         self.graph_memory.update_memory(**args)
+
+    def _merge_memory(self, objects_with_unique_poses):
+        """No-op for base GraphLM."""
+        logger.info("Merging memory is not supported for base GraphLM.")
 
     def _update_target_graph_mapping(self, detected_object, target_object):
         """Update dicts that keep track which graphs were built from which objects."""

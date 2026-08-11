@@ -190,3 +190,15 @@ class EvidenceGraphMemory(GraphMemory):
             )
         except GridTooSmallError:
             logger.info("Grid too small for given locations. Not updating model.")
+
+    def _merge_graphs(
+        self, locations, features, graph_id, input_channel, old_graph_ids
+    ):
+        """ """
+
+        self._build_graph(locations, features, graph_id, input_channel)
+
+        # Remove the old graphs from memory
+        for old_graph_id in old_graph_ids:
+            self.remove_graph_from_memory(old_graph_id)
+            # TODO check if this also clears the features and locations from memory
