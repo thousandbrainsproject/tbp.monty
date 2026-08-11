@@ -1075,7 +1075,7 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
-    def _merge_memory(self, persistent_object_ids: list[str]) -> None:
+    def _merge_memory(self, persistent_object_ids: list[str]) -> str | None:
         """Merge the graphs of a set of self-consistent objects into one graph.
 
         The first object's learned reference frame is used (arbitrarily) as the
@@ -1085,6 +1085,10 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             persistent_object_ids: IDs of the graphs to merge.
+
+        Returns:
+            The merged graph id on success, or None if the merge was skipped or
+            failed (memory unchanged).
         """
         # All graphs must have the same input channels to be merged.
         first_id = persistent_object_ids[0]
@@ -1093,7 +1097,7 @@ class EvidenceGraphLM(GraphLM):
             other = set(self.graph_memory.get_input_channels_in_graph(object_id))
             if other != channels:
                 logger.info("Objects have different input channels; skipping merge.")
-                return
+                return None
 
         # Ensure the merged id does not collide with an existing graph so that
         # registration cannot silently extend an existing entry.
@@ -1137,6 +1141,8 @@ class EvidenceGraphLM(GraphLM):
         )
         if merged:
             self._cleanup_after_merge(persistent_object_ids, new_graph_id)
+            return new_graph_id
+        return None
 
     def _cleanup_after_merge(
         self, old_ids: list[str], new_graph_id: str
@@ -1148,13 +1154,13 @@ class EvidenceGraphLM(GraphLM):
             new_graph_id: ID of the resulting merged graph.
         """
         old_id_set = set(old_ids)
+        merged_hypotheses = self._hypotheses.get(old_ids[0], Hypotheses.empty())
         for old_id in old_ids:
             self._hypotheses.pop(old_id, None)
             self.hypotheses_updater_telemetry.pop(old_id, None)
         self.symmetry_evidence = 0
         self._persistent_object_ids = []
 
-        # Rebuild matching caches so the merged graph can accumulate evidence.
         self.graph_memory.initialize_feature_arrays()
 
         # The merged graph inherits the ground-truth target labels of its sources.
@@ -1169,12 +1175,7 @@ class EvidenceGraphLM(GraphLM):
                 remaining_ids.add(new_graph_id)
                 self.target_to_graph_id[target] = remaining_ids
 
-        # TODO: The merged graph starts from an empty hypothesis space, so the
-        # evidence and locations accumulated on the source graphs are discarded
-        # and rebuilt from scratch on the next step. Decide whether to instead
-        # merge the source graphs' hypothesis spaces into a new hypothesis space
-        # to preserve that evidence.
-        self._hypotheses[new_graph_id] = Hypotheses.empty()
+        self._hypotheses[new_graph_id] = merged_hypotheses
         self.possible_matches = self._threshold_possible_matches()
         self.current_mlh = self._calculate_most_likely_hypothesis()
 
@@ -1243,10 +1244,25 @@ class EvidenceGraphLM(GraphLM):
                     f"{self.learning_module_id} has no persistent hypotheses yet."
                 )
             elif len(persistent) > 1:
-                self._merge_memory(list(persistent.keys()))
-
-                if self.terminal_state == "match":
-                    self.set_individual_ts(None)
+                merged_id = self._merge_memory(list(persistent.keys()))
+                if merged_id is None:
+                    if self.terminal_state == "match":
+                        self.set_individual_ts(None)
+                else:
+                    hypotheses = self._hypotheses[merged_id]
+                    mlh = self._calculate_most_likely_hypothesis(merged_id)
+                    pose_is_unique = self._check_for_unique_poses(
+                        hypotheses, mlh["rotation"]
+                    )
+                    self._set_detected_pose_stats(
+                        mlh, hypotheses, symmetric=not pose_is_unique
+                    )
+                    self._persistent_object_ids = [merged_id]
+                    self.set_individual_ts("match")
+                    logger.info(
+                        f"{self.learning_module_id} recognized merged object "
+                        f"{merged_id}"
+                    )
             else:
                 graph_id, hypotheses = next(iter(persistent.items()))
                 mlh = self._calculate_most_likely_hypothesis(graph_id)
