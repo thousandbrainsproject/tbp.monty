@@ -371,7 +371,7 @@ class OneObjectPerEpisodeInterface(Interface):
             # if mapping contains keys (i.e. not an empty dict) it should contain the
             # target object
             logger.warning(
-                f"target object {self.primary_target['object']} not in",
+                f"target object {self.primary_target['object']} not in"
                 " parent_to_child_mapping",
             )
         logger.info(f"New primary target: {pformat(self.primary_target)}")
