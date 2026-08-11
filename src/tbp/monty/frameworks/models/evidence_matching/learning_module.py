@@ -1104,41 +1104,58 @@ class EvidenceGraphLM(GraphLM):
             index = 0
             # Iterate through the different objects
             for object_id in objects_with_unique_poses:
-                locations = self.graph_memory.get_locations_in_graph(
+                current_locations = self.graph_memory.get_locations_in_graph(
                     object_id, current_channel
                 )
-                features = self.graph_memory.get_feature_array(object_id)
+                current_features = self.graph_memory.get_feature_array(object_id)
 
-                print(f"location shape: {np.shape(locations)}")
-                print(f"locations type: {type(locations)}")
-                print(f"feature keys: {features.keys()}")
-                print(f"feature channel keys: {np.shape(features[current_channel])}")
+                print(f"location shape: {np.shape(current_locations)}")
+                print(f"locations type: {type(current_locations)}")
+                print(f"feature keys: {current_features.keys()}")
+                print(
+                    f"feature channel keys: {np.shape(current_features[current_channel])}"
+                )
 
                 if index == 0:
                     # The first object is used as the reference frame (although this
                     # choice is arbitrary)
-                    all_locations = locations
-                    all_features = copy.deepcopy(features)
+                    all_locations = current_locations
+                    all_features = copy.deepcopy(current_features)
+                    first_mlh = self.get_mlh_for_object(object_id)
                 else:
                     # Get the MLH
-                    mlh = self.get_mlh_for_object(object_id)
+                    current_mlh = self.get_mlh_for_object(object_id)
 
-                    # Transform the locations such that they align with the reference frame of
-                    # the first object. This is the same transformation that is applied in
-                    # _compute_mismatch
-                    # SKIPPING THIS FOR NOW AS WE ARE TESTING WHERE THE GRAPHS
-                    # ARE IDENTICAL
+                    # == Corrective transformation ==
+                    # Fully correct the origin and rotation of the current object's graph so it is in
+                    # the same reference frame that the first object's graph was learned in
 
-                    # Add some small amount of jitter to the locations so that w
+                    # Convert to environmental coordinates, and normalize by current MLH location
+                    # Note the MLH rotation is the rotation required to match a displacement to
+                    # a model, so it is the *inverse* of e.g. the ground-truth rotation
+                    # TODO: See if apply_rf_transform_to_points could be used here
+                    rotated_locations = (
+                        current_mlh["rotation"].inv().apply(current_locations)
+                    )
+                    corrected_mlh_location = (
+                        current_mlh["rotation"].inv().apply(current_mlh["location"])
+                    )
+
+                    normalized_locations = rotated_locations - corrected_mlh_location
+                    # Convert from normalized coordinates to the learned coordinate of 1st object
+                    corrected_locations = (
+                        first_mlh["rotation"].apply(normalized_locations)
+                        + first_mlh["location"]
+                    )
+
+                    # jitter = np.random.normal(0, 0.001, corrected_locations.shape)
+                    # corrected_locations = corrected_locations + jitter
 
                     # Concatenate the locations and features
-                    # jitter = np.random.normal(0, 0.001, locations.shape)
-                    # locations = locations + jitter
-
                     all_locations = np.concatenate(
                         [
                             all_locations,
-                            locations,
+                            corrected_locations,
                         ],
                         axis=0,
                     )
@@ -1146,7 +1163,7 @@ class EvidenceGraphLM(GraphLM):
                     all_features[current_channel] = np.concatenate(
                         [
                             all_features[current_channel],
-                            features[current_channel],
+                            current_features[current_channel],
                         ],
                         axis=0,
                     )
