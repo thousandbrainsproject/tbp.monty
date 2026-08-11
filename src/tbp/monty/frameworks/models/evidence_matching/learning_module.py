@@ -1251,8 +1251,8 @@ class EvidenceGraphLM(GraphLM):
                     f"{self.learning_module_id} has no persistent hypotheses yet."
                 )
             elif len(persistent) > 1:
-                # TODO: merge the persistent hypotheses of multiple objects into
-                # one object representation. Placeholder - stays non-terminal.
+                self._merge_memory(list(persistent.keys()))
+
                 if self.terminal_state == "match":
                     self.set_individual_ts(None)
                 logger.info(
