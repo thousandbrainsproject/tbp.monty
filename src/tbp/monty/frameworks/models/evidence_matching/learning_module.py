@@ -1076,7 +1076,7 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
-    def _merge_memory(self, objects_with_unique_poses: list[str]) -> None:
+    def _merge_memory(self, persistent_object_ids: list[str]) -> None:
         """Merge the graphs of a set of self-consistent objects into one graph.
 
         The first object's learned reference frame is used (arbitrarily) as the
@@ -1085,11 +1085,11 @@ class EvidenceGraphLM(GraphLM):
         of the first and current object.
 
         Args:
-            objects_with_unique_poses: IDs of the graphs to merge.
+            persistent_object_ids: IDs of the graphs to merge.
         """
         # All graphs must have the same input channels to be merged.
         available_channels = None
-        for object_id in objects_with_unique_poses:
+        for object_id in persistent_object_ids:
             channels = self.graph_memory.get_input_channels_in_graph(object_id)
             if available_channels is None:
                 available_channels = channels
@@ -1098,10 +1098,10 @@ class EvidenceGraphLM(GraphLM):
                     "All objects must have the same input channels"
                 )
 
-        new_graph_id = "_".join(objects_with_unique_poses)
+        new_graph_id = "_".join(persistent_object_ids)
 
         for channel in available_channels:
-            for index, object_id in enumerate(objects_with_unique_poses):
+            for index, object_id in enumerate(persistent_object_ids):
                 current_locations = self.graph_memory.get_locations_in_graph(
                     object_id, channel
                 )
@@ -1142,7 +1142,7 @@ class EvidenceGraphLM(GraphLM):
                 features=all_features,
                 graph_id=new_graph_id,
                 input_channel=channel,
-                old_graph_ids=objects_with_unique_poses,
+                old_graph_ids=persistent_object_ids,
             )
 
     def _set_detected_pose_stats(self, mlh, hypotheses, symmetric):
