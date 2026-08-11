@@ -1132,9 +1132,8 @@ class EvidenceGraphLM(GraphLM):
                     # Add some small amount of jitter to the locations so that w
 
                     # Concatenate the locations and features
-                    # TODO REMOVE TEMPORARY JITTER
-                    jitter = np.random.normal(0, 0.001, locations.shape)
-                    locations = locations + jitter
+                    # jitter = np.random.normal(0, 0.001, locations.shape)
+                    # locations = locations + jitter
 
                     all_locations = np.concatenate(
                         [
