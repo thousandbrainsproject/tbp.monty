@@ -64,6 +64,29 @@ class EvidenceGraphMemory(GraphMemory):
         num_nodes = len(node_directions)
         return node_directions.reshape((num_nodes, 3, 3))
 
+    def get_features_by_name(
+        self, graph_id: str, input_channel: str
+    ) -> dict[str, np.ndarray]:
+        """Return a graph's stored features as a `{feature_name: (N, d)}` dict.
+
+        `node_ids` is excluded since the grid build path
+        derives node ids itself.
+
+        Args:
+            graph_id: ID of the graph to read features from.
+            input_channel: Identifier of the input channel.
+
+        Returns:
+            Features keyed by name, each an `(N, d)` array.
+        """
+        model = self.get_graph(graph_id, input_channel)
+        x = np.asarray(model.x)
+        return {
+            feature: x[:, ids[0] : ids[1]]
+            for feature, ids in model.feature_mapping.items()
+            if feature != "node_ids"
+        }
+
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------

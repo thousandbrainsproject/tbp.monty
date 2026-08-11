@@ -10,7 +10,6 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 import threading
 import time
@@ -1105,11 +1104,13 @@ class EvidenceGraphLM(GraphLM):
                 current_locations = self.graph_memory.get_locations_in_graph(
                     object_id, channel
                 )
-                current_features = self.graph_memory.get_feature_array(object_id)
+                current_features = self.graph_memory.get_features_by_name(
+                    object_id, channel
+                )
 
                 if index == 0:
                     all_locations = current_locations
-                    all_features = copy.deepcopy(current_features)
+                    all_features = current_features
                     first_mlh = self.get_mlh_for_object(object_id)
                     continue
 
@@ -1133,9 +1134,11 @@ class EvidenceGraphLM(GraphLM):
                 all_locations = np.concatenate(
                     [all_locations, corrected_locations], axis=0
                 )
-                all_features[channel] = np.concatenate(
-                    [all_features[channel], current_features[channel]], axis=0
-                )
+                for feature_name in all_features:
+                    all_features[feature_name] = np.concatenate(
+                        [all_features[feature_name], current_features[feature_name]],
+                        axis=0,
+                    )
 
             self.graph_memory._merge_graphs(
                 locations=all_locations,
