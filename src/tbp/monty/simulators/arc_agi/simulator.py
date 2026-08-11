@@ -11,9 +11,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from arc_agi import Arcade, OperationMode
 from arcengine import GameAction
 
+from arc_agi import Arcade, OperationMode
 from tbp.monty.frameworks.environments.environment import SimulatedEnvironment
 
 if TYPE_CHECKING:
@@ -38,7 +38,10 @@ class ArcAgiSimulator(SimulatedEnvironment):
 
         self._env = self._arcade.make(game_id=game_id)
 
-    def step(self, actions):
+    def step(
+        self,
+        actions,  # noqa: ARG002
+    ):
         return self._env.step(GameAction.ACTION1)
 
     def reset(self):
