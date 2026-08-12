@@ -995,6 +995,10 @@ class GraphLM(LearningModule):
             args["object_rotation"] = args["object_rotation"].inv()
         self.graph_memory.update_memory(**args)
 
+    def _merge_memory(self, persistent_object_ids: list[str]) -> None:
+        """No-op for base GraphLM. We can consider addressing this after the hackathon."""
+        logger.info("Merging model memories is not supported for the base GraphLM.")
+
     def _update_target_graph_mapping(self, detected_object, target_object):
         """Update dicts that keep track which graphs were built from which objects."""
         if detected_object is not None:
@@ -1324,6 +1328,8 @@ class GraphMemory(LMMemory):
 
     def remove_graph_from_memory(self, graph_id):
         self.models_in_memory.pop(graph_id)
+        self.feature_array.pop(graph_id, None)
+        self.feature_order.pop(graph_id, None)
 
     def _build_graph(self, locations, features, graph_id, input_channel):
         """Build a graph from a list of features at locations and add to memory.
