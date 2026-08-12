@@ -404,8 +404,12 @@ class GridObjectModel(GraphObjectModel):
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
-    def build_model(self, locations, features):
-        """Build graph from locations and features sorted into grids."""
+    def build_model(self, locations, features, start_location=None):
+        """Build graph from locations and features sorted into grids.
+
+        `start_location` is placed at the center of the grid. Defaults to the
+        first observed location.
+        """
         (
             feature_array,
             observation_feature_mapping,
@@ -416,6 +420,7 @@ class GridObjectModel(GraphObjectModel):
             locations=locations,
             features=feature_array,
             observation_feature_mapping=observation_feature_mapping,
+            start_location=start_location,
         )
         self._graph = self._build_graph_from_grids()
         logger.info(f"built graph {self._graph}")
@@ -557,17 +562,18 @@ class GridObjectModel(GraphObjectModel):
         self._location_offset = center_voxel_index - start_index
 
     def _initialize_and_fill_grid(
-        self, locations, features, observation_feature_mapping
+        self, locations, features, observation_feature_mapping, start_location=None
     ):
         # TODO: Do we still need to do this with sparse tensors?
         self._observation_count = self._generate_empty_grid(
             self._num_voxels_per_dim, n_entries=1
         )
         # initialize location mapping by calculating the scale factor and offset.
-        # The offset is set such that the first observed location starts at the
-        # center of the grid. To preserve the relative locations, the offset is
-        # applied to all following locations.
-        start_location = locations[0]
+        # The offset is set such that start_location (the first observed location
+        # by default) is at the center of the grid. To preserve the relative
+        # locations, the offset is applied to all following locations.
+        if start_location is None:
+            start_location = locations[0]
         self._initialize_location_mapping(start_location=start_location)
         # initialize self._feature_grid with feat_dim calculated from features
         feat_dim = features.shape[-1]
