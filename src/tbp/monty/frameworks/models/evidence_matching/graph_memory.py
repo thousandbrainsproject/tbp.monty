@@ -10,7 +10,6 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 
 import numpy as np
@@ -19,6 +18,9 @@ from tbp.monty.frameworks.models.graph_matching import GraphMemory
 from tbp.monty.frameworks.models.object_model import (
     GridObjectModel,
     GridTooSmallError,
+)
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    apply_rf_transform_to_points,
 )
 
 logger = logging.getLogger(__name__)
@@ -219,41 +221,6 @@ class EvidenceGraphMemory(GraphMemory):
         except GridTooSmallError:
             logger.info("Grid too small for given locations. Not updating model.")
 
-    def _init_merged_model(
-        self, first_model: GridObjectModel, first_graph_id: str, channel: str
-    ) -> GridObjectModel:
-        """Create the base model that other objects' points get merged into.
-
-        Models grown during learning already have a grid, so a deep copy is
-        extended directly and keeps its location mapping and observation counts.
-        Models loaded from a pretrained graph keep using their original graph and
-        never built a grid, so `update_model` cannot extend them; a fresh grid is
-        built from the model's own nodes first (observation counts start at 1).
-
-        Args:
-            first_model: The first graph's model for this channel.
-            first_graph_id: ID of the first graph (to read its features).
-            channel: Identifier of the input channel.
-
-        Returns:
-            A `GridObjectModel` with a grid, ready to be extended via
-            `update_model`. The caller sets its final `object_id`.
-        """
-        if getattr(first_model, "_location_scale_factor", None) is not None:
-            return copy.deepcopy(first_model)
-
-        model = GridObjectModel(
-            object_id=first_graph_id,
-            max_nodes=self.max_nodes_per_graph,
-            max_size=self.max_graph_size,
-            num_voxels_per_dim=self.num_model_voxels_per_dim,
-        )
-        model.build_model(
-            locations=np.asarray(first_model.pos),
-            features=self.get_features_by_name(first_graph_id, channel),
-        )
-        return model
-
     def _merge_graphs(
         self,
         first_graph_id: str,
@@ -262,16 +229,17 @@ class EvidenceGraphMemory(GraphMemory):
         old_graph_ids: list[str],
         location_rel_model: np.ndarray,
     ) -> bool:
-        """Merge source graphs into a copy of the first graph's model.
+        """Merge source graphs into a new model built on a fresh grid.
 
-        For each channel, the first graph's model is extended via `update_model`
-        with every other object's points. `update_model` applies the
-        reference-frame transform and rotates `pose_vectors`. Source graphs are
-        only removed once every channel has succeeded. Since a copy is mutated, a
-        `GridTooSmallError` leaves memory unchanged.
+        For each channel, every other object's points are transformed into the
+        first graph's reference frame and combined with the first graph's own
+        points. A fresh model is then built with the default grid parameters,
+        anchored so the combined point cloud's bounding-box center sits at the
+        center of the grid. Source graphs are only removed once every channel
+        has succeeded, so a `GridTooSmallError` leaves memory unchanged.
 
         Args:
-            first_graph_id: ID of the graph whose model/grid is extended.
+            first_graph_id: ID of the graph whose reference frame is used.
             merge_data: Per-channel list of
                 `(locations, features, object_rotation, object_location_rel_body)`
                 tuples, one per non-first source object.
@@ -287,27 +255,52 @@ class EvidenceGraphMemory(GraphMemory):
 
         merged_models = {}
         for channel, entries in merge_data.items():
-            first_model = self.models_in_memory[first_graph_id][channel]
-            try:
-                model = self._init_merged_model(first_model, first_graph_id, channel)
-                model.object_id = new_graph_id
-                for (
-                    locations,
-                    features,
-                    object_rotation,
-                    object_location_rel_body,
-                ) in entries:
-                    model.update_model(
-                        locations=locations,
-                        features=features,
+            locations = [
+                np.asarray(self.get_locations_in_graph(first_graph_id, channel))
+            ]
+            features = [self.get_features_by_name(first_graph_id, channel)]
+            for (
+                other_locations,
+                other_features,
+                object_rotation,
+                object_location_rel_body,
+            ) in entries:
+                transformed_locations, transformed_features = (
+                    apply_rf_transform_to_points(
+                        locations=other_locations,
+                        features=other_features,
                         location_rel_model=location_rel_model,
                         object_location_rel_body=object_location_rel_body,
                         object_rotation=object_rotation,
                     )
+                )
+                locations.append(transformed_locations)
+                features.append(transformed_features)
+            combined_locations = np.vstack(locations)
+            combined_features = {
+                name: np.concatenate([f[name] for f in features])
+                for name in features[0]
+            }
+            grid_center = (
+                combined_locations.min(axis=0) + combined_locations.max(axis=0)
+            ) / 2
+
+            model = GridObjectModel(
+                object_id=new_graph_id,
+                max_nodes=self.max_nodes_per_graph,
+                max_size=self.max_graph_size,
+                num_voxels_per_dim=self.num_model_voxels_per_dim,
+            )
+            try:
+                model.build_model(
+                    locations=combined_locations,
+                    features=combined_features,
+                    start_location=grid_center,
+                )
             except GridTooSmallError:
                 logger.info(
-                    f"Merged points for {channel} do not fit in "
-                    f"{first_graph_id}'s grid. Aborting merge, memory unchanged."
+                    f"Merged points for {channel} span more than the grid's "
+                    "max_size. Aborting merge, memory unchanged."
                 )
                 return False
             merged_models[channel] = model

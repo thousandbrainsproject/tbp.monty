@@ -3,11 +3,11 @@
 defaults:
   - /monty: evidencegraph_exp1000_emin_t3_tot2500
   - /monty/motor_system_config: distant_5
-  - /monty/learning_module: evidence_1lm_nn5_dod003
+  - /monty/learning_module: janus_evidence_1lm_nn5_dod003
   - /monty/sensor_module: camera_dist_delta_salience
   - /monty/connectivity: 1lm_1sm
   - /environment: mujoco_ycb_dist_agent
-  - /env_interface: eval_simple_split_2
+  - /env_interface: janus_eval_simple_merge
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
   - /logging: basic_warning_monty_runs
@@ -20,7 +20,7 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: ${constants.janus_pretrained_dir}/spoon_fork/pretrained/
+    model_name_or_path: ${constants.janus_pretrained_dir}/two_can_two_banana/pretrained/
     n_eval_epochs: ${constants.rotations_all_count}
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch

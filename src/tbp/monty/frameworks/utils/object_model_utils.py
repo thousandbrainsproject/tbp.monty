@@ -18,6 +18,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_right_hand_angle,
     normalize,
 )
+from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
 
@@ -363,13 +364,24 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         # equivalent. If we average over opposing directions, we will get noise.
         cd1_dirs = get_right_hand_angle(cds1, cds2[0], norm_mean) < 0
         cds1[cd1_dirs] = -cds1[cd1_dirs]
-        cd1_mean = normalize(np.mean(cds1, axis=0))
+        cd1_mean = np.mean(cds1, axis=0)
         # Get the second cd by calculating a vector orthogonal to cd1 and surface normal
-        cd2_mean = normalize(np.cross(norm_mean, cd1_mean))
-        if get_right_hand_angle(cd1_mean, cd2_mean, norm_mean) < 0:
-            cd2_mean = -cd2_mean
-        use_cds_to_update = True
-        pv_means = np.hstack([norm_mean, cd1_mean, cd2_mean])
+        cd2_mean = np.cross(norm_mean, cd1_mean)
+        # Despite the flipping above, the cds can nearly cancel out (e.g. when
+        # merging graphs whose curvature directions disagree in the tangent
+        # plane), leaving a mean with no direction information. Since norm_mean
+        # is unit length, a near-zero cross product covers both degenerate
+        # cases: the cd mean is near zero or near parallel to the normal.
+        if np.linalg.norm(cd2_mean) < DEFAULT_TOLERANCE:
+            pv_means = np.hstack([norm_mean, cds1[0], cds2[0]])
+            use_cds_to_update = False
+        else:
+            cd1_mean = normalize(cd1_mean)
+            cd2_mean = normalize(cd2_mean)
+            if get_right_hand_angle(cd1_mean, cd2_mean, norm_mean) < 0:
+                cd2_mean = -cd2_mean
+            use_cds_to_update = True
+            pv_means = np.hstack([norm_mean, cd1_mean, cd2_mean])
 
     assert not np.any(np.isnan(pv_means)), "NaN in pose vector mean"
     return pv_means, use_cds_to_update

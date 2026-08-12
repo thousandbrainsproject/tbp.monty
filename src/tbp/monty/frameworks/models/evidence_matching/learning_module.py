@@ -1122,9 +1122,7 @@ class EvidenceGraphLM(GraphLM):
                 merge_data[channel].append(
                     (
                         np.asarray(
-                            self.graph_memory.get_locations_in_graph(
-                                object_id, channel
-                            )
+                            self.graph_memory.get_locations_in_graph(object_id, channel)
                         ),
                         self.graph_memory.get_features_by_name(object_id, channel),
                         object_rotation,
@@ -1144,9 +1142,7 @@ class EvidenceGraphLM(GraphLM):
             return new_graph_id
         return None
 
-    def _cleanup_after_merge(
-        self, old_ids: list[str], new_graph_id: str
-    ) -> None:
+    def _cleanup_after_merge(self, old_ids: list[str], new_graph_id: str) -> None:
         """Remove all stale references to the deleted graphs.
 
         Args:

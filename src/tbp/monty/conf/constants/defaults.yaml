@@ -60,3 +60,7 @@ rotations_3:
   - [0, 0, 0]
   - [0, 90, 0]
   - [0, 180, 0]
+
+rotations_1_count: 1
+rotations_1:
+  - [0, 0, 0]
