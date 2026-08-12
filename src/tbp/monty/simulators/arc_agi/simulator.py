@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 from typing import Callable, Sequence
 
-from arcengine import GameAction
+from arcengine import GameAction, GameState
 
 from arc_agi import Arcade, EnvironmentWrapper, OperationMode
 from tbp.monty.frameworks.environments.environment import (
@@ -33,10 +33,11 @@ logger = logging.getLogger(__name__)
 
 
 class ArcAgiSimulator(SimulatedObjectEnvironment):
-    """Expose live ARC games through Monty's frozen patch-sensor contract.
+    """Simulator wrapper around the Arc AGI 3 game environment.
 
-    ``reset`` resets the ARC game and patch sensors. ``step`` only advances the
-    game when it receives an ARC game action; ``SetSensorPose`` moves the patch.
+    This simulator responds to game-specific actions that advance the game, as well
+    as SetSensorPose to move a sensor patch around the last frame received from
+    the game.
     """
 
     def __init__(
@@ -88,6 +89,14 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
             agent = self._agents[action.agent_id]
             action.act(agent)
 
+        game_state = self.env.observation_space.state
+
+        # If the game ends up in a win or lose state, we want to
+        # reset the game so that Monty can continue exploring
+        # the space.
+        if game_state is not GameState.NOT_FINISHED:
+            self.env.step(GameAction.RESET)
+
         return self.observations, self.states
 
     def add_object(
@@ -99,6 +108,7 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
         semantic_id: SemanticID | None = None,  # noqa: ARG002
         primary_target_object: ObjectID | None = None,  # noqa: ARG002
     ) -> ObjectInfo:
+        # We're hijacking the `add_object` method to switch games
         self.game_id = name
         self._env = self._arcade.make(game_id=name)
         return ObjectInfo(semantic_id=SemanticID(0), object_id=ObjectID(0))

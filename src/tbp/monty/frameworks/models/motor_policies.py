@@ -54,7 +54,7 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSyst
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.geometry import Rotation
-from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, VectorXYZ
+from tbp.monty.math import IDENTITY_QUATERNION, VectorXYZ
 from tbp.monty.memento import Memento, Snapshotable
 
 if TYPE_CHECKING:
