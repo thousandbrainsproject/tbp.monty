@@ -10,7 +10,6 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 import threading
 import time
@@ -1076,7 +1075,7 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
-    def _merge_memory(self, persistent_object_ids: list[str]) -> None:
+    def _merge_memory(self, persistent_object_ids: list[str]) -> str | None:
         """Merge the graphs of a set of self-consistent objects into one graph.
 
         The first object's learned reference frame is used (arbitrarily) as the
@@ -1086,64 +1085,99 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             persistent_object_ids: IDs of the graphs to merge.
+
+        Returns:
+            The merged graph id on success, or None if the merge was skipped or
+            failed (memory unchanged).
         """
         # All graphs must have the same input channels to be merged.
-        available_channels = None
-        for object_id in persistent_object_ids:
-            channels = self.graph_memory.get_input_channels_in_graph(object_id)
-            if available_channels is None:
-                available_channels = channels
-            else:
-                assert available_channels == channels, (
-                    "All objects must have the same input channels"
-                )
+        first_id = persistent_object_ids[0]
+        channels = set(self.graph_memory.get_input_channels_in_graph(first_id))
+        for object_id in persistent_object_ids[1:]:
+            other = set(self.graph_memory.get_input_channels_in_graph(object_id))
+            if other != channels:
+                logger.info("Objects have different input channels; skipping merge.")
+                return None
 
+        # Ensure the merged id does not collide with an existing graph so that
+        # registration cannot silently extend an existing entry.
         new_graph_id = "_".join(persistent_object_ids)
+        while new_graph_id in self.graph_memory.get_memory_ids():
+            new_graph_id += "_merged"
 
-        for channel in available_channels:
-            for index, object_id in enumerate(persistent_object_ids):
-                current_locations = self.graph_memory.get_locations_in_graph(
-                    object_id, channel
-                )
-                current_features = self.graph_memory.get_feature_array(object_id)
+        # Compute each object's MLH pose once (not per channel). The MLH rotation
+        # is the rotation required to match a displacement to a model, so it is
+        # the *inverse* of e.g. the ground-truth rotation.
+        first_mlh = self.get_mlh_for_object(first_id)
 
-                if index == 0:
-                    all_locations = current_locations
-                    all_features = copy.deepcopy(current_features)
-                    first_mlh = self.get_mlh_for_object(object_id)
-                    continue
-
-                current_mlh = self.get_mlh_for_object(object_id)
-
-                # Transform the current object's locations into the reference frame
-                # the first object's graph was learned in. Note the MLH rotation is
-                # the rotation required to match a displacement to a model, so it is
-                # the *inverse* of e.g. the ground-truth rotation.
-                # TODO: See if apply_rf_transform_to_points could be used here
-                normalized_locations = (
-                    current_mlh["rotation"]
-                    .inv()
-                    .apply(current_locations - current_mlh["location"])
-                )
-                corrected_locations = (
-                    first_mlh["rotation"].apply(normalized_locations)
-                    + first_mlh["location"]
-                )
-
-                all_locations = np.concatenate(
-                    [all_locations, corrected_locations], axis=0
-                )
-                all_features[channel] = np.concatenate(
-                    [all_features[channel], current_features[channel]], axis=0
+        # Per channel, collect the transform inputs for each non-first object.
+        # object_rotation is expressed in the update_model convention so that
+        # object_rotation.inv() = R_net = first_rotation * current_rotation.inv(),
+        # reducing the transform to p_0 = loc_0 + R_net * (p_i - loc_i).
+        merge_data = {channel: [] for channel in channels}
+        for object_id in persistent_object_ids[1:]:
+            current_mlh = self.get_mlh_for_object(object_id)
+            object_rotation = current_mlh["rotation"] * first_mlh["rotation"].inv()
+            for channel in channels:
+                merge_data[channel].append(
+                    (
+                        np.asarray(
+                            self.graph_memory.get_locations_in_graph(
+                                object_id, channel
+                            )
+                        ),
+                        self.graph_memory.get_features_by_name(object_id, channel),
+                        object_rotation,
+                        current_mlh["location"],
+                    )
                 )
 
-            self.graph_memory._merge_graphs(
-                locations=all_locations,
-                features=all_features,
-                graph_id=new_graph_id,
-                input_channel=channel,
-                old_graph_ids=persistent_object_ids,
-            )
+        merged = self.graph_memory._merge_graphs(
+            first_graph_id=first_id,
+            merge_data=merge_data,
+            new_graph_id=new_graph_id,
+            old_graph_ids=persistent_object_ids,
+            location_rel_model=first_mlh["location"],
+        )
+        if merged:
+            self._cleanup_after_merge(persistent_object_ids, new_graph_id)
+            return new_graph_id
+        return None
+
+    def _cleanup_after_merge(
+        self, old_ids: list[str], new_graph_id: str
+    ) -> None:
+        """Remove all stale references to the deleted graphs.
+
+        Args:
+            old_ids: IDs of the graphs that were merged away and deleted.
+            new_graph_id: ID of the resulting merged graph.
+        """
+        old_id_set = set(old_ids)
+        merged_hypotheses = self._hypotheses.get(old_ids[0], Hypotheses.empty())
+        for old_id in old_ids:
+            self._hypotheses.pop(old_id, None)
+            self.hypotheses_updater_telemetry.pop(old_id, None)
+        self.symmetry_evidence = 0
+        self._persistent_object_ids = []
+
+        self.graph_memory.initialize_feature_arrays()
+
+        # The merged graph inherits the ground-truth target labels of its sources.
+        merged_targets = set()
+        for old_id in old_ids:
+            merged_targets.update(self.graph_id_to_target.pop(old_id, set()))
+        if merged_targets:
+            self.graph_id_to_target[new_graph_id] = merged_targets
+        for target, graph_ids in self.target_to_graph_id.items():
+            if graph_ids.intersection(old_id_set):
+                remaining_ids = graph_ids.difference(old_id_set)
+                remaining_ids.add(new_graph_id)
+                self.target_to_graph_id[target] = remaining_ids
+
+        self._hypotheses[new_graph_id] = merged_hypotheses
+        self.possible_matches = self._threshold_possible_matches()
+        self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def _set_detected_pose_stats(self, mlh, hypotheses, symmetric):
         """Set detected pose LM variables and log pose stats to the buffer.
@@ -1210,14 +1244,25 @@ class EvidenceGraphLM(GraphLM):
                     f"{self.learning_module_id} has no persistent hypotheses yet."
                 )
             elif len(persistent) > 1:
-                self._merge_memory(list(persistent.keys()))
-
-                if self.terminal_state == "match":
-                    self.set_individual_ts(None)
-                logger.info(
-                    f"{self.learning_module_id}: persistent hypotheses span "
-                    f"{list(persistent.keys())} -> merging not implemented yet."
-                )
+                merged_id = self._merge_memory(list(persistent.keys()))
+                if merged_id is None:
+                    if self.terminal_state == "match":
+                        self.set_individual_ts(None)
+                else:
+                    hypotheses = self._hypotheses[merged_id]
+                    mlh = self._calculate_most_likely_hypothesis(merged_id)
+                    pose_is_unique = self._check_for_unique_poses(
+                        hypotheses, mlh["rotation"]
+                    )
+                    self._set_detected_pose_stats(
+                        mlh, hypotheses, symmetric=not pose_is_unique
+                    )
+                    self._persistent_object_ids = [merged_id]
+                    self.set_individual_ts("match")
+                    logger.info(
+                        f"{self.learning_module_id} recognized merged object "
+                        f"{merged_id}"
+                    )
             else:
                 graph_id, hypotheses = next(iter(persistent.items()))
                 mlh = self._calculate_most_likely_hypothesis(graph_id)
