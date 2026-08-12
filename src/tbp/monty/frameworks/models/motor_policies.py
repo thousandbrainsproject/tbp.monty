@@ -1079,6 +1079,88 @@ class SnakeScanPolicy(MotorPolicy):
         self._next_location_index = memento["next_location_index"]
 
 
+class RandomGameWalk(MotorPolicy):
+    """Perform a random-walk to explore an object."""
+
+    agent_id: AgentID
+    sensor_id: SensorID
+    frame_size: int
+    patch_size: int
+    stride: int
+
+    _position: VectorXYZ
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID | str = "patch",
+        frame_size: int = 64,
+        patch_size: int = 8,
+        stride: int = 4,
+    ) -> None:
+
+        self.agent_id = AgentID(agent_id)
+        self.sensor_id = SensorID(sensor_id)
+        self.frame_size = frame_size
+        self.patch_size = patch_size
+        self.stride = stride
+        self._position = self._center_position()
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
+    ) -> MotorPolicyResult:
+        dx: int = 0
+        dy: int = 0
+        while dx == dy == 0:
+            dx = ctx.rng.choice((-self.stride, 0, +self.stride))
+            dy = ctx.rng.choice((-self.stride, 0, +self.stride))
+        x = self._position[0] + dx
+        y = self._position[1] + dy
+
+        max_pos = self.frame_size - self.patch_size
+        if x < 0:
+            x = max_pos
+        elif x > max_pos:
+            x = 0
+        if y < 0:
+            y = max_pos
+        elif y > max_pos:
+            y = 0
+        self._position = (x, y, 0.0)
+
+        return MotorPolicyResult(
+            [
+                SetSensorPose(
+                    agent_id=self.agent_id,
+                    location=self._position,
+                    rotation_quat=IDENTITY_QUATERNION,
+                )
+            ]
+        )
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def _center_position(self) -> VectorXYZ:
+        center = float(self.frame_size // 2 - self.stride)
+        return (center, center, 0.0)
+
+    def reset(self) -> None:
+        # The simulator's reset observation is the first scan location.
+        self._position = self._center_position()
+
+    def state_dict(self) -> Memento:
+        return {"position": self._position}
+
+    def load_state_dict(self, memento: Memento) -> None:
+        self._position = memento["position"]
+
+
 class NaiveScanPolicy(InformedPolicy):
     """Policy that just moves left and right along the object."""
 

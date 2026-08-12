@@ -5,6 +5,7 @@ eval_env_interface_args:
   object_names:
   - sm00
   - sm01
+  - sm02
   - ar25
   - bp35
   - cd82
