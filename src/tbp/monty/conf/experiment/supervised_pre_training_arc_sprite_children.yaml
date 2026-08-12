@@ -1,0 +1,31 @@
+# @package _global_
+
+defaults:
+  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: snake_scan_p1_s1
+  - /monty/learning_module: evidence_2lm_arc_sprite_children
+  - /monty/sensor_module: arc_sprite_child_2sm
+  - /monty/connectivity: 2lm_2sm
+  - /environment: arc_sprite_dataset
+  - /env_interface: train_arc_sprite
+  - /env_interface/transform: none
+  - /logging: silent_info_train
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 6000
+    max_eval_steps: 6000
+    max_total_steps: 6000
+    n_train_epochs: 1
+    n_eval_epochs: 1
+    model_name_or_path: ''
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
+    seed: 42
+    supervised_lm_ids:
+      - learning_module_0
+    logging:
+      run_name: supervised_pre_training_arc_sprite_children

@@ -1,0 +1,5 @@
+# @package experiment.config.environment
+
+env_init_args:
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/arc/sprite_children/v1}
+env_init_func: ${monty.class:tbp.monty.simulators.arc_sprite.ArcSpriteDatasetEnvironment}

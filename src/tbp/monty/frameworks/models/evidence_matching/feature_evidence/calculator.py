@@ -28,7 +28,7 @@ class FeatureEvidenceCalculator(Protocol):
 class DefaultFeatureEvidenceCalculator:
     SKIP_FEATURES = frozenset({"pose_vectors", "pose_fully_defined"})
     CIRCULAR_FEATURES = frozenset({"hsv"})
-    CATEGORICAL_FEATURES = frozenset({"object_id"})
+    CATEGORICAL_FEATURES = frozenset({"object_id", "palette_index"})
     CIRCULAR_RANGE = 1
 
     @classmethod

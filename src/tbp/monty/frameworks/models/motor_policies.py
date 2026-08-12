@@ -996,56 +996,62 @@ class SnakeScanPolicy(MotorPolicy):
         self,
         agent_id: AgentID,
         sensor_id: SensorID | str = "patch",
-        frame_size: int = 64,
+        frame_size: int | None = 64,
         patch_size: int = 8,
         stride: int = 8,
     ) -> None:
-        for name, value in (
-            ("frame_size", frame_size),
-            ("patch_size", patch_size),
-            ("stride", stride),
-        ):
-            if not isinstance(value, int):
-                raise TypeError(f"{name} must be an integer")
-            if value <= 0:
-                raise ValueError(f"{name} must be positive")
-        if patch_size > frame_size:
-            raise ValueError("patch_size must not exceed frame_size")
-        if stride > patch_size:
-            raise ValueError("stride must not exceed patch_size")
-
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
         self.frame_size = frame_size
         self.patch_size = patch_size
         self.stride = stride
-        self._scan_locations = self._make_scan_locations()
+        self._scan_locations = (
+            self._make_scan_locations(frame_size, frame_size)
+            if frame_size is not None
+            else None
+        )
         self.reset()
 
-    def _make_scan_locations(self) -> list[VectorXYZ]:
-        max_start = self.frame_size - self.patch_size
-        starts = list(range(0, max_start + 1, self.stride))
-        if starts[-1] != max_start:
-            starts.append(max_start)
+    def _make_scan_locations(
+        self, frame_width: int, frame_height: int
+    ) -> list[VectorXYZ]:
+        max_x = frame_width - self.patch_size
+        max_y = frame_height - self.patch_size
+        x_starts = list(range(0, max_x + 1, self.stride))
+        y_starts = list(range(0, max_y + 1, self.stride))
+        if x_starts[-1] != max_x:
+            x_starts.append(max_x)
+        if y_starts[-1] != max_y:
+            y_starts.append(max_y)
 
         locations: list[VectorXYZ] = []
-        for row, y in enumerate(starts):
-            xs = starts if row % 2 == 0 else reversed(starts)
+        for row, y in enumerate(y_starts):
+            xs = x_starts if row % 2 == 0 else reversed(x_starts)
             locations.extend((float(x), float(y), 0.0) for x in xs)
         return locations
+
+    def _make_dynamic_scan(self, observations: Observations) -> list[VectorXYZ]:
+        frame = observations[self.agent_id][SensorID("view_finder")]["raw"]
+        frame_height, frame_width = frame.shape[:2]
+        return self._make_scan_locations(frame_width, frame_height)
 
     def __call__(
         self,
         ctx: RuntimeContext,  # noqa: ARG002
-        observations: Observations,  # noqa: ARG002
+        observations: Observations,
         state: MotorSystemState,  # noqa: ARG002
         percept: Message,  # noqa: ARG002
         goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
-        if self._next_location_index == len(self._scan_locations):
+        scan_locations = self._scan_locations
+        if scan_locations is None:
+            scan_locations = self._make_dynamic_scan(observations)
+            self._scan_locations = scan_locations
+
+        if self._next_location_index == len(scan_locations):
             raise StopIteration
 
-        location = self._scan_locations[self._next_location_index]
+        location = scan_locations[self._next_location_index]
         self._next_location_index += 1
         return MotorPolicyResult(
             [
@@ -1062,16 +1068,15 @@ class SnakeScanPolicy(MotorPolicy):
 
     def reset(self) -> None:
         # The simulator's reset observation is the first scan location.
+        if self.frame_size is None:
+            self._scan_locations = None
         self._next_location_index = 1
 
     def state_dict(self) -> Memento:
         return {"next_location_index": self._next_location_index}
 
     def load_state_dict(self, memento: Memento) -> None:
-        next_location_index = memento["next_location_index"]
-        if not 1 <= next_location_index <= len(self._scan_locations):
-            raise ValueError("next_location_index is outside the scan")
-        self._next_location_index = next_location_index
+        self._next_location_index = memento["next_location_index"]
 
 
 class NaiveScanPolicy(InformedPolicy):
