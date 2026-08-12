@@ -9,16 +9,11 @@
 
 # ruff: noqa: DOC201, DOC501
 
-"""Generate the effective-rendered ARC sprite-child dataset.
+"""Generate clean ARC sprite children and their initial-frame oracle regions.
 
-Run the full dataset generator from the repository root::
+Run from the repository root::
 
     uv run --no-sync python tools/generate_arc_sprite_dataset.py --overwrite
-
-Generate one game in a temporary directory::
-
-    uv run --no-sync python tools/generate_arc_sprite_dataset.py \
-        --games ar25 --output-dir /tmp/ar25-sprites --overwrite
 """
 
 from __future__ import annotations
@@ -26,11 +21,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.util
+import inspect
 import json
 import os
 import shutil
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -39,8 +35,8 @@ import numpy as np
 DISPLAY_SIZE = 64
 COMPACT_MAX_DIM = 8
 COMPACT_MIN_BBOX_FRACTION = 0.5
-DATASET_VERSION = 1
-DEFAULT_DATASET_SUBPATH = Path("arc/sprite_children/v1")
+DATASET_VERSION = 2
+DEFAULT_DATASET_SUBPATH = Path("arc/sprite_children/v2")
 
 ARC_RGBA_PALETTE = np.array(
     [
@@ -75,6 +71,12 @@ def pixel_signature(pixels: Any) -> str:
     return digest.hexdigest()
 
 
+def canonicalize_pixels(pixels: Any) -> np.ndarray:
+    """Represent every transparent value as ``-1``."""
+    array = np.asarray(pixels)
+    return np.where(array < 0, -1, array).astype(np.int8, copy=False)
+
+
 def count_components(mask: np.ndarray) -> int:
     """Count four-connected components."""
     remaining = set(zip(*np.nonzero(mask)))
@@ -97,8 +99,8 @@ def count_components(mask: np.ndarray) -> int:
 
 
 def compact_metrics(pixels: Any) -> dict[str, Any]:
-    """Return the values used by the compact-object filter."""
-    array = np.asarray(pixels)
+    """Return the values used by the compact-child filter."""
+    array = canonicalize_pixels(pixels)
     visible = array >= 0
     rows, columns = np.nonzero(visible)
     bbox_area = (
@@ -106,23 +108,18 @@ def compact_metrics(pixels: Any) -> dict[str, Any]:
         if len(rows)
         else 0
     )
+    height, width = array.shape
+    fraction = visible.sum() / bbox_area if bbox_area else 0.0
+    components = count_components(visible)
     return {
-        "height": array.shape[0],
-        "width": array.shape[1],
-        "bbox_fraction": visible.sum() / bbox_area if bbox_area else 0.0,
-        "component_count": count_components(visible),
         "raw_signature": pixel_signature(array),
+        "compact": (
+            max(height, width) <= COMPACT_MAX_DIM
+            and components == 1
+            and fraction >= COMPACT_MIN_BBOX_FRACTION
+        ),
+        "component_count": components,
     }
-
-
-def is_compact_candidate(pixels: Any) -> bool:
-    """Return whether raw pixels describe a compact child object."""
-    metrics = compact_metrics(pixels)
-    return (
-        max(metrics["height"], metrics["width"]) <= COMPACT_MAX_DIM
-        and metrics["component_count"] == 1
-        and metrics["bbox_fraction"] >= COMPACT_MIN_BBOX_FRACTION
-    )
 
 
 def camera_cell_scale(grid_size: Any, display_size: int = DISPLAY_SIZE) -> int:
@@ -131,22 +128,11 @@ def camera_cell_scale(grid_size: Any, display_size: int = DISPLAY_SIZE) -> int:
     return min(display_size // width, display_size // height)
 
 
-def canonicalize_pixels(pixels: Any) -> np.ndarray:
-    """Represent every transparent value as ``-1``."""
-    array = np.asarray(pixels)
-    return np.where(array < 0, -1, array).astype(np.int8, copy=False)
-
-
 def effective_pixels(rendered: Any, grid_size: Any) -> np.ndarray:
     """Expand logical cells to their displayed size."""
     pixels = canonicalize_pixels(rendered)
     scale = camera_cell_scale(grid_size)
     return np.repeat(np.repeat(pixels, scale, axis=0), scale, axis=1)
-
-
-def effective_sprite_pixels(sprite: Any, grid_size: Any) -> np.ndarray:
-    """Render and expand a Sprite."""
-    return effective_pixels(sprite.render(), grid_size)
 
 
 def object_label(base_label: str, pixels: Any) -> str:
@@ -164,24 +150,17 @@ def rgba_preview(pixels: Any) -> np.ndarray:
     return rgba
 
 
-def write_png(path: Path, pixels: Any) -> None:
-    """Write an RGBA preview."""
-    from PIL import Image  # noqa: PLC0415
-
-    Image.fromarray(rgba_preview(pixels), mode="RGBA").save(path)
-
-
 def discover_games(games_root: Path, requested: list[str] | None) -> list[Path]:
     """Find game modules, optionally restricted by game or map ID."""
     paths = sorted(games_root.glob("*/*/*.py"))
     if not requested:
         return paths
-    requested = set(requested)
+    requested_set = set(requested)
     return [
         path
         for path in paths
-        if path.parent.parent.name in requested
-        or f"{path.parent.parent.name}-{path.parent.name}" in requested
+        if path.parent.parent.name in requested_set
+        or f"{path.parent.parent.name}-{path.parent.name}" in requested_set
     ]
 
 
@@ -189,266 +168,175 @@ def load_game_module(path: Path, ordinal: int) -> Any:
     """Load one local game module."""
     name = f"_arc_sprite_dataset_{ordinal}_{path.stem}"
     spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load ARC game module {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
 
-def map_identity(path: Path) -> tuple[str, str, str]:
-    """Return game, version, and map IDs."""
-    game_id = path.parent.parent.name
-    version = path.parent.name
-    return game_id, version, f"{game_id}-{version}"
+def display_sprite(sprite: Any, camera: Any) -> dict[str, Any]:
+    """Project one sprite into the 64x64 display before layer occlusion."""
+    pixels = canonicalize_pixels(sprite.render())
+    scale = min(DISPLAY_SIZE // camera.width, DISPLAY_SIZE // camera.height)
+    x_offset = (DISPLAY_SIZE - camera.width * scale) // 2
+    y_offset = (DISPLAY_SIZE - camera.height * scale) // 2
+    rel_x, rel_y = sprite.x - camera.x, sprite.y - camera.y
 
+    x0, x1 = max(0, rel_x), min(camera.width, rel_x + pixels.shape[1])
+    y0, y1 = max(0, rel_y), min(camera.height, rel_y + pixels.shape[0])
+    mask = np.zeros((DISPLAY_SIZE, DISPLAY_SIZE), dtype=bool)
+    colors = np.full((DISPLAY_SIZE, DISPLAY_SIZE), -1, dtype=np.int8)
+    bbox = [0, 0, 0, 0]
+    if x0 < x1 and y0 < y1:
+        source = pixels[y0 - rel_y : y1 - rel_y, x0 - rel_x : x1 - rel_x]
+        source = np.repeat(np.repeat(source, scale, axis=0), scale, axis=1)
+        dx0, dy0 = x_offset + x0 * scale, y_offset + y0 * scale
+        dx1, dy1 = dx0 + source.shape[1], dy0 + source.shape[0]
+        colors[dy0:dy1, dx0:dx1] = source
+        mask[dy0:dy1, dx0:dx1] = source >= 0
+        bbox = [dx0, dy0, dx1, dy1]
 
-def definition_record(
-    path: Path, map_id: str, game_id: str, version: str, key: str, sprite: Any
-) -> dict[str, Any]:
-    """Describe one dictionary-defined Sprite."""
-    pixels = canonicalize_pixels(sprite.pixels)
-    metrics = compact_metrics(pixels)
     return {
-        "definition_id": f"{map_id}:{key}",
-        "source_path": str(path),
-        "map_id": map_id,
-        "game_id": game_id,
-        "version": version,
-        "base_label": str(sprite.name),
-        "raw_signature": metrics["raw_signature"],
-        "compact": (
-            max(metrics["height"], metrics["width"]) <= COMPACT_MAX_DIM
-            and metrics["component_count"] == 1
-            and metrics["bbox_fraction"] >= COMPACT_MIN_BBOX_FRACTION
-        ),
+        "pixels": effective_pixels(pixels, (camera.width, camera.height)),
+        "mask": mask,
+        "colors": colors,
+        "bbox": bbox,
+        "source_pixel_count": int((pixels >= 0).sum()) * scale * scale,
     }
 
 
-def occurrence_record(
-    definition: dict[str, Any],
-    level: Any,
-    level_index: int,
-    instance_index: int,
-    sprite: Any,
-) -> dict[str, Any]:
-    """Describe one placed Sprite."""
-    grid_size = [int(value) for value in level.grid_size]
-    return {
-        "definition_id": definition["definition_id"],
-        "base_label": definition["base_label"],
-        "raw_signature": definition["raw_signature"],
-        "map_id": definition["map_id"],
-        "game_id": definition["game_id"],
-        "version": definition["version"],
-        "level_index": level_index,
-        "level_name": str(getattr(level, "name", "Level")),
-        "instance_index": instance_index,
-        "grid_size": grid_size,
-        "cell_scale_px": camera_cell_scale(grid_size),
-        "x": int(sprite.x),
-        "y": int(sprite.y),
-        "scale": int(sprite.scale),
-        "rotation": int(sprite.rotation),
-        "mirror_ud": bool(sprite.mirror_ud),
-        "mirror_lr": bool(sprite.mirror_lr),
-        "sprite": sprite,
-    }
+def initial_frame_regions(
+    sprites: list[Any], camera: Any, source_ids: list[str]
+) -> list[dict[str, Any]]:
+    """Measure source-pixel visibility after clipping, layering, and interfaces."""
+    projected = [display_sprite(sprite, camera) for sprite in sprites]
+    owner = np.full((DISPLAY_SIZE, DISPLAY_SIZE), -1, dtype=int)
+    for index in sorted(range(len(sprites)), key=lambda item: sprites[item].layer):
+        if sprites[index].is_visible:
+            owner[projected[index]["mask"]] = index
 
-
-def collect_source(
-    game_paths: Iterable[Path],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    """Collect Sprite definitions, placements, and map summaries."""
-    definitions = []
-    occurrences = []
-    map_summaries = []
-    for ordinal, path in enumerate(game_paths):
-        module = load_game_module(path, ordinal)
-        game_id, version, map_id = map_identity(path)
-        map_definitions = [
-            definition_record(path, map_id, game_id, version, str(key), sprite)
-            for key, sprite in module.sprites.items()
-        ]
-        by_name = {row["base_label"]: row for row in map_definitions}
-        map_occurrences = [
-            occurrence_record(
-                by_name[str(sprite.name)], level, level_index, index, sprite
-            )
-            for level_index, level in enumerate(module.levels, start=1)
-            for index, sprite in enumerate(level.get_sprites())
-        ]
-        definitions.extend(map_definitions)
-        occurrences.extend(map_occurrences)
-        map_summaries.append(
+    final_frame = canonicalize_pixels(camera.render(sprites))
+    regions = []
+    for index, (sprite, source_id, display) in enumerate(
+        zip(sprites, source_ids, projected)
+    ):
+        source_count = display["source_pixel_count"]
+        visible = (
+            display["mask"] & (owner == index) & (display["colors"] == final_frame)
+        )
+        visible_count = int(visible.sum()) if sprite.is_visible else 0
+        x0, y0, x1, y1 = display["bbox"]
+        visible_mask = visible[y0:y1, x0:x1]
+        fraction = visible_count / source_count if source_count else 0.0
+        regions.append(
             {
-                "map_id": map_id,
-                "definitions": len(map_definitions),
-                "levels": len(module.levels),
-                "instances": len(map_occurrences),
-                "compact_definitions": sum(row["compact"] for row in map_definitions),
+                "source_sprite_id": source_id,
+                "bbox": display["bbox"],
+                "layer": int(sprite.layer),
+                "visible_mask": visible_mask.tolist(),
+                "visible_pixel_count": visible_count,
+                "visible_fraction": fraction,
+                "fully_visible": bool(source_count and visible_count == source_count),
+                "pixels": display["pixels"],
             }
         )
-    return definitions, occurrences, map_summaries
+    return regions
 
 
-def group_by(
-    rows: Iterable[dict[str, Any]], field: str
-) -> dict[Any, list[dict[str, Any]]]:
-    """Group dictionaries by one field."""
-    groups = defaultdict(list)
-    for row in rows:
-        groups[row[field]].append(row)
-    return groups
+def collect_clean_occurrences(
+    game_paths: Iterable[Path],
+) -> tuple[list[dict[str, Any]], Counter[str]]:
+    """Collect fully visible compact occurrences from frozen initial frames."""
+    from arcengine import ARCBaseGame  # noqa: PLC0415
 
+    clean = []
+    counts: Counter[str] = Counter()
+    for ordinal, path in enumerate(game_paths):
+        module = load_game_module(path, ordinal)
+        game_class = next(
+            value
+            for value in vars(module).values()
+            if inspect.isclass(value)
+            and value.__module__ == module.__name__
+            and issubclass(value, ARCBaseGame)
+        )
+        game_id, version = path.parent.parent.name, path.parent.name
+        map_id = f"{game_id}-{version}"
+        invisible_definitions = {
+            (str(sprite.name), pixel_signature(canonicalize_pixels(sprite.pixels)))
+            for sprite in module.sprites.values()
+            if not sprite.is_visible
+        }
 
-def raw_ambiguous_groups(
-    compact_definitions: Iterable[dict[str, Any]],
-) -> dict[str, list[dict[str, Any]]]:
-    """Find raw signatures shared by multiple base labels."""
-    return {
-        signature: rows
-        for signature, rows in group_by(compact_definitions, "raw_signature").items()
-        if len({row["base_label"] for row in rows}) > 1
-    }
-
-
-def excluded_definition_rows(
-    definitions: list[dict[str, Any]], occurrences: list[dict[str, Any]]
-) -> tuple[list[dict[str, Any]], set[str]]:
-    """Exclude ambiguous and unused compact definitions."""
-    compact = [row for row in definitions if row["compact"]]
-    ambiguous = raw_ambiguous_groups(compact)
-    counts = Counter(row["definition_id"] for row in occurrences)
-    excluded = []
-    selected = set()
-    for definition in sorted(compact, key=lambda row: row["definition_id"]):
-        signature = definition["raw_signature"]
-        count = counts[definition["definition_id"]]
-        if signature in ambiguous:
-            excluded.append(
-                {
-                    "kind": "definition",
-                    "reason": "raw_ambiguous_signature",
-                    "definition_id": definition["definition_id"],
-                    "base_label": definition["base_label"],
-                    "raw_signature": signature,
-                    "conflicting_base_labels": sorted(
-                        {row["base_label"] for row in ambiguous[signature]}
-                    ),
-                    "source_occurrence_count": count,
-                }
-            )
-        elif not count:
-            excluded.append(
-                {
-                    "kind": "definition",
-                    "reason": "unused_definition",
-                    "definition_id": definition["definition_id"],
-                    "base_label": definition["base_label"],
-                    "raw_signature": signature,
-                    "source_occurrence_count": 0,
-                }
-            )
-        else:
-            selected.add(definition["definition_id"])
-    return excluded, selected
-
-
-SOURCE_FIELDS = (
-    "definition_id",
-    "raw_signature",
-    "map_id",
-    "game_id",
-    "version",
-    "level_index",
-    "level_name",
-    "instance_index",
-    "grid_size",
-    "cell_scale_px",
-    "x",
-    "y",
-    "scale",
-    "rotation",
-    "mirror_ud",
-    "mirror_lr",
-)
-
-
-def source_provenance(occurrence: dict[str, Any]) -> dict[str, Any]:
-    """Remove the live Sprite from an occurrence record."""
-    return {key: occurrence[key] for key in SOURCE_FIELDS}
+        for level_index in range(len(module.levels)):
+            game = game_class()
+            if level_index:
+                game.set_level(level_index)
+            sprites = game.current_level.get_sprites()
+            source_ids = [
+                f"{map_id}:{level_index + 1}:{index}:{sprite.name}"
+                for index, sprite in enumerate(sprites)
+            ]
+            regions = initial_frame_regions(sprites, game.camera, source_ids)
+            counts["occurrences"] += len(sprites)
+            for sprite, region in zip(sprites, regions):
+                metrics = compact_metrics(sprite.pixels)
+                definition_key = (str(sprite.name), metrics["raw_signature"])
+                if definition_key in invisible_definitions:
+                    counts["invisible_definition_occurrences"] += 1
+                elif not sprite.is_visible:
+                    counts["invisible_occurrences"] += 1
+                elif not metrics["compact"]:
+                    counts["noncompact_occurrences"] += 1
+                elif not region["fully_visible"]:
+                    counts["occluded_occurrences"] += 1
+                else:
+                    clean.append(
+                        {
+                            "base_label": str(sprite.name),
+                            "raw_signature": metrics["raw_signature"],
+                            "pixels": region.pop("pixels"),
+                            "region": region,
+                        }
+                    )
+                    counts["clean_occurrences"] += 1
+    return clean, counts
 
 
 def build_variants(
     occurrences: Iterable[dict[str, Any]],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Render, deduplicate, and exclude cross-label collisions."""
+) -> list[dict[str, Any]]:
+    """Deduplicate clean occurrences without discarding their labels."""
     variants = {}
     for occurrence in occurrences:
-        pixels = effective_sprite_pixels(occurrence["sprite"], occurrence["grid_size"])
-        signature = pixel_signature(pixels)
+        signature = pixel_signature(occurrence["pixels"])
         variant = variants.setdefault(
             (occurrence["base_label"], signature),
             {
                 "base_label": occurrence["base_label"],
                 "effective_signature": signature,
-                "pixels": pixels,
-                "occurrences": [],
+                "pixels": occurrence["pixels"],
+                "regions": [],
             },
         )
-        variant["occurrences"].append(source_provenance(occurrence))
-
-    retained = []
-    excluded = []
-    for signature, group in sorted(
-        group_by(variants.values(), "effective_signature").items()
-    ):
-        labels = sorted({row["base_label"] for row in group})
-        if len(labels) == 1:
-            retained.extend(group)
-            continue
-        for variant in sorted(group, key=lambda row: row["base_label"]):
-            excluded.append(
-                {
-                    "kind": "effective_variant",
-                    "reason": "effective_ambiguous_collision",
-                    "base_label": variant["base_label"],
-                    "effective_signature": signature,
-                    "effective_shape": list(variant["pixels"].shape),
-                    "conflicting_base_labels": labels,
-                    "source_occurrence_count": len(variant["occurrences"]),
-                    "sources": variant["occurrences"],
-                }
-            )
+        variant["regions"].append(occurrence["region"])
     return sorted(
-        retained, key=lambda row: (row["base_label"], row["effective_signature"])
-    ), excluded
-
-
-def variant_manifest_row(variant: dict[str, Any]) -> dict[str, Any]:
-    """Build one manifest row."""
-    pixels = variant["pixels"]
-    label = object_label(variant["base_label"], pixels)
-    sources = sorted(
-        variant["occurrences"],
-        key=lambda row: (row["map_id"], row["level_index"], row["instance_index"]),
+        variants.values(),
+        key=lambda row: (row["base_label"], row["effective_signature"]),
     )
+
+
+def manifest_row(variant: dict[str, Any]) -> dict[str, Any]:
+    """Return the minimal artifact and oracle-region contract."""
+    label = object_label(variant["base_label"], variant["pixels"])
+    regions = sorted(variant["regions"], key=lambda row: row["source_sprite_id"])
     return {
-        "sample_id": label,
         "object_label": label,
-        "base_label": variant["base_label"],
-        "raw_signatures": sorted({row["raw_signature"] for row in sources}),
-        "effective_signature": variant["effective_signature"],
-        "effective_shape": list(pixels.shape),
-        "dtype": str(pixels.dtype),
         "npy_path": f"sprites/{label}.npy",
         "png_path": f"previews/{label}.png",
-        "cell_scales_px": sorted({row["cell_scale_px"] for row in sources}),
-        "grid_sizes": [
-            list(size) for size in sorted({tuple(row["grid_size"]) for row in sources})
-        ],
-        "source_occurrence_count": len(sources),
-        "sources": sources,
+        "oracle_regions": regions,
     }
 
 
@@ -462,154 +350,63 @@ def prepare_output_dir(output_dir: Path, overwrite: bool = False) -> None:
     (output_dir / "previews").mkdir()
 
 
-def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
-    """Write deterministic JSON Lines."""
-    path.write_text(
-        "".join(
-            json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
-            for row in rows
-        ),
-        encoding="utf-8",
-    )
-
-
-def write_report(
-    path: Path,
-    dataset: dict[str, Any],
-    map_summaries: list[dict[str, Any]],
-    excluded: list[dict[str, Any]],
-) -> None:
-    """Write a compact human-readable report."""
-    exclusions = Counter(row["reason"] for row in excluded)
-    lines = [
-        "# ARC sprite child dataset",
-        "",
-        "Variable-shaped effective-rendered Sprite canvases.",
-        "",
-        "## Counts",
-        "",
-        *(
-            f"- {key.replace('_', ' ')}: {value}"
-            for key, value in dataset["counts"].items()
-        ),
-        "",
-        "## Exclusions",
-        "",
-        *(f"- {reason}: {count}" for reason, count in sorted(exclusions.items())),
-        "",
-        "## Maps",
-        "",
-        "| map | definitions | levels | instances | compact |",
-        "| --- | ---: | ---: | ---: | ---: |",
-        *(
-            f"| {row['map_id']} | {row['definitions']} | {row['levels']} | "
-            f"{row['instances']} | {row['compact_definitions']} |"
-            for row in map_summaries
-        ),
-    ]
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
 def generate_dataset(
     games_root: Path,
     output_dir: Path,
     requested_games: list[str] | None = None,
     overwrite: bool = False,
 ) -> dict[str, Any]:
-    """Generate the sprite-child dataset."""
+    """Generate the clean sprite-child dataset."""
     game_paths = discover_games(games_root, requested_games)
-    definitions, occurrences, map_summaries = collect_source(game_paths)
-    excluded_definitions, selected_ids = excluded_definition_rows(
-        definitions, occurrences
-    )
-    variants, excluded_effective = build_variants(
-        row for row in occurrences if row["definition_id"] in selected_ids
-    )
-    excluded = excluded_definitions + excluded_effective
-    manifest = [variant_manifest_row(variant) for variant in variants]
+    occurrences, counts = collect_clean_occurrences(game_paths)
+    variants = build_variants(occurrences)
+    manifest = [manifest_row(variant) for variant in variants]
 
     prepare_output_dir(output_dir, overwrite)
+    from PIL import Image  # noqa: PLC0415
+
     for variant, row in zip(variants, manifest):
         np.save(output_dir / row["npy_path"], variant["pixels"], allow_pickle=False)
-        write_png(output_dir / row["png_path"], variant["pixels"])
+        Image.fromarray(rgba_preview(variant["pixels"]), mode="RGBA").save(
+            output_dir / row["png_path"]
+        )
 
-    compact = [row for row in definitions if row["compact"]]
-    ambiguous = raw_ambiguous_groups(compact)
-    collision_count = len(excluded_effective)
+    counts["object_labels"] = len(manifest)
     dataset = {
         "dataset": "arc_sprite_children",
         "version": DATASET_VERSION,
-        "source": {
-            "games_root": str(games_root.resolve()),
-            "maps": [row["map_id"] for row in map_summaries],
-            "game_paths": [str(path.resolve()) for path in game_paths],
-        },
-        "filter": {
+        "maps": [
+            f"{path.parent.parent.name}-{path.parent.name}" for path in game_paths
+        ],
+        "filters": {
             "compact_max_dim": COMPACT_MAX_DIM,
             "compact_min_bbox_fraction": COMPACT_MIN_BBOX_FRACTION,
-            "compact_component_connectivity": 4,
-            "raw_ambiguity_key": "raw_signature + multiple base_label values",
-            "unused_definitions_excluded": True,
-            "effective_cross_label_collisions_excluded": True,
+            "definition_visible": True,
+            "fully_visible_initial_frame": True,
         },
-        "rendering": {
-            "display_size": DISPLAY_SIZE,
-            "sprite_render": "Sprite.render()",
-            "camera_scale": "min(64 // grid_width, 64 // grid_height)",
-            "cell_scaling": "nearest_neighbor_repeat",
-            "canvas": "full_rendered_canvas_preserved",
-            "negative_value": -1,
-            "visible_palette_values": list(range(16)),
-        },
-        "palette_rgba": ARC_RGBA_PALETTE.tolist(),
-        "counts": {
-            "maps": len(map_summaries),
-            "definitions": len(definitions),
-            "compact_definitions": len(compact),
-            "raw_unique_signatures": len({row["raw_signature"] for row in compact}),
-            "raw_ambiguous_signature_groups": len(ambiguous),
-            "raw_ambiguous_definitions": sum(map(len, ambiguous.values())),
-            "unused_definitions": sum(
-                row["reason"] == "unused_definition" for row in excluded_definitions
-            ),
-            "used_definitions": len(selected_ids),
-            "base_labels": len({row["base_label"] for row in variants}),
-            "effective_variants_before_cross_label_exclusion": len(variants)
-            + collision_count,
-            "effective_cross_label_collision_variants": collision_count,
-            "object_labels": len(manifest),
-            "source_occurrences_before_effective_exclusion": sum(
-                len(row["occurrences"]) for row in variants
-            )
-            + sum(row["source_occurrence_count"] for row in excluded_effective),
-            "source_occurrences": sum(
-                row["source_occurrence_count"] for row in manifest
-            ),
-        },
+        "counts": dict(counts),
     }
     (output_dir / "dataset.json").write_text(
         json.dumps(dataset, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    write_jsonl(output_dir / "manifest.jsonl", manifest)
-    write_jsonl(
-        output_dir / "excluded.jsonl",
-        sorted(
-            excluded,
-            key=lambda row: (
-                row["reason"],
-                row.get("definition_id", ""),
-                row.get("base_label", ""),
-                row.get("effective_signature", ""),
-            ),
+    (output_dir / "manifest.jsonl").write_text(
+        "".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+            for row in manifest
         ),
+        encoding="utf-8",
     )
-    write_report(output_dir / "report.md", dataset, map_summaries, excluded)
+    report = [
+        "# ARC sprite child dataset",
+        "",
+        "Only fully visible compact occurrences from frozen initial frames are used.",
+        "",
+        "## Counts",
+        "",
+        *(f"- {key.replace('_', ' ')}: {value}" for key, value in counts.items()),
+    ]
+    (output_dir / "report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
     return dataset
-
-
-def default_output_dir() -> Path:
-    """Return the default location beneath ``MONTY_DATA``."""
-    return Path(os.environ["MONTY_DATA"]).expanduser() / DEFAULT_DATASET_SUBPATH
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -624,7 +421,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--games", nargs="+")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args(argv)
-    args.output_dir = args.output_dir or default_output_dir()
+    args.output_dir = args.output_dir or (
+        Path(os.environ["MONTY_DATA"]).expanduser() / DEFAULT_DATASET_SUBPATH
+    )
     return args
 
 
@@ -640,7 +439,7 @@ def main(argv: list[str] | None = None) -> int:
     counts = dataset["counts"]
     print(
         f"Generated {counts['object_labels']} ARC sprite objects from "
-        f"{counts['source_occurrences']} occurrences at {args.output_dir}"
+        f"{counts['clean_occurrences']} clean occurrences at {args.output_dir}"
     )
     return 0
 

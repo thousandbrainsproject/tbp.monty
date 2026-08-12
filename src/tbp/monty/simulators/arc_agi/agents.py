@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 import numpy as np
 import quaternion as qt
@@ -44,33 +44,50 @@ _ARC_RGBA_PALETTE = np.array(
 
 
 class ArcAgent:
-    VIEWPORT = SensorID("view_finder")
-    PATCH = SensorID("patch")
-
     def __init__(
         self,
         simulator: ArcAgiSimulator,
         agent_id: str,
         patch_resolution: Resolution2D,
-        sensor_configs,  # noqa: ARG002
+        sensor_configs: Mapping[str, object],
+        viewport_sensor_id: str = "view_finder",
     ):
         self.id = agent_id
         self._sim = simulator
         self._sensor_position = ZERO_VECTOR  # top-left corner of the patch crop
         self._patch_res = patch_resolution
+        self.viewport_sensor_id = SensorID(viewport_sensor_id)
+        configured_sensor_ids = tuple(
+            SensorID(sensor_id) for sensor_id in sensor_configs
+        )
+        if self.viewport_sensor_id not in configured_sensor_ids:
+            raise ValueError(
+                f"viewport_sensor_id {self.viewport_sensor_id!r} must be in "
+                f"sensor_configs ({configured_sensor_ids!r})"
+            )
+        self._patch_ids = tuple(
+            SensorID(sensor_id)
+            for sensor_id in configured_sensor_ids
+            if sensor_id != self.viewport_sensor_id
+        )
+        if not self._patch_ids:
+            raise ValueError("sensor_configs must include at least one patch sensor")
 
     @property
     def state(self) -> AgentState:
         return AgentState(
             sensors={
-                self.VIEWPORT: SensorState(
+                self.viewport_sensor_id: SensorState(
                     position=ZERO_VECTOR,
                     rotation=qt.quaternion(*IDENTITY_QUATERNION),
                 ),
-                self.PATCH: SensorState(
-                    position=self._sensor_position,
-                    rotation=qt.quaternion(*IDENTITY_QUATERNION),
-                ),
+                **{
+                    sensor_id: SensorState(
+                        position=self._sensor_position,
+                        rotation=qt.quaternion(*IDENTITY_QUATERNION),
+                    )
+                    for sensor_id in self._patch_ids
+                },
             },
             position=ZERO_VECTOR,
             rotation=qt.quaternion(*IDENTITY_QUATERNION),
@@ -81,7 +98,7 @@ class ArcAgent:
         obs = AgentObservations()
         frame_raw = np.asarray(self._sim.env.observation_space.frame[-1])
         frame_rgba = _ARC_RGBA_PALETTE[frame_raw]
-        obs[self.VIEWPORT] = SensorObservation(raw=frame_raw, rgba=frame_rgba)
+        obs[self.viewport_sensor_id] = SensorObservation(raw=frame_raw, rgba=frame_rgba)
         x, y, _ = self._sensor_position
         x = int(x)
         y = int(y)
@@ -91,7 +108,8 @@ class ArcAgent:
         patch_rgba = frame_rgba[
             y : y + self._patch_res.height, x : x + self._patch_res.width
         ]
-        obs[self.PATCH] = SensorObservation(raw=patch_raw, rgba=patch_rgba)
+        for sensor_id in self._patch_ids:
+            obs[sensor_id] = SensorObservation(raw=patch_raw, rgba=patch_rgba)
         return obs
 
     def reset(self) -> None:

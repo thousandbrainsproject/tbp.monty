@@ -7,6 +7,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from .simulator import ArcAgiSimulator
+from .simulator import ArcAgiSimulator, ArcOracleRegion
 
-__all__ = ["ArcAgiSimulator"]
+__all__ = ["ArcAgiSimulator", "ArcOracleRegion"]

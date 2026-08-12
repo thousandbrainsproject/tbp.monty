@@ -996,12 +996,14 @@ class SnakeScanPolicy(MotorPolicy):
         self,
         agent_id: AgentID,
         sensor_id: SensorID | str = "patch",
+        frame_sensor_id: SensorID | str = "view_finder",
         frame_size: int | None = 64,
         patch_size: int = 8,
         stride: int = 8,
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
+        self.frame_sensor_id = SensorID(frame_sensor_id)
         self.frame_size = frame_size
         self.patch_size = patch_size
         self.stride = stride
@@ -1031,7 +1033,7 @@ class SnakeScanPolicy(MotorPolicy):
         return locations
 
     def _make_dynamic_scan(self, observations: Observations) -> list[VectorXYZ]:
-        frame = observations[self.agent_id][SensorID("view_finder")]["raw"]
+        frame = observations[self.agent_id][self.frame_sensor_id]["raw"]
         frame_height, frame_width = frame.shape[:2]
         return self._make_scan_locations(frame_width, frame_height)
 
@@ -1098,7 +1100,6 @@ class RandomGameWalk(MotorPolicy):
         patch_size: int = 8,
         stride: int = 4,
     ) -> None:
-
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
         self.frame_size = frame_size

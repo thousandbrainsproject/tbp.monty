@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
 import time
@@ -1101,14 +1102,13 @@ class EvidenceGraphLM(GraphLM):
         return pose.as_matrix().T
 
     def _object_id_to_features(self, object_id):
-        """Turn object ID into features that express object similarity.
+        """Convert an object ID to a stable categorical feature.
 
         Returns:
-            The object ID features.
+            A float32-safe 24-bit integer derived from SHA-256.
         """
-        # TODO H: Make this based on object similarity
-        # For now just taking sum of character ids in object name
-        return sum(ord(i) for i in object_id)
+        digest = hashlib.sha256(object_id.encode("utf-8")).digest()
+        return int.from_bytes(digest[:3], byteorder="big")
 
     def _fill_feature_weights_with_default(self, default: int) -> None:
         for input_channel, channel_tolerances in self.tolerances.items():

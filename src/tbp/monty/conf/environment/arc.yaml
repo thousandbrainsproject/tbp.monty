@@ -7,6 +7,7 @@ env_init_args:
     - _target_: tbp.monty.simulators.arc_agi.agents.ArcAgent
       _partial_: true
       agent_id: agent_id_0
+      viewport_sensor_id: view_finder
       sensor_configs: # For MontyExperiment
         view_finder:
           position: [0, 0, 0]
