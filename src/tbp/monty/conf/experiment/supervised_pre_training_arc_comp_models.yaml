@@ -2,12 +2,12 @@
 
 defaults:
   - /monty: evidencegraph_exp1000_e3_t3_tot2500
-  - /monty/motor_system_config: snake_scan_p1_s1
+  - /monty/motor_system_config: arc_compositional_scan
   - /monty/learning_module: evidence_2lm_arc
-  - /monty/sensor_module: arc_sprite_child_2sm
+  - /monty/sensor_module: arc_compositional_2sm
   - /monty/connectivity: 2lm_2sm
-  - /environment: arc_sprite_dataset
-  - /env_interface: train_arc_sprite
+  - /environment: compositional_arc
+  - /env_interface: train_arc
   - /env_interface/transform: none
   - /logging: silent_info_train
 
@@ -20,12 +20,13 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 1
     n_eval_epochs: 1
-    model_name_or_path: ''
+    model_name_or_path: ${constants.arc_pretrained_dir}/supervised_pre_training_arc_sprite_children/pretrained/
     match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
+      _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+      ids:
+        - learning_module_1
     seed: 42
     supervised_lm_ids:
-      - learning_module_0
+      - learning_module_1
     logging:
-      run_name: supervised_pre_training_arc_sprite_children
+      run_name: supervised_pre_training_arc_comp_models

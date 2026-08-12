@@ -32,6 +32,7 @@ from tbp.monty.simulators.arc_agi.actions import (
     GameUp,
     GameUse,
 )
+from tbp.monty.simulators.arc_agi.region_scan import SetArcRegionPose
 
 if TYPE_CHECKING:
     from tbp.monty.simulators.arc_agi import ArcAgiSimulator
@@ -55,6 +56,8 @@ class ArcAgent:
         self.id = agent_id
         self._sim = simulator
         self._sensor_position = ZERO_VECTOR  # top-left corner of the patch crop
+        self._display_sensor_position = ZERO_VECTOR
+        self._active_region_id: str | None = None
         self._patch_res = patch_resolution
         self.viewport_sensor_id = SensorID(viewport_sensor_id)
         configured_sensor_ids = tuple(
@@ -98,8 +101,12 @@ class ArcAgent:
         obs = AgentObservations()
         frame_raw = np.asarray(self._sim.env.observation_space.frame[-1])
         frame_rgba = _ARC_RGBA_PALETTE[frame_raw]
-        obs[self.viewport_sensor_id] = SensorObservation(raw=frame_raw, rgba=frame_rgba)
-        x, y, _ = self._sensor_position
+        obs[self.viewport_sensor_id] = SensorObservation(
+            raw=frame_raw,
+            rgba=frame_rgba,
+            oracle_regions=self._sim.oracle_regions,
+        )
+        x, y, _ = self._display_sensor_position
         x = int(x)
         y = int(y)
         patch_raw = frame_raw[
@@ -109,17 +116,50 @@ class ArcAgent:
             y : y + self._patch_res.height, x : x + self._patch_res.width
         ]
         for sensor_id in self._patch_ids:
-            obs[sensor_id] = SensorObservation(raw=patch_raw, rgba=patch_rgba)
+            patch = SensorObservation(
+                raw=patch_raw,
+                rgba=patch_rgba,
+                region_active=self._active_region_id is not None,
+            )
+            if self._active_region_id is not None:
+                region = self._sim.get_oracle_region(self._active_region_id)
+                patch["region_id"] = region.region_id
+                patch["object_label"] = region.object_label
+            obs[sensor_id] = patch
         return obs
 
     def reset(self) -> None:
         self._sensor_position = ZERO_VECTOR
+        self._display_sensor_position = ZERO_VECTOR
+        self._active_region_id = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(id={self.id}"
 
     def actuate_set_sensor_pose(self, action: SetSensorPose) -> None:
         self._sensor_position = action.location
+        self._display_sensor_position = action.location
+        self._active_region_id = None
+
+    def actuate_set_arc_region_pose(self, action: SetArcRegionPose) -> None:
+        region = self._sim.get_oracle_region(action.region_id)
+        x, y, z = action.display_location
+        display_position = (int(x), int(y))
+        if (
+            z != 0
+            or x != display_position[0]
+            or y != display_position[1]
+            or display_position not in region.display_positions
+        ):
+            raise ValueError(
+                f"Display location {action.display_location!r} is not a visible "
+                f"pixel in ARC oracle region {action.region_id!r}"
+            )
+        local_x = display_position[0] - region.display_origin[0]
+        local_y = display_position[1] - region.display_origin[1]
+        self._display_sensor_position = (float(x), float(y), 0.0)
+        self._sensor_position = (float(local_x), float(local_y), 0.0)
+        self._active_region_id = region.region_id
 
     def actuate_game_reset(self, action: GameReset) -> None:
         self._sim.env.step(action=action.arc_action)

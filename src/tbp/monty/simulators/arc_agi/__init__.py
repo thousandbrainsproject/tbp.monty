@@ -7,6 +7,26 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from .simulator import ArcAgiSimulator, ArcOracleRegion
+"""ARC-AGI simulator integration."""
 
-__all__ = ["ArcAgiSimulator", "ArcOracleRegion"]
+from importlib import import_module
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .region_scan import ArcRegionScanPolicy, SetArcRegionPose
+    from .simulator import ArcAgiSimulator, ArcOracleRegion
+
+__all__ = [
+    "ArcAgiSimulator",
+    "ArcOracleRegion",
+    "ArcRegionScanPolicy",
+    "SetArcRegionPose",
+]
+
+
+def __getattr__(name: str) -> Any:
+    if name in {"ArcRegionScanPolicy", "SetArcRegionPose"}:
+        return getattr(import_module(f"{__name__}.region_scan"), name)
+    if name in {"ArcAgiSimulator", "ArcOracleRegion"}:
+        return getattr(import_module(f"{__name__}.simulator"), name)
+    raise AttributeError(name)

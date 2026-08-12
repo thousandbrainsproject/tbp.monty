@@ -47,6 +47,7 @@ class ArcSpritePixelSensorModule(SensorModule):
     ) -> Message:
         palette_index = int(observation["raw"][0, 0])
         visible = palette_index >= 0
+        region_active = observation.get("region_active", True)
         return Message(
             location=self.location.copy(),
             morphological_features={
@@ -59,7 +60,7 @@ class ArcSpritePixelSensorModule(SensorModule):
                 else {}
             ),
             confidence=1.0,
-            use_state=visible and not motor_only_step,
+            use_state=visible and region_active and not motor_only_step,
             sender_id=self.sensor_module_id,
             sender_type="SM",
         )
