@@ -990,6 +990,8 @@ class InformedPolicy(BasePolicy):
             ), "Failed to return sensor to orientation"
 
 
+ARC_GAME_ACTIONS: list[type[Action]] = [GameUp, GameDown, GameLeft, GameRight]
+
 class SnakeScanPolicy(MotorPolicy):
     """Scan in a snake pattern using top-left patch-crop coordinates."""
 
@@ -1040,7 +1042,7 @@ class SnakeScanPolicy(MotorPolicy):
 
     def __call__(
         self,
-        ctx: RuntimeContext,  # noqa: ARG002
+        ctx: RuntimeContext,
         observations: Observations,
         state: MotorSystemState,  # noqa: ARG002
         percept: Message,  # noqa: ARG002
@@ -1052,8 +1054,12 @@ class SnakeScanPolicy(MotorPolicy):
             self._scan_locations = scan_locations
 
         if self._next_location_index == len(scan_locations):
-            raise StopIteration
+            # Game step
+            self._next_location_index = 0
+            action_cls: type[Action] = ctx.rng.choice(ARC_GAME_ACTIONS)
+            return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
 
+        # Monty step (saccade on frame)
         location = scan_locations[self._next_location_index]
         self._next_location_index += 1
         return MotorPolicyResult(
@@ -1084,8 +1090,6 @@ class SnakeScanPolicy(MotorPolicy):
 
 class RandomGameWalk(MotorPolicy):
     """Perform a random-walk to explore an object."""
-
-    GAME_ACTIONS: ClassVar[list[type[Action]]] = [GameUp, GameDown, GameLeft, GameRight]
 
     agent_id: AgentID
     sensor_id: SensorID
@@ -1126,7 +1130,7 @@ class RandomGameWalk(MotorPolicy):
         if self._step >= self.cadence:
             # Game step
             self._step = 0
-            action_cls: type[Action] = ctx.rng.choice(self.GAME_ACTIONS)
+            action_cls: type[Action] = ctx.rng.choice(ARC_GAME_ACTIONS)
             return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
 
         # Monty step (saccade on frame)
