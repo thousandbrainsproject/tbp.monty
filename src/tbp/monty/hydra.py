@@ -38,6 +38,13 @@ def ndarray_resolver(list_or_tuple: list | tuple) -> np.ndarray:
     return np.array(list_or_tuple)
 
 
+def full_resolver(*args) -> np.ndarray:
+    """Returns a numpy array using `full`."""
+    shape = args[:-1]
+    value = args[-1]
+    return np.full(shape, value)
+
+
 def ones_resolver(n: int) -> np.ndarray:
     """Returns a numpy array of ones."""
     return np.ones(n)
@@ -67,6 +74,7 @@ def register_resolvers() -> None:
     resolvers: dict[str, Callable[..., Any]] = {
         "monty.class": monty_class_resolver,
         "np.array": ndarray_resolver,
+        "np.full": full_resolver,
         "np.ones": ones_resolver,
         "np.list_eval": numpy_list_eval_resolver,
         "path.expanduser": path_expanduser_resolver,
