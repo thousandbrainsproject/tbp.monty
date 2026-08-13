@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
