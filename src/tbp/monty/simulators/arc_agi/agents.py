@@ -58,6 +58,17 @@ class ArcAgent:
         self._sim = simulator
         self._sensor_position = ZERO_VECTOR  # top-left corner of the patch crop
         self._patch_res = patch_resolution
+        self._game_step = 0
+
+    def _begin_game(self) -> None:
+        self._game_step = 0
+
+    def _advance_game(self) -> None:
+        self._game_step += 1
+
+    def _end_game(self) -> None:
+        self._game_step = -1
+
 
     @property
     def state(self) -> AgentState:
@@ -72,7 +83,7 @@ class ArcAgent:
                     rotation=qt.quaternion(*IDENTITY_QUATERNION),
                 ),
             },
-            position=ZERO_VECTOR,
+            position=(0.0, 0.0, float(self._game_step)),
             rotation=qt.quaternion(*IDENTITY_QUATERNION),
         )
 
@@ -105,25 +116,33 @@ class ArcAgent:
 
     def actuate_game_reset(self, action: GameReset) -> None:
         self._sim.env.step(action=action.arc_action)
+        self._begin_game()
 
     def actuate_game_up(self, action: GameUp) -> None:
         self._sim.env.step(action=action.arc_action)
+        self._advance_game()
 
     def actuate_game_down(self, action: GameDown) -> None:
         self._sim.env.step(action=action.arc_action)
+        self._advance_game()
 
     def actuate_game_left(self, action: GameLeft) -> None:
         self._sim.env.step(action=action.arc_action)
+        self._advance_game()
 
     def actuate_game_right(self, action: GameRight) -> None:
         self._sim.env.step(action=action.arc_action)
+        self._advance_game()
 
     def actuate_game_use(self, action: GameUse) -> None:
         self._sim.env.step(action=action.arc_action)
+        self._advance_game()
 
     def actuate_game_click(self, action: GameClick) -> None:
         data = {"x": action.x, "y": action.y}
         self._sim.env.step(action=action.arc_action, data=data)
+        self._advance_game()
 
     def actuate_game_undo(self, action: GameUndo) -> None:
         self._sim.env.step(action=action.arc_action)
+        self._advance_game()
