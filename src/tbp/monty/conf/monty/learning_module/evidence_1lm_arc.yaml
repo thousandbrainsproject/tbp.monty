@@ -1,0 +1,15 @@
+# @package experiment.config.monty_config.learning_modules
+
+learning_module_0:
+  _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+  max_match_distance: 1.0
+  tolerances:
+    patch:
+      palette_histogram: ${np.array:[0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625]}
+  feature_weights:
+    patch:
+      palette_histogram: ${np.array:[0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625]}
+  max_graph_size: 128
+  num_model_voxels_per_dim: 128
+  max_nodes_per_graph: 4096
+  object_evidence_threshold: 3

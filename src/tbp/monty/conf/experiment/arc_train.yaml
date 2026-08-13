@@ -3,7 +3,8 @@
 defaults:
   - /monty: graph_exp500_e3_t3_tot2500
   - /monty/motor_system_config: snake_scan
-  - /monty/learning_module: displacement_delta_d0001
+  # - /monty/learning_module: displacement_delta_d0001
+  - /monty/learning_module: evidence_1lm_arc
   - /monty/sensor_module: arc_patch
   - /monty/connectivity: 1lm_1sm
   - /environment: arc
