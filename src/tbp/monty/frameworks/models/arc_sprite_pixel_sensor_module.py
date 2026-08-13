@@ -22,7 +22,7 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.memento import Memento
 
-__all__ = ["ArcSpritePixelSensorModule"]
+__all__ = ["ArcCompositionalPixelSensorModule", "ArcSpritePixelSensorModule"]
 
 
 class ArcSpritePixelSensorModule(SensorModule):
@@ -70,3 +70,22 @@ class ArcSpritePixelSensorModule(SensorModule):
 
     def state_dict(self) -> Memento:
         return {}
+
+
+class ArcCompositionalPixelSensorModule(ArcSpritePixelSensorModule):
+    """Provide palette input during map scanning and region emission."""
+
+    def step(
+        self,
+        ctx: RuntimeContext,
+        observation: SensorObservation,
+        motor_only_step: bool = False,
+    ) -> Message:
+        message = super().step(ctx, observation, motor_only_step)
+        phase = observation.get("region_phase")
+        message.use_state = bool(
+            message.non_morphological_features
+            and phase in {None, "emit"}
+            and not motor_only_step
+        )
+        return message

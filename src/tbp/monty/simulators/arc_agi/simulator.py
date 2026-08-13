@@ -195,6 +195,7 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
 
         self.game_id = game_id
         self._env = self._arcade.make(game_id=game_id)
+        self._last_game_state = self.env.observation_space.state
         self._refresh_oracle_regions()
 
     @property
@@ -206,6 +207,16 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
     def oracle_regions(self) -> tuple[ArcOracleRegion, ...]:
         """Return frozen privileged regions for the current reset frame."""
         return self._oracle_regions
+
+    @property
+    def current_level_number(self) -> int:
+        """Return the active ARC level using one-based numbering."""
+        return self.env._game.level_index + 1
+
+    @property
+    def last_game_state(self) -> GameState:
+        """Return the state observed before any automatic terminal reset."""
+        return self._last_game_state
 
     def get_oracle_region(self, region_id: str) -> ArcOracleRegion:
         """Return one frozen region or fail on a stale/unknown identifier.
@@ -253,6 +264,7 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
             reset_requested = reset_requested or isinstance(action, GameReset)
 
         game_state = self.env.observation_space.state
+        self._last_game_state = game_state
 
         # If the game ends up in a win or lose state, we want to
         # reset the game so that Monty can continue exploring
@@ -278,6 +290,7 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
         # We're hijacking the `add_object` method to switch games
         self.game_id = name
         self._env = self._arcade.make(game_id=name)
+        self._last_game_state = self.env.observation_space.state
         self._refresh_oracle_regions()
         return ObjectInfo(semantic_id=SemanticID(0), object_id=ObjectID(0))
 
@@ -286,6 +299,7 @@ class ArcAgiSimulator(SimulatedObjectEnvironment):
 
     def reset(self):
         self.env.step(GameAction.RESET)
+        self._last_game_state = self.env.observation_space.state
         self._refresh_oracle_regions()
         for agent in self._agents.values():
             agent.reset()

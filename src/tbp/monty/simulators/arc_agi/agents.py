@@ -58,6 +58,7 @@ class ArcAgent:
         self._sensor_position = ZERO_VECTOR  # top-left corner of the patch crop
         self._display_sensor_position = ZERO_VECTOR
         self._active_region_id: str | None = None
+        self._region_phase: str | None = None
         self._patch_res = patch_resolution
         self.viewport_sensor_id = SensorID(viewport_sensor_id)
         configured_sensor_ids = tuple(
@@ -119,12 +120,17 @@ class ArcAgent:
             patch = SensorObservation(
                 raw=patch_raw,
                 rgba=patch_rgba,
-                region_active=self._active_region_id is not None,
+                region_active=(
+                    self._active_region_id is not None and self._region_phase == "scan"
+                ),
             )
             if self._active_region_id is not None:
                 region = self._sim.get_oracle_region(self._active_region_id)
                 patch["region_id"] = region.region_id
                 patch["object_label"] = region.object_label
+                patch["region_phase"] = self._region_phase
+                patch["region_anchor"] = region.global_anchor
+                patch["region_location"] = self._sensor_position
             obs[sensor_id] = patch
         return obs
 
@@ -132,6 +138,7 @@ class ArcAgent:
         self._sensor_position = ZERO_VECTOR
         self._display_sensor_position = ZERO_VECTOR
         self._active_region_id = None
+        self._region_phase = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(id={self.id}"
@@ -140,6 +147,7 @@ class ArcAgent:
         self._sensor_position = action.location
         self._display_sensor_position = action.location
         self._active_region_id = None
+        self._region_phase = None
 
     def actuate_set_arc_region_pose(self, action: SetArcRegionPose) -> None:
         region = self._sim.get_oracle_region(action.region_id)
@@ -155,11 +163,15 @@ class ArcAgent:
                 f"Display location {action.display_location!r} is not a visible "
                 f"pixel in ARC oracle region {action.region_id!r}"
             )
-        local_x = display_position[0] - region.display_origin[0]
-        local_y = display_position[1] - region.display_origin[1]
         self._display_sensor_position = (float(x), float(y), 0.0)
-        self._sensor_position = (float(local_x), float(local_y), 0.0)
+        if action.phase == "scan":
+            local_x = display_position[0] - region.display_origin[0]
+            local_y = display_position[1] - region.display_origin[1]
+            self._sensor_position = (float(local_x), float(local_y), 0.0)
+        else:
+            self._sensor_position = self._display_sensor_position
         self._active_region_id = region.region_id
+        self._region_phase = action.phase
 
     def actuate_game_reset(self, action: GameReset) -> None:
         self._sim.env.step(action=action.arc_action)

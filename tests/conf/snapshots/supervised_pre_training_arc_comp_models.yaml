@@ -3,22 +3,26 @@ experiment:
     do_eval: false
     do_train: true
     monty_config:
-      monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
+      monty_class: ${monty.class:tbp.monty.frameworks.models.arc_compositional.MontyForArcCompositionalLearning}
       monty_args:
         num_exploratory_steps: 1000
         min_eval_steps: 3
         min_train_steps: 3
-        max_total_steps: 2500
+        max_total_steps: 12000
+        child_lm_index: 0
+        parent_lm_index: 1
+        region_sensor_id: patch_0
       motor_system_config:
         policy_selector:
           policy:
-            _target_: tbp.monty.frameworks.models.motor_policies.SnakeScanPolicy
+            _target_: tbp.monty.simulators.arc_agi.ArcCompositionalScanPolicy
             agent_id: agent_id_0
-            sensor_id: patch_0
+            child_sensor_id: patch_0
+            map_sensor_id: patch_1
             frame_sensor_id: view_finder
             frame_size: null
-            patch_size: 1
-            stride: 1
+            region_index: 0
+            recognition_passes: 2
           _target_: tbp.monty.frameworks.models.motor_policy_selectors.SinglePolicySelector
         _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
       learning_modules:
@@ -57,7 +61,7 @@ experiment:
           _target_: tbp.monty.frameworks.models.arc_sprite_pixel_sensor_module.ArcSpritePixelSensorModule
           sensor_module_id: patch_0
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.arc_sprite_pixel_sensor_module.ArcSpritePixelSensorModule
+          _target_: tbp.monty.frameworks.models.arc_sprite_pixel_sensor_module.ArcCompositionalPixelSensorModule
           sensor_module_id: patch_1
         sensor_module_2:
           _target_: tbp.monty.frameworks.models.sensor_modules.Probe
@@ -77,6 +81,7 @@ experiment:
     environment:
       env_init_args:
         data_path: ./arc_agi/games
+        sprite_manifest_path: ${path.expanduser:${oc.env:MONTY_DATA}/arc/sprite_children/v2/manifest.jsonl}
         game_id: ls20
         agents:
         - _target_: tbp.monty.simulators.arc_agi.agents.ArcAgent
@@ -109,19 +114,16 @@ experiment:
       - sm00
       - sm01
       - ar25
-      - bp35
       - cd82
       - cn04
       - dc22
       - ft09
       - g50t
       - ka59
-      - lf52
       - lp85
       - ls20
       - m0r0
       - r11l
-      - re86
       - s5i5
       - sb26
       - sc25
@@ -154,9 +156,9 @@ experiment:
       wandb_group: debugging
       run_name: supervised_pre_training_arc_comp_models
     show_sensor_output: false
-    max_train_steps: 6000
-    max_eval_steps: 6000
-    max_total_steps: 6000
+    max_train_steps: 12000
+    max_eval_steps: 12000
+    max_total_steps: 12000
     n_train_epochs: 1
     n_eval_epochs: 1
     model_name_or_path: ${constants.arc_pretrained_dir}/supervised_pre_training_arc_sprite_children/pretrained/

@@ -137,7 +137,7 @@ class ArcPatchSensorModule(SensorModule):
             non_morphological_features={
                 "palette_histogram": histogram,
                 "transition_density": transitions,
-                "rgba": rgba
+                "rgba": rgba,
             },
             confidence=1.0,
             use_state=not motor_only_step,

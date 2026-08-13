@@ -1,0 +1,35 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  # Initial frames with at least one manifest-backed, fully visible sprite region.
+  object_names:
+  - sm00
+  - sm01
+  - ar25
+  - cd82
+  - cn04
+  - dc22
+  - ft09
+  - g50t
+  - ka59
+  - lp85
+  - ls20
+  - m0r0
+  - r11l
+  - s5i5
+  - sb26
+  - sc25
+  - sk48
+  - sp80
+  - su15
+  - tn36
+  - tr87
+  - tu93
+  - vc33
+  - wa30
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations:
+      - [0, 0, 0]
+train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

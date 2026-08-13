@@ -5,3 +5,4 @@ agent_id: agent_id_0
 sensor_id: patch_0
 frame_sensor_id: view_finder
 region_index: 0
+recognition_passes: 2
