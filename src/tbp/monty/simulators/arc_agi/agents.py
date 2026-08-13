@@ -37,7 +37,6 @@ from tbp.monty.simulators.arc_agi.region_scan import SetArcRegionPose
 if TYPE_CHECKING:
     from tbp.monty.simulators.arc_agi import ArcAgiSimulator
 
-
 _ARC_RGBA_PALETTE = np.array(
     [tuple(bytes.fromhex(COLOR_MAP[index][1:])) for index in range(len(COLOR_MAP))],
     dtype=np.uint8,
@@ -98,13 +97,17 @@ class ArcAgent:
                 ),
                 **{
                     sensor_id: SensorState(
-                        position=self._sensor_position,
+                        position=(
+                            self._sensor_position[0],
+                            self._sensor_position[1],
+                            self._game_step,
+                        ),
                         rotation=qt.quaternion(*IDENTITY_QUATERNION),
                     )
                     for sensor_id in self._patch_ids
                 },
             },
-            position=(0.0, 0.0, float(self._game_step)),
+            position=ZERO_VECTOR,
             rotation=qt.quaternion(*IDENTITY_QUATERNION),
         )
 
