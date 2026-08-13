@@ -5,10 +5,10 @@ learning_module_0:
   max_match_distance: 1.0
   tolerances:
     patch:
-      palette_histogram: ${np.array:[0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625]}
+      palette_histogram: ${np.full:16, 0.0625}
   feature_weights:
     patch:
-      palette_histogram: ${np.array:[0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625, 0.0625]}
+      palette_histogram: ${np.full:16, 0.0625}
   max_graph_size: 128
   num_model_voxels_per_dim: 128
   max_nodes_per_graph: 4096
