@@ -21,6 +21,7 @@ import torch
 from omegaconf import DictConfig
 
 from tbp.monty.frameworks.run_parallel import main
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 
@@ -46,7 +47,7 @@ class RunParallelTest(unittest.TestCase):
 
         # Run the training experiments once for this whole test suite.
         # serial run
-        exp = hydra.utils.instantiate(cls.supervised_pre_training_cfg.experiment)
+        exp = instantiate_experiment(cls.supervised_pre_training_cfg.experiment)
         with exp:
             exp.run()
 
@@ -124,7 +125,7 @@ class RunParallelTest(unittest.TestCase):
 
     def test_eval_parallel_equals_serial_when_epochs_equals_rotations(self) -> None:
         # serial run
-        exp = hydra.utils.instantiate(self.eval_cfg.experiment)
+        exp = instantiate_experiment(self.eval_cfg.experiment)
         with exp:
             exp.run()
 
@@ -155,7 +156,7 @@ class RunParallelTest(unittest.TestCase):
 
     def test_eval_parallel_equals_serial_when_epochs_less_than_rotations(self) -> None:
         # serial run
-        exp = hydra.utils.instantiate(self.eval_lt_cfg.experiment)
+        exp = instantiate_experiment(self.eval_lt_cfg.experiment)
         with exp:
             exp.run()
 
@@ -180,7 +181,7 @@ class RunParallelTest(unittest.TestCase):
         self,
     ) -> None:
         # serial run
-        exp = hydra.utils.instantiate(self.eval_gt_cfg.experiment)
+        exp = instantiate_experiment(self.eval_gt_cfg.experiment)
         with exp:
             exp.run()
 

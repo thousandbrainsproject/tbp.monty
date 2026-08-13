@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: unknown
 improved-metric: numsteps, goal-policy
 output-type: PR, monty-feature
-skills: python, monty, refactoring
+skills: python, monty-advanced, refactoring
 contributor: tristanls-tbp, scottcanoe
 status: completed
 ---

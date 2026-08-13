@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import copy
 import datetime
 import logging
 import logging.config
@@ -17,6 +16,7 @@ import pprint
 from pathlib import Path
 from typing import Any, Literal
 
+import hydra
 import numpy as np
 import torch
 from omegaconf import DictConfig
@@ -29,7 +29,9 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
 )
+from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import (
@@ -42,6 +44,7 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
+from tbp.monty.memento import Memento
 
 __all__ = ["MontyExperiment"]
 
@@ -56,6 +59,15 @@ class MontyExperiment:
     and episode).
     """
 
+    model: MontyBase
+    env_interface: Interface | None
+
+    _match_criterion: MatchCriterion
+    _recreation_mode: bool
+    _monty_cfg: DictConfig | None  # dehydrated Monty config
+    _monty_memo: Memento
+    _step_hook: StepHook
+
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
 
@@ -63,6 +75,12 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.config = config
+
+        # Feature flag for "recreation" episode/epoch strategy.
+        self._recreation_mode = False
+        logger.warning(f"_recreation_mode = {self._recreation_mode}")
+        self._monty_cfg = None
+        self._monty_memo = {}
 
         self.rng = np.random.RandomState(config["seed"])
 
@@ -78,7 +96,7 @@ class MontyExperiment:
             self.model_path = Path(config["model_name_or_path"])
         else:
             self.model_path = None
-        self.min_lms_match = config["min_lms_match"]
+        self._match_criterion = config["match_criterion"]
         self.show_sensor_output = config["show_sensor_output"]
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
@@ -93,6 +111,8 @@ class MontyExperiment:
         self.eval_episodes = config.get("episode", 0)
 
         self._rng_seed_history: list[int] = []
+
+        self._step_hook = config.pop("step_hook", NoOpStepHook())
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -118,77 +138,22 @@ class MontyExperiment:
         """
         self.init_loggers(self.config["logging"])
         logger.info(self.config)
-        self.model: MontyBase = self.init_model(
-            monty_config=config["monty_config"],
-            model_path=self.model_path,
-        )
-        self.load_environment_interfaces(config)
-        self.init_monty_data_loggers(self.config["logging"])
-        self.init_counters()
 
-    def init_model(self, monty_config, model_path=None):
-        """Initialize the Monty model.
+        self._create_monty()
 
-        Args:
-            monty_config: configuration for the Monty class.
-            model_path: Optional model checkpoint. Can be full file name or just the
-                directory containing the "model.pt" file saved from a previous run.
-
-        Returns:
-            Monty class instance
-        """
-        # Make monty_config a dict from a DictConfig, so we can edit it.
-        monty_config = dict(copy.deepcopy(monty_config))
-
-        learning_modules = monty_config.pop("learning_modules")
-        for lm_id, lm in learning_modules.items():
-            lm.learning_module_id = lm_id
-
-        sensor_modules = monty_config.pop("sensor_modules")
-        motor_system = monty_config.pop("motor_system_config")
-
-        # Get mapping between sensor modules, learning modules and agents
-        lm_len = len(learning_modules)
-        sm_to_lm_matrix = monty_config.pop("sm_to_lm_matrix", [[]] * lm_len)
-        lm_to_lm_matrix = monty_config.pop("lm_to_lm_matrix", [[]] * lm_len)
-        lm_to_lm_vote_matrix = monty_config.pop("lm_to_lm_vote_matrix", [[]] * lm_len)
-        sm_to_agent_dict = monty_config.pop("sm_to_agent_dict")
-
-        # Create monty model
-        # FIXME: Kept for backward compatibility
-        monty_args = monty_config.pop("monty_args", {})
-        monty_class = monty_config.pop("monty_class")
-        model = monty_class(
-            sensor_modules=list(sensor_modules.values()),
-            learning_modules=list(learning_modules.values()),
-            motor_system=motor_system,
-            sm_to_agent_dict=sm_to_agent_dict,
-            sm_to_lm_matrix=sm_to_lm_matrix,
-            lm_to_lm_matrix=lm_to_lm_matrix,
-            lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
-            **monty_config,
-            # FIXME: Kept for backward compatibility
-            **monty_args,
-        )
-        model.min_lms_match = self.min_lms_match
-
-        if monty_args["num_exploratory_steps"] > self.max_total_steps:
-            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            print(
-                "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
-            )
-            self.max_total_steps = new_max_steps
-
-        # Load from checkpoint
-        if model_path:
+        if self.model_path:
+            # Load from checkpoint
+            model_path = self.model_path
+            # Can be full file name or just the directory containing
+            # the "model.pt" file saved from a previous run.
             if "model.pt" not in model_path.parts:
                 model_path = model_path / "model.pt"
             state_dict = torch.load(model_path, weights_only=False)
-            model.load_state_dict(state_dict)
+            self.model.load_state_dict(state_dict)
 
-        return model
+        self.load_environment_interfaces(config)
+        self.init_monty_data_loggers(self.config["logging"])
+        self.init_counters()
 
     def init_env(self, env_init_func, env_init_args):
         self.env = env_init_func(**env_init_args)
@@ -261,10 +226,6 @@ class MontyExperiment:
         self.env_interface = None
         self.eval_epochs = 0
         self.train_epochs = 0
-
-    ####
-    # Logging
-    ####
 
     @property
     def logger_args(self):
@@ -458,15 +419,85 @@ class MontyExperiment:
 
         return self.experiment_mode, epoch, episode
 
-    ####
-    # Methods for running the experiment
-    ####
+    def _create_monty(self) -> None:
+        """Create a Monty model from dehydrated config.
 
-    def pre_step(self, _step, _observation):
+        **WARNING:** `self._monty_cfg` must be initialized
+        with the dehydrated config before calling this method.
+
+        Raises:
+            ValueError: If `self._monty_cfg` is not initialized
+        """
+        if self._monty_cfg is None:
+            raise ValueError("`self._monty_cfg` is not initialized")
+
+        # create a shallow `dict` so we can use `pop()` to remove consumed elements
+        config = dict(self._monty_cfg)
+        instantiate = hydra.utils.instantiate
+
+        learning_modules = instantiate(config.pop("learning_modules"))
+        for lm_id, lm in learning_modules.items():
+            lm.learning_module_id = lm_id
+            if self._recreation_mode:
+                lm.init_from_ltm()  # TODO: init should have already done everything
+
+        sensor_modules = instantiate(config.pop("sensor_modules"))
+        motor_system = instantiate(config.pop("motor_system_config"))
+
+        # Create mapping between sensor modules, learning modules and agents
+        sm_to_lm_matrix = instantiate(config.pop("sm_to_lm_matrix"))
+        lm_to_lm_matrix = instantiate(config.pop("lm_to_lm_matrix"))
+        lm_to_lm_vote_matrix = instantiate(config.pop("lm_to_lm_vote_matrix"))
+        sm_to_agent_dict = instantiate(config.pop("sm_to_agent_dict"))
+
+        # Create monty model
+        monty_args = config.pop("monty_args", {})
+        monty_class = config.pop("monty_class")
+        model = monty_class(
+            sensor_modules=list(sensor_modules.values()),
+            learning_modules=list(learning_modules.values()),
+            motor_system=motor_system,
+            sm_to_agent_dict=sm_to_agent_dict,
+            sm_to_lm_matrix=sm_to_lm_matrix,
+            lm_to_lm_matrix=lm_to_lm_matrix,
+            lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
+            # Pass any leftover configuration paramters downstream to monty_class
+            **config,
+            **monty_args,
+        )
+        model._match_criterion = self._match_criterion
+
+        if monty_args["num_exploratory_steps"] > self.max_total_steps:
+            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
+            logger.warning(
+                "max_total_steps is set < num_exploratory_steps + max_train_steps."
+                f" Resetting it to {new_max_steps}"
+            )
+            self.max_total_steps = new_max_steps
+
+        self.model = model
+
+    def _snapshot_monty(self) -> None:
+        """Capture episodic state of Monty model."""
+        self._monty_memo = self.model.snapshot()
+
+    def _restore_monty(self) -> None:
+        """Recreate episodic state of Monty model."""
+        if self._recreation_mode:
+            # TODO: we _should_ be able to create Monty _outside_ this condition
+            if self._monty_memo:
+                self._create_monty()
+                self.model.restore(self._monty_memo)
+            self.logger_handler.model = self.model
+        else:
+            self.model.reset()
+        self.model.set_experiment_mode(self.experiment_mode)
+
+    def pre_step(self, _step, _observation) -> None:
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
 
-    def post_step(self, _step, _observation):
+    def post_step(self, _step, _observation) -> None:
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 
@@ -482,6 +513,14 @@ class MontyExperiment:
             self.pre_step(step, observations)
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
+                actions = self._step_hook(
+                    ctx,
+                    self.model,
+                    self.supervised_lm_ids if self.supervised_lm_ids else [],
+                    step,
+                    observations,
+                    actions,
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -500,7 +539,7 @@ class MontyExperiment:
 
         self.post_episode(step)
 
-    def pre_episode(self):
+    def pre_episode(self) -> None:
         """Call pre_episode on elements in experiment and set mode."""
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
@@ -515,7 +554,8 @@ class MontyExperiment:
 
         self.reset_episode_rng()
 
-        self.model.pre_episode()
+        self._restore_monty()
+
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps
@@ -527,7 +567,7 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def post_episode(self, steps):
+    def post_episode(self, steps) -> None:
         """Call post_episode on elements in experiment and increment counters.
 
         General order of post episode should be:
@@ -541,7 +581,9 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
-        self.model.post_episode()
+
+        self.model.update_ltm()
+        self._snapshot_monty()
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
@@ -576,7 +618,7 @@ class MontyExperiment:
 
         self.post_epoch()
 
-    def pre_epoch(self):
+    def pre_epoch(self) -> None:
         """Set environment interface and call sub pre_epoch functions."""
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(f"running train epoch {self.train_epochs}")
@@ -589,7 +631,7 @@ class MontyExperiment:
         self.env_interface.pre_epoch()
         self.logger_handler.pre_epoch(self.logger_args)
 
-    def post_epoch(self):
+    def post_epoch(self) -> None:
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
         self.save_state_dir(output_dir=self.output_dir / f"{self.train_epochs}")
@@ -602,7 +644,7 @@ class MontyExperiment:
             self.eval_epochs += 1
             self.eval_env_interface.post_epoch()
 
-    def run(self):
+    def run(self) -> None:
         """Run the experiment."""
         if self.do_train:
             self.train()
@@ -610,7 +652,7 @@ class MontyExperiment:
         if self.do_eval:
             self.evaluate()
 
-    def train(self):
+    def train(self) -> None:
         """Run n_train_epochs."""
         logger.info(f"running {self.n_train_epochs} train epochs")
         self.experiment_mode = ExperimentMode.TRAIN
@@ -620,7 +662,7 @@ class MontyExperiment:
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
 
-    def evaluate(self):
+    def evaluate(self) -> None:
         """Run n_eval_epochs."""
         logger.info(f"running {self.n_eval_epochs} eval epochs")
         self.experiment_mode = ExperimentMode.EVAL
@@ -681,7 +723,9 @@ class MontyExperiment:
         for k in state_dict_keys:
             setattr(self, k, exp_state_dict[k])
 
-    def close(self):
+    def close(self) -> None:
+        self._step_hook.close()
+
         env = getattr(self, "env", None)
         if env is not None:
             env.close()

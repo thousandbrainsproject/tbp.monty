@@ -12,6 +12,7 @@ import pytest
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -61,7 +62,7 @@ class SensorModuleTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_can_set_up(self):
         """Check that correct features are returned by sensor module."""
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -81,7 +82,7 @@ class SensorModuleTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_features_in_sensor(self):
         """Check that correct features are returned by sensor module."""
-        exp = hydra.utils.instantiate(self.sensor_feature_cfg.experiment)
+        exp = instantiate_experiment(self.sensor_feature_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -114,7 +115,7 @@ class SensorModuleTest(unittest.TestCase):
                     )
 
     def test_feature_change_sm(self):
-        exp = hydra.utils.instantiate(self.feature_change_sensor_cfg.experiment)
+        exp = instantiate_experiment(self.feature_change_sensor_cfg.experiment)
         with exp:
             exp.run()
             # TODO: test that only new features are given to LM

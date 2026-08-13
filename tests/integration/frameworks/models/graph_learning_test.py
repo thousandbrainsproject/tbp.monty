@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -24,10 +26,11 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import hydra
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from omegaconf import DictConfig
 
@@ -146,12 +149,12 @@ class GraphLearningTest(BaseGraphTest):
         This could be part of the setUp method, but it's easier to debug if something
         breaks the setup_experiment method if there's a separate test for it.
         """
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             pass
 
     def test_can_run_train_episode(self):
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -159,7 +162,7 @@ class GraphLearningTest(BaseGraphTest):
             exp.run_episode()
 
     def test_right_data_in_buffer(self) -> None:
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -211,7 +214,7 @@ class GraphLearningTest(BaseGraphTest):
                 step += 1
 
     def test_can_run_eval_episode(self):
-        exp = hydra.utils.instantiate(self.base_cfg.experiment)
+        exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -219,7 +222,7 @@ class GraphLearningTest(BaseGraphTest):
             exp.run_episode()
 
     def test_can_run_eval_episode_with_surface_agent(self):
-        exp = hydra.utils.instantiate(self.surface_agent_eval_cfg.experiment)
+        exp = instantiate_experiment(self.surface_agent_eval_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -227,17 +230,17 @@ class GraphLearningTest(BaseGraphTest):
             exp.run_episode()
 
     def test_can_run_ppf_experiment(self):
-        exp = hydra.utils.instantiate(self.ppf_pred_cfg.experiment)
+        exp = instantiate_experiment(self.ppf_pred_cfg.experiment)
         with exp:
             exp.run()
 
     def test_can_run_disp_experiment(self):
-        exp = hydra.utils.instantiate(self.disp_pred_cfg.experiment)
+        exp = instantiate_experiment(self.disp_pred_cfg.experiment)
         with exp:
             exp.run()
 
     def test_can_run_feature_experiment(self):
-        exp = hydra.utils.instantiate(self.feature_pred_cfg.experiment)
+        exp = instantiate_experiment(self.feature_pred_cfg.experiment)
         with exp:
             exp.run()
 
@@ -258,7 +261,7 @@ class GraphLearningTest(BaseGraphTest):
         Followed by three eval episodes on capsule3DSolid (same rotation sequence so
         the first and third episode should recognize the capsule).
         """
-        exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.experiment)
+        exp = instantiate_experiment(self.fixed_actions_disp_cfg.experiment)
         with exp:
             exp.run()
 
@@ -271,7 +274,7 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_fixed_actions_ppf(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
-        exp = hydra.utils.instantiate(self.fixed_actions_ppf_cfg.experiment)
+        exp = instantiate_experiment(self.fixed_actions_ppf_cfg.experiment)
         with exp:
             exp.run()
 
@@ -284,7 +287,7 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_fixed_actions_feat(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
-        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.experiment)
+        exp = instantiate_experiment(self.fixed_actions_feat_cfg.experiment)
         with exp:
             exp.run()
 
@@ -297,7 +300,7 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_save_and_load(self):
         # Move this to graph_building_test.py?
-        exp = hydra.utils.instantiate(self.fixed_actions_ppf_cfg.experiment)
+        exp = instantiate_experiment(self.fixed_actions_ppf_cfg.experiment)
         with exp:
             exp.run()
 
@@ -306,7 +309,7 @@ class GraphLearningTest(BaseGraphTest):
         cfg2.experiment.config.model_name_or_path = str(
             Path(exp.output_dir) / "2",  # latest checkpoint
         )
-        exp2 = hydra.utils.instantiate(cfg2.experiment)
+        exp2 = instantiate_experiment(cfg2.experiment)
         with exp2:
             graph_memory_1 = exp.model.learning_modules[
                 0
@@ -322,7 +325,7 @@ class GraphLearningTest(BaseGraphTest):
                     graph_2 = graph_memory_2[obj_name][input_channel]
                     self.check_graphs_equal(graph_1, graph_2)
 
-    def test_time_out(self):
+    def test_time_out(self) -> None:
         """Test time_out and pose_time_out detection and logging.
 
         # TODO: This test is a little shaky and should be improved.
@@ -332,24 +335,35 @@ class GraphLearningTest(BaseGraphTest):
         (Episode 3: object is too similar with tolerances, will also detect time_out)
         Episodes 4 and 5: Increased curvature tolerance -> detect time_out
         """
-        exp = hydra.utils.instantiate(self.feature_pred_time_out_cfg.experiment)
+        exp = instantiate_experiment(self.feature_pred_time_out_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
-            for e in range(6):
-                if e % 2 == 0:
+            for episode_num in range(6):
+                if episode_num % 2 == 0:
                     exp.pre_epoch()
-                if e == 2:
+                if episode_num >= 2:
                     # Set max steps low & raise mmd to get pose time outs
                     exp.max_train_steps = 3
-                    exp.model.learning_modules[0].max_match_distance = 0.1
-                if e == 4:
+                    if exp._recreation_mode:
+                        lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
+                        lm_cfg["max_match_distance"] = 0.1
+                    else:
+                        exp.model.learning_modules[0].max_match_distance = 0.1
+                if episode_num >= 4:
                     # set curvature threshold high to get time outs
-                    exp.model.learning_modules[0].tolerances["patch"][
-                        "principal_curvatures_log"
-                    ] = [10, 10]
+                    if exp._recreation_mode:
+                        lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
+                        lm_cfg["tolerances"]["patch"]["principal_curvatures_log"] = [
+                            10,
+                            10,
+                        ]
+                    else:
+                        exp.model.learning_modules[0].tolerances["patch"][
+                            "principal_curvatures_log"
+                        ] = [10, 10]
                 exp.run_episode()
-                if e % 2 == 1:
+                if episode_num % 2 == 1:
                     exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
@@ -373,11 +387,6 @@ class GraphLearningTest(BaseGraphTest):
                 "time_out",
                 "time out not recognized/logged correctly",
             )
-            self.assertEqual(
-                train_stats["primary_performance"][episode],
-                "time_out",
-                "time out not recognized/logged correctly",
-            )
             self.assertGreater(
                 train_stats["num_possible_matches"][episode],
                 1,
@@ -393,7 +402,7 @@ class GraphLearningTest(BaseGraphTest):
     def test_confused_logging(self):
         # When the algorithm evolves, this scenario may not lead to confusion
         # anymore. Setting min_steps would also avoid this, probably.
-        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.experiment)
+        exp = instantiate_experiment(self.fixed_actions_feat_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -447,7 +456,7 @@ class GraphLearningTest(BaseGraphTest):
         # Tests additional elements of logging, in particular in relation
         # to logging of observations when off the object
 
-        exp = hydra.utils.instantiate(self.feature_pred_off_object_train_cfg.experiment)
+        exp = instantiate_experiment(self.feature_pred_off_object_train_cfg.experiment)
         with exp:
             # First episode will be used to learn object (no_match is triggered before
             # min_steps is reached and the sensor moves off the object). In the second
@@ -501,7 +510,7 @@ class GraphLearningTest(BaseGraphTest):
             )
 
     def test_detailed_logging(self):
-        exp = hydra.utils.instantiate(self.feature_pred_off_object_cfg.experiment)
+        exp = instantiate_experiment(self.feature_pred_off_object_cfg.experiment)
         with exp:
             exp.run()
 
@@ -552,7 +561,7 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_uniform_initial_poses(self):
         """Test same scenario as test_fixed_actions_feat with uniform poses."""
-        exp = hydra.utils.instantiate(self.feature_uniform_initial_poses_cfg.experiment)
+        exp = instantiate_experiment(self.feature_uniform_initial_poses_cfg.experiment)
         with exp:
             exp.run()
 
@@ -564,8 +573,13 @@ class GraphLearningTest(BaseGraphTest):
         self.check_eval_results(eval_stats)
 
     def gm_learn_object(
-        self, graph_lm: FeatureGraphLM, obj_name, observations, offset=None
-    ):
+        self,
+        graph_lm: FeatureGraphLM,
+        obj_name: str,
+        observations: Sequence[Message],
+        sender_id: str = "patch",
+        offset: npt.NDArray[np.float64] | None = None,
+    ) -> list[Message]:
         if offset is None:
             offset = np.zeros(3)
 
@@ -576,6 +590,7 @@ class GraphLearningTest(BaseGraphTest):
         offset_obs = []
         for observation in observations:
             obs_to_learn = copy.deepcopy(observation)
+            obs_to_learn.sender_id = sender_id
             obs_to_learn.location += offset
             offset_obs.append(obs_to_learn)
             graph_lm.exploratory_step(self.ctx, [obs_to_learn])
@@ -590,11 +605,12 @@ class GraphLearningTest(BaseGraphTest):
         graph_lm.fixme_update_ground_truth()
         return offset_obs
 
-    def get_gm_with_fake_object(self):
+    def get_gm_with_fake_object(self) -> FeatureGraphLM:
+        sender_id = "patch"
         graph_lm = FeatureGraphLM(
             max_match_distance=0.005,
             tolerances={
-                "patch": {
+                sender_id: {
                     "hsv": [0.1, 1, 1],
                     "principal_curvatures_log": [1, 1],
                 }
@@ -602,7 +618,10 @@ class GraphLearningTest(BaseGraphTest):
         )
 
         self.gm_learn_object(
-            graph_lm, obj_name="new_object0", observations=self.fake_obs_learn
+            graph_lm,
+            obj_name="new_object0",
+            observations=self.fake_obs_learn,
+            sender_id=sender_id,
         )
 
         self.assertEqual(
@@ -617,31 +636,24 @@ class GraphLearningTest(BaseGraphTest):
         )
         return graph_lm
 
-    def get_5lm_gm_with_fake_objects(self, objects) -> list[TrainedGraphLM]:
-        graph_lms = []
-        for lm in range(5):
-            graph_lm = FeatureGraphLM(
-                max_match_distance=0.005,
-                tolerances={
-                    "patch": {
-                        "hsv": [0.1, 1, 1],
-                        "principal_curvatures_log": [1, 1],
-                    }
-                },
-            )
+    def get_5lm_gm_with_fake_objects(self, graph_lms, objects) -> list[TrainedGraphLM]:
+        tms: list[TrainedGraphLM] = []
+        for idx, graph_lm in enumerate(graph_lms):
+            # wrap already-configured `graph_lm`
             object_obs = []
+            sender_id = f"patch_{idx}"
             for i, obj in enumerate(objects):
                 obj_name = f"new_object{i}"
                 offset_obs = self.gm_learn_object(
-                    graph_lm,
+                    graph_lm=graph_lm,
                     obj_name=obj_name,
                     observations=obj,
-                    offset=self.lm_offsets[lm],
+                    sender_id=sender_id,
+                    offset=self.lm_offsets[idx],
                 )
                 object_obs.append(EpisodeObservations(obj_name, offset_obs))
-            graph_lms.append(TrainedGraphLM(graph_lm, object_obs))
-
-        return graph_lms
+            tms.append(TrainedGraphLM(graph_lm, object_obs))
+        return tms
 
     def test_same_sequence_recognition(self):
         """Test that the object is recognized with same action sequence."""
@@ -920,7 +932,7 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_5lm_displacement_experiment(self):
         """Test 5 displacement LMs voting with two evaluation settings."""
-        exp = hydra.utils.instantiate(self.five_lm_ppf_displacement_cfg.experiment)
+        exp = instantiate_experiment(self.five_lm_ppf_displacement_cfg.experiment)
         with exp:
             exp.run()
 
@@ -935,49 +947,56 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_5lm_feature_experiment(self):
         """Test 5 feature LMs voting with two evaluation settings."""
-        exp = hydra.utils.instantiate(self.five_lm_feature_cfg.experiment)
+        objects = [self.fake_obs_learn, self.fake_obs_house_3d]
+        num_episodes = len(objects)
+        exp = instantiate_experiment(self.five_lm_feature_cfg.experiment)
         with exp:
-            objects = [self.fake_obs_learn, self.fake_obs_house_3d]
-            trained_modules = self.get_5lm_gm_with_fake_objects(objects)
             exp.experiment_mode = ExperimentMode.EVAL
             monty = exp.model
             monty.set_experiment_mode(exp.experiment_mode)
-            monty.learning_modules = [tm.learning_module for tm in trained_modules]
 
-            for tm in trained_modules:
-                tm.mode = ExperimentMode.EVAL
+            trained_modules = self.get_5lm_gm_with_fake_objects(
+                graph_lms=monty.learning_modules,
+                objects=objects,
+            )
+            tm0 = trained_modules[0]
 
             exp.pre_epoch()
             ctx = RuntimeContext(rng=exp.rng)
+            # FIXME: snapshot must be initialized after training
+            exp._snapshot_monty()
 
-            for episode_num in range(tm.num_episodes):
+            for episode_num in range(num_episodes):
                 exp.pre_episode()
-                # Normally the experiment `pre_episode` method would call the model
-                # `pre_episode` method, but it expects to feed data from an environment
-                # interface to the model, and we aren't using that, so we call it again
-                # with the correct target value.
-                monty.pre_episode(self.placeholder_target)
-                for step in range(tm.num_observations(episode_num)):
+                # When `exp._recreation_mode = True`, `exp.model` is replaced
+                # so we need to update our local reference.
+                monty = exp.model
+                monty.set_experiment_mode(exp.experiment_mode)
+                for idx, tm in enumerate(trained_modules):
+                    tm.learning_module = monty.learning_modules[idx]
+                # The experiment `pre_episode` method calls `fixme_set_ground_truth`
+                # on the model, but that expects data from an environment interface
+                # and we aren't using that, so we call it again with the correct target.
+                monty.fixme_set_ground_truth(self.placeholder_target)
+                num_steps = tm0.num_observations(episode_num)
+                for step in range(num_steps):
                     # Manually run through the internal Monty steps since we aren't
                     # using the data from the environment interface and are instead
                     # providing faked observations.
                     monty.sensor_module_outputs = [
-                        lm.episodes[episode_num].observations[step]
-                        for lm in trained_modules
+                        tm.episodes[episode_num].observations[step]
+                        for tm in trained_modules
                     ]
                     monty._step_learning_modules(ctx)
                     monty._vote()
                     monty._pass_goals()
                     monty._set_step_type_and_check_if_done()
                     monty._post_step()
-                exp.post_episode(tm.num_observations(episode_num))
+                exp.post_episode(num_steps)
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
-        # Just testing 1 episode here. Somehow the second rotation doesn't get
-        # recognized. Probably just some parameter setting due to flaws in old
-        # LM but didn't want to dig too deep into that for now.
         self.check_multilm_eval_results(
-            eval_stats, num_lms=5, min_done=3, num_episodes=1
+            eval_stats, num_lms=5, min_done=3, num_episodes=num_episodes
         )

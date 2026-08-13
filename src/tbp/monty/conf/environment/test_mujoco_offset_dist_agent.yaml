@@ -1,0 +1,25 @@
+# @package experiment.config.environment
+
+env_init_args:
+  agents:
+    - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
+      _partial_: true
+      agent_id: agent_id_0
+      sensor_configs:
+        patch:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          zoom: 10.0
+        view_finder:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          zoom: 1.0
+      position:
+        - 0.0
+        - 1.5
+        - 0.21 # Offset by 1cm to make `test_can_run_with_no_features` pass
+env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}

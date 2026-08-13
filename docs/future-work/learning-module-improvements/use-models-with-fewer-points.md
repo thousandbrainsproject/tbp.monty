@@ -5,7 +5,7 @@ rfc:
 estimated-scope: large
 improved-metric: speed, generalization, numsteps
 output-type: experiments, analysis, PR
-skills: python, research, monty
+skills: python, research, monty-advanced
 contributor: ramyamounir, scottcanoe
 status: in-progress
 ---

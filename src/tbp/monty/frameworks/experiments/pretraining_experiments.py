@@ -69,7 +69,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 # original sensor positions were.
                 sensor_cfgs = agents_config[0].keywords["sensor_configs"]
                 self.sensor_pos = np.array(
-                    sensor["position"] for sensor in sensor_cfgs.values()
+                    [sensor["position"] for sensor in sensor_cfgs.values()]
                 )
         else:
             self.sensor_pos = np.array([0, 0, 0])
@@ -112,6 +112,14 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 )
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
+                actions = self._step_hook(
+                    ctx,
+                    self.model,
+                    self.supervised_lm_ids if self.supervised_lm_ids else [],
+                    num_steps,
+                    observations,
+                    actions,
+                )
             except StopIteration:
                 # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
                 #       episode termination. This is a holdover from when we used
@@ -193,8 +201,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         self.reset_episode_rng()
 
-        # TODO: Fix invalid pre_episode signature call
-        self.model.pre_episode(self.env_interface.primary_target)
+        self._restore_monty()
+
+        self.model.fixme_set_ground_truth(self.env_interface.primary_target)
         self.env_interface.pre_episode(self.rng)
 
         self.max_steps = self.max_train_steps  # no eval mode here

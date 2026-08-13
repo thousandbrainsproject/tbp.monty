@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: large
 improved-metric: accuracy, deformations, noise, generalization
 output-type: prototype, analysis, monty-feature, PR
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: hlee9212
 status: paused
 ---

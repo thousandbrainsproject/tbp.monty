@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: large
 improved-metric: numsteps, goal-policy
 output-type: prototype, monty-feature, PR, RFC, experiments, analysis, publication
-skills: python, monty, research, reinforcement-learning
+skills: python, monty-beginner, research, reinforcement-learning
 contributor: h555yand
 status: in-progress
 ---

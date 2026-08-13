@@ -108,14 +108,6 @@ class FutureWorkRecord(BaseModel):
         str | None,
         Field(default=None, description="Current status of the work"),
     ]
-    tags: Annotated[
-        list[str] | None,
-        Field(
-            default=None,
-            description="Categorization tags for the work item",
-            max_length=10,
-        ),
-    ]
     skills: Annotated[
         list[str] | None,
         Field(
@@ -197,7 +189,7 @@ class FutureWorkRecord(BaseModel):
 
         return parsed_items
 
-    @field_validator("tags", "skills", "output_type", "improved_metric", mode="before")
+    @field_validator("skills", "output_type", "improved_metric", mode="before")
     @classmethod
     def validate_comma_separated_list(
         cls, v: Any, info: ValidationInfo

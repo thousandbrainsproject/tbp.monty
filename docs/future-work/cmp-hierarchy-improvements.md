@@ -2,18 +2,7 @@
 title: CMP & Hierarchy Improvements
 description: Improvements we would like to add to the CMP or hierarchical information processing.
 ---
-These are the things we would like to implement:
-
-- [Figure out performance measures and supervision in heterarchy](cmp-hierarchy-improvements/figure-out-performance-measure-and-supervision-in-heterarchy.md)
-- [Add top-down connections](cmp-hierarchy-improvements/add-top-down-connections.md)
-- [Run & Analyze experiments with more LMs in heterarchy testbed](cmp-hierarchy-improvements/run-analyze-experiments-with-more-lms-in-heterarchy-testbed.md)
-- [Test learning at different speeds depending on level in hierarchy](cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md)
-- [Send similarity encoding object ID to next level & test](cmp-hierarchy-improvements/send-similarity-encoding-object-id-to-next-level-test.md)
-- [Global Interval Timer](cmp-hierarchy-improvements/global-interval-timer.md)
-- [Include State in CMP](cmp-hierarchy-improvements/include-state-in-CMP.md)
-- [Evaluate on the Omniglot dataset](cmp-hierarchy-improvements/evaluate-on-omniglot-dataset.md)
-
-!snippet[../snippets/contributing-tasks.md]
+Items that relate to changing the [message passing](../how-monty-works/monty/messages-in-monty.md) between Monty components (either the routing or the format of the messages), go into this section, as well as items related to passing information up and down the hierarchy (between LMs). Items related to messages passed laterally between LMs (voting) are listed under [voting improvements](voting-improvements.md).
 
 > 📘 Heterarchy vs. Hierarchy
 > 

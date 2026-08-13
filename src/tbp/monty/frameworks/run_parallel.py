@@ -43,8 +43,9 @@ from tbp.monty.frameworks.loggers.monty_handlers import (
 from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_dir,
     maybe_rename_existing_file,
+    overall_accuracy,
 )
-from tbp.monty.hydra import register_resolvers
+from tbp.monty.hydra import instantiate_experiment, register_resolvers
 
 __all__ = ["main"]
 
@@ -373,7 +374,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 def single_train(experiment):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
-    exp = hydra.utils.instantiate(experiment)
+    exp = instantiate_experiment(experiment)
     with exp:
         print("---------training---------")
         exp.run()
@@ -382,7 +383,7 @@ def single_train(experiment):
 def single_evaluate(experiment):
     output_dir = Path(experiment["config"]["logging"]["output_dir"])
     output_dir.mkdir(exist_ok=True, parents=True)
-    exp = hydra.utils.instantiate(experiment)
+    exp = instantiate_experiment(experiment)
     with exp:
         print("---------evaluating---------")
         exp.run()
@@ -456,6 +457,35 @@ def get_overall_stats(stats):
     return overall_stats
 
 
+def per_lm_stats(eval_stats):
+    """Reconstruct LM accuracy metrics from the merged evaluation rows.
+
+    Returns:
+        Named per-LM accuracy percentages.
+    """
+    return {
+        f"{lm_id}/overall/percent_correct": overall_accuracy(lm_stats)
+        for lm_id, lm_stats in eval_stats.groupby("lm_id")
+    }
+
+
+def print_benchmark_stats(overall_stats: dict) -> None:
+    benchmark_keys = [
+        "overall/percent_correct",
+        "overall/percent_correct_child_or_parent",
+        "overall/avg_rotation_error",
+        "overall/avg_num_monty_matching_steps",
+        "overall/run_time",
+        "overall/avg_episode_run_time",
+        "overall/percent_used_mlh_after_timeout",
+        "overall/num_episodes",
+    ]
+    benchmark_stats = [overall_stats[k] for k in benchmark_keys]
+    comma_keys = ",".join([k[len("overall/") :] for k in benchmark_keys])
+    comma_stats = ",".join([str(s) for s in benchmark_stats])
+    print(f"Benchmark Stats\n{comma_keys}\n{comma_stats}")
+
+
 def collect_detailed_episodes_names(parallel_dirs: Iterable[Path]) -> list[Path]:
     filenames = []
     for pdir in parallel_dirs:
@@ -510,7 +540,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
         outfile = base_dir / filename
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
-    exp = hydra.utils.instantiate(experiments[0])
+    exp = instantiate_experiment(experiments[0])
     if isinstance(exp, ProfileExperimentMixin):
         post_parallel_profile_cleanup(parallel_dirs, base_dir, "evaluate")
 
@@ -532,7 +562,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         Path(exp["config"]["logging"]["output_dir"]) for exp in experiments
     ]
     pretraining = False
-    exp = hydra.utils.instantiate(experiments[0])
+    exp = instantiate_experiment(experiments[0])
     if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
         parallel_dirs = [pdir / "pretrained" for pdir in parallel_dirs]
         pretraining = True
@@ -617,15 +647,16 @@ def run_episodes_parallel(
     )
     start_time = time.time()
     log_parallel_wandb = experiments[0]["config"]["logging"]["log_parallel_wandb"]
+    wandb_run = None
     if log_parallel_wandb:
-        run = wandb.init(
+        wandb_run = wandb.init(
             name=experiment_name,
             group=experiments[0]["config"]["logging"]["wandb_group"],
             project="Monty",
             config=experiments[0],
             id=hydra.utils.instantiate(experiments[0]["config"]["logging"]["wandb_id"]),
         )
-    print(f"Wandb setup took {time.time() - start_time} seconds")
+        print(f"Wandb setup took {time.time() - start_time} seconds")
     start_time = time.time()
 
     # Create a multiprocessing Context so that we can set the start method to "spawn".
@@ -641,7 +672,8 @@ def run_episodes_parallel(
         elif log_parallel_wandb:
             all_episode_stats: dict[str, list[Any]] = {}
             for result in p.imap(single_evaluate, experiments):
-                run.log(result)
+                if wandb_run:
+                    wandb_run.log(result)
                 if not all_episode_stats:  # first episode
                     for key in list(result.keys()):
                         all_episode_stats[key] = [result[key]]
@@ -654,7 +686,9 @@ def run_episodes_parallel(
             # log this here additionally.
             overall_stats["overall/parallel_run_time"] = time.time() - start_time
             overall_stats["overall/num_processes"] = num_parallel
-            run.log(overall_stats)
+            if wandb_run:
+                wandb_run.log(overall_stats)
+            print_benchmark_stats(overall_stats)
         else:
             p.map(single_evaluate, experiments)
     end_time = time.time()
@@ -669,8 +703,8 @@ def run_episodes_parallel(
             if csv_path.exists():
                 train_stats = pd.read_csv(csv_path)
                 train_table = wandb.Table(dataframe=train_stats)
-                if run is not None:
-                    run.log({"train_stats": train_table})
+                if wandb_run:
+                    wandb_run.log({"train_stats": train_table})
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
     else:
@@ -680,7 +714,10 @@ def run_episodes_parallel(
             if csv_path.exists():
                 eval_stats = pd.read_csv(csv_path)
                 eval_table = wandb.Table(dataframe=eval_stats)
-                run.log({"eval_stats": eval_table})
+                if wandb_run:
+                    wandb_run.log(
+                        {"eval_stats": eval_table, **per_lm_stats(eval_stats)}
+                    )
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
 
@@ -688,8 +725,8 @@ def run_episodes_parallel(
         f"Total time for {len(experiments)} running {num_parallel} episodes in "
         f"parallel: {total_time}"
     )
-    if log_parallel_wandb:
-        run.finish()
+    if wandb_run:
+        wandb_run.finish()
 
     print(f"Done running parallel experiments in {end_time - start_time} seconds")
 

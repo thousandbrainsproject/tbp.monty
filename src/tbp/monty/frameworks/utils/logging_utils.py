@@ -18,6 +18,7 @@ from collections import deque
 from itertools import chain
 from pathlib import Path
 from sys import getsizeof
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -75,7 +76,10 @@ def load_stats(
     return train_stats, eval_stats, detailed_stats, lm_models
 
 
-def load_models_from_dir(exp_path, pretrained_dict=None):
+def load_models_from_dir(
+    exp_path: Path | str, pretrained_dict: Path | str | None = None
+) -> dict[str, Any]:
+    # TODO: return value needs a better type
     lm_models = {}
 
     if pretrained_dict is not None:
@@ -892,8 +896,9 @@ def target_data_to_dict(target):
     """
     output_dict = {}
     output_dict["primary_target_object"] = target["object"]
-    output_dict["primary_target_position"] = target["position"]
-    output_dict["primary_target_rotation_euler"] = list(target["euler_rotation"])
+    # Convert values to NumPy arrays to get consistent string rendering.
+    output_dict["primary_target_position"] = np.array(target["position"])
+    output_dict["primary_target_rotation_euler"] = np.array(target["euler_rotation"])
     output_dict["primary_target_rotation_quat"] = np.array(target["rotation"])
     # Currently scale is applied uniformly along all dimensions
     output_dict["primary_target_scale"] = target["scale"][0]
