@@ -10,3 +10,4 @@ policy_selector:
     frame_size: 64
     patch_size: 8
     stride: 8
+    cadence: 24

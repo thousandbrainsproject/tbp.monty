@@ -18,7 +18,7 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Protocol, cast
+from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, Union, cast
 
 import numpy as np
 import quaternion as qt
@@ -56,6 +56,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, VectorXYZ
 from tbp.monty.memento import Memento, Snapshotable
+from tbp.monty.simulators.arc_agi.actions import GameDown, GameLeft, GameRight, GameUp
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -1084,13 +1085,17 @@ class SnakeScanPolicy(MotorPolicy):
 class RandomGameWalk(MotorPolicy):
     """Perform a random-walk to explore an object."""
 
+    GAME_ACTIONS: ClassVar[list[type[Action]]] = [GameUp, GameDown, GameLeft, GameRight]
+
     agent_id: AgentID
     sensor_id: SensorID
     frame_size: int
     patch_size: int
     stride: int
+    cadence: int
 
     _position: VectorXYZ
+    _step: int
 
     def __init__(
         self,
@@ -1099,13 +1104,16 @@ class RandomGameWalk(MotorPolicy):
         frame_size: int = 64,
         patch_size: int = 8,
         stride: int = 4,
+        cadence: int = 96,
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
         self.frame_size = frame_size
         self.patch_size = patch_size
         self.stride = stride
+        self.cadence = cadence
         self._position = self._center_position()
+        self._step = 0
 
     def __call__(
         self,
@@ -1115,6 +1123,13 @@ class RandomGameWalk(MotorPolicy):
         percept: Message,  # noqa: ARG002
         goal: Goal | None,  # noqa: ARG002
     ) -> MotorPolicyResult:
+        if self._step >= self.cadence:
+            # Game step
+            self._step = 0
+            action_cls: type[Action] = ctx.rng.choice(self.GAME_ACTIONS)
+            return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
+
+        # Monty step (saccade on frame)
         dx: int = 0
         dy: int = 0
         while dx == dy == 0:
@@ -1133,6 +1148,8 @@ class RandomGameWalk(MotorPolicy):
         elif y > max_pos:
             y = 0
         self._position = (x, y, 0.0)
+
+        self._step += 1
 
         return MotorPolicyResult(
             [
