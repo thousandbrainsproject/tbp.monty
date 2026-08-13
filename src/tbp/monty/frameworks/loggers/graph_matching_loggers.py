@@ -570,9 +570,9 @@ class BasicUnsupervisedGraphMatchingLogger(BasicGraphMatchingLogger):
                 continue
 
             prefix = f"{lm_id}/overall"
-            formatted_stats[f"{prefix}/percent_correct_first_epoch"] = (
-                benchmark_stats["percent_correct_first_epoch"]
-            )
+            formatted_stats[f"{prefix}/percent_correct_first_epoch"] = benchmark_stats[
+                "percent_correct_first_epoch"
+            ]
             formatted_stats[f"{prefix}/percent_correct_after_first_epoch"] = (
                 benchmark_stats["percent_correct_after_first_epoch"]
             )

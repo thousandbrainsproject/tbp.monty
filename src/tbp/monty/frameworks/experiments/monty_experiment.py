@@ -297,7 +297,7 @@ class MontyExperiment:
             args["n_total_train_episodes"] = (
                 len(self.train_env_interface.object_names) * self.n_train_epochs
             )
-            
+
         # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
         if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
