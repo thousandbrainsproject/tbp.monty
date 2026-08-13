@@ -1,0 +1,31 @@
+# @package _global_
+
+defaults:
+  - /monty: graph_exp4k_e3_t3_tot16k
+  - /monty/motor_system_config: snake_scan_p4_s4
+  - /monty/learning_module: evidence_1lm_arc
+  - /monty/sensor_module: arc_patch_4x4
+  - /monty/connectivity: 1lm_1sm
+  - /environment: arc_4x4
+  - /env_interface: train_arc_favs
+  - /env_interface/transform: none
+  - /logging: silent_info_train
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 4096
+    max_eval_steps: 512
+    max_total_steps: 16384
+    n_train_epochs: 1
+    n_eval_epochs: 3
+    model_name_or_path: ''
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
+    seed: 42
+    supervised_lm_ids: all
+    logging:
+      run_name: arc_train_4k
+

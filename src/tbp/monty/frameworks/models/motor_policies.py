@@ -990,7 +990,7 @@ class InformedPolicy(BasePolicy):
             ), "Failed to return sensor to orientation"
 
 
-ARC_GAME_ACTIONS: list[type[Action]] = [GameUp, GameDown, GameLeft, GameRight]
+DEFAULT_GAME_ACTIONS: list[type[Action]] = [GameUp, GameDown, GameLeft, GameRight]
 
 class SnakeScanPolicy(MotorPolicy):
     """Scan in a snake pattern using top-left patch-crop coordinates."""
@@ -1003,6 +1003,7 @@ class SnakeScanPolicy(MotorPolicy):
         frame_size: int | None = 64,
         patch_size: int = 8,
         stride: int = 8,
+        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
@@ -1010,6 +1011,7 @@ class SnakeScanPolicy(MotorPolicy):
         self.frame_size = frame_size
         self.patch_size = patch_size
         self.stride = stride
+        self.action_space = action_space
         self._scan_locations = (
             self._make_scan_locations(frame_size, frame_size)
             if frame_size is not None
@@ -1056,7 +1058,7 @@ class SnakeScanPolicy(MotorPolicy):
         if self._next_location_index == len(scan_locations):
             # Game step
             self._next_location_index = 0
-            action_cls: type[Action] = ctx.rng.choice(ARC_GAME_ACTIONS)
+            action_cls: type[Action] = ctx.rng.choice(self.action_space)
             return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
 
         # Monty step (saccade on frame)
@@ -1097,6 +1099,7 @@ class RandomGameWalk(MotorPolicy):
     patch_size: int
     stride: int
     cadence: int
+    action_space: list[type[Action]]
 
     _position: VectorXYZ
     _step: int
@@ -1109,6 +1112,7 @@ class RandomGameWalk(MotorPolicy):
         patch_size: int = 8,
         stride: int = 4,
         cadence: int = 96,
+        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
@@ -1116,6 +1120,7 @@ class RandomGameWalk(MotorPolicy):
         self.patch_size = patch_size
         self.stride = stride
         self.cadence = cadence
+        self.action_space = action_space
         self._position = self._center_position()
         self._step = 0
 
@@ -1130,7 +1135,7 @@ class RandomGameWalk(MotorPolicy):
         if self._step >= self.cadence:
             # Game step
             self._step = 0
-            action_cls: type[Action] = ctx.rng.choice(ARC_GAME_ACTIONS)
+            action_cls: type[Action] = ctx.rng.choice(self.action_space)
             return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
 
         # Monty step (saccade on frame)

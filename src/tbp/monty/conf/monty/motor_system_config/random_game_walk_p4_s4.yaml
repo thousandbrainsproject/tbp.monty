@@ -8,9 +8,9 @@ policy_selector:
     agent_id: agent_id_0
     sensor_id: patch
     frame_size: 64
-    patch_size: 8
-    stride: 8
-    cadence: 24
+    patch_size: 4
+    stride: 4
+    cadence: 72
     action_space:
       - ${monty.class:tbp.monty.simulators.arc_agi.actions.GameUp}
       - ${monty.class:tbp.monty.simulators.arc_agi.actions.GameDown}
