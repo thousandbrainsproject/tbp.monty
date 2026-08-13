@@ -26,6 +26,28 @@ from tbp.monty.memento import Memento
 __all__ = ["ArcPatchSensorModule"]
 
 ARC_PALETTE_SIZE = 16
+# Color mapping for frame values (0-15)
+ARC_PALETTE = np.array(
+    (
+        (255, 255, 255, 255),  # 0: White "#FFFFFFFF"
+        (204, 204, 204, 255),  # 1: Off-white "#CCCCCCFF"
+        (153, 153, 153, 255),  # 2: Neutral Light "#999999FF"
+        (102, 102, 102, 255),  # 3: Neutral "#666666FF"
+        (51, 51, 51, 255),  # 4: Off Black "#333333FF"
+        (0, 0, 0, 255),  # 5: Black "#000000FF"
+        (229, 58, 163, 255),  # 6: Magenta "#E53AA3FF"
+        (255, 123, 204, 255),  # 7: Magenta Light "#FF7BCCFF"
+        (249, 60, 49, 255),  # 8: Red "#F93C31FF"
+        (30, 147, 255, 255),  # 9: Blue "#1E93FFFF"
+        (136, 216, 241, 255),  # 10: Blue Light "#88D8F1FF"
+        (255, 220, 0, 255),  # 11: Yellow "#FFDC00FF"
+        (255, 133, 27, 255),  # 12: Orange "#FF851BFF"
+        (146, 18, 49, 255),  # 13: Maroon "#921231FF"
+        (79, 204, 48, 255),  # 14: Green "#4FCC30FF"
+        (163, 86, 214, 255),  # 15: Purple "#A356D6FF"
+    ),
+    dtype=np.uint8,
+)
 ARC_FRAME_POSE = np.array(
     [
         [0.0, 0.0, 1.0],
