@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 DEFAULT_EDGE_STRENGTH_THRESHOLD = 0.1
 DEFAULT_COHERENCE_THRESHOLD = 0.5
 DEFAULT_UNSCALED_EDGE_SCALE = 0.002
-DEFAULT_POINT_SIZE = 7
+DEFAULT_POINT_SIZE = 21
 DEFAULT_TANGENT_LINE_WIDTH = 5
 DEFAULT_NORMAL_LINE_WIDTH = 2
 DEFAULT_NORMAL_SCALE = 0.01
@@ -673,7 +673,7 @@ def visualize_point_cloud_interactive(
 
 def _load_available_objects(model_path: Path, lm_id: int) -> list[str]:
     """Load checkpoint metadata and return graph-memory object names."""
-    state_dict = torch.load(model_path, map_location="cpu")
+    state_dict = torch.load(model_path, map_location="cpu", weights_only=False)
     graph_memory = state_dict["lm_dict"][lm_id]["graph_memory"]
     return list(graph_memory.keys())
 

@@ -19,7 +19,7 @@ def load_object_model(model_path, object_name, lm_id=0):
             - features: dict mapping feature names to arrays
     """
     # Load the checkpoint
-    state_dict = torch.load(model_path, map_location="cpu")
+    state_dict = torch.load(model_path, map_location="cpu", weights_only=False)
 
     # Navigate to the graph object (patch key varies: "patch", "patch_0", etc.)
     object_data = state_dict["lm_dict"][lm_id]["graph_memory"][object_name]
