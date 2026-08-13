@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import numpy as np
+import scipy
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
@@ -126,6 +127,7 @@ class ArcPatchSensorModule(SensorModule):
                 ]
             )
 
+        rgba = ARC_PALETTE[scipy.stats.mode(patch)[0]]
         return Message(
             location=np.asarray(self.state.position, dtype=float).copy(),
             morphological_features={
@@ -135,6 +137,7 @@ class ArcPatchSensorModule(SensorModule):
             non_morphological_features={
                 "palette_histogram": histogram,
                 "transition_density": transitions,
+                "rgba": rgba
             },
             confidence=1.0,
             use_state=not motor_only_step,
