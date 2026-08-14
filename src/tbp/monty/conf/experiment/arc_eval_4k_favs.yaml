@@ -20,7 +20,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 1
     n_eval_epochs: 3
-    model_name_or_path: ${constants.arc_pretrained_dir}/arc_train/pretrained/
+    model_name_or_path: ${constants.arc_pretrained_dir}/arc_train_4k/pretrained/
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
