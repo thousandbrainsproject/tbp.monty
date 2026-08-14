@@ -18,7 +18,7 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, Union, cast
+from typing import TYPE_CHECKING, Literal, Protocol, cast
 
 import numpy as np
 import quaternion as qt
@@ -992,6 +992,7 @@ class InformedPolicy(BasePolicy):
 
 DEFAULT_GAME_ACTIONS: list[type[Action]] = [GameUp, GameDown, GameLeft, GameRight]
 
+
 class SnakeScanPolicy(MotorPolicy):
     """Scan in a snake pattern using top-left patch-crop coordinates."""
 
@@ -1003,7 +1004,7 @@ class SnakeScanPolicy(MotorPolicy):
         frame_size: int | None = 64,
         patch_size: int = 8,
         stride: int = 8,
-        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS
+        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS,
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
@@ -1112,7 +1113,7 @@ class RandomGameWalk(MotorPolicy):
         patch_size: int = 8,
         stride: int = 4,
         cadence: int = 96,
-        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS
+        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS,
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
@@ -1186,6 +1187,59 @@ class RandomGameWalk(MotorPolicy):
 
     def load_state_dict(self, memento: Memento) -> None:
         self._position = memento["position"]
+
+
+class GoalDrivenGameWalk(MotorPolicy):
+    """Visit all locations specified by goal"""
+
+    agent_id: AgentID
+    sensor_id: SensorID
+    action_space: list[type[Action]]
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID | str = "patch",
+        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS,
+    ) -> None:
+        self.agent_id = AgentID(agent_id)
+        self.sensor_id = SensorID(sensor_id)
+        self.action_space = action_space
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,
+    ) -> MotorPolicyResult:
+        if goal:
+            return MotorPolicyResult(
+                [
+                    SetSensorPose(
+                        agent_id=self.agent_id,
+                        location=np.array(goal.location),
+                        rotation_quat=IDENTITY_QUATERNION,
+                    )
+                ]
+            )
+
+        # Game Step
+        action_cls: type[Action] = ctx.rng.choice(self.action_space)
+        return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        pass
+
+    def state_dict(self) -> Memento:
+        return {}
+
+    def load_state_dict(self, memento: Memento) -> None:
+        pass
 
 
 class NaiveScanPolicy(InformedPolicy):

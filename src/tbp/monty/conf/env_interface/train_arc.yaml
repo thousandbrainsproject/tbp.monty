@@ -3,6 +3,7 @@
 do_train: true
 train_env_interface_args:
   object_names:
+  - sm02
   - sm00
   - sm01
   - ar25

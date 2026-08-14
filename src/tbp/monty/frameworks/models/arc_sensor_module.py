@@ -14,7 +14,7 @@ from __future__ import annotations
 import numpy as np
 import scipy
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -22,6 +22,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.math import VectorXYZ
 from tbp.monty.memento import Memento
 
 __all__ = ["ArcPatchSensorModule"]
@@ -150,3 +151,150 @@ class ArcPatchSensorModule(SensorModule):
 
     def state_dict(self) -> Memento:
         return {}
+
+
+class ArcChangeSensorModule(SensorModule):
+    def __init__(
+        self,
+        sensor_module_id: str,
+        frame_size: int = 64,
+        patch_size: int = 8,
+        stride: int = 8,
+    ) -> None:
+        self.sensor_module_id = sensor_module_id
+        self.frame_size = frame_size
+        self.patch_size = patch_size
+        self.stride = stride
+        self.is_exploring = False
+        self.state: SensorState | None = None
+        self.prev_frame = None
+
+    def _make_scan_locations(
+        self, frame_width: int, frame_height: int
+    ) -> list[VectorXYZ]:
+        max_x = frame_width - self.patch_size
+        max_y = frame_height - self.patch_size
+        x_starts = list(range(0, max_x + 1, self.stride))
+        y_starts = list(range(0, max_y + 1, self.stride))
+        if x_starts[-1] != max_x:
+            x_starts.append(max_x)
+        if y_starts[-1] != max_y:
+            y_starts.append(max_y)
+
+        locations: list[VectorXYZ] = []
+        for row, y in enumerate(y_starts):
+            xs = x_starts if row % 2 == 0 else reversed(x_starts)
+            locations.extend((float(x), float(y), 0.0) for x in xs)
+        return locations
+
+    def update_state(self, agent: AgentState) -> None:
+        sensor = agent.sensors[SensorID(self.sensor_module_id)]
+        self.state = SensorState(
+            position=(
+                float(sensor.position[0]),
+                float(sensor.position[1]),
+                float(sensor.position[2]),
+            ),
+            rotation=sensor.rotation,
+        )
+
+    def step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        observation: SensorObservation,
+        motor_only_step: bool = False,
+    ) -> Message:
+        raw = observation.get("raw")
+        patch = np.asarray(raw)
+        new_goals = []
+
+        if self.prev_frame is None:
+            goal_locations = np.array(
+                self._make_scan_locations(self.frame_size, self.frame_size)
+            )
+            new_goals = [
+                Goal(
+                    location=loc,
+                    morphological_features=None,
+                    non_morphological_features=None,
+                    confidence=0.5,
+                    use_state=False,
+                    sender_id=self.sensor_module_id,
+                    sender_type="SM",
+                    goal_tolerances=None,
+                )
+                for loc in goal_locations
+            ]
+            self.prev_frame = raw
+
+        else:
+            diff = raw - self.prev_frame
+            xs, ys = np.nonzero(diff)  # tuple of (rows, cols) that are non-zero
+            new_goals = [
+                Goal(
+                    location=np.array([float(x), float(y), 0.0]),
+                    morphological_features=None,
+                    non_morphological_features=None,
+                    confidence=0.5,
+                    use_state=False,  # SalienceSM goals are intended for the motor system
+                    sender_id=self.sensor_module_id,
+                    sender_type="SM",
+                    goal_tolerances=None,
+                )
+                for x in xs
+                for y in ys
+            ]
+
+        if new_goals:
+            self._goals = new_goals
+            return Message(
+                location=np.zeros(3),
+                morphological_features={},
+                non_morphological_features={},
+                confidence=1.0,
+                use_state=False,
+                sender_id=self.sensor_module_id,
+                sender_type="SM",
+            )
+
+        histogram = (
+            np.bincount(patch.ravel(), minlength=ARC_PALETTE_SIZE).astype(float)
+            / patch.size
+        )
+        if self.patch_size == 1:
+            transitions = np.zeros(2)
+        else:
+            transitions = np.array(
+                [
+                    np.mean(patch[:, 1:] != patch[:, :-1]),
+                    np.mean(patch[1:, :] != patch[:-1, :]),
+                ]
+            )
+
+        rgba = ARC_PALETTE[scipy.stats.mode(patch)[0]]
+        return Message(
+            location=np.asarray(self.state.position, dtype=float).copy(),
+            morphological_features={
+                "pose_vectors": ARC_FRAME_POSE.copy(),
+                "pose_fully_defined": True,
+            },
+            non_morphological_features={
+                "palette_histogram": histogram,
+                "transition_density": transitions,
+                "rgba": rgba,
+            },
+            confidence=1.0,
+            use_state=not motor_only_step,
+            sender_id=self.sensor_module_id,
+            sender_type="SM",
+        )
+
+    def reset(self) -> None:
+        self.is_exploring = False
+
+    def state_dict(self) -> Memento:
+        return {}
+
+    def propose_goals(self) -> list[Goal]:
+        goal = self._goals.pop()
+        return [goal]
