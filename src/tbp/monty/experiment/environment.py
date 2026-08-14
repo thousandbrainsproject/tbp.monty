@@ -52,7 +52,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 
 __all__ = [
-    "ArcAgiInterface",
     "Interface",
     "OmniglotInterface",
     "OneObjectPerEpisodeInterface",

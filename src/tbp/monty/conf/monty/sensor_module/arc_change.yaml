@@ -3,11 +3,11 @@
 sensor_module_0:
   _target_: tbp.monty.frameworks.models.arc_sensor_module.ArcPatchSensorModule
   sensor_module_id: patch
+  patch_size: 8
+
+sensor_module_1:
+  _target_: tbp.monty.frameworks.models.arc_sensor_module.ArcChangeSensorModule
+  sensor_module_id: view_finder
   frame_size: 64
   patch_size: 8
   stride: 8
-
-sensor_module_1:
-  _target_: tbp.monty.frameworks.models.sensor_modules.ArcChangeSensorModule
-  sensor_module_id: view_finder
-  save_raw_obs: true

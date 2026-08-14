@@ -61,7 +61,6 @@ from tbp.monty.simulators.arc_agi.actions import GameDown, GameLeft, GameRight, 
 if TYPE_CHECKING:
     from os import PathLike
 
-
 __all__ = [
     "BasePolicy",
     "InformedPolicy",
@@ -990,7 +989,14 @@ class InformedPolicy(BasePolicy):
             ), "Failed to return sensor to orientation"
 
 
-DEFAULT_GAME_ACTIONS: list[type[Action]] = [GameUp, GameDown, GameLeft, GameRight]
+ActionSpace = tuple[type[Action], ...]
+
+DEFAULT_GAME_ACTIONS: ActionSpace = (
+    GameUp,
+    GameDown,
+    GameLeft,
+    GameRight,
+)
 
 
 class SnakeScanPolicy(MotorPolicy):
@@ -1004,7 +1010,7 @@ class SnakeScanPolicy(MotorPolicy):
         frame_size: int | None = 64,
         patch_size: int = 8,
         stride: int = 8,
-        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS,
+        action_space: ActionSpace = DEFAULT_GAME_ACTIONS,
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
@@ -1100,7 +1106,7 @@ class RandomGameWalk(MotorPolicy):
     patch_size: int
     stride: int
     cadence: int
-    action_space: list[type[Action]]
+    action_space: ActionSpace
 
     _position: VectorXYZ
     _step: int
@@ -1113,7 +1119,7 @@ class RandomGameWalk(MotorPolicy):
         patch_size: int = 8,
         stride: int = 4,
         cadence: int = 96,
-        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS,
+        action_space: ActionSpace = DEFAULT_GAME_ACTIONS,
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)
@@ -1190,17 +1196,17 @@ class RandomGameWalk(MotorPolicy):
 
 
 class GoalDrivenGameWalk(MotorPolicy):
-    """Visit all locations specified by goal"""
+    """Visit all locations specified by goal."""
 
     agent_id: AgentID
     sensor_id: SensorID
-    action_space: list[type[Action]]
+    action_space: ActionSpace
 
     def __init__(
         self,
         agent_id: AgentID,
         sensor_id: SensorID | str = "patch",
-        action_space: list[type[Action]] = DEFAULT_GAME_ACTIONS,
+        action_space: ActionSpace = DEFAULT_GAME_ACTIONS,
     ) -> None:
         self.agent_id = AgentID(agent_id)
         self.sensor_id = SensorID(sensor_id)

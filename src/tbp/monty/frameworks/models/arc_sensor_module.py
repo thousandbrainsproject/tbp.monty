@@ -168,6 +168,7 @@ class ArcChangeSensorModule(SensorModule):
         self.is_exploring = False
         self.state: SensorState | None = None
         self.prev_frame = None
+        self._goals = []
 
     def _make_scan_locations(
         self, frame_width: int, frame_height: int
@@ -225,25 +226,31 @@ class ArcChangeSensorModule(SensorModule):
                 )
                 for loc in goal_locations
             ]
-            self.prev_frame = raw
-
         else:
             diff = raw - self.prev_frame
-            xs, ys = np.nonzero(diff)  # tuple of (rows, cols) that are non-zero
+            ys, xs = np.nonzero(diff)  # tuple of (rows, cols) that are non-zero
+
+            def to_stride(n):
+                return (n // self.stride) * self.stride
+
+            goal_locations = {(to_stride(x), to_stride(y), 0.0) for x, y in zip(xs, ys)}
+
             new_goals = [
                 Goal(
-                    location=np.array([float(x), float(y), 0.0]),
+                    location=np.array(loc),
                     morphological_features=None,
                     non_morphological_features=None,
                     confidence=0.5,
-                    use_state=False,  # SalienceSM goals are intended for the motor system
+                    use_state=False,
+                    # SalienceSM goals are intended for the motor system
                     sender_id=self.sensor_module_id,
                     sender_type="SM",
                     goal_tolerances=None,
                 )
-                for x in xs
-                for y in ys
+                for loc in goal_locations
             ]
+
+        self.prev_frame = raw
 
         if new_goals:
             self._goals = new_goals
@@ -291,10 +298,14 @@ class ArcChangeSensorModule(SensorModule):
 
     def reset(self) -> None:
         self.is_exploring = False
+        self._goals = []
+        self.prev_frame = None
 
     def state_dict(self) -> Memento:
         return {}
 
     def propose_goals(self) -> list[Goal]:
-        goal = self._goals.pop()
-        return [goal]
+        if self._goals:
+            goal = self._goals.pop()
+            return [goal]
+        return []
