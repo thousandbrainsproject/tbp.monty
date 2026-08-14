@@ -205,9 +205,8 @@ class ArcChangeSensorModule(SensorModule):
         observation: SensorObservation,
         motor_only_step: bool = False,
     ) -> Message:
-        raw = observation.get("raw")
+        raw = observation["raw"]
         patch = np.asarray(raw)
-        new_goals = []
 
         if self.prev_frame is None:
             goal_locations = np.array(
