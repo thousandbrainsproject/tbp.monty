@@ -54,7 +54,7 @@ Note that all benchmark experiments were performed with the total least-squares 
 
 ## Shorter Experiments with 10 Objects
 
-The following results are obtained from experiments using the 10-object subsets of the YCB dataset described above. `base` configs test with all 14 known rotations (10 objects * 14 rotations each = 140 episodes), and `randrot` configs test with 10 random rotations (10 objects * 10 rotation each = 100 episodes). All experiments were run on 16 CPUs with parallelization except for `base_10multi_distinctobj_dist_agent`; this experiment must be run without parallelization.
+The following results are obtained from experiments using the 10-object subsets of the YCB dataset described above. `base` configs test with all 14 known rotations (10 objects * 14 rotations each = 140 episodes), and `randrot` configs test with 10 random rotations (10 objects * 10 rotation each = 100 episodes). All experiments were run on 16 CPUs with parallelization.
 
 ### Results
 
@@ -149,8 +149,8 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Dataset | Archive Format | Download Link |
 > | --- | --- | --- |
-> | compositional_objects_1.1 | tgz | [compositional_objects_1.1.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz) |
-> | compositional_objects_1.1 | zip | [compositional_objects_1.1.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip) |
+> | compositional_objects_1.2 | tgz | [compositional_objects_1.2.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.tgz) |
+> | compositional_objects_1.2 | zip | [compositional_objects_1.2.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.zip) |
 > 
 > Unpack the archive in the `~/tbp/data/habitat/versioned_data/` folder. For example:
 >
@@ -159,7 +159,7 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/data/habitat/versioned_data/
 >
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.tgz | tar -xzf -
 > ```
 >
 > or
@@ -169,17 +169,25 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > 
 > cd ~/tbp/data/habitat/versioned_data/
 > 
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.zip
 > 
-> unzip compositional_objects_1.1.zip
+> unzip compositional_objects_1.2.zip
 > ```
 >
-> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder:
+> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder. If this is the first time you are doing this, you can use:
 >
 > ```plaintext
 > mkdir -p ~/tbp/data/habitat/objects/
 >
-> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.1 ~/tbp/data/habitat/objects/compositional_objects
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
+> ```
+>
+> If you have a pre-existing symlink for an old version of the dataset, then you will need to remove this first, i.e.:
+>
+> ```plaintext
+> rm ~/tbp/data/habitat/objects/compositional_objects
+>
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
@@ -195,8 +203,8 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Models | Archive Format | Download Link |
 > | --- | --- | --- |
-> | pretrained_compositional_objects_v4 | tgz | [pretrained_compositional_objects_v4.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.tgz) |
-> | pretrained_compositional_objects_v4 | zip | [pretrained_compositional_objects_v4.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.zip) |
+> | pretrained_compositional_objects_v5 | tgz | [pretrained_compositional_objects_v5.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.tgz) |
+> | pretrained_compositional_objects_v5 | zip | [pretrained_compositional_objects_v5.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.zip) |
 >
 > Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 >
@@ -205,16 +213,16 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.tgz | tar -xzf -
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.tgz | tar -xzf -
 > ```
 > ```plaintext zip
 > mkdir -p ~/tbp/results/monty/pretrained_models/
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.zip
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.zip
 >
-> unzip pretrained_compositional_objects_v4.zip
+> unzip pretrained_compositional_objects_v5.zip
 > ```
 
 

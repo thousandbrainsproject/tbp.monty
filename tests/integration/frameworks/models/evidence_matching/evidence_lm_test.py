@@ -378,7 +378,7 @@ class EvidenceLMTest(BaseGraphTest):
         self.check_eval_results(eval_stats, num_lms=5)
 
     def test_5lm_3done_evidence(self):
-        """Test 5 evidence LMs voting works with lower min_lms_match setting."""
+        """Test 5 evidence LMs voting with an AnyLMsMatch count of 3."""
         exp = instantiate_experiment(self.five_lm_three_done_cfg.experiment)
         with exp:
             exp.train()
