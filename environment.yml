@@ -10,10 +10,10 @@
 # you open a new terminal, run:
 #     $ conda config --set auto_activate_base false
 # Finally, activate the environment with:
-#     $ conda activate fate.attenzione
+#     $ conda activate tbp.monty
 #
 # platform: default
-name: fate.attenzione
+name: tbp.monty
 channels:
   - aihabitat
   - pytorch

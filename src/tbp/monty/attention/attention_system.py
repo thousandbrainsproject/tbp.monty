@@ -16,7 +16,7 @@ import pandas as pd
 
 from tbp.monty.attention.telemetry import AttentionSystemTelemetry
 from tbp.monty.attention.voxels import VOXEL_LEVELS, voxelize_and_bin_points
-from tbp.monty.cmp import AttentionWeight, Goal
+from tbp.monty.cmp import Goal
 from tbp.monty.memento import Memento
 
 
@@ -83,9 +83,7 @@ class AttentionSystem:
         """The voxel grid: (x, y, z) MultiIndex rows with age/count columns."""
         return self._voxel_grid
 
-    def step(
-        self, goals: list[Goal], regions: list[list[AttentionWeight]]
-    ) -> list[Goal]:
+    def step(self, goals: list[Goal], regions: list[list[Goal]]) -> list[Goal]:
         """Update the attention system with new regions and filter goals.
 
         Args:
@@ -104,9 +102,7 @@ class AttentionSystem:
         merged = self._merge(aged, proposed)
         self._voxel_grid = self._expire(merged)
         self._telemetry.voxel_grid(self._voxel_grid)
-        filtered = self._filter(goals)
-        self._telemetry.goal_filtering(goals, filtered)
-        return filtered
+        return self._filter(goals)
 
     def contains_points(
         self,
@@ -142,7 +138,7 @@ class AttentionSystem:
             **self._telemetry.state_dict(),
         )
 
-    def _voxelize_regions(self, regions: list[list[AttentionWeight]]) -> pd.DataFrame:
+    def _voxelize_regions(self, regions: list[list[Goal]]) -> pd.DataFrame:
         """Voxelize this step's regions into a fresh grid.
 
         Args:
@@ -154,7 +150,7 @@ class AttentionSystem:
         """
         per_region_voxels = []
         for region in regions:
-            locations = [aw.location for aw in region if aw.location is not None]
+            locations = [g.location for g in region if g.location is not None]
             if not locations:
                 continue
             per_region_voxels.extend(
@@ -215,7 +211,6 @@ class AttentionSystem:
         fresh = proposed.copy()
         seen_before = fresh.index.intersection(remembered.index)
         if len(seen_before):
-            fresh.loc[seen_before, "age"] = self._voxel_lifetime
             fresh.loc[seen_before, "count"] = (
                 fresh.loc[seen_before, "count"].to_numpy()
                 + remembered.loc[seen_before, "count"].to_numpy()
