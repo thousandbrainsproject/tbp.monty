@@ -473,7 +473,7 @@ class DefaultMessageNoise(MessageNoise):
         Returns:
             Percept with noise added.
         """
-        if "features" in self.noise_params:
+        if "features" in self.noise_params and percept.process_features_in_lm:
             for key in self.noise_params["features"]:
                 if key in percept.morphological_features:
                     if key == "pose_vectors":
