@@ -174,12 +174,20 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > unzip compositional_objects_1.2.zip
 > ```
 >
-> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder:
+> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder. If this is the first time you are doing this, you can use:
 >
 > ```plaintext
 > mkdir -p ~/tbp/data/habitat/objects/
 >
-> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.1 ~/tbp/data/habitat/objects/compositional_objects
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
+> ```
+>
+> If you have a pre-existing symlink for an old version of the dataset, then you will need to remove this first, i.e.:
+>
+> ```plaintext
+> rm ~/tbp/data/habitat/objects/compositional_objects
+>
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
