@@ -248,13 +248,15 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.spec.visual.headlight.ambient = (0.5, 0.5, 0.5)
         self.spec.visual.headlight.diffuse = (0.0, 0.0, 0.0)
         self.spec.visual.headlight.specular = (0.0, 0.0, 0.0)
-        # Add a directional light on the "front" side of the object.
-        self.spec.worldbody.add_light(
-            pos=(0, 0.0, 0.2),
-            diffuse=(0.6, 0.6, 0.6),
-            specular=(0.1, 0.1, 0.1),
-            type=mjtLightType.mjLIGHT_DIRECTIONAL,
-        )
+        # Add a directional light on the "front" side of the object,
+        # unless a previous recompile already added it.
+        if not self.spec.lights:
+            self.spec.worldbody.add_light(
+                pos=(0, 0.0, 0.2),
+                diffuse=(0.6, 0.6, 0.6),
+                specular=(0.1, 0.1, 0.1),
+                type=mjtLightType.mjLIGHT_DIRECTIONAL,
+            )
 
     def renderer_for_res(self, resolution: Resolution2D) -> Renderer:
         """Creates or returns a renderer of the specified resolution.
