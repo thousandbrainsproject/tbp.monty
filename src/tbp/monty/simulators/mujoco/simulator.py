@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, Sequence
 
@@ -91,6 +92,18 @@ HABITAT_PRIMITIVE_OBJECTS = {
 # configurations, e.g. in tests.
 DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
 
+# Key for tracking what custom objects we've already loaded meshes for.
+# Includes scale since MuJoCo stores scale on the mesh, and not the geom.
+LoadedObjectKey = tuple[str, VectorXYZ]
+
+
+@dataclass
+class ModelMetadata:
+    """Dataclass to store custom object mesh and material names."""
+
+    mesh_name: str
+    material_name: str
+
 
 class MuJoCoAgentFactory(Protocol):
     """Protocol for the partially applied Agent constructors from Hydra.
@@ -156,7 +169,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     _raise_actuate_missing: bool
     _agent_partials: Sequence[MuJoCoAgentFactory]
     _agents: dict[AgentID, Agent]
-    _loaded_custom_types: set[str]
+    _loaded_custom_types: dict[LoadedObjectKey, ModelMetadata]
     _object_count: int
     _renderers: dict[tuple[int, int], Renderer]
 
@@ -182,7 +195,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.id_to_semantic_id = self._default_id_mapping()
 
         self._data_path = Path(data_path) if data_path else None
-        self._loaded_custom_types: set[str] = set()
+        self._loaded_custom_types = {}
         self._raise_actuate_missing = raise_actuate_missing
         self._renderers = {}
         self._agent_partials = [] if agents is None else agents
@@ -315,7 +328,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self._recompile()
         self.id_to_semantic_id = self._default_id_mapping()
         self._object_count = 0
-        self._loaded_custom_types = set()
+        self._loaded_custom_types = {}
 
     @override
     def add_object(
@@ -384,29 +397,23 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
         """
-        if scale != (1.0, 1.0, 1.0):
-            # TODO: In order to support this, we need to update the
-            #  object loading code to set the scale on the "mesh" object,
-            #  which also means we need to track loaded objects with the
-            #  scale included.
-            raise NotImplementedError(
-                "Custom objects do not currently support "
-                "'scale' other than (1.0, 1.0, 1.0)."
-            )
+        object_lookup_key: LoadedObjectKey = (object_type, scale)
+        if object_lookup_key not in self._loaded_custom_types:
+            object_lookup_key = self._load_custom_object(object_type, scale)
 
-        if object_type not in self._loaded_custom_types:
-            self._load_custom_object(object_type)
-
+        metadata = self._loaded_custom_types[object_lookup_key]
         self.spec.worldbody.add_geom(
             name=obj_name,
             type=mjtGeom.mjGEOM_MESH,
-            meshname=f"{object_type}_mesh",
-            material=f"{object_type}_mat",
+            meshname=metadata.mesh_name,
+            material=metadata.material_name,
             pos=position,
             quat=rotation,
         )
 
-    def _load_custom_object(self, object_type: str) -> None:
+    def _load_custom_object(
+        self, object_type: str, scale: VectorXYZ
+    ) -> LoadedObjectKey:
         """Loads a custom object from the data_path into the spec.
 
         This should only be done once per custom object type.
@@ -416,6 +423,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             UnknownObjectType: When the directory for the object_type is missing.
             MissingObjectTexture: When the texture map is missing.
             MissingObjectModel: When the object is missing.
+
+        Returns:
+            The loaded object key.
+            Note: This may return a scale different from the one passed in.
         """
         if not self._data_path:
             raise DataPathNotConfigured(
@@ -425,6 +436,19 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         path = self._data_path / object_type
         texture_path = path / "texture_map.png"
         model_path = path / "textured.obj"
+
+        metadata_path = path / "metadata.json"
+        if metadata_path.exists():
+            metadata = load_object_metadata(metadata_path, object_type)
+        else:
+            metadata = ObjectMetadata()
+
+        # If the metadata overrides the scale, use that instead
+        if tuple(metadata.scale) != (1.0, 1.0, 1.0):
+            # We need to convert to a VectorXYZ for type checking
+            scale = tuple(metadata.scale)
+
+        obj_name_base = f"{object_type}_{scale[0]}_{scale[1]}_{scale[2]}"
 
         if not path.exists():
             raise UnknownObjectType(f"Unknown object type: {object_type}")
@@ -438,30 +462,35 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # MuJoCo doesn't seem to be able to load the referenced texture from the
         # 'texture.obj' file directly, so we have to load the texture separately and
         # create a material for it that we can add to the mesh.
+        texture_name = f"{obj_name_base}_tex"
         self.spec.add_texture(
-            name=f"{object_type}_tex",
+            name=texture_name,
             type=mjtTexture.mjTEXTURE_2D,
             file=str(texture_path),
         )
+
+        material_name = f"{obj_name_base}_mat"
         mat = self.spec.add_material(
-            name=f"{object_type}_mat",
+            name=material_name,
         )
-        mat.textures[mjtTextureRole.mjTEXROLE_RGB] = f"{object_type}_tex"
+        mat.textures[mjtTextureRole.mjTEXROLE_RGB] = texture_name
 
-        metadata_path = path / "metadata.json"
-        if metadata_path.exists():
-            metadata = load_object_metadata(metadata_path, object_type)
-        else:
-            metadata = ObjectMetadata()
-
+        mesh_name = f"{obj_name_base}_mesh"
         self.spec.add_mesh(
-            name=f"{object_type}_mesh",
+            name=mesh_name,
             file=str(model_path),
             refquat=metadata.refquat,
             refpos=metadata.refpos,
+            scale=scale,
         )
 
-        self._loaded_custom_types.add(object_type)
+        object_lookup_key: LoadedObjectKey = (object_type, scale)
+        self._loaded_custom_types[object_lookup_key] = ModelMetadata(
+            mesh_name=mesh_name,
+            material_name=material_name,
+        )
+
+        return object_lookup_key
 
     def _add_primitive_object(
         self,

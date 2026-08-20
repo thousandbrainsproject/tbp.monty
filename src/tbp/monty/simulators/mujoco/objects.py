@@ -32,6 +32,9 @@ class ObjectMetadata:
     normals. The model compiler normalizes the quaternion automatically.
     """
 
+    scale: VectorXYZ = (1.0, 1.0, 1.0)
+    """Scaling factor for the model in each direction."""
+
 
 class ObjectMetadataDecoder(json.JSONDecoder):
     """Decodes custom object metadata from JSON.
@@ -40,6 +43,7 @@ class ObjectMetadataDecoder(json.JSONDecoder):
     {
       "refpos": [0.0, 0.0, 0.0],
       "refquat": [1.0, 0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
     }
     """
 
@@ -55,20 +59,13 @@ class ObjectMetadataDecoder(json.JSONDecoder):
                 f"Couldn't decode '{self.object_type}' metadata."
             ) from e
 
-        # Check for extra or missing fields in the metadata
+        # Check for extra in the metadata
         fields_set = set(decoded.keys())
         expected_fields = {f.name for f in fields(ObjectMetadata)}
-        missing_fields = expected_fields - fields_set
         extra_fields = fields_set - expected_fields
-        errors = []
-        if missing_fields:
-            errors.append(f"missing fields: {missing_fields}")
         if extra_fields:
-            errors.append(f"extra fields: {extra_fields}")
-        if errors:
-            errors_str = " and ".join(errors)
             raise InvalidObjectMetadata(
-                f"Object '{self.object_type}' metadata has {errors_str}"
+                f"Object '{self.object_type}' metadata has extra fields: {extra_fields}"
             )
 
         return ObjectMetadata(**decoded)
