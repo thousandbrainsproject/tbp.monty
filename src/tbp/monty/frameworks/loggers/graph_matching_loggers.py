@@ -17,6 +17,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
+from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
     target_data_to_dict,
@@ -177,12 +178,13 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             DETAILED={},
         )
 
-    def log_episode(self, logger_args, output_dir, model):
-        mode = model.experiment_mode
-        episode = logger_args[f"{mode}_episodes"]
+    def log_episode(self, logger_args, output_dir, model):  # noqa: ARG002
+        # mode = model.experiment_mode
+        # episode = logger_args[f"{mode}_episodes"]
 
-        for handler in self.handlers:
-            handler.report_episode(self.data, output_dir, episode, mode)
+        # TODO telemetry: temporarily commented to test EpisodeTelemetryHandler
+        # for handler in self.handlers:
+        #     handler.report_episode(self.data, output_dir, episode, mode)
 
         if not self.use_parallel_wandb_logging:
             # when logging in parallel to wandb we need to wait with flushing
@@ -202,7 +204,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, model):
+    def update_episode_data(self, logger_args, model: MontyBase):
         """Run get_stats_per_lm and add to overall stats.
 
         Store stats ~

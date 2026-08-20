@@ -30,6 +30,7 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -40,6 +41,10 @@ from tbp.monty.frameworks.loggers.exp_logger import (
 )
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.monty_base import MontyBase
+from tbp.monty.frameworks.telemetry.episode.subscribers import (
+    EpisodeTelemetryHandler,
+    MontyHandlerTelemetryConnector,
+)
 from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
@@ -49,6 +54,9 @@ from tbp.monty.memento import Memento
 __all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
+telemeter = telemetry.getTelemeter(
+    __name__, event_level=telemetry.INFO, snapshot_level=telemetry.TRACE
+)  # TODO telemetry: equivalent of logger.setLevel
 
 
 class MontyExperiment:
@@ -153,6 +161,7 @@ class MontyExperiment:
 
         self.load_environment_interfaces(config)
         self.init_monty_data_loggers(self.config["logging"])
+        self.init_telemetry()
         self.init_counters()
 
     def init_env(self, env_init_func, env_init_args):
@@ -398,6 +407,14 @@ class MontyExperiment:
             self.monty_logger, self.model, output_dir=self.output_dir
         )
 
+    def init_telemetry(self):
+        """Initialize Monty telemetry."""
+        # TODO telemetry: Hydra config for levels
+        self.episode_telemetry = EpisodeTelemetryHandler(telemetry.INFO)
+        self.monty_handler_telemetry = MontyHandlerTelemetryConnector(
+            handlers=self.monty_logger.handlers, output_dir=self.output_dir
+        )
+
     def get_epoch_state(self):
         if self.experiment_mode is ExperimentMode.TRAIN:
             epoch = self.train_epochs
@@ -570,6 +587,7 @@ class MontyExperiment:
         get 'confused'/'FP'.
         """
         self.logger_handler.post_episode(self.logger_args)
+        self.episode_telemetry.post_episode(self.logger_args, self.model)
 
         self.model.update_ltm()
         self._snapshot_monty()
@@ -722,6 +740,10 @@ class MontyExperiment:
 
         # Close monty logging
         self.logger_handler.close(self.logger_args)
+
+        self.episode_telemetry.unsubscribe()
+        self.monty_handler_telemetry.unsubscribe()
+        # TODO telemetry: close all self.xxx_telemetry?
 
         # Close python logging
         for handler in logger.handlers:

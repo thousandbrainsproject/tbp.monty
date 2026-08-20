@@ -18,6 +18,7 @@ import torch
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -34,12 +35,20 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.telemetry.episode.schemas import (
+    LearningModuleObjectRecognized,
+    LearningModuleStateTelemetry,
+    TerminalState,
+)
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 
-__all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
+__all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching", "TerminalState"]
 
 logger = logging.getLogger(__name__)
+telemeter = telemetry.getTelemeter(
+    __name__, event_level=telemetry.INFO, snapshot_level=telemetry.TRACE
+)  # TODO telemetry: equivalent of logger.setLevel
 
 
 class MontyForGraphMatching(MontyBase):
@@ -625,6 +634,7 @@ class GraphLM(LearningModule):
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
+        self._emit_lm_state()
 
     def exploratory_step(
         self,
@@ -635,6 +645,11 @@ class GraphLM(LearningModule):
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
+        self._emit_lm_state()
+
+    def _emit_lm_state(self):
+        """Emits post-step LM state telemetry."""
+        telemeter.emit(LearningModuleStateTelemetry.from_graph_lm(self, emitter=self))
 
     def update_ltm_from_stm(self) -> None:
         """If training, update memory from buffer."""
@@ -898,6 +913,10 @@ class GraphLM(LearningModule):
             self.buffer.set_individual_ts(self.detected_object, self.detected_pose)
         else:
             self.buffer.set_individual_ts(None, None)
+
+        telemeter.emit(LearningModuleObjectRecognized.from_graph_lm(self, emitter=self))
+
+        self._emit_lm_state()  # TODO telemetry: probably unnecessary, I will re-assess
 
     def collect_stats_to_save(self):
         """Get all stats that this LM should store in the buffer for logging.

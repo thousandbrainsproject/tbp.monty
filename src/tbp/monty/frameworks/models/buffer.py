@@ -167,7 +167,7 @@ class FeatureAtLocationBuffer:
         """Reset the buffer."""
         self.__init__()
 
-    def get_current_location(self, input_channel):
+    def get_current_location(self, input_channel="first"):
         """Get the current location.
 
         Note:
