@@ -659,7 +659,7 @@ class EvidenceGraphLM(GraphLM):
                 lm_episode_stats = {
                     "detected_path": mlh["location"],
                     "detected_location_on_model": mlh["location"],
-                    "detected_location_rel_body": self.buffer.current_location(),
+                    "detected_location_rel_body": self.buffer.last_location,
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r_inv.as_quat(),
                     "detected_scale": 1,  # TODO: scale doesn't work yet

@@ -199,6 +199,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         for p in percepts:
             p.set_displacement(displacement)
         self.last_location = current_location.copy()
+        self.buffer.last_location = current_location.copy()
         return percepts
 
     def _displace_hypotheses(self, percepts: Sequence[Message]) -> None:
@@ -224,6 +225,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
                 hypotheses, displacement, graph_id
             )
         self.last_location = current_location.copy()
+        self.buffer.last_location = current_location.copy()
 
     def matching_step(
         self,
