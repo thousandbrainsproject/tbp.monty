@@ -19,6 +19,8 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
+    get_unsupervised_benchmark_stats,
+    lm_stats_to_dataframe,
     target_data_to_dict,
     total_size,
 )
@@ -515,6 +517,73 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 )
 
         return overall_stats
+
+
+class BasicUnsupervisedGraphMatchingLogger(BasicGraphMatchingLogger):
+    """Basic graph-matching logger with unsupervised benchmark stats."""
+
+    def __init__(self, handlers):
+        """Initialize logger."""
+        super().__init__(handlers)
+        self.unsupervised_train_stats = {}
+
+    def post_episode(self, logger_args, output_dir, model):
+        self.update_episode_data(logger_args, model)
+        self.update_unsupervised_overall_stats(logger_args, model)
+        self.log_episode(logger_args, output_dir, model)
+
+    def update_unsupervised_overall_stats(self, logger_args, model):
+        """Add unsupervised benchmark stats to current overall stats."""
+        mode = model.experiment_mode
+        if mode is not ExperimentMode.TRAIN:
+            return
+
+        if logger_args.get("supervised_lm_ids"):
+            return
+
+        episode = logger_args[f"{mode}_episodes"]
+        episode_stats = self.data["BASIC"][f"{mode}_stats"].get(episode)
+        if episode_stats is None:
+            return
+
+        self.unsupervised_train_stats[episode] = copy.deepcopy(episode_stats)
+
+        n_train_epochs = logger_args.get("n_train_epochs")
+        n_total_train_episodes = logger_args.get("n_total_train_episodes")
+
+        if not n_train_epochs or not n_total_train_episodes:
+            return
+
+        if n_total_train_episodes % n_train_epochs != 0:
+            return
+
+        epoch_len = n_total_train_episodes // n_train_epochs
+        stats_df = lm_stats_to_dataframe(self.unsupervised_train_stats)
+
+        formatted_stats = {}
+        for lm_id, lm_stats in stats_df.groupby("lm_id", sort=False):
+            if len(lm_stats) < epoch_len:
+                continue
+
+            benchmark_stats = get_unsupervised_benchmark_stats(lm_stats, epoch_len)
+            if not benchmark_stats:
+                continue
+
+            prefix = f"{lm_id}/overall"
+            formatted_stats[f"{prefix}/percent_correct_first_epoch"] = benchmark_stats[
+                "percent_correct_first_epoch"
+            ]
+            formatted_stats[f"{prefix}/percent_correct_after_first_epoch"] = (
+                benchmark_stats["percent_correct_after_first_epoch"]
+            )
+            formatted_stats[f"{prefix}/mean_objects_per_graph"] = benchmark_stats[
+                "mean_objects_per_graph"
+            ]
+            formatted_stats[f"{prefix}/mean_graphs_per_object"] = benchmark_stats[
+                "mean_graphs_per_object"
+            ]
+
+        self.data["BASIC"][f"{mode}_overall_stats"][episode].update(formatted_stats)
 
 
 class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
