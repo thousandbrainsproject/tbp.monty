@@ -33,6 +33,10 @@ from tools.github_readme_sync.constants import (
     IGNORE_YOUTUBE,
     REGEX_CSV_TABLE,
 )
+from tools.github_readme_sync.future_work_metadata import (
+    is_future_work_doc_path,
+    render_future_work_metadata,
+)
 from tools.github_readme_sync.req import delete, get, post, put
 
 logger = logging.getLogger(__name__)
@@ -305,7 +309,7 @@ class ReadMe:
     def create_or_update_doc(
         self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
     ) -> tuple[str, bool]:
-        markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
+        markdown = self.process_markdown(doc, file_path)
 
         create_doc_request = {
             "title": doc["title"],
@@ -341,8 +345,9 @@ class ReadMe:
 
         return doc_id, created
 
-    def process_markdown(self, body: str, file_path: str, slug: str) -> str:
-        body = self.insert_edit_this_page(body, slug, file_path)
+    def process_markdown(self, doc: dict, file_path: str) -> str:
+        body = self.insert_future_work_metadata(doc, file_path)
+        body = self.insert_edit_this_page(body, doc["slug"], file_path)
         body = self.insert_markdown_snippet(body, file_path)
         body = self.convert_csv_to_html_table(body, file_path)
         body = self.correct_image_locations(body)
@@ -359,11 +364,15 @@ class ReadMe:
         allowed_tags.add("style")
         allowed_tags.add("a")
         allowed_tags.add("label")
+        for tag in ("div", "strong"):
+            allowed_attributes[tag] = set()
         for tag in allowed_attributes:
             allowed_attributes[tag].add("width")
             allowed_attributes[tag].add("style")
             allowed_attributes[tag].add("target")
             allowed_attributes[tag].add("class")
+        allowed_attributes["a"].add("rel")
+        allowed_attributes["img"].add("title")
 
         return nh3.clean(
             body,
@@ -374,6 +383,23 @@ class ReadMe:
             generic_attribute_prefixes={"data-"},
             clean_content_tags={"script"},
         )
+
+    def insert_future_work_metadata(self, doc: dict, file_path: str) -> str:
+        """Insert rendered future work metadata at the top of the document body.
+
+        Returns:
+            The document body, with metadata prepended when applicable.
+        """
+        body = doc["body"]
+        if not is_future_work_doc_path(file_path):
+            return body
+        metadata_html = render_future_work_metadata(doc)
+        if not metadata_html:
+            return body
+        metadata_block = self._create_readme_block(
+            "html", {"html": self.sanitize_html(metadata_html)}
+        )
+        return f"{metadata_block}\n\n{body.lstrip()}"
 
     def insert_edit_this_page(self, body: str, filename: str, file_path: str) -> str:
         depth = len(file_path.split("/")) - 1
@@ -510,7 +536,7 @@ class ReadMe:
     def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:
         return identifier in ignore_list
 
-    def _create_video_block(self, block_type: str, block_data: dict[str, Any]) -> str:
+    def _create_readme_block(self, block_type: str, block_data: dict[str, Any]) -> str:
         return f"[block:{block_type}]\n{json.dumps(block_data, indent=2)}\n[/block]"
 
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
@@ -529,7 +555,7 @@ class ReadMe:
                     f"Your browser does not support the video tag.</video></div>"
                 )
             }
-            return self._create_video_block("html", block)
+            return self._create_readme_block("html", block)
 
         return regex_cloudinary_video.sub(replace_video, markdown_text)
 
@@ -564,7 +590,7 @@ class ReadMe:
                 "href": youtube_url,
                 "typeOfEmbed": "youtube",
             }
-            return self._create_video_block("embed", block)
+            return self._create_readme_block("embed", block)
 
         return regex_youtube_link.sub(replace_youtube, markdown_text)
 

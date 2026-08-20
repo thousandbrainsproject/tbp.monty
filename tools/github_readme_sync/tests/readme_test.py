@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -356,6 +356,57 @@ This is a test document.""",
             "A collection of terms",
             "Excerpt field value is incorrect",
         )
+
+    @patch("tools.github_readme_sync.readme.get")
+    @patch("tools.github_readme_sync.readme.post")
+    @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
+    def test_create_or_update_doc_includes_future_work_metadata(
+        self, mock_post, mock_get
+    ):
+        mock_get.return_value = None
+        mock_post.return_value = json.dumps({"_id": "future-work-doc-id"})
+
+        doc = {
+            "title": "Example Doc",
+            "body": "Body content here.",
+            "slug": "example-doc",
+            "estimated-scope": "large",
+        }
+
+        self.readme.create_or_update_doc(
+            order=1,
+            category_id="category-id",
+            doc=doc,
+            parent_id="parent-doc-id",
+            file_path="docs/future-work/learning-module-improvements",
+        )
+
+        actual_body = mock_post.call_args[0][1]["body"]
+        expected_prefix = self.readme.insert_future_work_metadata(
+            doc,
+            "docs/future-work/learning-module-improvements",
+        )
+        self.assertTrue(actual_body.startswith(expected_prefix))
+
+    def test_insert_future_work_metadata_sanitizes_malicious_content(self):
+        doc = {
+            "slug": "example",
+            "body": "Body content here.",
+            "status": "<script>alert(1)</script>",
+            "rfc": 'https://example.com" onclick="alert(1)',
+            "skills": "<img src=x onerror=alert(1)>",
+        }
+
+        result = self.readme.insert_future_work_metadata(
+            doc,
+            "docs/future-work/example",
+        )
+
+        self.assertNotIn("<script>", result)
+        self.assertNotIn("onerror=", result)
+        self.assertNotIn("onclick=", result)
+        self.assertIn("[block:html]", result)
+        self.assertIn("Body content here.", result)
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})
     def test_correct_image_locations_markdown(self):
