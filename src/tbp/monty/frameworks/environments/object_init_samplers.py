@@ -21,12 +21,6 @@ from tbp.monty.geometry import Rotation
 from tbp.monty.math import EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
 
 
-class MultiObjectNames(TypedDict):
-    targets_list: Sequence[str]
-    source_object_list: Sequence[str]
-    num_distractors: int
-
-
 class ObjectInitParams(TypedDict):
     position: VectorXYZ
     rotation: QuaternionWXYZ

@@ -25,13 +25,11 @@ from tbp.monty.frameworks.environment_utils.transforms import (
     TransformContext,
 )
 from tbp.monty.frameworks.environments.environment import (
-    ObjectID,
     SemanticID,
     SimulatedObjectEnvironment,
 )
 from tbp.monty.frameworks.environments.object_init_samplers import (
     Default,
-    MultiObjectNames,
     ObjectInitParams,
     Predefined,
     RandomRotation,
@@ -175,7 +173,7 @@ class OneObjectPerEpisodeInterface(Interface):
 
     def __init__(
         self,
-        object_names: list[str] | ListConfig | MultiObjectNames,
+        object_names: list[str] | ListConfig,
         object_init_sampler: Default | Predefined | RandomRotation,
         parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
@@ -186,14 +184,7 @@ class OneObjectPerEpisodeInterface(Interface):
 
         Args:
             object_names: plain list of objects, or Hydra `ListConfig`, if doing a
-                simple experiment with primary target objects only; mapping typed as
-                `MultiObjectNames` for experiments with multiple objects,
-                corresponding to -->
-                targets_list : the list of primary target objects
-                source_object_list : the original object list from which the primary
-                    target objects were sampled; used to sample distractor objects
-                num_distractors : the number of distractor objects to add to the
-                    environment
+                simple experiment with primary target objects only
             object_init_sampler: Function that returns dict with position, rotation,
                 and scale of objects when re-initializing.
             parent_to_child_mapping: dictionary mapping parent objects to their child
@@ -202,28 +193,11 @@ class OneObjectPerEpisodeInterface(Interface):
                 prior to each episode.
             *args: passed to `super()` call
             **kwargs: passed to `super()` call
-
-        Raises:
-            TypeError: If `object_names` is not a `list`, `ListConfig`, or a mapping
         """
         super().__init__(*args, **kwargs)
-        if isinstance(object_names, Mapping):
-            # TODO when we want more advanced multi-object experiments, update these
-            # arguments along with the Object Initializers so that we can easily
-            # specify a set of primary targets and distractors, i.e. random sampling
-            # of the distractor objects shouldn't happen here
-            self.object_names = object_names["targets_list"]
-            self.source_object_list = list(
-                dict.fromkeys(object_names["source_object_list"])
-            )
-            self.num_distractors = object_names["num_distractors"]
-        elif isinstance(object_names, (list, ListConfig)):
-            self.object_names = object_names
-            # Return an (ordered) list of unique items:
-            self.source_object_list = list(dict.fromkeys(self.object_names))
-            self.num_distractors = 0
-        else:
-            raise TypeError("Object names must be a list, ListConfig, or a mapping")
+        self.object_names = object_names
+        # Return an (ordered) list of unique items:
+        self.source_object_list = list(dict.fromkeys(self.object_names))
         self.create_semantic_mapping()
 
         self.episodes = 0
@@ -264,7 +238,7 @@ class OneObjectPerEpisodeInterface(Interface):
             # We only care about the last result.
             success = result.success
 
-        if self.num_distractors == 0 and not success:
+        if not success:
             raise RuntimeError(
                 f"Primary target '{self.primary_target['object']}' "
                 f"with rotation {self.primary_target['euler_rotation']} "
@@ -329,8 +303,6 @@ class OneObjectPerEpisodeInterface(Interface):
         which should correspond to the index of the object in the `self.object_params`
         list.
 
-        Also add any distractor objects if required.
-
         Args:
             idx: Index of the new object and its parameters in object_params
 
@@ -342,20 +314,13 @@ class OneObjectPerEpisodeInterface(Interface):
         self.env.remove_all_objects()
 
         semantic_id = self.semantic_label_to_id[self.object_names[idx]]
-        # TODO clean this up with its own specific call i.e. Law of Demeter
-        primary_target = self.env.add_object(
+        self.env.add_object(
             name=self.object_names[idx],
             position=self.object_params["position"],
             rotation=self.object_params["rotation"],
             scale=self.object_params["scale"],
             semantic_id=semantic_id,
         )
-
-        if self.num_distractors > 0:
-            self.add_distractor_objects(
-                primary_target.object_id,
-                primary_target_name=self.object_names[idx],
-            )
 
         self.current_object = idx
         self.primary_target = {
@@ -375,38 +340,6 @@ class OneObjectPerEpisodeInterface(Interface):
                 " parent_to_child_mapping",
             )
         logger.info(f"New primary target: {pformat(self.primary_target)}")
-
-    def add_distractor_objects(
-        self,
-        primary_target_obj: ObjectID,
-        primary_target_name: str,
-    ):
-        """Add arbitrarily many "distractor" objects to the environment.
-
-        Args:
-            primary_target_obj : The ID of the object which is the primary target in
-                the scene.
-            primary_target_name: name of the primary target object
-        """
-        # Sample distractor objects from those that are not the primary target; this
-        # is so that, for now, we can evaluate how well the model stays on the primary
-        # target object until it is classified, with no ambiguity about what final
-        # object it is classifying
-        sampling_list = [
-            item for item in self.source_object_list if item != primary_target_name
-        ]
-
-        for __ in range(self.num_distractors):
-            new_obj_label = self.rng.choice(sampling_list)
-            semantic_id = self.semantic_label_to_id[new_obj_label]
-            self.env.add_object(
-                name=new_obj_label,
-                position=self.object_params["position"],
-                rotation=self.object_params["rotation"],
-                scale=self.object_params["scale"],
-                semantic_id=semantic_id,
-                primary_target_object=primary_target_obj,
-            )
 
 
 class OmniglotInterface(OneObjectPerEpisodeInterface):
