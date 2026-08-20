@@ -1,0 +1,88 @@
+[project]
+name = "liveview-experiment"
+version = "0.0.1"
+description = "LiveView experiment monitor for tbp.monty"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MPL-2.0"}
+authors = [
+    {name = "Dmitry Ledentsov"}
+]
+keywords = ["monty", "experiment", "liveview", "monitoring", "dashboard"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Programming Language :: Python :: 3.8",
+]
+
+dependencies = [
+    "pyzmq>=25.0.0",
+]
+
+[project.optional-dependencies]
+liveview = [
+    "pyview-web>=0.8.1",
+    "uvicorn[standard]>=0.32.0",
+]
+dev = [
+    "black>=24.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.0.0",
+    "pytest>=8.0.0",
+    "radon>=6.0.0",
+    "vulture>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "DTZ", "T10", "SIM", "ARG", "PIE", "PT", "RET", "TCH", "TID", "Q", "RUF", "G", "PTH", "PLC", "BLE", "PGH", "S110"]
+ignore = []
+
+[tool.mypy]
+python_version = "3.14"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pyview.*",
+    "zmq.*",
+    "starlette.*",
+    "uvicorn.*",
+    "ibis.*",
+    "tbp.monty.*",
+    "hydra.*",
+    "numpy.*",
+    "PIL.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v"
+
