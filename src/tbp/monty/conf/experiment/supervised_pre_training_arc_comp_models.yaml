@@ -1,0 +1,39 @@
+# @package _global_
+
+defaults:
+  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty/motor_system_config: arc_compositional_scan
+  - /monty/learning_module: evidence_2lm_arc_compositional
+  - /monty/sensor_module: arc_compositional_2sm
+  - /monty/connectivity: 2lm_2sm
+  - /environment: compositional_arc
+  - /env_interface: train_arc_compositional
+  - /env_interface/transform: none
+  - /logging: silent_info_train
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 12000
+    max_eval_steps: 12000
+    max_total_steps: 12000
+    n_train_epochs: 1
+    n_eval_epochs: 1
+    model_name_or_path: ${constants.arc_pretrained_dir}/supervised_pre_training_arc_sprite_children/pretrained/
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+      ids:
+        - learning_module_1
+    seed: 42
+    supervised_lm_ids:
+      - learning_module_1
+    monty_config:
+      monty_class: ${monty.class:tbp.monty.frameworks.models.arc_compositional.MontyForArcCompositionalLearning}
+      monty_args:
+        child_lm_index: 0
+        parent_lm_index: 1
+        region_sensor_id: patch_0
+        max_total_steps: 12000
+    logging:
+      run_name: supervised_pre_training_arc_comp_models

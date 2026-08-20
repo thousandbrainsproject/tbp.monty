@@ -1,0 +1,18 @@
+{
+  "game_id": "cd82-fb555c5d",
+  "title": "CD82",
+  "default_fps": 30,
+  "tags": [
+    "keyboard_click"
+  ],
+  "baseline_actions": [
+    55,
+    8,
+    41,
+    21,
+    23,
+    23
+  ],
+  "local_dir": "environment_files/cd82/fb555c5d",
+  "date_downloaded": "2026-08-10T16:09:52.978356+00:00"
+}

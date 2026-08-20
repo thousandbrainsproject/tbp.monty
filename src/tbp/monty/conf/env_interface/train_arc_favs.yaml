@@ -1,0 +1,26 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  object_names:
+  - sm00
+  - sm01
+  - sm02
+  - ar25
+  - bp35
+  - cd82
+  - cn04
+  - g50t
+  - ka59
+  - ls20
+  - m0r0
+  - re86
+  - sk48
+  - sp80
+  - tu93
+  - wa30
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations:
+      - [0, 0, 0]
+train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

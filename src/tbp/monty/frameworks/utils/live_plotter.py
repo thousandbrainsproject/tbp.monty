@@ -30,8 +30,7 @@ class LivePlotter:
     assumes that
     - sensor with ID "view_finder" exists
     - sensor with ID "patch" exists
-    - "rgba" modality in "view_finder" sensor observation
-    - "depth" modality in "patch" sensor observation
+    - an image modality exists in both sensor observations
     """
 
     def __init__(self):
@@ -58,12 +57,18 @@ class LivePlotter:
 
         Returns:
             A tuple of the first learning module, the first sensor module raw
-            observations, the patch depth, and the view finder rgba.
+            observations, the patch image, and the view finder image.
+
+        Raises:
+            KeyError: If either sensor observation has no supported image modality.
         """
         first_learning_module = model.learning_modules[0]
         first_sensor_module = model.sensor_modules[0]
+        snapshot_telemetry = getattr(first_sensor_module, "_snapshot_telemetry", None)
         first_sensor_module_raw_observations = (
-            first_sensor_module._snapshot_telemetry.raw_observations
+            snapshot_telemetry.raw_observations
+            if snapshot_telemetry is not None
+            else []
         )
         first_sensor_module_id = first_sensor_module.sensor_module_id
 
@@ -75,12 +80,25 @@ class LivePlotter:
                 break
         assert first_sensor_module_agent_id is not None
 
-        first_sensor_depth = observation[first_sensor_module_agent_id][
+        patch_observation = observation[first_sensor_module_agent_id][
             first_sensor_module_id
-        ]["depth"]
-        view_finder_rgba = observation[first_sensor_module_agent_id][
+        ]
+        patch_image = patch_observation.get("depth")
+        if patch_image is None:
+            patch_image = patch_observation.get("rgba")
+        if patch_image is None:
+            patch_image = patch_observation.get("raw")
+        if patch_image is None:
+            raise KeyError("Patch observation has no depth, rgba, or raw image")
+
+        view_finder_observation = observation[first_sensor_module_agent_id][
             SensorID("view_finder")
-        ]["rgba"]
+        ]
+        view_finder_image = view_finder_observation.get("rgba")
+        if view_finder_image is None:
+            view_finder_image = view_finder_observation.get("raw")
+        if view_finder_image is None:
+            raise KeyError("View-finder observation has no rgba or raw image")
         if hasattr(first_learning_module, "get_current_mlh"):
             mlh = first_learning_module.get_current_mlh()
             if mlh["graph_id"] == "no_observations_yet":
@@ -95,8 +113,8 @@ class LivePlotter:
         return (
             first_learning_module,
             first_sensor_module_raw_observations,
-            first_sensor_depth,
-            view_finder_rgba,
+            patch_image,
+            view_finder_image,
             mlh,
             mlh_model,
         )
@@ -105,8 +123,8 @@ class LivePlotter:
         self,
         first_learning_module,
         first_sensor_module_raw_observations,
-        first_sensor_depth,
-        view_finder_rgba,
+        patch_image,
+        view_finder_image,
         mlh,
         mlh_model,
         step: int,
@@ -116,11 +134,11 @@ class LivePlotter:
         self.show_view_finder(
             first_sensor_module_raw_observations,
             first_learning_module,
-            first_sensor_depth,
-            view_finder_rgba,
+            patch_image,
+            view_finder_image,
             is_saccade_on_image_data_loader,
         )
-        self.show_patch(first_sensor_depth)
+        self.show_patch(patch_image)
         if mlh_model:
             self.show_mlh(mlh, mlh_model)
         plt.pause(0.00001)
@@ -129,8 +147,8 @@ class LivePlotter:
         self,
         first_sensor_module_raw_observations,
         first_learning_module,
-        first_sensor_depth,
-        view_finder_rgba,
+        patch_image,
+        view_finder_image,
         is_saccade_on_image_data_loader,
     ):
         if self.camera_image:
@@ -138,22 +156,22 @@ class LivePlotter:
 
         if is_saccade_on_image_data_loader:
             center_pixel_id = np.array([200, 200])
-            patch_size = np.array(first_sensor_depth).shape[0]
+            patch_size = np.asarray(patch_image).shape[0]
             raw_obs = first_sensor_module_raw_observations
             if len(raw_obs) > 0:
                 center_pixel_id = np.array(raw_obs[-1]["pixel_loc"])
-                view_finder_rgba = add_patch_outline_to_view_finder(
-                    view_finder_rgba, center_pixel_id, patch_size
+                view_finder_image = add_patch_outline_to_view_finder(
+                    view_finder_image, center_pixel_id, patch_size
                 )
-            self.camera_image = self.ax[0].imshow(view_finder_rgba, zorder=-99)
+            self.camera_image = self.ax[0].imshow(view_finder_image, zorder=-99)
         else:
             self.camera_image = self.ax[0].imshow(
-                view_finder_rgba,
+                view_finder_image,
                 zorder=-99,
             )
             # Show a square in the middle as a rough estimate of where the patch is
             # Note: This isn't exactly the size that the patch actually is.
-            image_shape = view_finder_rgba.shape
+            image_shape = view_finder_image.shape
             square = plt.Rectangle(
                 (image_shape[1] * 4.5 // 10, image_shape[0] * 4.5 // 10),
                 image_shape[1] / 10,
@@ -168,20 +186,17 @@ class LivePlotter:
                 graph_ids, evidences = first_learning_module.evidence_for_each_graph()
                 self.add_text(
                     mlh,
-                    pos=view_finder_rgba.shape[0],
+                    pos=view_finder_image.shape[0],
                     possible_matches=first_learning_module.get_possible_matches(),
                     graph_ids=graph_ids,
                     evidences=evidences,
                 )
 
-    def show_patch(self, first_sensor_depth):
-        if self.depth_image:
-            self.depth_image.remove()
-        self.depth_image = self.ax[1].imshow(
-            first_sensor_depth,
-            cmap="viridis_r",
-        )
-        # self.colorbar.update_normal(self.depth_image)
+    def show_patch(self, patch_image):
+        if self.sensor_image:
+            self.sensor_image.remove()
+        kwargs = {"cmap": "viridis_r"} if np.asarray(patch_image).ndim == 2 else {}
+        self.sensor_image = self.ax[1].imshow(patch_image, **kwargs)
 
     def show_mlh(self, mlh, mlh_model):
         if not mlh_model:
@@ -243,9 +258,9 @@ class LivePlotter:
         self.text = None
 
     def setup_sensor_ax(self):
-        self.ax[1].set_title("Sensor depth image")
+        self.ax[1].set_title("Sensor image")
         self.ax[1].set_axis_off()
-        self.depth_image = None
+        self.sensor_image = None
 
     def setup_mlh_ax(self):
         self.ax[2] = plt.subplot(1, 3, 3, projection="3d")

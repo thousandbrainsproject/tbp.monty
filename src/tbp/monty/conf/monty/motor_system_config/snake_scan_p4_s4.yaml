@@ -1,0 +1,18 @@
+# @package experiment.config.monty_config.motor_system_config
+
+_target_: tbp.monty.frameworks.models.motor_system.MotorSystem
+policy_selector:
+  _target_: tbp.monty.frameworks.models.motor_policy_selectors.SinglePolicySelector
+  policy:
+    _target_: tbp.monty.frameworks.models.motor_policies.SnakeScanPolicy
+    agent_id: agent_id_0
+    sensor_id: patch
+    frame_size: 64
+    patch_size: 4
+    stride: 4
+    action_space:
+      - ${monty.class:tbp.monty.simulators.arc_agi.actions.GameUp}
+      - ${monty.class:tbp.monty.simulators.arc_agi.actions.GameDown}
+      - ${monty.class:tbp.monty.simulators.arc_agi.actions.GameLeft}
+      - ${monty.class:tbp.monty.simulators.arc_agi.actions.GameRight}
+      - ${monty.class:tbp.monty.simulators.arc_agi.actions.GameUse}

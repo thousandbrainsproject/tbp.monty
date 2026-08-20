@@ -40,6 +40,7 @@ from tbp.monty.frameworks.actions.actions import (
     OrientHorizontal,
     OrientVertical,
     SetAgentPose,
+    SetSensorPose,
     SetSensorRotation,
     TurnLeft,
     TurnRight,
@@ -53,12 +54,12 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSyst
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.geometry import Rotation
-from tbp.monty.math import VectorXYZ
+from tbp.monty.math import IDENTITY_QUATERNION, VectorXYZ
 from tbp.monty.memento import Memento, Snapshotable
+from tbp.monty.simulators.arc_agi.actions import GameDown, GameLeft, GameRight, GameUp
 
 if TYPE_CHECKING:
     from os import PathLike
-
 
 __all__ = [
     "BasePolicy",
@@ -67,6 +68,7 @@ __all__ = [
     "NaiveScanPolicy",
     "NoGoalProvided",
     "RuntimeMotorPolicy",
+    "SnakeScanPolicy",
     "SurfacePolicy",
     "SurfacePolicyCurvatureInformed",
 ]
@@ -985,6 +987,265 @@ class InformedPolicy(BasePolicy):
                 state[self.agent_id].sensors[current_sensor].rotation,
                 self._pre_jump_state.sensors[current_sensor].rotation,
             ), "Failed to return sensor to orientation"
+
+
+ActionSpace = tuple[type[Action], ...]
+
+DEFAULT_GAME_ACTIONS: ActionSpace = (
+    GameUp,
+    GameDown,
+    GameLeft,
+    GameRight,
+)
+
+
+class SnakeScanPolicy(MotorPolicy):
+    """Scan in a snake pattern using top-left patch-crop coordinates."""
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID | str = "patch",
+        frame_sensor_id: SensorID | str = "view_finder",
+        frame_size: int | None = 64,
+        patch_size: int = 8,
+        stride: int = 8,
+        action_space: ActionSpace = DEFAULT_GAME_ACTIONS,
+    ) -> None:
+        self.agent_id = AgentID(agent_id)
+        self.sensor_id = SensorID(sensor_id)
+        self.frame_sensor_id = SensorID(frame_sensor_id)
+        self.frame_size = frame_size
+        self.patch_size = patch_size
+        self.stride = stride
+        self.action_space = action_space
+        self._scan_locations = (
+            self._make_scan_locations(frame_size, frame_size)
+            if frame_size is not None
+            else None
+        )
+        self.reset()
+
+    def _make_scan_locations(
+        self, frame_width: int, frame_height: int
+    ) -> list[VectorXYZ]:
+        max_x = frame_width - self.patch_size
+        max_y = frame_height - self.patch_size
+        x_starts = list(range(0, max_x + 1, self.stride))
+        y_starts = list(range(0, max_y + 1, self.stride))
+        if x_starts[-1] != max_x:
+            x_starts.append(max_x)
+        if y_starts[-1] != max_y:
+            y_starts.append(max_y)
+
+        locations: list[VectorXYZ] = []
+        for row, y in enumerate(y_starts):
+            xs = x_starts if row % 2 == 0 else reversed(x_starts)
+            locations.extend((float(x), float(y), 0.0) for x in xs)
+        return locations
+
+    def _make_dynamic_scan(self, observations: Observations) -> list[VectorXYZ]:
+        frame = observations[self.agent_id][self.frame_sensor_id]["raw"]
+        frame_height, frame_width = frame.shape[:2]
+        return self._make_scan_locations(frame_width, frame_height)
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
+    ) -> MotorPolicyResult:
+        scan_locations = self._scan_locations
+        if scan_locations is None:
+            scan_locations = self._make_dynamic_scan(observations)
+            self._scan_locations = scan_locations
+
+        if self._next_location_index == len(scan_locations):
+            # Game step
+            self._next_location_index = 0
+            action_cls: type[Action] = ctx.rng.choice(self.action_space)
+            return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
+
+        # Monty step (saccade on frame)
+        location = scan_locations[self._next_location_index]
+        self._next_location_index += 1
+        return MotorPolicyResult(
+            [
+                SetSensorPose(
+                    agent_id=self.agent_id,
+                    location=location,
+                    rotation_quat=IDENTITY_QUATERNION,
+                )
+            ]
+        )
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        # The simulator's reset observation is the first scan location.
+        if self.frame_size is None:
+            self._scan_locations = None
+        self._next_location_index = 1
+
+    def state_dict(self) -> Memento:
+        return {"next_location_index": self._next_location_index}
+
+    def load_state_dict(self, memento: Memento) -> None:
+        self._next_location_index = memento["next_location_index"]
+
+
+class RandomGameWalk(MotorPolicy):
+    """Perform a random-walk to explore an object."""
+
+    agent_id: AgentID
+    sensor_id: SensorID
+    frame_size: int
+    patch_size: int
+    stride: int
+    cadence: int
+    action_space: ActionSpace
+
+    _position: VectorXYZ
+    _step: int
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID | str = "patch",
+        frame_size: int = 64,
+        patch_size: int = 8,
+        stride: int = 4,
+        cadence: int = 96,
+        action_space: ActionSpace = DEFAULT_GAME_ACTIONS,
+    ) -> None:
+        self.agent_id = AgentID(agent_id)
+        self.sensor_id = SensorID(sensor_id)
+        self.frame_size = frame_size
+        self.patch_size = patch_size
+        self.stride = stride
+        self.cadence = cadence
+        self.action_space = action_space
+        self._position = self._center_position()
+        self._step = 0
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,  # noqa: ARG002
+    ) -> MotorPolicyResult:
+        if self._step >= self.cadence:
+            # Game step
+            self._step = 0
+            action_cls: type[Action] = ctx.rng.choice(self.action_space)
+            return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
+
+        # Monty step (saccade on frame)
+        dx: int = 0
+        dy: int = 0
+        while dx == dy == 0:
+            dx = ctx.rng.choice((-self.stride, 0, +self.stride))
+            dy = ctx.rng.choice((-self.stride, 0, +self.stride))
+        x = self._position[0] + dx
+        y = self._position[1] + dy
+
+        max_pos = self.frame_size - self.patch_size
+        if x < 0:
+            x = max_pos
+        elif x > max_pos:
+            x = 0
+        if y < 0:
+            y = max_pos
+        elif y > max_pos:
+            y = 0
+        self._position = (x, y, 0.0)
+
+        self._step += 1
+
+        return MotorPolicyResult(
+            [
+                SetSensorPose(
+                    agent_id=self.agent_id,
+                    location=self._position,
+                    rotation_quat=IDENTITY_QUATERNION,
+                )
+            ]
+        )
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def _center_position(self) -> VectorXYZ:
+        center = float(self.frame_size // 2 - self.stride)
+        return (center, center, 0.0)
+
+    def reset(self) -> None:
+        # The simulator's reset observation is the first scan location.
+        self._position = self._center_position()
+
+    def state_dict(self) -> Memento:
+        return {"position": self._position}
+
+    def load_state_dict(self, memento: Memento) -> None:
+        self._position = memento["position"]
+
+
+class GoalDrivenGameWalk(MotorPolicy):
+    """Visit all locations specified by goal."""
+
+    agent_id: AgentID
+    sensor_id: SensorID
+    action_space: ActionSpace
+
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID | str = "patch",
+        action_space: ActionSpace = DEFAULT_GAME_ACTIONS,
+    ) -> None:
+        self.agent_id = AgentID(agent_id)
+        self.sensor_id = SensorID(sensor_id)
+        self.action_space = action_space
+
+    def __call__(
+        self,
+        ctx: RuntimeContext,
+        observations: Observations,  # noqa: ARG002
+        state: MotorSystemState,  # noqa: ARG002
+        percept: Message,  # noqa: ARG002
+        goal: Goal | None,
+    ) -> MotorPolicyResult:
+        if goal:
+            return MotorPolicyResult(
+                [
+                    SetSensorPose(
+                        agent_id=self.agent_id,
+                        location=np.array(goal.location),
+                        rotation_quat=IDENTITY_QUATERNION,
+                    )
+                ]
+            )
+
+        # Game Step
+        action_cls: type[Action] = ctx.rng.choice(self.action_space)
+        return MotorPolicyResult([action_cls(agent_id=self.agent_id)])
+
+    def fixme_provide_motor_system(self, motor_system: ExperimentMotorSystem) -> None:
+        pass
+
+    def reset(self) -> None:
+        pass
+
+    def state_dict(self) -> Memento:
+        return {}
+
+    def load_state_dict(self, memento: Memento) -> None:
+        pass
 
 
 class NaiveScanPolicy(InformedPolicy):

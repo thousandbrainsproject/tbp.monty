@@ -154,6 +154,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 #       fully. For example, we know how many steps the policy will take,
                 #       so the experiment can set max steps based on that knowledge
                 #       alone.
+                self.model.deal_with_time_out()
                 self.model.set_is_done()
                 return step
 

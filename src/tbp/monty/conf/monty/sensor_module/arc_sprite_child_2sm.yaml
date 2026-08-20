@@ -1,0 +1,14 @@
+# @package experiment.config.monty_config.sensor_modules
+
+sensor_module_0:
+  _target_: tbp.monty.frameworks.models.arc_sprite_pixel_sensor_module.ArcSpritePixelSensorModule
+  sensor_module_id: patch_0
+
+sensor_module_1:
+  _target_: tbp.monty.frameworks.models.arc_sprite_pixel_sensor_module.ArcSpritePixelSensorModule
+  sensor_module_id: patch_1
+
+sensor_module_2:
+  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  sensor_module_id: view_finder
+  save_raw_obs: true

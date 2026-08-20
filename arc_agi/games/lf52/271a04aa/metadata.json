@@ -1,0 +1,22 @@
+{
+  "game_id": "lf52-271a04aa",
+  "title": "LF52",
+  "default_fps": 30,
+  "tags": [
+    "click"
+  ],
+  "baseline_actions": [
+    32,
+    81,
+    60,
+    71,
+    205,
+    148,
+    244,
+    109,
+    164,
+    225
+  ],
+  "local_dir": "environment_files/lf52/271a04aa",
+  "date_downloaded": "2026-08-10T16:09:55.384292+00:00"
+}

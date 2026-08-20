@@ -1,0 +1,22 @@
+# @package experiment.config.environment
+
+env_init_args:
+  data_path: ./arc_agi/games
+  sprite_manifest_path: ${path.expanduser:${oc.env:MONTY_DATA}/arc/sprite_children/v2/manifest.jsonl}
+  game_id: ls20
+  agents:
+    - _target_: tbp.monty.simulators.arc_agi.agents.ArcAgent
+      _partial_: true
+      agent_id: agent_id_0
+      viewport_sensor_id: view_finder
+      sensor_configs:
+        patch_0:
+          position: [0, 0, 0]
+        patch_1:
+          position: [0, 0, 0]
+        view_finder:
+          position: [0, 0, 0]
+      patch_resolution:
+        width: 1
+        height: 1
+env_init_func: ${monty.class:tbp.monty.simulators.arc_agi.ArcAgiSimulator}

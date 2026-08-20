@@ -29,6 +29,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.math import VectorXYZ
 from tbp.monty.memento import Memento, Snapshotable
 
 __all__ = [
@@ -57,6 +58,13 @@ class SensorObservation(TypedDict, total=False):
     cam_to_world: npt.NDArray[np.float64]  # TODO: Verify specific type
     pixel_loc: npt.NDArray[np.float64]  # TODO: Verify specific type
     raw: npt.NDArray[np.uint8]
+    oracle_regions: tuple[Any, ...]
+    region_active: bool
+    region_id: str
+    object_label: str
+    region_phase: str
+    region_anchor: VectorXYZ
+    region_location: VectorXYZ
 
 
 class AgentObservations(Dict[SensorID, SensorObservation]):

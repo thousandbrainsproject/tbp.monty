@@ -1,0 +1,20 @@
+{
+  "game_id": "lp85-305b61c3",
+  "title": "LP85",
+  "default_fps": 20,
+  "tags": [
+    "click"
+  ],
+  "baseline_actions": [
+    17,
+    38,
+    31,
+    16,
+    41,
+    60,
+    26,
+    159
+  ],
+  "local_dir": "environment_files/lp85/305b61c3",
+  "date_downloaded": "2026-08-10T16:09:57.018316+00:00"
+}

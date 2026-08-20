@@ -1,0 +1,30 @@
+# @package _global_
+
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty/motor_system_config: random_game_walk
+  - /monty/learning_module: evidence_arc_1lm
+  - /monty/sensor_module: arc_patch
+  - /monty/connectivity: 1lm_1sm
+  - /environment: arc
+  - /env_interface: eval_arc
+  - /env_interface/transform: none
+  - /logging: basic_warning_wandb_evidence_eval_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 500
+    max_total_steps: 6000
+    n_train_epochs: 1
+    n_eval_epochs: 3
+    model_name_or_path: ${constants.arc_pretrained_dir}/arc_train/pretrained/
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
+    seed: 42
+    supervised_lm_ids: all
+    logging:
+      run_name: arc_eval

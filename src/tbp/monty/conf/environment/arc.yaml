@@ -1,0 +1,19 @@
+# @package experiment.config.environment
+
+env_init_args:
+  data_path: ./arc_agi/games
+  game_id: ls20
+  agents:
+    - _target_: tbp.monty.simulators.arc_agi.agents.ArcAgent
+      _partial_: true
+      agent_id: agent_id_0
+      viewport_sensor_id: view_finder
+      sensor_configs: # For MontyExperiment
+        view_finder:
+          position: [0, 0, 0]
+        patch:
+          position: [0, 0, 0]
+      patch_resolution:
+        width: 8
+        height: 8
+env_init_func: ${monty.class:tbp.monty.simulators.arc_agi.ArcAgiSimulator}

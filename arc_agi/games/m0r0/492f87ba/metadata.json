@@ -1,0 +1,18 @@
+{
+  "game_id": "m0r0-492f87ba",
+  "title": "M0R0",
+  "default_fps": 7,
+  "tags": [
+    "keyboard_click"
+  ],
+  "baseline_actions": [
+    30,
+    111,
+    203,
+    26,
+    500,
+    237
+  ],
+  "local_dir": "environment_files/m0r0/492f87ba",
+  "date_downloaded": "2026-08-10T16:09:58.272784+00:00"
+}

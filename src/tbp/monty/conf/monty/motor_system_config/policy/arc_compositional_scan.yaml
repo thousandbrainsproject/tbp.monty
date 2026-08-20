@@ -1,0 +1,10 @@
+# @package experiment.config.monty_config.motor_system_config.policy_selector.policy
+
+_target_: tbp.monty.simulators.arc_agi.ArcCompositionalScanPolicy
+agent_id: agent_id_0
+child_sensor_id: patch_0
+map_sensor_id: patch_1
+frame_sensor_id: view_finder
+frame_size: null
+region_index: 0
+recognition_passes: 2
