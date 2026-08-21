@@ -41,10 +41,12 @@ class BaseGraphTest(TestCase):
                 "hsv": [0, 1, 1],
             },
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
+            process_features_in_lm=True,
             sender_id=fake_sender_id,
             sender_type="SM",
         )
+        self.default_percept_args = default_percept_args
         fp_1 = copy.deepcopy(default_percept_args)
         fp_1["location"] = np.array([1.0, 0.0, 0.0])
         fp_2 = copy.deepcopy(default_percept_args)
