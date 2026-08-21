@@ -13,7 +13,10 @@ import copy
 import logging
 from typing import Any, ClassVar, Sequence
 
-from tbp.monty.attention.attention_system import AttentionSystem
+from tbp.monty.attention.attention_system import (
+    AttentionSystemProtocol,
+    NoopAttentionSystem,
+)
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -53,6 +56,7 @@ class MontyBase(Monty):
         min_train_steps,
         num_exploratory_steps,
         max_total_steps,
+        attention_system: AttentionSystemProtocol | None = None,
     ) -> None:
         """Initialize the base class.
 
@@ -82,6 +86,10 @@ class MontyBase(Monty):
             min_train_steps: Minimum number of steps required for training.
             num_exploratory_steps: Number of steps required by the exploratory phase.
             max_total_steps: Maximum number of steps to run the experiment.
+            attention_system: The attention system to use. Defaults to a
+                NoopAttentionSystem, which filters nothing; configure an
+                AttentionSystem (e.g. the /monty/attention_system config
+                group) to attend.
 
         Raises:
             ValueError: If `sm_to_lm_matrix` is not defined
@@ -146,10 +154,12 @@ class MontyBase(Monty):
         self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
-        self._attention_system = AttentionSystem()
+        self._attention_system = (
+            NoopAttentionSystem() if attention_system is None else attention_system
+        )
 
     @property
-    def attention_system(self) -> AttentionSystem:
+    def attention_system(self) -> AttentionSystemProtocol:
         return self._attention_system
 
     def step(

@@ -26,7 +26,7 @@ class SlicMerge(SegmentationStrategy):
 
     def __init__(
         self,
-        n_seeds: int = 50,
+        n_seeds: int = 70,
         compactness: float = 10.0,
         max_iter: int = 10,
         sigma: float = 1.0,

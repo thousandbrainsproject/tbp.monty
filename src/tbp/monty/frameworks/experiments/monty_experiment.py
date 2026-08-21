@@ -432,6 +432,7 @@ class MontyExperiment:
 
         sensor_modules = instantiate(config.pop("sensor_modules"))
         motor_system = instantiate(config.pop("motor_system_config"))
+        attention_system = instantiate(config.pop("attention_system", None))
 
         # Create mapping between sensor modules, learning modules and agents
         sm_to_lm_matrix = instantiate(config.pop("sm_to_lm_matrix"))
@@ -450,6 +451,7 @@ class MontyExperiment:
             sm_to_lm_matrix=sm_to_lm_matrix,
             lm_to_lm_matrix=lm_to_lm_matrix,
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
+            attention_system=attention_system,
             # Pass any leftover configuration paramters downstream to monty_class
             **config,
             **monty_args,

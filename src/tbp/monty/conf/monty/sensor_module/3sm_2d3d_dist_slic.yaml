@@ -24,7 +24,7 @@ sensor_module_0:
       - 2
       - 2
     distance: 0.01
-  save_raw_obs: true
+  save_raw_obs: false
 sensor_module_1:
   _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
   sensor_module_id: patch_1
@@ -83,11 +83,11 @@ sensor_module_2:
       - 4
       - 4
     distance: 0.05
-  save_raw_obs: true
+  save_raw_obs: false
 sensor_module_3:
   _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
   sensor_module_id: view_finder
-  save_raw_obs: true
+  save_raw_obs: false
   salience_strategy:
     _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2.from_config
     config:
@@ -100,6 +100,3 @@ sensor_module_3:
       use_orientation: false
   segmentation_strategy:
     _target_: tbp.monty.frameworks.models.salience.segmentation.strategies.slic_merge.SlicMerge
-  snapshot_telemetry:
-    _target_: tbp.monty.frameworks.models.salience.telemetry.SalienceSMTelemetry
-    save_segmentation: true

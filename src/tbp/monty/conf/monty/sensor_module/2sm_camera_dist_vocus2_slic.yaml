@@ -66,5 +66,4 @@ sensor_module_2:
     _target_: tbp.monty.frameworks.models.salience.segmentation.strategies.slic_merge.SlicMerge
   snapshot_telemetry:
     _target_: tbp.monty.frameworks.models.salience.telemetry.SalienceSMTelemetry
-    save_segmentation: true
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import MAX_ATTENTION_WEIGHT, AttentionWeight, Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -48,7 +48,6 @@ class SalienceSM(SensorModule):
         segmentation_strategy: SegmentationStrategy | None = None,
     ) -> None:
         self._sensor_module_id = sensor_module_id
-        self._save_raw_obs = save_raw_obs
         self._salience_strategy = (
             Uniform() if salience_strategy is None else salience_strategy
         )
@@ -62,13 +61,21 @@ class SalienceSM(SensorModule):
         self._segmentation_strategy = segmentation_strategy
 
         self._goals: list[Goal] = []
-        self._region: list[Goal] = []
+        self._region: list[AttentionWeight] = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
+        self._save_raw_obs = save_raw_obs
 
     @property
     def sensor_module_id(self) -> str:
         return self._sensor_module_id
+
+    def reset(self) -> None:
+        self._goals.clear()
+        self._region.clear()
+        self._return_inhibitor.reset()
+        self._snapshot_telemetry.reset()
+        self.is_exploring = False
 
     def state_dict(self) -> Memento:
         return self._snapshot_telemetry.state_dict()
@@ -82,7 +89,10 @@ class SalienceSM(SensorModule):
             rotation=agent.rotation * sensor.rotation,
         )
 
-    def propose_region(self) -> list[Goal]:
+    def propose_goals(self) -> list[Goal]:
+        return self._goals
+
+    def propose_region(self) -> list[AttentionWeight]:
         return self._region
 
     def step(
@@ -131,38 +141,36 @@ class SalienceSM(SensorModule):
         ]
 
         segmentation_map, self._region = self._segment_region(
-            ctx, observation, on_object, salience
+            ctx, observation, on_object
         )
 
-        if not self.is_exploring:
-            if self._save_raw_obs:
-                self._snapshot_telemetry.raw_observation(
-                    observation, self.state.rotation, self.state.position
-                )
-            self._snapshot_telemetry.record(segmentation_map, self._region)
+        if self._save_raw_obs and not self.is_exploring:
+            self._snapshot_telemetry.raw_observation(
+                observation, self.state.rotation, self.state.position
+            )
+            self._snapshot_telemetry.salience(salience_map)
+            self._snapshot_telemetry.segmentation(segmentation_map, self._region)
 
     def _segment_region(
         self,
         ctx: RuntimeContext,
         observation: SensorObservation,
         on_object: OnObjectObservation,
-        salience: np.ndarray,
-    ) -> tuple[np.ndarray | None, list[Goal]]:
+    ) -> tuple[np.ndarray | None, list[AttentionWeight]]:
         """Segment the surface under fixation into a region proposal.
 
         The region is the set of on-object locations inside the segmented
-        surface, expressed as goals so it can travel to the attention system via
-        ``propose_region``.
+        surface, expressed as attention weights so it can travel to the
+        attention system via ``propose_region``.
 
         Args:
             ctx: The runtime context.
             observation: Sensor observation.
             on_object: The on-object view of the observation.
-            salience: Weighted salience, aligned with ``on_object.locations``.
 
         Returns:
-            The segmentation mask and the region's goals; None and an empty
-            list without a segmentation strategy.
+            The segmentation mask and the region's attention weights; None and
+            an empty list without a segmentation strategy.
         """
         if self._segmentation_strategy is None:
             return None, []
@@ -171,25 +179,13 @@ class SalienceSM(SensorModule):
             ctx=ctx, rgba=observation["rgba"], depth=observation["depth"]
         )
 
-        # Restore the weighted salience to image shape; boolean-mask indexing and
-        # np.where enumerate pixels in the same row-major order.
-        salience_map = np.zeros(on_object.on_object_mask.shape)
-        salience_map[on_object.on_object_mask] = salience
-
         surface_mask = segmentation_map.astype(bool) & on_object.on_object_mask
         surface_locations = on_object.locations_map[surface_mask]
-        surface_salience = salience_map[surface_mask]
 
         return segmentation_map, [
-            Goal(
+            AttentionWeight(
                 location=surface_locations[i],
-                morphological_features=None,
-                non_morphological_features=None,
-                confidence=surface_salience[i],
-                use_state=False,
-                sender_id=self._sensor_module_id,
-                sender_type="SM",
-                goal_tolerances=None,
+                weight=MAX_ATTENTION_WEIGHT,
             )
             for i in range(len(surface_locations))
         ]
@@ -232,13 +228,3 @@ class SalienceSM(SensorModule):
             return np.clip(weighted_salience, 0, 1)
 
         return (weighted_salience - min_) / scale
-
-    def reset(self) -> None:
-        self._goals.clear()
-        self._region.clear()
-        self._return_inhibitor.reset()
-        self._snapshot_telemetry.reset()
-        self.is_exploring = False
-
-    def propose_goals(self) -> list[Goal]:
-        return self._goals

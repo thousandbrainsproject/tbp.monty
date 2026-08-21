@@ -31,3 +31,4 @@ experiment:
     python_log_level: DEBUG
     logging:
       run_name: base_infer_objects_with_stickers_monolithic_models_3lm_mujoco
+      output_dir: ${path.expanduser:'~/tbp/results/comp_benefits_figures'}

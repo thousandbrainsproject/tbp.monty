@@ -452,6 +452,10 @@ class ActionsTest(TestCase):
         np.testing.assert_allclose(
             np.linalg.norm(agent_pos),
             expected_distance,
+            # atol so an expected distance of exactly zero (movements that
+            # cancel out) tolerates float noise; rtol alone can never pass
+            # against zero.
+            atol=1e-12,
             err_msg="OrientHorizontal action does not obey the Law of Cosines.",
         )
 

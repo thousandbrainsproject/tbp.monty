@@ -576,8 +576,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
                 buffer_data[f"SM_{i}"] = sm.state_dict()
 
         attention_state = model.attention_system.state_dict()
-        if len(attention_state["voxel_grids"]) > 0:
-            buffer_data["attention_system"] = attention_state
+        buffer_data["attention_system"] = attention_state
 
         # TODO ensure will work with multiple, independent sensor agents
         buffer_data["motor_system"] = {}
