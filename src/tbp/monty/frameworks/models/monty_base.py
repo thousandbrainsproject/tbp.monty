@@ -13,6 +13,10 @@ import copy
 import logging
 from typing import Any, ClassVar, Sequence
 
+from tbp.monty.attention.attention_system import (
+    AttentionSystemProtocol,
+    NoopAttentionSystem,
+)
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -52,6 +56,7 @@ class MontyBase(Monty):
         min_train_steps,
         num_exploratory_steps,
         max_total_steps,
+        attention_system: AttentionSystemProtocol | None = None,
     ) -> None:
         """Initialize the base class.
 
@@ -81,6 +86,10 @@ class MontyBase(Monty):
             min_train_steps: Minimum number of steps required for training.
             num_exploratory_steps: Number of steps required by the exploratory phase.
             max_total_steps: Maximum number of steps to run the experiment.
+            attention_system: The attention system to use. Defaults to a
+                NoopAttentionSystem, which filters nothing; configure an
+                AttentionSystem (e.g. the /monty/attention_system config
+                group) to attend.
 
         Raises:
             ValueError: If `sm_to_lm_matrix` is not defined
@@ -145,6 +154,13 @@ class MontyBase(Monty):
         self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
+        self._attention_system = (
+            NoopAttentionSystem() if attention_system is None else attention_system
+        )
+
+    @property
+    def attention_system(self) -> AttentionSystemProtocol:
+        return self._attention_system
 
     def step(
         self,
@@ -333,6 +349,12 @@ class MontyBase(Monty):
             goals = sm.propose_goals()
             self._goals.extend(goals)
 
+        # The attention system folds the proposed regions into its voxel grid and
+        # returns only the goals that fall within it.
+        regions = [lm.propose_region() for lm in self.learning_modules]
+        regions.extend(sm.propose_region() for sm in self.sensor_modules)
+        self._goals = self._attention_system.step(self._goals, regions)
+
     def _step_motor_system(
         self,
         ctx: RuntimeContext,
@@ -396,6 +418,7 @@ class MontyBase(Monty):
 
         self.motor_system.reset()
         self._goals = []
+        self._attention_system.reset()
 
     def snapshot(self) -> Memento:
         memo = {}

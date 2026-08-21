@@ -1,0 +1,92 @@
+# @package experiment.config
+
+do_eval: true
+eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
+eval_env_interface_args:
+  parent_to_child_mapping: null
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations:
+    - - 0.0
+      - 0.0
+      - 0.0
+  object_names:
+  - a_colored_wood_blocks
+  - a_cups
+  - a_lego_duplo
+  - a_marbles
+  - a_toy_airplane
+  - adjustable_wrench
+  - apple
+  - b_colored_wood_blocks
+  - b_cups
+  - b_lego_duplo
+  - b_marbles
+  - b_toy_airplane
+  - banana
+  - baseball
+  - bleach_cleanser
+  - bowl
+  - c_cups
+  - c_lego_duplo
+  - c_toy_airplane
+  - chain
+  - cracker_box
+  - d_cups
+  - d_lego_duplo
+  - d_toy_airplane
+  - dice
+  - e_cups
+  - e_lego_duplo
+  - e_toy_airplane
+  - extra_large_clamp
+  - f_cups
+  - f_lego_duplo
+  - flat_screwdriver
+  - foam_brick
+  - fork
+  - g_cups
+  - g_lego_duplo
+  - gelatin_box
+  - golf_ball
+  - h_cups
+  - hammer
+  - i_cups
+  - j_cups
+  - knife
+  - large_clamp
+  - large_marker
+  - lemon
+  - master_chef_can
+  - medium_clamp
+  - mini_soccer_ball
+  - mug
+  - mustard_bottle
+  - nine_hole_peg_test
+  - orange
+  - padlock
+  - peach
+  - pear
+  - phillips_screwdriver
+  - pitcher_base
+  - plate
+  - plum
+  - potted_meat_can
+  - power_drill
+  - pudding_box
+  - racquetball
+  - rubiks_cube
+  - scissors
+  - skillet
+  - skillet_lid
+  - softball
+  - spatula
+  - sponge
+  - spoon
+  - strawberry
+  - sugar_box
+  - tennis_ball
+  - tomato_soup_can
+  - tuna_fish_can
+  - windex_bottle
+  - wood_block

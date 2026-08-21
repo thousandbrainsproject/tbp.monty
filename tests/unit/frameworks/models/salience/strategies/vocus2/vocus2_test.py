@@ -575,12 +575,14 @@ class Vocus2FromConfigTest(unittest.TestCase):
             surround_sigma=sentinel.surround_sigma,
             n_scales=sentinel.n_scales,
             max_octaves=sentinel.max_octaves,
+            operating_limits=None,
         )
         depth_salience_mock.assert_called_once_with(
             center_sigma=sentinel_center_sigma,
             surround_sigma=sentinel.surround_sigma,
             n_scales=sentinel.n_scales,
             max_octaves=sentinel.max_octaves,
+            operating_limits=None,
         )
         orientation_salience_mock.assert_called_once_with(
             period=2 * sentinel_center_sigma,

@@ -202,8 +202,7 @@ class ColorChannelSalience:
         parameters are outside of the safe operating limits. Some are checked at
         construction time, others are checked at runtime and subject to
         `RuntimeContext.suppress_runtime_errors`. To opt-out of using safe operating
-        limits, use the `without_operating_limits` class method instead of constructing
-        directly.
+        limits, pass `operating_limits=NoOperatingLimits()`.
 
         Args:
             center_sigma: The center sigma for the center/surround pyramids.
@@ -424,6 +423,9 @@ class Vocus2SalienceConfig:
     max_octaves: int = 5
     use_depth: bool = True
     use_orientation: bool = True
+    # None means SafeOperatingLimits; pass NoOperatingLimits() to opt out of
+    # the sigma-vs-image-size checks.
+    operating_limits: OperatingLimits | None = None
 
 
 class Normalize(Protocol):
@@ -512,6 +514,7 @@ class Vocus2(SalienceStrategy):
             surround_sigma=config.surround_sigma,
             n_scales=config.n_scales,
             max_octaves=config.max_octaves,
+            operating_limits=config.operating_limits,
         )
 
         depth = (
@@ -520,6 +523,7 @@ class Vocus2(SalienceStrategy):
                 surround_sigma=config.surround_sigma,
                 n_scales=config.n_scales,
                 max_octaves=config.max_octaves,
+                operating_limits=config.operating_limits,
             )
             if config.use_depth
             else None

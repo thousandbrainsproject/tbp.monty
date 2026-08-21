@@ -9,6 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Literal, Sequence
 
 import numpy as np
@@ -376,6 +377,12 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
     }
 
 
+# Bounds of an attention weight: full excitation and full inhibition. A
+# freshly attended location is proposed at MAX_ATTENTION_WEIGHT.
+MIN_ATTENTION_WEIGHT = -1.0
+MAX_ATTENTION_WEIGHT = 1.0
+
+
 def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None:
     """Compute the mean location across messages.
 
@@ -389,3 +396,16 @@ def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None
     if not locations:
         return None
     return np.mean(locations, axis=0)
+
+
+@dataclass
+class AttentionWeight:
+    """Attention weight assigning weight to a location.
+
+    Attributes:
+        location: The location of the attention.
+        weight: The weight of the attention.
+    """
+
+    location: npt.NDArray[np.float64]
+    weight: float

@@ -13,12 +13,11 @@ from typing import Any
 from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 import quaternion as qt
 from parameterized import parameterized_class
 
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import MAX_ATTENTION_WEIGHT, AttentionWeight, Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
@@ -28,18 +27,8 @@ from tbp.monty.frameworks.models.salience.on_object_observation import (
 from tbp.monty.frameworks.models.salience.sensor_module import (
     SalienceSM,
 )
+from tbp.monty.frameworks.models.salience.telemetry import SalienceSMTelemetry
 from tbp.monty.frameworks.sensors import SensorID
-
-
-class ArrayEqual:
-    def __init__(self, arr: npt.ArrayLike):
-        self.arr = arr
-
-    def __eq__(self, other: npt.ArrayLike):
-        return np.array_equal(self.arr, other)
-
-    def __hash__(self):
-        return hash(np.asarray(self.arr).tobytes())
 
 
 @pytest.fixture
@@ -48,6 +37,8 @@ def mocked_object_observation():
         center_location=None,
         locations=np.empty((0, 3)),
         salience=np.empty([]),
+        on_object_mask=np.zeros((64, 64), dtype=bool),
+        locations_map=np.zeros((64, 64, 3)),
     )
     with patch(
         "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation",
@@ -92,21 +83,25 @@ class SalienceSMTest(unittest.TestCase):
         self.ctx = RuntimeContext(rng=np.random.RandomState())
 
     def test_step_snapshots_raw_observation_as_needed(self) -> None:
-        self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
-        self.sensor_module.is_exploring = self.is_exploring  # type: ignore[attr-defined]
+        # save_raw_obs configures the default telemetry, so build without an
+        # explicit one and assert on what actually got recorded.
+        sensor_module = SalienceSM(
+            sensor_module_id="test",
+            save_raw_obs=self.save_raw_obs,  # type: ignore[attr-defined]
+            salience_strategy=MagicMock(return_value=np.array([])),
+            return_inhibitor=MagicMock(return_value=np.array([])),
+        )
+        sensor_module.is_exploring = self.is_exploring  # type: ignore[attr-defined]
         data: dict[str, Any] = MagicMock()
 
-        self.sensor_module.update_state(self.state)
-        self.sensor_module.step(self.ctx, data)
+        sensor_module.update_state(self.state)
+        sensor_module.step(self.ctx, data)
 
-        if self.should_snapshot:  # type: ignore[attr-defined]
-            self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
-                data, self.state.rotation, ArrayEqual(self.state.position)
-            )
-        else:
-            self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
+        recorded = sensor_module.state_dict()["raw_observations"]
+        self.assertEqual(len(recorded), 1 if self.should_snapshot else 0)  # type: ignore[attr-defined]
 
     def test_step_returns_no_percept(self) -> None:
+        self.sensor_module.update_state(self.state)
         self.assertIsNone(self.sensor_module.step(self.ctx, self.observation))
 
     @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
@@ -119,6 +114,8 @@ class SalienceSMTest(unittest.TestCase):
             center_location=sentinel.center_location,
             locations=locations,
             salience=sentinel.salience_map,
+            on_object_mask=np.zeros((64, 64), dtype=bool),
+            locations_map=np.zeros((64, 64, 3)),
         )
         self.sensor_module._return_inhibitor.return_value = sentinel.ior_weights  # type: ignore[attr-defined]
         salience = 0.1 * np.array([1, 2, 3])
@@ -128,6 +125,7 @@ class SalienceSMTest(unittest.TestCase):
             depth=np.zeros((64, 64)),
         )
 
+        self.sensor_module.update_state(self.state)
         self.sensor_module.step(self.ctx, data)
         goals = self.sensor_module.propose_goals()
 
@@ -168,6 +166,189 @@ class SalienceSMTest(unittest.TestCase):
             self.assertEqual(g.goal_tolerances, expected_goal.goal_tolerances)
             self.assertEqual(g.sender_id, expected_goal.sender_id)
             self.assertEqual(g.sender_type, expected_goal.sender_type)
+
+
+class SalienceSMRegionTest(unittest.TestCase):
+    """The region is the segmented surface, proposed as goals."""
+
+    def setUp(self) -> None:
+        # A 2x2 frame: three on-object pixels, of which the segmentation covers
+        # (0, 0) and (1, 1). Locations encode their own pixel coordinates.
+        self.on_object_mask = np.array([[True, True], [False, True]])
+        self.locations_map = np.zeros((2, 2, 3))
+        for row in range(2):
+            for col in range(2):
+                self.locations_map[row, col] = [row, col, 1.0]
+        self.segmentation_map = np.array([[1, 0], [1, 1]], dtype=np.uint8)
+        # Weighted salience for the on-object pixels, in row-major order:
+        # (0, 0), (0, 1), (1, 1).
+        self.weighted_salience = np.array([0.1, 0.5, 0.9])
+
+        self.segmentation_strategy = MagicMock(return_value=self.segmentation_map)
+        self.sensor_module = SalienceSM(
+            sensor_module_id="test",
+            salience_strategy=MagicMock(return_value=sentinel.salience_map),
+            return_inhibitor=MagicMock(return_value=sentinel.ior_weights),
+            snapshot_telemetry=MagicMock(),
+            segmentation_strategy=self.segmentation_strategy,
+        )
+        self.sensor_module._weight_salience = MagicMock(  # type: ignore[method-assign]
+            return_value=self.weighted_salience
+        )
+        self.observation = SensorObservation(
+            rgba=np.zeros((2, 2, 4), dtype=np.uint8),
+            depth=np.zeros((2, 2)),
+        )
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
+
+    def step(self) -> None:
+        """Step the sensor module with the mocked observation pipeline."""
+        self.sensor_module.state = SensorState(
+            position=np.zeros(3), rotation=qt.quaternion(1, 0, 0, 0)
+        )
+        pix_rows, pix_cols = np.where(self.on_object_mask)
+        on_object = OnObjectObservation(
+            center_location=None,
+            locations=self.locations_map[pix_rows, pix_cols],
+            salience=sentinel.salience_map,
+            on_object_mask=self.on_object_mask,
+            locations_map=self.locations_map,
+        )
+        with patch(
+            "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation",
+            return_value=on_object,
+        ):
+            self.sensor_module.step(self.ctx, self.observation)
+
+    def test_region_is_the_on_object_part_of_the_segmented_surface(self) -> None:
+        self.step()
+        region = self.sensor_module.propose_region()
+        locations = [g.location.tolist() for g in region]
+        # (1, 0) is segmented but off-object; (0, 1) is on-object but outside
+        # the segmentation.
+        self.assertEqual(locations, [[0.0, 0.0, 1.0], [1.0, 1.0, 1.0]])
+
+    def test_region_entries_are_attention_weights(self) -> None:
+        self.step()
+        region = self.sensor_module.propose_region()
+        for aw in region:
+            self.assertIsInstance(aw, AttentionWeight)
+        self.assertEqual([aw.weight for aw in region], [MAX_ATTENTION_WEIGHT] * 2)
+
+    def test_segmentation_strategy_receives_the_observation(self) -> None:
+        self.step()
+        self.segmentation_strategy.assert_called_once_with(
+            ctx=self.ctx,
+            rgba=self.observation["rgba"],
+            depth=self.observation["depth"],
+        )
+
+    def test_without_a_segmentation_strategy_the_region_is_empty(self) -> None:
+        self.sensor_module._segmentation_strategy = None
+        self.step()
+        self.assertEqual(self.sensor_module.propose_region(), [])
+
+    def test_reset_clears_the_region(self) -> None:
+        self.step()
+        self.sensor_module.reset()
+        self.assertEqual(self.sensor_module.propose_region(), [])
+
+
+class SalienceSMTelemetryRecordingTest(unittest.TestCase):
+    """Segmentation masks and regions are stashed when telemetry is supplied."""
+
+    def setUp(self) -> None:
+        # The same 2x2 mocked pipeline as SalienceSMRegionTest, with telemetry.
+        self.on_object_mask = np.array([[True, True], [False, True]])
+        self.locations_map = np.zeros((2, 2, 3))
+        for row in range(2):
+            for col in range(2):
+                self.locations_map[row, col] = [row, col, 1.0]
+        self.segmentation_map = np.array([[1, 0], [1, 1]], dtype=np.uint8)
+        self.weighted_salience = np.array([0.1, 0.5, 0.9])
+
+        self.telemetry = SalienceSMTelemetry()
+        self.sensor_module = SalienceSM(
+            sensor_module_id="test",
+            save_raw_obs=True,
+            salience_strategy=MagicMock(return_value=sentinel.salience_map),
+            return_inhibitor=MagicMock(return_value=sentinel.ior_weights),
+            snapshot_telemetry=self.telemetry,
+            segmentation_strategy=MagicMock(return_value=self.segmentation_map),
+        )
+        self.sensor_module._weight_salience = MagicMock(  # type: ignore[method-assign]
+            return_value=self.weighted_salience
+        )
+        self.observation = SensorObservation(
+            rgba=np.zeros((2, 2, 4), dtype=np.uint8),
+            depth=np.zeros((2, 2)),
+        )
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
+
+    def step(self) -> None:
+        """Step the sensor module with the mocked observation pipeline."""
+        self.sensor_module.state = SensorState(
+            position=np.zeros(3), rotation=qt.quaternion(1, 0, 0, 0)
+        )
+        pix_rows, pix_cols = np.where(self.on_object_mask)
+        on_object = OnObjectObservation(
+            center_location=None,
+            locations=self.locations_map[pix_rows, pix_cols],
+            salience=sentinel.salience_map,
+            on_object_mask=self.on_object_mask,
+            locations_map=self.locations_map,
+        )
+        with patch(
+            "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation",
+            return_value=on_object,
+        ):
+            self.sensor_module.step(self.ctx, self.observation)
+
+    def test_step_records_the_segmentation_mask_and_region(self) -> None:
+        self.step()
+        state = self.telemetry.state_dict()
+        np.testing.assert_array_equal(
+            state["segmentation_maps"][0], self.segmentation_map
+        )
+        self.assertEqual(state["regions"][0], self.sensor_module.propose_region())
+
+    def test_step_does_not_record_while_exploring(self) -> None:
+        self.sensor_module.is_exploring = True
+        self.step()
+        self.assertEqual(self.telemetry.state_dict()["segmentation_maps"], [])
+
+    def test_without_a_segmentation_strategy_none_is_recorded(self) -> None:
+        self.sensor_module._segmentation_strategy = None
+        self.step()
+        state = self.telemetry.state_dict()
+        self.assertIsNone(state["segmentation_maps"][0])
+        self.assertEqual(state["regions"][0], [])
+
+    def test_state_dict_holds_snapshot_and_segmentation_telemetry(self) -> None:
+        self.step()
+        state = self.sensor_module.state_dict()
+        self.assertEqual(
+            set(state),
+            {
+                "raw_observations",
+                "sm_properties",
+                "segmentation_maps",
+                "regions",
+                "salience_maps",
+            },
+        )
+
+    def test_recording_is_off_unless_save_raw_obs_is_set(self) -> None:
+        self.sensor_module._save_raw_obs = False
+        self.step()
+        state = self.sensor_module.state_dict()
+        self.assertEqual(state["segmentation_maps"], [])
+        self.assertEqual(state["regions"], [])
+
+    def test_reset_discards_the_recordings(self) -> None:
+        self.step()
+        self.sensor_module.reset()
+        self.assertEqual(self.telemetry.state_dict()["segmentation_maps"], [])
 
 
 class SalienceSMPrivateTest(unittest.TestCase):

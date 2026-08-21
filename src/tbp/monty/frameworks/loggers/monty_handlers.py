@@ -12,13 +12,12 @@ from __future__ import annotations
 
 import abc
 import copy
-import json
 import logging
-import os
 from pathlib import Path
 from pprint import pformat
 from typing import Container, Literal
 
+import orjson
 from typing_extensions import override
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -31,6 +30,37 @@ from tbp.monty.frameworks.utils.logging_utils import (
 __all__ = ["BasicCSVStatsHandler", "DetailedJSONHandler", "MontyHandler"]
 
 logger = logging.getLogger(__name__)
+
+
+def _dumps(payload: dict) -> bytes:
+    """Serialize a detailed-stats payload with orjson.
+
+    orjson serializes numpy arrays straight from their buffers, which is
+    what makes it worth the switch for the multi-hundred-MB episode files.
+    Differences from the stdlib encoder that matter here:
+
+    - NaN is written as null (stdlib wrote a bare NaN token, which is not
+      valid JSON); readers see None instead of float nan.
+    - SERIALIZE_NUMPY bypasses BufferEncoder for contiguous arrays of
+      supported dtypes; anything else falls through to ``default`` where
+      the registered ndarray/tolist encoder still applies.
+    - PASSTHROUGH_DATACLASS routes dataclasses through BufferEncoder
+      (registered encoder first, field dict otherwise) instead of orjson's
+      own dataclass serializer, preserving the stdlib-era output.
+    - NON_STR_KEYS keeps stdlib's coercion of int dict keys (the episode
+      id) to strings.
+
+    Returns:
+        The serialized payload.
+    """
+    return orjson.dumps(
+        payload,
+        default=BufferEncoder().default,
+        option=orjson.OPT_SERIALIZE_NUMPY
+        | orjson.OPT_NON_STR_KEYS
+        | orjson.OPT_PASSTHROUGH_DATACLASS,
+    )
+
 
 ###
 # Template for MontyHandler
@@ -161,12 +191,8 @@ class DetailedJSONHandler(MontyHandler):
         episode_file = episodes_dir / f"episode_{global_episode_id:06d}.json"
         maybe_rename_existing_file(episode_file)
 
-        with episode_file.open("w") as f:
-            json.dump(
-                {global_episode_id: stats[global_episode_id]},
-                f,
-                cls=BufferEncoder,
-            )
+        with episode_file.open("wb") as f:
+            f.write(_dumps({global_episode_id: stats[global_episode_id]}))
 
         logger.debug(
             "Saved detailed JSON for episode %s to %s",
@@ -181,13 +207,9 @@ class DetailedJSONHandler(MontyHandler):
             maybe_rename_existing_file(save_stats_path)
             self.already_renamed = True
 
-        with save_stats_path.open("a") as f:
-            json.dump(
-                {global_episode_id: stats[global_episode_id]},
-                f,
-                cls=BufferEncoder,
-            )
-            f.write(os.linesep)
+        with save_stats_path.open("ab") as f:
+            f.write(_dumps({global_episode_id: stats[global_episode_id]}))
+            f.write(b"\n")
 
         logger.debug(
             "Appended detailed stats for episode %s to %s",

@@ -44,6 +44,7 @@ dependencies = [
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
+    "orjson>=3.10.15",
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']

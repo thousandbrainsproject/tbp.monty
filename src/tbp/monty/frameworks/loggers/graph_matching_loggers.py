@@ -575,6 +575,9 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
             if len(sm.state_dict()["raw_observations"]) > 0:
                 buffer_data[f"SM_{i}"] = sm.state_dict()
 
+        attention_state = model.attention_system.state_dict()
+        buffer_data["attention_system"] = attention_state
+
         # TODO ensure will work with multiple, independent sensor agents
         buffer_data["motor_system"] = {}
         buffer_data["motor_system"]["action_sequence"] = (
