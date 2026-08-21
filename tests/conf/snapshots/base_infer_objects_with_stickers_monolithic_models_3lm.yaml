@@ -435,7 +435,7 @@ experiment:
     max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_objects_with_stickers_monolithic_models_3lm/pretrained/}
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_stickers_monolithic_models_3lm/pretrained/
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
       ids:
