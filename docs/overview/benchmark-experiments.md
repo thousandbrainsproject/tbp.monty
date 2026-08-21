@@ -203,8 +203,8 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Models | Archive Format | Download Link |
 > | --- | --- | --- |
-> | pretrained_compositional_objects_v5 | tgz | [pretrained_compositional_objects_v5.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.tgz) |
-> | pretrained_compositional_objects_v5 | zip | [pretrained_compositional_objects_v5.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.zip) |
+> | pretrained_compositional_objects_v6 | tgz | [pretrained_compositional_objects_v6.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.tgz) |
+> | pretrained_compositional_objects_v6 | zip | [pretrained_compositional_objects_v6.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.zip) |
 >
 > Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 >
@@ -213,16 +213,16 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.tgz | tar -xzf -
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.tgz | tar -xzf -
 > ```
 > ```plaintext zip
 > mkdir -p ~/tbp/results/monty/pretrained_models/
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v5.zip
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.zip
 >
-> unzip pretrained_compositional_objects_v5.zip
+> unzip pretrained_compositional_objects_v6.zip
 > ```
 
 
