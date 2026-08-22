@@ -187,24 +187,31 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self._renderers = {}
         self._agent_partials = [] if agents is None else agents
         self._agents = {}
-        self._create_agents()
 
         # Track how many objects we add to the environment.
         # This is used to give added objects unique names.
         self._object_count = 0
 
+        self._initialize_new_spec()
         self._recompile()
 
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
-        # The spec might be new, so reset all the options
-        self._configure_spec_settings()
-        self._configure_lights()
         self.model, self.data = self.spec.recompile(self.model, self.data)
         # The renderers have to be recreated when the model is updated.
         self._close_renderers()
         # Step the simulation so all objects are in their initial positions.
         mj_forward(self.model, self.data)
+
+    def _initialize_new_spec(self):
+        """Initializes a freshly created spec object.
+
+        Sets all the relevant global settings for the spec object, configures
+        the lights in the scene, and (re)creates the agents.
+        """
+        self._configure_spec_settings()
+        self._configure_lights()
+        self._create_agents()
 
     def _configure_spec_settings(self) -> None:
         """Set all the relevant global settings on the spec object."""
@@ -213,7 +220,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         # Start with a default resolution in case we don't have agents and therefore
         # sensors to query, e.g. in tests.
         render_resolution = DEFAULT_RESOLUTION
-        if self._agents:
+        if self._agent_partials:
             render_resolution = self._max_sensor_resolution()
         g = self.spec.visual.global_
         g.offheight = render_resolution.height
@@ -304,7 +311,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
 
     def remove_all_objects(self) -> None:
         self.spec = MjSpec()
-        self._create_agents()
+        self._initialize_new_spec()
         self._recompile()
         self.id_to_semantic_id = self._default_id_mapping()
         self._object_count = 0
