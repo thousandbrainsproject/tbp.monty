@@ -18,6 +18,7 @@ import torch
 from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -34,6 +35,7 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.telemetry.schemas import TelemetryEvent
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
@@ -41,6 +43,7 @@ from tbp.monty.runtime import is_location_only_step
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
 logger = logging.getLogger(__name__)
+telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyForGraphMatching(MontyBase):
@@ -1367,6 +1370,9 @@ class GraphMemory(LMMemory):
         self.models_in_memory[graph_id][input_channel] = model
 
         logger.info(f"Added new graph with id {graph_id} to memory.")
+        telemeter.info(
+            TelemetryEvent(kind="NewGraphAdded", values={"graph_id": graph_id})
+        )
 
     def _extend_graph(
         self,
