@@ -1,0 +1,89 @@
+# Copyright 2026 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+from typing import Mapping, Protocol
+
+from typing_extensions import Self
+
+__all__ = [
+    "RecognitionPolicy",
+    "RecognitionResult",
+    "RecognitionStatus",
+]
+
+
+@dataclass
+class RecognitionStatus:
+    """Recognition Status from each Learning Module."""
+
+    confidence: float = 0.0
+
+
+class RecognitionResult(Enum):
+    """Result of calling a Recognition Policy."""
+
+    CONTINUE = "continue"
+    MATCHED = "matched"
+    NO_MATCH = "no match"
+    TIMED_OUT = "timed out"
+
+
+class RecognitionPolicy(Protocol):
+    """Decides what constitutes "recognition" in an Experiment.
+
+    Each Learning Module determines its own Recognition Status independently of the
+    others. The Recognition Policy turns the per-LM status into the single decision
+    of whether Monty has recognized the object.
+    """
+
+    def __call__(
+        self: Self, status: Mapping[str, RecognitionStatus]
+    ) -> RecognitionResult:
+        """Apply this policy to produce a Recognition Result from per-LM status.
+
+        Args:
+            status: A mapping of Learning Module names to their Recognition Status.
+
+        Returns:
+            An aggregate Recognition Result based on this policy.
+        """
+        ...
+
+
+class MinimumCount(RecognitionPolicy):
+    """Satisifed once any `count` of Learning Modules have reached "match"."""
+
+    _count: int
+
+    def __init__(self: Self, count: int) -> None:
+        """Initialize the policy.
+
+        Args:
+            count: The number of Learning Modules that must reach "match" for the
+                policy to be satisfied.
+
+        Raises:
+            ValueError: If `count` is not positive.
+        """
+        if count <= 0:
+            raise ValueError("count must be positive")
+        self._count = count
+
+    def __call__(
+        self: Self, status: Mapping[str, RecognitionStatus]
+    ) -> RecognitionResult:
+        matched = sum(0 for rs in status.values() if rs.confidence > 0.5)
+        return (
+            RecognitionResult.MATCHED
+            if matched >= self._count
+            else RecognitionResult.CONTINUE
+        )
