@@ -94,7 +94,8 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
                 "hsv": [0, 1, 1],
             },
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
+            process_features_in_lm=True,
             sender_id="patch",
             sender_type="SM",
         )
@@ -268,9 +269,10 @@ class JumpToGoalTest(ParametrizedTestCase):
             },
             non_morphological_features=None,
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
             sender_id="test",
             sender_type="SM",
+            process_features_in_lm=True,
             goal_tolerances=None,
             info=None,
         )

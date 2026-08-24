@@ -23,6 +23,7 @@ import torch
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation as ScipyRotation
 
+from tbp.monty.cmp import Goal, encode_goal, location_mean
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
 from tbp.monty.frameworks.utils.dataclass_utils import is_dataclass_instance
 from tbp.monty.geometry import Rotation
@@ -42,7 +43,7 @@ class FeatureAtLocationBuffer:
 
     def __init__(self):
         """Initialize buffer dicts for locations, features, displacements and stats."""
-        self.locations = {}
+        self.locations = np.empty((0, 3))
         self.features = {}
         self.on_object = []
         self.input_percepts = []
@@ -99,40 +100,49 @@ class FeatureAtLocationBuffer:
         """Return the number of observations stored in the buffer."""
         return len(self.on_object)
 
-    def get_buffer_len_by_channel(self, input_channel):
-        """Return the number of observations stored for that input channel."""
-        if input_channel not in self.locations:
-            return 0
-        return np.count_nonzero(~np.isnan(self.locations[input_channel][:, 0]))
-
     def append(self, percepts: Sequence[Message]) -> None:
         """Add a list of percepts to the buffer. Must be features at locations.
+
+        Per-channel feature rows are stored only for percepts that carry features. If
+        an input channel does not contain features, its feature array is padded with
+        NaNs to keep index alignment with features from channels that did receive input.
+        These NaN values are later dropped by `_extract_entries_with_content` when
+        building graphs.
 
         TODO S: Store messages instead of list of percepts?
         A provisional version of this is implemented below, as the GSG uses
         messages for computations.
         """
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        loc = location_mean(sm_percepts)
+        assert loc is not None, (
+            "Should have at least one sensor module percept with location"
+        )
+        self.locations = np.vstack([self.locations, loc])
+
         any_obs_on_obj = False
         for msg in percepts:
             input_channel = msg.sender_id
 
             self.channel_sender_types[input_channel] = msg.sender_type
 
-            self._add_loc_to_location_buffer(input_channel, msg.location)
             if input_channel not in self.features:
                 self.features[input_channel] = {}
-            for attr in msg.morphological_features:
-                attr_val = msg.morphological_features[attr]
-                self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
-            # TODO S: separate non-morphological features from morphological features?
-            # May cause problems with graph.x array representation. Could be added when
-            # using separate models for features and morphology
-            for attr in msg.non_morphological_features:
-                attr_val = msg.non_morphological_features[attr]
-                self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
-            on_obj = msg.get_on_object()
-            self._add_attr_to_feature_buffer(input_channel, "on_object", on_obj)
-            if on_obj:
+            if msg.process_features_in_lm:
+                for attr in msg.morphological_features:
+                    attr_val = msg.morphological_features[attr]
+                    self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
+                # TODO S: separate non-morphological features from morphological
+                # features? May cause problems with graph.x array representation.
+                # Could be added when using separate models for features and
+                # morphology
+                for attr in msg.non_morphological_features:
+                    attr_val = msg.non_morphological_features[attr]
+                    self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
+                self._add_attr_to_feature_buffer(
+                    input_channel, "on_object", msg.get_on_object()
+                )
+            if msg.get_on_object():
                 any_obs_on_obj = True
         self._store_displacement_and_location(percepts)
 
@@ -167,54 +177,55 @@ class FeatureAtLocationBuffer:
         """Reset the buffer."""
         self.__init__()
 
-    def get_current_location(self, input_channel):
+    def current_location(self):
         """Get the current location.
 
         Note:
             May have to add on_object check at some point.
 
         Returns:
-            The current location.
+            The current location, or None if the buffer is empty.
         """
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-
-        if len(self) > 0 and input_channel is not None:
-            return self.locations[input_channel][-1]
+        if len(self) > 0:
+            return self.locations[-1]
 
         return None
 
-    def get_current_features(self, keys):
-        """Get the current value of a specific feature.
-
-        Returns:
-            The current features.
-        """
-        current_features = {}
-        for input_channel in self.features:
-            current_features[input_channel] = {}
-            for key in keys:
-                current_features[input_channel][key] = self.features[input_channel][
-                    key
-                ][-1]
-        return current_features
-
     def get_current_pose(self, input_channel):
         """Get currently sensed location and orientation.
+
+        The location is updated on every buffer append step, while the pose comes from
+        the last received feature from `input_channel`. A channel that sends no features
+        on a step has no pose vectors stored for it. So, for this a channel the two may
+        be drawn from different time steps. A warning is logged when this happens.
+
+        Note:
+            This cannot happen for when the `input_channel` is the first SM channel,
+            since percepts are currently only appended to the buffer when the SM
+            channels contain features. Its pose vectors are therefore always from the
+            current step.
+
+        Args:
+            input_channel: Input channel whose pose vectors to use, or "first"
+                for the first sensory input channel.
 
         Returns:
             The currently sensed location and orientation.
         """
         if input_channel == "first":
             input_channel = self.get_first_sensory_input_channel()
-        sensed_pose_features = self.get_current_features(["pose_vectors"])
-        sensed_location = self.get_current_location(input_channel)
-        channel_pose = sensed_pose_features[input_channel]["pose_vectors"].reshape(
-            (3, 3)
-        )
+        pose_vectors = self.features[input_channel]["pose_vectors"]
+        if len(pose_vectors) < len(self.locations):
+            logger.warning(
+                f"Pose vectors of input channel '{input_channel}' were last received "
+                f"at step {len(pose_vectors) - 1}, but the current step is "
+                f"{len(self.locations) - 1}. The returned pose combines a location and "
+                "a pose observed at different time steps."
+            )
+        channel_pose = pose_vectors[-1].reshape((3, 3))
         return np.vstack(
             [
-                sensed_location,
+                self.current_location(),
                 channel_pose,
             ]
         )
@@ -239,25 +250,13 @@ class FeatureAtLocationBuffer:
             return self.on_object[-1]
         return False
 
-    def get_all_locations_on_object(self, input_channel=None):
-        """Get all observed locations that were on the object.
+    def get_all_locations_on_object(self):
+        """Get all locations from steps where at least one input was on object.
 
         Returns:
-            All observed locations that were on the object.
+            The locations at steps where the global on_object flag is True.
         """
-        if input_channel is None:
-            # Pad each channel's locations to the full buffer length.
-            # Also filter locations by global on_object.
-            global_on_object_ids = self._global_on_object_ids()
-            result = {}
-            for channel in self.locations:
-                channel_locs = self._pad_to_target_length(self.locations[channel])
-                result[channel] = channel_locs[global_on_object_ids]
-            return result
-        if input_channel == "first":
-            input_channel = self.get_first_sensory_input_channel()
-        on_object_ids = np.where(self.features[input_channel]["on_object"])[0]
-        return np.array(self.locations[input_channel])[on_object_ids]
+        return self.locations[self._global_on_object_mask()]
 
     def get_all_input_percepts(self) -> list[Message]:
         """Get all the percept inputs that the buffer's parent LM has observed.
@@ -337,9 +336,9 @@ class FeatureAtLocationBuffer:
         """
         all_features_on_object = {}
         # Number of steps where at least one input was on the object
-        global_on_object_ids = self._global_on_object_ids()
+        global_on_object_ids = self._global_on_object_mask()
         logger.debug(
-            f"Observed {np.array(self.locations).shape} locations, "
+            f"Observed {self.locations.shape} locations, "
             f"{len(global_on_object_ids)} global on object"
         )
         for channel_name, channel in self.features.items():
@@ -462,7 +461,7 @@ class FeatureAtLocationBuffer:
             # If no symmetry was detected, this will be None.
             self.stats["symmetric_rotations_ts"] = self.stats["symmetric_rotations"]
 
-    def _global_on_object_ids(self) -> npt.NDArray[np.bool_]:
+    def _global_on_object_mask(self) -> npt.NDArray[np.bool_]:
         """Get indices of steps where at least one input was on the object.
 
         Returns:
@@ -506,24 +505,6 @@ class FeatureAtLocationBuffer:
             self.features[input_channel][attr_name] = padded_feat
         self.features[input_channel][attr_name][-1] = attr_value
 
-    def _add_loc_to_location_buffer(self, input_channel, location):
-        """Add location to location buffer.
-
-        Args:
-            input_channel: Input channel from which the location was received.
-            location: Location to add to buffer.
-        """
-        if input_channel not in self.locations:
-            self.locations[input_channel] = np.empty((0, 0))
-
-        padded_locs = self._pad_to_target_length(
-            existing_vals=self.locations[input_channel],
-            target_length=len(self) + 1,
-            new_val_len=location.shape[0],
-        )
-        self.locations[input_channel] = padded_locs
-        self.locations[input_channel][-1] = location
-
     def _store_displacement_and_location(self, percepts: Sequence[Message]) -> None:
         """Store the global displacement and location from the current step.
 
@@ -534,14 +515,16 @@ class FeatureAtLocationBuffer:
         Args:
             percepts: Sequence of Message objects from the current step.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        current_location = np.mean([p.location for p in sm_percepts], axis=0)
-
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
         first_percept = sm_percepts[0]
         if getattr(first_percept, "displacement", None):
-            for name in sm_percepts[0].displacement:
-                self._add_displacement(name, sm_percepts[0].displacement[name])
+            for name in first_percept.displacement:
+                self._add_displacement(name, first_percept.displacement[name])
 
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         self.last_location = current_location.copy()
 
     def _add_displacement(
@@ -556,7 +539,7 @@ class FeatureAtLocationBuffer:
             val: Value of the displacement.
         """
         if name not in self.displacements:
-            self.displacements[name] = np.full((len(self.locations), len(val)), np.nan)
+            self.displacements[name] = np.full((len(self), len(val)), np.nan)
 
         padded_vals = self._pad_to_target_length(
             existing_vals=self.displacements[name],
@@ -748,3 +731,4 @@ BufferEncoder.register(Action, ActionJSONEncoder)
 BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))
 BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
+BufferEncoder.register(Goal, encode_goal)

@@ -9,12 +9,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
-
-from tbp.monty.frameworks.models.buffer import BufferEncoder
 
 
 class Message:
@@ -38,9 +36,15 @@ class Message:
             pose_vectors of shape (3,3) and pose_fully_defined (bool).
         non_morphological_features: dictionary of non-morphological features.
         confidence: message confidence. In range [0,1].
-        use_state: boolean indicating whether the message should be used or not.
+        pass_message: boolean indicating whether the message should be delivered to
+            the receiver (as opposed to withheld, e.g. on motor-only steps).
         sender_id: string identifying the sender of the message.
         sender_type: string identifying the type of sender. Can be "SM" or "LM".
+        process_features_in_lm: boolean indicating whether the receiving learning
+            module should process the message's features, as opposed to treating it
+            as a location-only message that only syncs the receiver's sense of the
+            sensor location. Note that the message may still carry features even when
+            this is False (e.g. so the motor system can use them).
     """
 
     def __init__(
@@ -50,9 +54,10 @@ class Message:
         morphological_features: dict[str, Any],
         non_morphological_features: dict[str, Any],
         confidence: float,
-        use_state: bool,
+        pass_message: bool,
         sender_id: str,
         sender_type: Literal["SM", "LM"],
+        process_features_in_lm: bool,
     ):
         """Initialize a message."""
         self.location = location
@@ -60,18 +65,20 @@ class Message:
         self.morphological_features = morphological_features
         self.non_morphological_features = non_morphological_features
         self.confidence = confidence
-        self.use_state = use_state
+        self.pass_message = pass_message
         self.sender_id = sender_id
         self.sender_type = sender_type
+        self.process_features_in_lm = process_features_in_lm
         self._set_allowable_sender_types()
-        if self.use_state:
+        if self.process_features_in_lm:
             self._check_all_attributes()
 
     def __repr__(self):
         """Return a string representation of the object."""
+        location = np.round(self.location, 3) if self.location is not None else None
         repr_string = (
             f"Message from {self.sender_id}:\n"
-            f"   Location: {np.round(self.location, 3)}.\n"
+            f"   Location: {location}.\n"
             f"   Morphological Features: \n"
         )
         if self.morphological_features is not None:
@@ -94,7 +101,7 @@ class Message:
                 repr_string += f"       {feature}: {feat_val}\n"
         repr_string += (
             f"   Confidence: {self.confidence}\n"
-            f"   Use State: {self.use_state}\n"
+            f"   Pass Message: {self.pass_message}\n"
             f"   Sender Type: {self.sender_type}\n"
         )
         return repr_string
@@ -102,6 +109,9 @@ class Message:
     def _set_allowable_sender_types(self):
         """Set the allowable sender types of this Message class."""
         self.allowable_sender_types = ("SM", "LM")
+
+    def is_from_sm(self) -> bool:
+        return self.sender_type == "SM"
 
     def transform_morphological_features(self, translation=None, rotation=None):
         """Apply translation and/or rotation to morphological features."""
@@ -196,14 +206,19 @@ class Message:
             "pose_fully_defined must be a boolean but type is "
         )
         f"{type(self.morphological_features['pose_fully_defined'])}"
-        assert self.location.shape == (3,), (
-            f"Location must be a 3D vector but shape is {self.location.shape}"
-        )
+        if self.location is not None:
+            assert self.location.shape == (3,), (
+                f"Location must be a 3D vector but shape is {self.location.shape}"
+            )
         assert self.confidence >= 0 and self.confidence <= 1, (
             f"Confidence must be in [0,1] but is {self.confidence}"
         )
-        assert isinstance(self.use_state, bool), (
-            f"use_state must be a boolean but is {type(self.use_state)}"
+        assert isinstance(self.pass_message, bool), (
+            f"pass_message must be a boolean but is {type(self.pass_message)}"
+        )
+        assert isinstance(self.process_features_in_lm, bool), (
+            "process_features_in_lm must be a boolean but is "
+            f"{type(self.process_features_in_lm)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
@@ -240,9 +255,10 @@ class Goal(Message):
         morphological_features: dict[str, Any] | None,
         non_morphological_features: dict[str, Any] | None,
         confidence: float,
-        use_state: bool,
+        pass_message: bool,
         sender_id: str,
         sender_type: str,
+        process_features_in_lm: bool,
         goal_tolerances: dict[str, Any] | None,
         info: dict[str, Any] | None = None,
     ):
@@ -259,9 +275,13 @@ class Goal(Message):
             non_morphological_features: a dictionary containing non-morphological
               features at the target location or `None`.
             confidence: a float between 0 and 1 representing the confidence in the goal.
-            use_state: a boolean indicating whether the goal should be used.
+            pass_message: a boolean indicating whether the goal should be delivered to
+              the receiver.
             sender_id: the ID of the sender of the goal (e.g., `"LM_0"`).
             sender_type: the type of sender of the goal (e.g., `"GSG"`).
+            process_features_in_lm: a boolean indicating whether the receiving
+              learning module should process the goal's features, as opposed to
+              treating it as carrying only a target location.
             goal_tolerances: Dictionary of tolerances that GSGs use when determining
                 whether the current state of the LM matches the driving goal
                 or `None`. As such, a GSG can send a goal with more or less
@@ -277,9 +297,10 @@ class Goal(Message):
             morphological_features,
             non_morphological_features,
             confidence,
-            use_state,
+            pass_message,
             sender_id,
             sender_type,
+            process_features_in_lm,
         )
 
     def _set_allowable_sender_types(self):
@@ -318,8 +339,8 @@ class Goal(Message):
         assert self.confidence >= 0 and self.confidence <= 1, (
             f"Confidence must be in [0,1] but is {self.confidence}"
         )
-        assert isinstance(self.use_state, bool), (
-            f"use_state must be a boolean but is {type(self.use_state)}"
+        assert isinstance(self.pass_message, bool), (
+            f"pass_message must be a boolean but is {type(self.pass_message)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
@@ -346,7 +367,8 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
         "morphological_features": goal.morphological_features,
         "non_morphological_features": goal.non_morphological_features,
         "confidence": goal.confidence,
-        "use_state": goal.use_state,
+        "pass_message": goal.pass_message,
+        "process_features_in_lm": goal.process_features_in_lm,
         "sender_id": goal.sender_id,
         "sender_type": goal.sender_type,
         "goal_tolerances": goal.goal_tolerances,
@@ -354,4 +376,16 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
     }
 
 
-BufferEncoder.register(Goal, encode_goal)
+def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None:
+    """Compute the mean location across messages.
+
+    Args:
+        messages: Sequence of Message objects.
+
+    Returns:
+        The mean of the messages' locations, or None if no message has a location.
+    """
+    locations = [m.location for m in messages if m.location is not None]
+    if not locations:
+        return None
+    return np.mean(locations, axis=0)
