@@ -164,10 +164,46 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
             geom = sim.spec.geom("scaled_object_0")
             assert geom.type == mjtGeom.mjGEOM_MESH
-            assert geom.meshname == "scaled_object_3.0_3.0_3.0_mesh"
+            # The mesh name scale values are relative to the requested scale
+            # not the actual scale value used.
+            assert geom.meshname == "scaled_object_1.0_1.0_1.0_mesh"
 
             mesh = sim.spec.mesh(geom.meshname)
             assert np.allclose(mesh.scale, [3.0, 3.0, 3.0])
+
+    @given(
+        scale_x=st.floats(min_value=0.0001, max_value=2.0),
+        scale_y=st.floats(min_value=0.0001, max_value=2.0),
+        scale_z=st.floats(min_value=0.0001, max_value=2.0),
+    )
+    def test_custom_object_scaling_with_both(
+        self, scale_x: float, scale_y: float, scale_z: float
+    ) -> None:
+        """Test scaling a custom object when a scale is defined in both places.
+
+        We want to make sure that we use the scale argument to scale an object based
+        on its default scale, so if that default scale isn't 1.0 then we need to make
+        sure we scale that instead of just replacing it with the arugment scale.
+        """
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("scaled_object", scale=(scale_x, scale_y, scale_z))
+
+            geom = sim.spec.geom("scaled_object_0")
+            assert geom.type == mjtGeom.mjGEOM_MESH
+            # The mesh name scale values are relative to the requested scale
+            # not the actual scale value used.
+            assert geom.meshname == f"scaled_object_{scale_x}_{scale_y}_{scale_z}_mesh"
+
+            mesh = sim.spec.mesh(geom.meshname)
+            assert np.allclose(
+                mesh.scale,
+                [
+                    # 3.0 is the default scale of this object set in the metadata
+                    scale_x * 3.0,
+                    scale_y * 3.0,
+                    scale_z * 3.0,
+                ],
+            )
 
     def test_duplicate_custom_objects_share_meshes(self) -> None:
         """Test adding multiple custom objects that share the same mesh.

@@ -51,6 +51,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DEFAULT_RESOLUTION",
+    "PRIMITIVE_OBJECTS",
     "ActuateMethodMissing",
     "DataPathNotConfigured",
     "MissingObjectModel",
@@ -426,7 +427,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
 
         Returns:
             The loaded object key.
-            Note: This may return a scale different from the one passed in.
         """
         if not self._data_path:
             raise DataPathNotConfigured(
@@ -442,11 +442,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             metadata = load_object_metadata(metadata_path, object_type)
         else:
             metadata = ObjectMetadata()
-
-        # If the metadata overrides the scale, use that instead
-        if tuple(metadata.scale) != (1.0, 1.0, 1.0):
-            # We need to convert to a VectorXYZ for type checking
-            scale = tuple(metadata.scale)
 
         obj_name_base = f"{object_type}_{scale[0]}_{scale[1]}_{scale[2]}"
 
@@ -475,13 +470,19 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         )
         mat.textures[mjtTextureRole.mjTEXROLE_RGB] = texture_name
 
+        actual_scale = (
+            scale[0] * metadata.scale[0],
+            scale[1] * metadata.scale[1],
+            scale[2] * metadata.scale[2],
+        )
+
         mesh_name = f"{obj_name_base}_mesh"
         self.spec.add_mesh(
             name=mesh_name,
             file=str(model_path),
             refquat=metadata.refquat,
             refpos=metadata.refpos,
-            scale=scale,
+            scale=actual_scale,
         )
 
         object_lookup_key: LoadedObjectKey = (object_type, scale)
