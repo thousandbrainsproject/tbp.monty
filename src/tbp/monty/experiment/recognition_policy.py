@@ -60,6 +60,7 @@ class RecognitionPolicy(Protocol):
         """Apply this policy to produce a Recognition Result from per-LM status.
 
         Args:
+            step: The experiment step number.
             status: A mapping of Learning Module names to their Recognition Status.
 
         Returns:
