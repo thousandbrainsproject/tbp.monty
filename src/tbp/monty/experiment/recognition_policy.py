@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Mapping, Protocol
 
@@ -24,9 +24,9 @@ __all__ = [
 class RecognitionConclusion(Enum):
     """Label for the terminal state of a Learning Module."""
 
-    MATCHED = "matched"
-    NO_MATCH = "no match"
-    TIMED_OUT = "timed out"
+    MATCH = "match"
+    NO_MATCH = "no_match"
+    TIME_OUT = "time_out"
 
 
 @dataclass
@@ -34,7 +34,7 @@ class RecognitionStatus:
     """Recognition Status from each Learning Module."""
 
     conclusion: RecognitionConclusion | None
-    telemetry: dict[str, Any]
+    telemetry: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

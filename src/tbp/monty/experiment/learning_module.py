@@ -9,6 +9,7 @@
 
 from typing import Protocol
 
+from tbp.monty.experiment.recognition_policy import RecognitionStatus
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 
 __all__ = [
@@ -52,3 +53,6 @@ class ExperimentLearningModule(Protocol):
             mode: The experiment mode.
         """
         ...
+
+    @property
+    def recognition_status(self) -> RecognitionStatus: ...
