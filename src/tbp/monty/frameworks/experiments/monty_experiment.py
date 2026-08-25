@@ -544,7 +544,7 @@ class MontyExperiment:
                 rc = RecognitionConclusion.MATCH
             rs = RecognitionStatus(rc)
             status = {"monty": rs}
-            rr = self._recognition_policy(status)
+            rr = self._recognition_policy(step=step, status=status)
             assert rr.is_done == legacy_result, (
                 f"wrong recognition result: expected {legacy_result}, got {rr.is_done}"
             )

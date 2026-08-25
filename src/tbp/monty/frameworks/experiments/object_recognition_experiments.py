@@ -155,11 +155,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 #       so the experiment can set max steps based on that knowledge
                 #       alone.
                 self.model.set_is_done()
-                return step
 
-            if self.model.is_done:
-                # Check this right after step to avoid setting time out
-                # after object was already recognized.
+            if self._recognition_complete(step):
                 return step
 
             step += 1

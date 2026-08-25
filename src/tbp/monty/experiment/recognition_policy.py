@@ -102,6 +102,6 @@ class MinimumCount(RecognitionPolicy):
         if step >= self._max_steps:
             return RecognitionResult(is_done=True)
 
-        num_matched = sum(0 for rs in status.values() if rs.conclusion is not None)
+        num_matched = sum(1 for rs in status.values() if rs.conclusion is not None)
         is_done = num_matched >= self._count
         return RecognitionResult(is_done=is_done)
