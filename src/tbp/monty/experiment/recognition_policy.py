@@ -15,6 +15,8 @@ from typing import Any, Mapping, Protocol
 from typing_extensions import Self
 
 __all__ = [
+    "MinimumCount",
+    "RecognitionConclusion",
     "RecognitionPolicy",
     "RecognitionResult",
     "RecognitionStatus",
@@ -53,7 +55,7 @@ class RecognitionPolicy(Protocol):
     """
 
     def __call__(
-        self: Self, status: Mapping[str, RecognitionStatus]
+        self: Self, step: int, status: Mapping[str, RecognitionStatus]
     ) -> RecognitionResult:
         """Apply this policy to produce a Recognition Result from per-LM status.
 
@@ -69,25 +71,37 @@ class RecognitionPolicy(Protocol):
 class MinimumCount(RecognitionPolicy):
     """Satisfied once any `count` of Learning Modules have reached "match"."""
 
-    _count: int
+    _max_steps: int
+    """The maximum number of Monty steps before reaching a conclusion."""
 
-    def __init__(self: Self, count: int) -> None:
+    _count: int
+    """The minimum number of LMs that must reach "match" status."""
+
+    def __init__(self: Self, count: int, max_steps: int) -> None:
         """Initialize the policy.
 
         Args:
             count: The number of Learning Modules that must reach "match" for the
                 policy to be satisfied.
+            max_steps: The maximum number of Monty steps before reaching a conclusion.
 
         Raises:
-            ValueError: If `count` is not positive.
+            ValueError: If `count` or `max_steps` are not positive.
         """
         if count <= 0:
             raise ValueError("count must be positive")
         self._count = count
 
+        if max_steps <= 0:
+            raise ValueError("max_steps must be positive")
+        self._max_steps = max_steps
+
     def __call__(
-        self: Self, status: Mapping[str, RecognitionStatus]
+        self: Self, step: int, status: Mapping[str, RecognitionStatus]
     ) -> RecognitionResult:
+        if step >= self._max_steps:
+            return RecognitionResult(is_done=True)
+
         num_matched = sum(0 for rs in status.values() if rs.conclusion is not None)
         is_done = num_matched >= self._count
         return RecognitionResult(is_done=is_done)
