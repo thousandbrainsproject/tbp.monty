@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Mapping, Protocol
+from typing import Any, Mapping, Protocol
 
 from typing_extensions import Self
 
@@ -21,20 +21,27 @@ __all__ = [
 ]
 
 
+class RecognitionConclusion(Enum):
+    """Label for the terminal state of a Learning Module."""
+
+    MATCHED = "matched"
+    NO_MATCH = "no match"
+    TIMED_OUT = "timed out"
+
+
 @dataclass
 class RecognitionStatus:
     """Recognition Status from each Learning Module."""
 
-    confidence: float = 0.0
+    conclusion: RecognitionConclusion | None
+    telemetry: dict[str, Any]
 
 
-class RecognitionResult(Enum):
-    """Result of calling a Recognition Policy."""
+@dataclass
+class RecognitionResult:
+    """Aggregated result from the Recognition Policy."""
 
-    CONTINUE = "continue"
-    MATCHED = "matched"
-    NO_MATCH = "no match"
-    TIMED_OUT = "timed out"
+    is_done: bool
 
 
 class RecognitionPolicy(Protocol):
@@ -60,7 +67,7 @@ class RecognitionPolicy(Protocol):
 
 
 class MinimumCount(RecognitionPolicy):
-    """Satisifed once any `count` of Learning Modules have reached "match"."""
+    """Satisfied once any `count` of Learning Modules have reached "match"."""
 
     _count: int
 
@@ -81,9 +88,6 @@ class MinimumCount(RecognitionPolicy):
     def __call__(
         self: Self, status: Mapping[str, RecognitionStatus]
     ) -> RecognitionResult:
-        matched = sum(0 for rs in status.values() if rs.confidence > 0.5)
-        return (
-            RecognitionResult.MATCHED
-            if matched >= self._count
-            else RecognitionResult.CONTINUE
-        )
+        num_matched = sum(0 for rs in status.values() if rs.conclusion is not None)
+        is_done = num_matched >= self._count
+        return RecognitionResult(is_done=is_done)
