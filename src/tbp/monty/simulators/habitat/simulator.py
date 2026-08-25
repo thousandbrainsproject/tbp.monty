@@ -68,7 +68,13 @@ from tbp.monty.frameworks.environments.environment import (
     SemanticID,
     SimulatedObjectEnvironment,
 )
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import (
+    IDENTITY_QUATERNION,
+    ONES_VECTOR,
+    ZERO_VECTOR,
+    QuaternionWXYZ,
+    VectorXYZ,
+)
 
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
@@ -224,9 +230,9 @@ class HabitatSim(HabitatActuator, SimulatedObjectEnvironment):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = ZERO_VECTOR,
+        rotation: QuaternionWXYZ = IDENTITY_QUATERNION,
+        scale: VectorXYZ = ONES_VECTOR,
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
@@ -256,7 +262,7 @@ class HabitatSim(HabitatActuator, SimulatedObjectEnvironment):
 
         # Check if we are changing the object scale
         scale = tuple(scale)
-        if scale != (1.0, 1.0, 1.0):
+        if scale != ONES_VECTOR:
             # Get scaled object template
             scaled_obj_handle = f"{obj_handle}_scale_{scale}"
             scaled_tpl = obj_mgr.get_template_handles(scaled_obj_handle)

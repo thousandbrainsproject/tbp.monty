@@ -39,7 +39,13 @@ from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
-from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import (
+    IDENTITY_QUATERNION,
+    ONES_VECTOR,
+    ZERO_VECTOR,
+    QuaternionWXYZ,
+    VectorXYZ,
+)
 from tbp.monty.simulators.mujoco.agents import Agent
 from tbp.monty.simulators.mujoco.objects import (
     ObjectMetadata,
@@ -337,7 +343,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         name: str,
         position: VectorXYZ = ZERO_VECTOR,
         rotation: QuaternionWXYZ = IDENTITY_QUATERNION,
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        scale: VectorXYZ = ONES_VECTOR,
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:

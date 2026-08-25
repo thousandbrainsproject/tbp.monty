@@ -12,11 +12,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, NewType, Protocol, Sequence
 
+from tbp.monty.math import (
+    IDENTITY_QUATERNION,
+    ONES_VECTOR,
+    ZERO_VECTOR,
+    QuaternionWXYZ,
+    VectorXYZ,
+)
+
 if TYPE_CHECKING:
     from tbp.monty.frameworks.actions.actions import Action
     from tbp.monty.frameworks.models.abstract_monty_classes import Observations
     from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-    from tbp.monty.math import QuaternionWXYZ, VectorXYZ
 
 __all__ = [
     "Environment",
@@ -77,9 +84,9 @@ class ObjectEnvironment(Protocol):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = ZERO_VECTOR,
+        rotation: QuaternionWXYZ = IDENTITY_QUATERNION,
+        scale: VectorXYZ = ONES_VECTOR,
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
