@@ -62,11 +62,10 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-# Scaling factor to make MuJoCo primitives roughly the same size
-# as their Habitat counterparts. This was determined by trial and error.
 HABITAT_SCALING_FACTOR = (0.1, 0.1, 0.1)
+"""Scaling factor to make MuJoCo primitives roughly the same size
+as their Habitat counterparts. This was determined by trial and error."""
 
-# Map of names to MuJoCo primitive object types
 PRIMITIVE_OBJECTS = {
     "box": mjtGeom.mjGEOM_BOX,
     "capsule": mjtGeom.mjGEOM_CAPSULE,
@@ -74,10 +73,8 @@ PRIMITIVE_OBJECTS = {
     "ellipsoid": mjtGeom.mjGEOM_ELLIPSOID,
     "sphere": mjtGeom.mjGEOM_SPHERE,
 }
+"""Map of names to MuJoCo primitive object types"""
 
-# Define primitives with the same names as Habitat uses so we don't
-# have to define new environment interface configurations during the
-# transition period.
 # TODO: remove once Habitat is gone and the test configs are updated to use
 #   MuJoCo names for these objects.
 HABITAT_PRIMITIVE_OBJECTS = {
@@ -88,14 +85,16 @@ HABITAT_PRIMITIVE_OBJECTS = {
     # cone primitive object as an option.
     "coneSolid": mjtGeom.mjGEOM_SPHERE,
 }
+"""Define primitives with the same names as Habitat uses so we don't
+have to define new environment interface configurations during the
+transition period."""
 
-# Default rendering resolution in the event that there are no sensor
-# configurations, e.g. in tests.
 DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
-
-# Key for tracking what custom objects we've already loaded meshes for.
-# Includes scale since MuJoCo stores scale on the mesh, and not the geom.
+"""Default rendering resolution in the event that there are no sensor
+configurations, e.g. in tests."""
 LoadedObjectKey = tuple[str, VectorXYZ]
+"""Key for tracking what custom objects we've already loaded meshes for.
+Includes scale since MuJoCo stores scale on the mesh, and not the geom."""
 
 
 @dataclass
@@ -398,11 +397,11 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
         """
-        object_lookup_key: LoadedObjectKey = (object_type, scale)
-        if object_lookup_key not in self._loaded_custom_types:
-            object_lookup_key = self._load_custom_object(object_type, scale)
+        object_key: LoadedObjectKey = (object_type, scale)
+        if object_key not in self._loaded_custom_types:
+            self._load_custom_object(object_key)
 
-        metadata = self._loaded_custom_types[object_lookup_key]
+        metadata = self._loaded_custom_types[object_key]
         self.spec.worldbody.add_geom(
             name=obj_name,
             type=mjtGeom.mjGEOM_MESH,
@@ -412,9 +411,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             quat=rotation,
         )
 
-    def _load_custom_object(
-        self, object_type: str, scale: VectorXYZ
-    ) -> LoadedObjectKey:
+    def _load_custom_object(self, object_key: LoadedObjectKey) -> None:
         """Loads a custom object from the data_path into the spec.
 
         This should only be done once per custom object type.
@@ -424,10 +421,9 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             UnknownObjectType: When the directory for the object_type is missing.
             MissingObjectTexture: When the texture map is missing.
             MissingObjectModel: When the object is missing.
-
-        Returns:
-            The loaded object key.
         """
+        object_type, scale = object_key
+
         if not self._data_path:
             raise DataPathNotConfigured(
                 "Cannot load custom objects in simulator, "
@@ -485,13 +481,10 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             scale=actual_scale,
         )
 
-        object_lookup_key: LoadedObjectKey = (object_type, scale)
-        self._loaded_custom_types[object_lookup_key] = ModelMetadata(
+        self._loaded_custom_types[object_key] = ModelMetadata(
             mesh_name=mesh_name,
             material_name=material_name,
         )
-
-        return object_lookup_key
 
     def _add_primitive_object(
         self,

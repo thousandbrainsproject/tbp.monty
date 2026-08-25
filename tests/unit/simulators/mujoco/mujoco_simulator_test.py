@@ -146,7 +146,6 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             )
 
     def test_custom_object_scaling_in_call(self):
-        """Test adding a custom object with a scaling factor."""
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
             sim.add_object("valid_object", scale=(2.0, 2.0, 2.0))
 
@@ -158,7 +157,6 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             assert np.allclose(mesh.scale, [2.0, 2.0, 2.0])
 
     def test_custom_object_scaling_from_metadata(self) -> None:
-        """Test adding a custom object with a scaling factor defined in metadata."""
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
             sim.add_object("scaled_object")
 
@@ -183,7 +181,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
         We want to make sure that we use the scale argument to scale an object based
         on its default scale, so if that default scale isn't 1.0 then we need to make
-        sure we scale that instead of just replacing it with the arugment scale.
+        sure we scale that instead of just replacing it with the argument scale.
         """
         with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
             sim.add_object("scaled_object", scale=(scale_x, scale_y, scale_z))
