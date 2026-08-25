@@ -92,6 +92,7 @@ transition period."""
 DEFAULT_RESOLUTION = Resolution2D(width=64, height=64)
 """Default rendering resolution in the event that there are no sensor
 configurations, e.g. in tests."""
+
 LoadedObjectKey = tuple[str, VectorXYZ]
 """Key for tracking what custom objects we've already loaded meshes for.
 Includes scale since MuJoCo stores scale on the mesh, and not the geom."""
