@@ -20,21 +20,20 @@ class InvalidObjectMetadata(Exception):
 
 @dataclass
 class ObjectMetadata:
-    """Contains the metadata for initializing a custom object.
-
-    Attributes:
-        refpos: Reference position relative to which the 3D vertex coordinates are
-          defined. This vector is subtracted from the positions.
-        refquat: Reference orientation relative to which the 3D vertex
-          coordinates and normals are defined. The conjugate of this quaternion is used
-          to rotate the positions and normals. The model compiler normalizes the
-          quaternion automatically.
-        scale: Scaling factor for the model in each direction.
-    """
+    """Contains the metadata for initializing a custom object."""
 
     refpos: VectorXYZ = ZERO_VECTOR
+    """Reference position relative to which the 3D vertex coordinates are defined.
+    This vector is subtracted from the positions."""
+
     refquat: QuaternionWXYZ = IDENTITY_QUATERNION
+    """Reference orientation relative to which the 3D vertex coordinates and normals
+    are defined. The conjugate of this quaternion is used to rotate the positions and
+    normals. The model compiler normalizes the quaternion automatically.
+    """
+
     scale: VectorXYZ = (1.0, 1.0, 1.0)
+    """Scaling factor for the model in each direction."""
 
 
 class ObjectMetadataDecoder(json.JSONDecoder):
