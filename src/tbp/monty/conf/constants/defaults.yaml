@@ -33,7 +33,8 @@ pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
 # v3 : Trained after fixing the monolithic experiments connectivity issues (PR#942)
 # v4 : Trained after compositional benchmark config refactor (PR#1070)
 # v5 : Updated pretrained models for compositional_objects_1.2 (symmetrically ambiguous objects removed), and fix to monolithic supervised IDs
-compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v5}
+# v6 : Uses 3LM architecture (with TwoDSensorModule + burst sampling) trained on compositional_objects_1.2
+compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v6}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
