@@ -6,6 +6,8 @@ on:
     types:
     - opened
     - edited
+    - labeled
+    - unlabeled
 
 jobs:
   pr_title_triage:
@@ -38,3 +40,20 @@ jobs:
             echo "correct label for this PR."
             exit 1
           fi
+
+  pr_labels_triage:
+    name: pr-labels-triage
+    runs-on: ubuntu-latest
+    steps:
+      - name: triaged label is present
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'triaged') }}
+        run: |
+          echo "This PR has been triaged."
+          exit 0
+      - name: triaged label is absent
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'triaged') }}
+        run: |
+          echo "This PR is missing the 'triaged' label."
+          echo "A maintainer will apply it during triage."
+          echo "See https://docs.thousandbrains.org/docs/triage#labels-1"
+          exit 1
