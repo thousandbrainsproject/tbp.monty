@@ -19,6 +19,7 @@ QuaternionWXYZ = Tuple[float, float, float, float]
 
 IDENTITY_QUATERNION: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0)
 ZERO_VECTOR: VectorXYZ = (0.0, 0.0, 0.0)
+ONES_VECTOR: VectorXYZ = (1.0, 1.0, 1.0)
 
 DEFAULT_TOLERANCE = 1e-6
 ROTATION_TOLERANCE_RADIANS = 1e-6
