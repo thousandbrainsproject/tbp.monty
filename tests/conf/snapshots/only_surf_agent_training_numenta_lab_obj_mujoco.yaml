@@ -81,7 +81,7 @@ experiment:
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/numenta_lab}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/numenta_lab}
         agents:
         - _target_: tbp.monty.simulators.mujoco.agents.SurfaceAgent
           _partial_: true

@@ -79,7 +79,7 @@ experiment:
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/numenta_lab}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/numenta_lab}
         agents:
         - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
           _partial_: true
@@ -170,7 +170,7 @@ experiment:
     max_eval_steps: 500
     max_total_steps: 6000
     n_train_epochs: 3
-    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj_mujoco/pretrained/
+    model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
     n_eval_epochs: 10
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
