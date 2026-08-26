@@ -11,7 +11,13 @@ from dataclasses import dataclass, fields
 from json import JSONDecodeError
 from pathlib import Path
 
-from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import (
+    IDENTITY_QUATERNION,
+    ONES_VECTOR,
+    ZERO_VECTOR,
+    QuaternionWXYZ,
+    VectorXYZ,
+)
 
 
 class InvalidObjectMetadata(Exception):
@@ -32,7 +38,7 @@ class ObjectMetadata:
     normals. The model compiler normalizes the quaternion automatically.
     """
 
-    scale: VectorXYZ = (1.0, 1.0, 1.0)
+    scale: VectorXYZ = ONES_VECTOR
     """Scaling factor for the model in each direction."""
 
 
@@ -59,7 +65,7 @@ class ObjectMetadataDecoder(json.JSONDecoder):
                 f"Couldn't decode '{self.object_type}' metadata."
             ) from e
 
-        # Check for extra in the metadata
+        # Check for extra keys in the metadata JSON
         fields_set = set(decoded.keys())
         expected_fields = {f.name for f in fields(ObjectMetadata)}
         extra_fields = fields_set - expected_fields
