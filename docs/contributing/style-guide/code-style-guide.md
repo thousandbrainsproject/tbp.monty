@@ -16,7 +16,36 @@ A convenient way to ensure your code is formatted correctly is using the [ruff f
 
 ## Code Docstrings
 
-We adopted the Google Style for docstrings. For more details, see the [Google Python Style Guide - 3.8 Comments and Docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
+We adopted the Google Style for docstrings, with modifications. For more details on the Google Style docstrings, see the [Google Python Style Guide - 3.8 Comments and Docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
+
+### Class Attribute, Instance Property, and Constant Docstrings
+
+Diverging from the Google Style docstring convention, we place docstrings for class attributes, instance properties, and constants after their declarations.
+
+```python
+MY_CONSTANT = 17
+"""This is my constant docstring."""
+
+class MyClass:
+
+	my_attribute: ClassVar[str]
+	"""This is my class attribute docstring."""
+
+	my_property: str
+	"""This is my instance property docstring."""
+
+	_my_private_ish_property: str
+	"""This is my "private" instance property docstring."""
+
+	def __init__(self, my_property: str):
+		"""Initialize MyClass.
+
+		Arguments:
+			my_property: My property to initialize with.
+		"""
+		self.my_property = my_property
+		self._my_private_ish_property = "shhh"
+```
 
 ## Libraries
 
