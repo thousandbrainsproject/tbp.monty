@@ -27,6 +27,7 @@ MY_CONSTANT = 17
 """This is my constant docstring."""
 
 class MyClass:
+	"""I'm a Class... I'm a Class... I'm a Class..."""
 
 	my_attribute: ClassVar[str]
 	"""This is my class attribute docstring."""
