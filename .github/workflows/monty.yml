@@ -538,13 +538,11 @@ jobs:
       - name: Create uv environment
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
-        continue-on-error: true
         run: |
           uv sync --locked --extra dev --extra simulator_mujoco
       - name: Test tutorials
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
-        continue-on-error: true
         run: |
           export MUJOCO_GL=egl
           export EGL_PLATFORM=headless
@@ -594,7 +592,6 @@ jobs:
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
-        continue-on-error: true
         run: |
           export MUJOCO_GL=egl
           export EGL_PLATFORM=headless
