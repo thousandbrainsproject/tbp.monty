@@ -41,7 +41,7 @@ class MyClass:
 		"""Initialize MyClass.
 
 		Arguments:
-			my_property: My property to initialize with.
+			my_property: My argument to initialize with.
 		"""
 		self.my_property = my_property
 		self._my_private_ish_property = "shhh"
