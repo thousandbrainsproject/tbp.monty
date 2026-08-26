@@ -155,7 +155,6 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 #       so the experiment can set max steps based on that knowledge
                 #       alone.
                 self.model.set_is_done()
-                # TODO: `MontyBase.set_is_done()` is not defined, use `set_done()`?
                 return step
 
             if self._recognition_complete(step):
