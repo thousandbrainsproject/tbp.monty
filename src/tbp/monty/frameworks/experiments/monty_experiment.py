@@ -529,14 +529,18 @@ class MontyExperiment:
                 break
             finally:
                 self.post_step(step, observations)
+
+            if step >= self.max_steps:
+                self.model.set_done()
             if self._recognition_complete(step):
                 break
+
             step += 1
 
         self.post_episode(step)
 
     def _recognition_complete(self, step: int) -> bool:
-        legacy_result = self.model.is_done or step >= self.max_steps
+        legacy_result = self.model.is_done
 
         if self._recognition_policy is not None:
             rc = None
