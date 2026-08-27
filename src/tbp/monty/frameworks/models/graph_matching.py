@@ -18,7 +18,7 @@ import torch
 from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
-from tbp.monty.experiment.recognition_policy import (
+from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
     RecognitionStatus,
 )
