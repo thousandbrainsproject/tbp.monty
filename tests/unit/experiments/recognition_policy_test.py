@@ -19,34 +19,34 @@ from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
     RecognitionStatus,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
+from tbp.monty.frameworks.models.monty_base import MontyBase
 
 
-def _model_is_done(is_done: bool) -> MagicMock:
-    model = MagicMock()
+def _model_is_done(is_done: bool) -> MontyBase:
+    model: MontyBase = MagicMock()
     model.is_done = is_done
     return model
 
 
 def _model_with_conclusions(
     conclusions: list[RecognitionConclusion | None],
-) -> MagicMock:
-    learning_modules = []
+) -> MontyBase:
+    learning_modules: list[LearningModule] = []
     for conclusion in conclusions:
         lm = MagicMock()
         lm.recognition_status = RecognitionStatus(conclusion=conclusion)
         learning_modules.append(lm)
-    model = MagicMock()
+    model: MontyBase = MagicMock()
     model.learning_modules = learning_modules
     return model
 
 
 class MontyIsDoneTest(unittest.TestCase):
-    def test_raises_if_max_steps_is_not_positive(self) -> None:
+    @given(max_steps=st.integers(max_value=0))
+    def test_raises_if_max_steps_is_not_positive(self, max_steps: int) -> None:
         with self.assertRaises(ValueError):
-            MontyIsDone(max_steps=0)
-
-        with self.assertRaises(ValueError):
-            MontyIsDone(max_steps=-1)
+            MontyIsDone(max_steps=max_steps)
 
     @given(is_done=st.booleans(), step=st.integers(min_value=0))
     def test_mirrors_model_when_no_max_steps(self, is_done: bool, step: int) -> None:
@@ -79,19 +79,19 @@ class MontyIsDoneTest(unittest.TestCase):
 
 
 class MinimumCountTest(unittest.TestCase):
-    def test_raises_value_error_if_count_is_not_positive(self) -> None:
+    @given(count=st.integers(max_value=0), max_steps=st.integers(min_value=1))
+    def test_raises_value_error_if_count_is_not_positive(
+        self, count: int, max_steps: int
+    ) -> None:
         with self.assertRaises(ValueError):
-            MinimumCount(count=0, max_steps=10)
+            MinimumCount(count=count, max_steps=max_steps)
 
+    @given(count=st.integers(min_value=1), max_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_steps_is_not_positive(
+        self, count: int, max_steps: int
+    ) -> None:
         with self.assertRaises(ValueError):
-            MinimumCount(count=-1, max_steps=10)
-
-    def test_raises_value_error_if_max_steps_is_not_positive(self) -> None:
-        with self.assertRaises(ValueError):
-            MinimumCount(count=1, max_steps=0)
-
-        with self.assertRaises(ValueError):
-            MinimumCount(count=1, max_steps=-1)
+            MinimumCount(count=count, max_steps=max_steps)
 
     @given(
         num_concluded=st.integers(min_value=0, max_value=10),
