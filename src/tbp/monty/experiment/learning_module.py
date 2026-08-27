@@ -9,7 +9,7 @@
 
 from typing import Protocol
 
-from tbp.monty.experiment.recognition_policy import RecognitionStatus
+from tbp.monty.experiment.recognition_status import RecognitionStatus
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 
 __all__ = [

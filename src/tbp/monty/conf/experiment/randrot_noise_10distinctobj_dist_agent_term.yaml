@@ -26,8 +26,7 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.MinimumCount
-      count: 1
+      _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
       max_steps: 500
     seed: 42
     supervised_lm_ids: []
