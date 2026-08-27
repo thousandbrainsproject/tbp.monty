@@ -23,11 +23,13 @@ We adopted the Google Style for docstrings, with modifications. For more details
 Diverging from the Google Style docstring convention, we place docstrings for class attributes, instance properties, and constants after their declarations.
 
 ```python
+"""This is a module docstring."""
+
 MY_CONSTANT = 17
 """This is my constant docstring."""
 
 class MyClass:
-	"""I'm a Class... I'm a Class... I'm a Class..."""
+	"""This is a class docstring."""
 
 	my_attribute: ClassVar[str]
 	"""This is my class attribute docstring."""
@@ -41,7 +43,7 @@ class MyClass:
 	def __init__(self, my_property: str):
 		"""Initialize MyClass.
 
-		Arguments:
+		Args:
 			my_property: My argument to initialize with.
 		"""
 		self.my_property = my_property
