@@ -36,10 +36,6 @@ from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
 from tbp.monty.frameworks.experiments.profile import ProfileExperimentMixin
-from tbp.monty.frameworks.loggers.monty_handlers import (
-    BasicCSVStatsHandler,
-    DetailedJSONHandler,
-)
 from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_dir,
     maybe_rename_existing_file,
