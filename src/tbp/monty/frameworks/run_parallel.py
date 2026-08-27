@@ -426,12 +426,6 @@ def get_overall_stats(stats):
     overall_stats["overall/percent_used_mlh_after_timeout"] = (
         np.mean(stats["episode/used_mlh_after_time_out"]) * 100
     )
-    overall_stats["overall/percent_correct_child_or_parent"] = (
-        np.mean(stats["episode/consistent_child_or_parent"]) * 100
-    )
-    overall_stats["overall/percent_consistent_child_obj"] = (
-        np.mean(stats["episode/consistent_child_obj"]) * 100
-    )
     overall_stats["overall/avg_prediction_error"] = np.mean(
         stats["episode/avg_prediction_error"]
     )
@@ -472,7 +466,6 @@ def per_lm_stats(eval_stats):
 def print_benchmark_stats(overall_stats: dict) -> None:
     benchmark_keys = [
         "overall/percent_correct",
-        "overall/percent_correct_child_or_parent",
         "overall/avg_rotation_error",
         "overall/avg_num_monty_matching_steps",
         "overall/run_time",

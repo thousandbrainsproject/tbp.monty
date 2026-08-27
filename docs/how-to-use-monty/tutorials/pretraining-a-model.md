@@ -92,7 +92,6 @@ Opening `src/tbp/monty/conf/env_interface/tutorial_train_2obj_predefined.yaml` w
 
 do_train: true
 train_env_interface_args:
-  parent_to_child_mapping: null
   # Here we specify which objects to learn. "mug" and "banana" come from the YCB dataset.
   # If you don't have the YCB dataset, replace with names from habitat (e.g.,
   # "capsule3DSolid", "cubeSolid", etc.).

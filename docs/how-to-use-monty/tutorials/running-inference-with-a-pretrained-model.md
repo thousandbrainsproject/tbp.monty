@@ -55,7 +55,6 @@ We can see the details at `src/tbp/monty/conf/env_interface/tutorial_eval_2obj_p
 
 do_eval: true
 eval_env_interface_args:
-  parent_to_child_mapping: null
   # Specify objects to test.
   object_names:
   - mug

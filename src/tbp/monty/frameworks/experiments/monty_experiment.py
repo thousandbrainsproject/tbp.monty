@@ -258,10 +258,6 @@ class MontyExperiment:
         # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
         if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
-            if target is not None:
-                target.update(
-                    consistent_child_objects=self.env_interface.consistent_child_objects
-                )
             args.update(target=target)
         return args
 
