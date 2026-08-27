@@ -34,6 +34,9 @@ experiment:
               rotation_degrees: 5.0
       learning_modules:
         learning_module_0:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
+          hypotheses_updater_args:
+            max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           max_match_distance: 0.01
           tolerances:
@@ -42,7 +45,7 @@ experiment:
               principal_curvatures_log: ${np.ones:2}
           feature_weights: {}
           max_graph_size: 0.3
-          num_model_voxels_per_dim: 200
+          num_model_voxels_per_dim: 100
           max_nodes_per_graph: 2000
           gsg:
             _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
@@ -53,19 +56,51 @@ experiment:
             x_percent_scale_factor: 0.75
             desired_object_distance: 0.03
         learning_module_1:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
+          hypotheses_updater_args:
+            max_nneighbors: 10
+          _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
+          feature_weights:
+            patch_1:
+              hsv: ${np.array:[1, 0.5, 0.5]}
+              pose_vectors: ${np.array:[0, 2, 1]}
+          tolerances:
+            patch_1:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+          max_match_distance: 0.001
+          x_percent_threshold: 20
+          evidence_threshold_config: all
+          max_graph_size: 0.1
+          num_model_voxels_per_dim: 100
+          gsg:
+            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
+            goal_tolerances:
+              location: 0.015
+            elapsed_steps_factor: 10
+            min_post_goal_success_steps: 5
+            x_percent_scale_factor: 0.75
+            desired_object_distance: 0.03
+        learning_module_2:
+          hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
+          hypotheses_updater_args:
+            max_nneighbors: 10
           _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
           max_match_distance: 0.01
           tolerances:
-            patch_1:
+            patch_2:
               hsv: ${np.array:[0.1, 1, 1]}
               principal_curvatures_log: ${np.ones:2}
             learning_module_0:
               object_id: 1
+            learning_module_1:
+              object_id: 1
           feature_weights:
             learning_module_0:
               object_id: 1
+            learning_module_1:
+              object_id: 1
           max_graph_size: 0.4
-          num_model_voxels_per_dim: 200
+          num_model_voxels_per_dim: 100
           max_nodes_per_graph: 2000
           gsg:
             _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
@@ -102,8 +137,44 @@ experiment:
             distance: 0.01
           save_raw_obs: true
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
           sensor_module_id: patch_1
+          save_raw_obs: false
+          edge_detector:
+            _target_: tbp.monty.frameworks.utils.edge_detection.EdgeDetector
+            gaussian_sigma: 1.0
+            kernel_size: 7
+            strength_threshold: 0.1
+            coherence_threshold: 0.5
+            radius: 14.0
+            sigma_r: 7.0
+            depth_edge_threshold: 0.01
+            max_center_offset: null
+          noise_params: null
+          features:
+          - pose_vectors
+          - pose_fully_defined
+          - principal_curvatures
+          - on_object
+          - object_coverage
+          - rgba
+          - hsv
+          - edge_strength
+          - coherence
+          - mean_depth
+          - min_depth
+          delta_thresholds:
+            on_object: 0
+            n_steps: 20
+            hsv:
+            - 0.1
+            - 0.1
+            - 0.1
+            pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
+            distance: 0.01
+        sensor_module_2:
+          _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+          sensor_module_id: patch_2
           features:
           - pose_vectors
           - pose_fully_defined
@@ -124,17 +195,19 @@ experiment:
             - 4
             distance: 0.05
           save_raw_obs: true
-        sensor_module_2:
+        sensor_module_3:
           _target_: tbp.monty.frameworks.models.sensor_modules.Probe
           sensor_module_id: view_finder
           save_raw_obs: true
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0
+        patch_2: agent_id_0
         view_finder: agent_id_0
       sm_to_lm_matrix:
       - - 0
       - - 1
+      - - 2
       lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
     environment:
@@ -154,6 +227,7 @@ experiment:
             sensor_ids:
             - patch_0
             - patch_1
+            - patch_2
             - view_finder
             height: 0.0
             position:
@@ -167,7 +241,12 @@ experiment:
               - 64
             - - 64
               - 64
+            - - 64
+              - 64
             positions:
+            - - 0.0
+              - 0.0
+              - 0.0
             - - 0.0
               - 0.0
               - 0.0
@@ -190,17 +269,28 @@ experiment:
               - 0.0
               - 0.0
               - 0.0
+            - - 1.0
+              - 0.0
+              - 0.0
+              - 0.0
             semantics:
+            - false
             - false
             - false
             - false
             zooms:
             - 10.0
+            - 30.0
             - 5.0
             - 1.0
           agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
       env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
       transform:
+      - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
+        agent_id: agent_id_0
+        sigma: 5
+        sensor_ids:
+        - patch_1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
         max_depth: 1
@@ -209,8 +299,11 @@ experiment:
         sensor_ids:
         - patch_0
         - patch_1
+        - patch_2
         - view_finder
         resolutions:
+        - - 64
+          - 64
         - - 64
           - 64
         - - 64
@@ -220,71 +313,12 @@ experiment:
         world_coord: true
         zooms:
         - 10.0
+        - 30.0
         - 5.0
         - 1.0
         get_all_points: true
         use_semantic_sensor: false
     eval_env_interface_args:
-      parent_to_child_mapping:
-        001_cube:
-        - 001_cube
-        002_cube_tbp:
-        - 001_cube
-        - 021_logo_tbp
-        004_cube_numenta:
-        - 001_cube
-        - 022_logo_numenta
-        006_disk:
-        - 006_disk
-        007_disk_tbp:
-        - 006_disk
-        - 021_logo_tbp
-        009_disk_numenta:
-        - 006_disk
-        - 022_logo_numenta
-        011_cylinder:
-        - 011_cylinder
-        012_cylinder_tbp_horz:
-        - 011_cylinder
-        - 021_logo_tbp
-        013_cylinder_tbp_vert:
-        - 011_cylinder
-        - 021_logo_tbp
-        014_cylinder_numenta_horz:
-        - 011_cylinder
-        - 022_logo_numenta
-        015_cylinder_numenta_vert:
-        - 011_cylinder
-        - 022_logo_numenta
-        016_sphere:
-        - 016_sphere
-        017_sphere_tbp:
-        - 016_sphere
-        - 021_logo_tbp
-        019_sphere_numenta:
-        - 016_sphere
-        - 022_logo_numenta
-        021_logo_tbp:
-        - 021_logo_tbp
-        022_logo_numenta:
-        - 022_logo_numenta
-        023_mug:
-        - 023_mug
-        024_mug_tbp_horz:
-        - 023_mug
-        - 021_logo_tbp
-        025_mug_tbp_vert:
-        - 023_mug
-        - 021_logo_tbp
-        026_mug_numenta_horz:
-        - 023_mug
-        - 022_logo_numenta
-        027_mug_numenta_vert:
-        - 023_mug
-        - 022_logo_numenta
-        028_mug_tbp_horz_bent:
-        - 023_mug
-        - 021_logo_tbp
       object_names:
       - 001_cube
       - 006_disk
@@ -344,7 +378,7 @@ experiment:
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
       ids:
-      - learning_module_1
+      - learning_module_2
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG

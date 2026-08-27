@@ -155,7 +155,6 @@ experiment:
         - 0
         clip_value: 0.05
     eval_env_interface_args:
-      parent_to_child_mapping: null
       object_names:
       - mug
       - bowl
@@ -221,7 +220,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v5}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v6}
   rotations_all_count: 14
   rotations_all:
   - - 0

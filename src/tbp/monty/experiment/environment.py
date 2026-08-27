@@ -177,7 +177,6 @@ class OneObjectPerEpisodeInterface(Interface):
         self,
         object_names: list[str] | ListConfig | MultiObjectNames,
         object_init_sampler: Default | Predefined | RandomRotation,
-        parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         *args,
         **kwargs,
@@ -196,8 +195,6 @@ class OneObjectPerEpisodeInterface(Interface):
                     environment
             object_init_sampler: Function that returns dict with position, rotation,
                 and scale of objects when re-initializing.
-            parent_to_child_mapping: dictionary mapping parent objects to their child
-                objects. Used for logging.
             positioning_procedures: Sequence of positioning procedures to apply
                 prior to each episode.
             *args: passed to `super()` call
@@ -235,8 +232,6 @@ class OneObjectPerEpisodeInterface(Interface):
         self.current_object = 0
         self.n_objects = len(self.object_names)
         self.primary_target = None
-        self.consistent_child_objects = None
-        self.parent_to_child_mapping = parent_to_child_mapping or {}
         self._positioning_procedures = positioning_procedures
 
     def pre_episode(self, rng: np.random.RandomState):
@@ -363,17 +358,6 @@ class OneObjectPerEpisodeInterface(Interface):
             "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
             **self.object_params,
         }
-        if self.primary_target["object"] in self.parent_to_child_mapping:
-            self.consistent_child_objects = self.parent_to_child_mapping[
-                self.primary_target["object"]
-            ]
-        elif self.parent_to_child_mapping:
-            # if mapping contains keys (i.e. not an empty dict) it should contain the
-            # target object
-            logger.warning(
-                f"target object {self.primary_target['object']} not in",
-                " parent_to_child_mapping",
-            )
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
@@ -420,7 +404,6 @@ class OmniglotInterface(OneObjectPerEpisodeInterface):
         env: OmniglotEnvironment,
         rng: np.random.RandomState,
         transform: Transform | Sequence[Transform] | None = None,
-        parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         *_args,
         **_kwargs,
@@ -435,8 +418,6 @@ class OmniglotInterface(OneObjectPerEpisodeInterface):
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned
                  by the environment.
-            parent_to_child_mapping: dictionary mapping parent objects to their child
-                objects. Used for logging.
             positioning_procedures: Sequence of positioning procedures to apply
                 prior to each episode.
             *args: Unused?
@@ -459,10 +440,6 @@ class OmniglotInterface(OneObjectPerEpisodeInterface):
             str(self.env.alphabet_names[alphabets[i]]) + "_" + str(self.characters[i])
             for i in range(self.n_objects)
         ]
-        self.consistent_child_objects = None
-        self.parent_to_child_mapping = (
-            parent_to_child_mapping if parent_to_child_mapping else {}
-        )
         self._positioning_procedures = positioning_procedures
 
     def post_episode(self):
@@ -515,7 +492,6 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
         env: SaccadeOnImageEnvironment,
         rng: np.random.RandomState,
         transform: Transform | Sequence[Transform] | None = None,
-        parent_to_child_mapping: Mapping[str, Sequence[str]] | None = None,
         positioning_procedures: Sequence[PositioningProcedureFactory] | None = None,
         *_args,
         **_kwargs,
@@ -530,8 +506,6 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
-            parent_to_child_mapping: dictionary mapping parent objects to their child
-                objects. Used for logging.
             positioning_procedures: Sequence of positioning procedures to apply
                 prior to each episode.
             *args: Unused?
@@ -550,8 +524,6 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
         self.episodes = 0
         self.epochs = 0
         self.primary_target = None
-        self.consistent_child_objects = None
-        self.parent_to_child_mapping = parent_to_child_mapping or {}
         self._positioning_procedures = positioning_procedures
 
     def post_episode(self):
