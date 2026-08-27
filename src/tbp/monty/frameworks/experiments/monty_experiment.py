@@ -30,6 +30,11 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.experiment.recognition_policy import (
+    RecognitionConclusion,
+    RecognitionPolicy,
+    RecognitionStatus,
+)
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -67,6 +72,7 @@ class MontyExperiment:
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
     _step_hook: StepHook
+    _recognition_policy: RecognitionPolicy | None
 
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
@@ -113,6 +119,7 @@ class MontyExperiment:
         self._rng_seed_history: list[int] = []
 
         self._step_hook = config.pop("step_hook", NoOpStepHook())
+        self._recognition_policy = config.pop("recognition_policy", None)
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -522,11 +529,31 @@ class MontyExperiment:
                 break
             finally:
                 self.post_step(step, observations)
-            if self.model.is_done or step >= self.max_steps:
+
+            if step >= self.max_steps:
+                self.model.set_done()
+            if self._recognition_complete(step):
                 break
+
             step += 1
 
         self.post_episode(step)
+
+    def _recognition_complete(self, step: int) -> bool:
+        legacy_result = self.model.is_done
+
+        if self._recognition_policy is not None:
+            rc = None
+            if legacy_result:
+                rc = RecognitionConclusion.MATCH
+            rs = RecognitionStatus(rc)
+            status = {"monty": rs}
+            rr = self._recognition_policy(step=step, status=status)
+            assert rr.is_done == legacy_result, (
+                f"wrong recognition result: expected {legacy_result}, got {rr.is_done}"
+            )
+
+        return legacy_result
 
     def pre_episode(self) -> None:
         """Call pre_episode on elements in experiment and set mode."""

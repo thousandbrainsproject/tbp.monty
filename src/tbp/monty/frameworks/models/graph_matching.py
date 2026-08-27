@@ -18,6 +18,10 @@ import torch
 from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.experiment.recognition_policy import (
+    RecognitionConclusion,
+    RecognitionStatus,
+)
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -174,16 +178,6 @@ class MontyForGraphMatching(MontyBase):
             return True
 
         return False
-
-    # ------------------ Getters & Setters ---------------------
-
-    def set_is_done(self):
-        """Set the model's `is_done` flag.
-
-        Method that e.g. experiment classes can use to set the model's flag if
-        e.g. the total number of episode steps possible has been exceeded.
-        """
-        self._is_done = True
 
     # ------------------ Logging & Saving ----------------------
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
@@ -747,6 +741,15 @@ class GraphLM(LearningModule):
                 self.set_individual_ts(None)
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
+
+    @property
+    def recognition_status(self) -> RecognitionStatus:
+        conclusion = (
+            RecognitionConclusion(self.terminal_state)
+            if self.terminal_state is not None
+            else None
+        )
+        return RecognitionStatus(conclusion=conclusion)
 
     # ------------------ Getters & Setters ---------------------
 
