@@ -76,10 +76,10 @@ class MontyIsDone(RecognitionPolicy):
 
 
 class MinimumCount(RecognitionPolicy):
-    """`count` LMs have reached "match", or `max_steps` have been taken."""
+    """`count` LMs have reached a conclusion, or `max_steps` have been taken."""
 
     _count: int
-    """The minimum number of LMs that must reach "match" status."""
+    """The minimum number of LMs that must reach a conclusion."""
 
     _max_steps: int
     """The maximum number of Monty steps before reaching a conclusion."""
@@ -88,8 +88,8 @@ class MinimumCount(RecognitionPolicy):
         """Initialize the policy.
 
         Args:
-            count: The number of Learning Modules that must reach "match" for the
-                policy to be satisfied.
+            count: The number of Learning Modules that must reach a conclusion for
+                the policy to be satisfied.
             max_steps: The maximum number of Monty steps before reaching a conclusion.
 
         Raises:
