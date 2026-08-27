@@ -35,7 +35,6 @@ from tbp.monty.frameworks.environments.environment import (
 )
 from tbp.monty.frameworks.environments.object_init_samplers import (
     Default,
-    MultiObjectNames,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
@@ -203,7 +202,6 @@ class OneObjectPerEpisodeInterfaceTest(unittest.TestCase):
             ["object_a", "object_b", "object_a"], env_interface.object_names
         )
         self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
-        self.assertEqual(0, env_interface.num_distractors)
 
     def test_accepts_hydra_list_config_object_names(self):
         seed = 42
@@ -222,52 +220,6 @@ class OneObjectPerEpisodeInterfaceTest(unittest.TestCase):
             ["object_a", "object_b", "object_a"], env_interface.object_names
         )
         self.assertEqual(["object_a", "object_b"], env_interface.source_object_list)
-        self.assertEqual(0, env_interface.num_distractors)
-
-    def test_accepts_mapping_object_names(self):
-        seed = 42
-        rng = np.random.RandomState(seed)
-
-        env_interface = OneObjectPerEpisodeInterface(
-            env=FakeEnvironmentAbs(),
-            rng=rng,
-            seed=seed,
-            experiment_mode=ExperimentMode.EVAL,
-            object_names=MultiObjectNames(
-                targets_list=["object_a", "object_c"],
-                source_object_list=[
-                    "object_a",
-                    "object_b",
-                    "object_c",
-                    "object_b",
-                ],
-                num_distractors=2,
-            ),
-            object_init_sampler=Default(),
-        )
-
-        self.assertEqual(["object_a", "object_c"], env_interface.object_names)
-        self.assertEqual(
-            ["object_a", "object_b", "object_c"], env_interface.source_object_list
-        )
-        self.assertEqual(2, env_interface.num_distractors)
-
-    def test_rejects_tuple_object_names(self):
-        seed = 42
-        rng = np.random.RandomState(seed)
-
-        with self.assertRaisesRegex(
-            TypeError,
-            "Object names must be a list, ListConfig, or a mapping",
-        ):
-            OneObjectPerEpisodeInterface(
-                env=FakeEnvironmentAbs(),
-                rng=rng,
-                seed=seed,
-                experiment_mode=ExperimentMode.EVAL,
-                object_names=("object_a", "object_b"),  # type: ignore[arg-type]
-                object_init_sampler=Default(),
-            )
 
 
 class EmbodiedDataTest(unittest.TestCase):

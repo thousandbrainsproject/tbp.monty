@@ -9,6 +9,7 @@
 
 import pytest
 
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.hydra import instantiate_experiment
 
 pytest.importorskip(
@@ -72,8 +73,9 @@ class GetGoodViewTest(unittest.TestCase):
                 target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
                 target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
+                assert exp.env_interface is not None  # for type narrowing
                 observation, state = exp.env_interface.step([])
-                view = observation[agent_id]["view_finder"]
+                view = observation[agent_id][SensorID("view_finder")]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
                     semantic, semantic_id=SemanticID(1)
@@ -96,71 +98,4 @@ class GetGoodViewTest(unittest.TestCase):
                 assert closest_point_on_target_obj > target_closest_point, (
                     f"Initial view is too close, {closest_point_on_target_obj} "
                     f"vs target of {target_closest_point}"
-                )
-
-    def test_multi_object_target_not_visible(self) -> None:
-        """Test the ability to move a distant agent to a good view of an object.
-
-        Given a view of multiple objects with the target object not visible, the
-        positioning procedure should generate distant agent actions to
-        a good view of the object before beginning the experiment.
-
-        In this case, there are multiple objects, such that at the start of the
-        experiment the target object is not visible in the central pixel of the view.
-        Positioning procedure must turn the agent towards the target object using the
-        viewfinder, and then move towards it.
-        """
-        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
-            config = hydra_config("multi_object_target_not_visible", self.output_dir)
-            agent_cfg = config.experiment.config.environment.env_init_args.agents
-            agent_id = config.experiment.config.train_env_interface_args[
-                "positioning_procedures"
-            ][0].agent_id
-            exp = instantiate_experiment(config.experiment)
-            with exp:
-                exp.train()
-
-                exp.experiment_mode = ExperimentMode.EVAL
-                exp.model.set_experiment_mode(exp.experiment_mode)
-                exp.pre_epoch()
-                exp.pre_episode()
-
-                target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
-                target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
-
-                observation, state = exp.env_interface.step([])
-                view = observation[agent_id]["view_finder"]
-                semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
-                perc_on_target_obj = get_perc_on_obj_semantic(
-                    semantic, semantic_id=SemanticID(1)
-                )
-
-                # Make sure we've actually moved
-                assert not np.allclose(
-                    state[agent_id].position, agent_cfg.agent_args.position
-                ), "Agent did not move."
-
-                assert perc_on_target_obj >= target_perc_on_target_obj, (
-                    f"Initial view is not good enough, {perc_on_target_obj} "
-                    f"vs target of {target_perc_on_target_obj}"
-                )
-
-                points_on_target_obj = semantic == 1
-                closest_point_on_target_obj = np.min(
-                    view["depth"][points_on_target_obj]
-                )
-
-                assert closest_point_on_target_obj > target_closest_point, (
-                    "Initial view is too close to target, "
-                    f"{closest_point_on_target_obj} vs target of {target_closest_point}"
-                )
-                # Also calculate the closest point on *any* object so that we don't get
-                # too close and clip into objects; An object is anything with
-                # SemanticID > 0
-                points_on_any_obj = view["semantic"] > 0
-                closest_point_on_any_obj = np.min(view["depth"][points_on_any_obj])
-                assert closest_point_on_any_obj > target_closest_point / 6, (
-                    "Initial view too close to other objects, "
-                    f"{closest_point_on_any_obj} vs target of "
-                    f"{target_closest_point / 6}"
                 )
