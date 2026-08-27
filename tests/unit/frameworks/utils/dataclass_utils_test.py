@@ -590,4 +590,3 @@ class IsDataclassInstanceTest(unittest.TestCase):
         self.assertFalse(
             dataclass_utils.is_dataclass_instance(FakeNamedTuple(name=0, value=[]))
         )
-

@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 class MontyBase(Monty):
-
     _is_done: bool
 
     def __init__(

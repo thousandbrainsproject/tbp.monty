@@ -230,6 +230,7 @@ def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> lis
     idxs = parse_episode_spec(episode_spec, len(configs))
     return [cfg for i, cfg in enumerate(configs) if i in idxs]
 
+
 def monty_data_logger_handlers_include_wandb_wrapper(config: DictConfig) -> bool:
     return any(
         handler["_target_"]
@@ -257,6 +258,7 @@ def wandb_group_from_monty_data_logger_handlers(config: DictConfig) -> str | Non
         ):
             return handler["wandb_group"]
     return None
+
 
 def generate_parallel_eval_configs(
     experiment: DictConfig,
