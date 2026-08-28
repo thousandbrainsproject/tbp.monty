@@ -9,7 +9,7 @@ defaults:
   - /environment: test_habitat
   - /env_interface: test_train_3obj_default_eval_3obj_default
   - /env_interface/transform: none
-  - /logging: detailed_debug_monty_runs
+  - /logging: base_debug_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
