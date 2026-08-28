@@ -97,6 +97,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         # Collect data about the object (exploratory steps)
         num_steps = 0
         actions: list[Action] = []
+        stop_requested: bool = False
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
 
@@ -129,14 +130,18 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 #       fully. For example, we know how many steps the policy will take,
                 #       so the experiment can set max steps based on that knowledge
                 #       alone.
-                break
-            if self.model.is_done:
-                break
+                stop_requested = True
 
+            # TODO: use `num_steps` (off by 1?) instead?
+            step = self.model.episode_steps
             # Even if many exploratory steps have not sent information to learning
             # modules (so is_done remains False), eventually terminate exploration
-            # TODO: should we use model.total_steps here?
-            if self.model.episode_steps >= self.max_total_steps:
+            if step >= self.max_total_steps:
+                stop_requested = True
+            stop_requested = stop_requested or self._recognition_complete(step)
+
+            if stop_requested:
+                self.model.set_done()  # TODO: remove `is_done` from Monty
                 break
 
         # Pass target info to model --> will overwrite (where specified)

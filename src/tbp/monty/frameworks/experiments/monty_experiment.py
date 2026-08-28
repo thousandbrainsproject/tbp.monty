@@ -536,7 +536,6 @@ class MontyExperiment:
             step += 1
 
         self.post_episode(step)
-        return step
 
     def _recognition_complete(self, step: int) -> bool:
         legacy_result = self.model.is_done
