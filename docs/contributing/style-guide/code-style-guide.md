@@ -56,7 +56,7 @@ class MyClass:
 
 Using a docstring right after the attribute, property, or constant definition puts the documentation as close as possible to what is being documented. Having to put `Attributes: ` in a class docstring some distance from the attributes/properties (as per the Google Style convention) makes it more likely that they won't be updated when names change.
 
-Note that while docstrings after a class, module, or function are stored on the `__doc__` attribute of the object, docstrings placed after attribute, property, or constant definition do not.
+Note that while docstrings after a class, module, or function are stored on the `__doc__` attribute of the object, docstrings placed after attribute, property, or constant definitions are not.
 
 [PEP-257 - Docstring Conventions](https://peps.python.org/pep-0257/) states:
 
