@@ -101,7 +101,7 @@ experiment:
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
       monty_data_logger:
-        _target_: tbp.monty.frameworks.loggers.monty_loggers.BasicGraphMatchingLogger
+        _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       run_name: world_image_from_stream_on_scanned_model

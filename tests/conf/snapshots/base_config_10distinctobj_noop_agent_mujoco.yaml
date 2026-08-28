@@ -163,7 +163,7 @@ experiment:
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
       monty_data_logger:
-        _target_: tbp.monty.frameworks.loggers.monty_loggers.BasicGraphMatchingLogger
+        _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers: []
       run_name: base_config_10distinctobj_noop_agent_mujoco
     show_sensor_output: false

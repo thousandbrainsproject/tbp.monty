@@ -173,7 +173,7 @@ experiment:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       run_name: surf_agent_2obj_eval_mujoco
       monty_data_logger:
-        _target_: tbp.monty.frameworks.loggers.monty_loggers.BasicGraphMatchingLogger
+        _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       wandb_group: gm_eval_runs
