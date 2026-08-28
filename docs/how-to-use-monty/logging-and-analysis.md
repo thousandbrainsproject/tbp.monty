@@ -3,7 +3,7 @@ title: Logging and Analysis
 ---
 # Monty Loggers
 
-To manage the logging for an experiment you can specify the handlers that should be used by the `monty_data_logger` in the `logging` config. If you want to report data to WandB, you can use the `tbp.monty.frameworks.loggers.wandb_handlers.WandbWrapper` as one of the `monty_data_logger` handlers, it will start a WandB session. Inside this wrapper, you can then specify the individual types of `wandb_handlers`.
+To manage the logging for an experiment you can specify the handlers that should be used by the `monty_data_logger` in the `logging` config. If you want to report data to Wandb, you can use the `tbp.monty.frameworks.loggers.wandb_handlers.WandbWrapper` as one of the `monty_data_logger` handlers, it will start a Wandb session. Inside this wrapper, you can then specify the individual types of `wandb_handlers`.
 
 ## List of all Logging Handlers
 
