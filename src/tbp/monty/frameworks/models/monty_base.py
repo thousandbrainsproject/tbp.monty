@@ -104,7 +104,6 @@ class MontyBase(Monty):
 
         # Counters, logging, default step_type
         self.step_type = "matching_step"
-        self.is_seeking_match = True  # for consistency with custom monty experiments
         self.experiment_mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
         )
@@ -223,7 +222,7 @@ class MontyBase(Monty):
             True if max_steps was reached, False otherwise.
         """
         if (
-            self.is_seeking_match and self.matching_steps >= max_steps
+            (not self.is_exploring) and (self.matching_steps >= max_steps)
             # Since we increment matching steps from 0 (i.e. the first matching
             # step is the "0th" step, this is set to >=, not >)
         ):
@@ -507,6 +506,10 @@ class MontyBase(Monty):
         return self.motor_system.motor_only_step
 
     @property
+    def is_exploring(self) -> bool:
+        return self.step_type == "exploratory_step"
+
+    @property
     def is_done(self) -> bool:
         return self._is_done
 
@@ -553,10 +556,8 @@ class MontyBase(Monty):
 
     def switch_to_matching_step(self):
         self.step_type = "matching_step"
-        self.is_seeking_match = True
         logger.debug(f"Going into matching mode after {self.episode_steps} steps")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
-        self.is_seeking_match = False
         logger.info(f"Going into exploratory mode after {self.matching_steps} steps")
