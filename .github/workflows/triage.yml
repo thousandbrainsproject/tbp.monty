@@ -4,10 +4,11 @@ on:
     branches:
     - main
     types:
-    - opened
     - edited
     - labeled
+    - opened
     - unlabeled
+    - synchronize
 
 jobs:
   pr_title_triage:

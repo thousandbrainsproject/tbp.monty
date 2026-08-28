@@ -18,7 +18,7 @@ import torch
 from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
-from tbp.monty.experiment.recognition_policy import (
+from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
     RecognitionStatus,
 )
@@ -161,16 +161,6 @@ class MontyForGraphMatching(MontyBase):
             return True
 
         return False
-
-    # ------------------ Getters & Setters ---------------------
-
-    def set_is_done(self):
-        """Set the model's `is_done` flag.
-
-        Method that e.g. experiment classes can use to set the model's flag if
-        e.g. the total number of episode steps possible has been exceeded.
-        """
-        self._is_done = True
 
     # ------------------ Logging & Saving ----------------------
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):

@@ -31,9 +31,7 @@ from tbp.monty.experiment.environment import (
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.recognition_policy import (
-    RecognitionConclusion,
     RecognitionPolicy,
-    RecognitionStatus,
 )
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
@@ -252,10 +250,6 @@ class MontyExperiment:
         # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
         if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
-            if target is not None:
-                target.update(
-                    consistent_child_objects=self.env_interface.consistent_child_objects
-                )
             args.update(target=target)
         return args
 
@@ -495,12 +489,7 @@ class MontyExperiment:
         legacy_result = self.model.is_done
 
         if self._recognition_policy is not None:
-            rc = None
-            if legacy_result:
-                rc = RecognitionConclusion.MATCH
-            rs = RecognitionStatus(rc)
-            status = {"monty": rs}
-            rr = self._recognition_policy(step=step, status=status)
+            rr = self._recognition_policy(model=self.model, step=step)
             assert rr.is_done == legacy_result, (
                 f"wrong recognition result: expected {legacy_result}, got {rr.is_done}"
             )

@@ -87,11 +87,8 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             num_time_out=0,
             num_patch_off_object=0,
             num_no_label=0,
-            num_consistent_child_obj=0,
-            num_correct_child_or_parent=0,
             num_correct_per_lm=0,
             num_correct_mlh_per_lm=0,
-            num_consistent_child_obj_per_lm=0,
             num_no_match_per_lm=0,
             num_confused_per_lm=0,
             num_confused_mlh_per_lm=0,
@@ -147,7 +144,6 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "no_label",
             "pose_time_out",
             "time_out",
-            "consistent_child_obj",  # also counted if LM didn't converge
             "confused_mlh",
             "correct_mlh",
             "no_match",
@@ -272,9 +268,6 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                     episode_stats["episode_avg_prediction_error"]
                 )
 
-            if performance in {"consistent_child_obj", "correct", "correct_mlh"}:
-                stats["num_correct_child_or_parent"] += 1
-
             stats["goal_states_attempted"] = episode_stats["goal_states_attempted"]
 
             stats["goal_state_success_rate"] = (
@@ -395,15 +388,6 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 if len(stats["episode_avg_prediction_error"]) > 0
                 else np.nan
             ),
-            "overall/percent_consistent_child_obj": (
-                stats["num_consistent_child_obj"] / (stats["num_episodes"])
-            )
-            * 100,
-            "overall/percent_correct_child_or_parent": (
-                stats["num_correct_child_or_parent"]
-                / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
             "overall/run_time": np.sum(stats["run_times"]) / len(self.lms),
             # NOTE: does not take into account different runtimes with multiple LMs
             "overall/avg_episode_run_time": (
@@ -421,12 +405,6 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "episode/confused_mlh": stats["episode_confused_mlh"],
             "episode/pose_time_out": stats["episode_pose_time_out"],
             "episode/time_out": stats["episode_time_out"],
-            "episode/consistent_child_obj": stats["episode_consistent_child_obj"],
-            "episode/consistent_child_or_parent": (
-                stats["episode_consistent_child_obj"]
-                or stats["episode_correct"]
-                or stats["episode_correct_mlh"]
-            ),
             "episode/used_mlh_after_time_out": stats["episode_correct_mlh"]
             or stats["episode_confused_mlh"],
             "episode/rotation_error": (

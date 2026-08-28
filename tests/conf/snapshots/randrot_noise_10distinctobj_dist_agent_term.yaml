@@ -164,7 +164,6 @@ experiment:
         get_all_points: true
         use_semantic_sensor: false
     eval_env_interface_args:
-      parent_to_child_mapping: null
       object_names:
       - mug
       - bowl
@@ -217,8 +216,7 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.MinimumCount
-      count: 1
+      _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
       max_steps: 500
     seed: 42
     supervised_lm_ids: []
