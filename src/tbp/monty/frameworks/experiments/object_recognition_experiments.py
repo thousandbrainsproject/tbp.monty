@@ -103,6 +103,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         step = 0
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
+        stop_requested: bool = False
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
 
@@ -122,12 +123,12 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 )
                 # Need to break here already, otherwise there are problems
                 # when the object is recognized in the last step
-                return step
+                break
 
             if step >= (self.max_total_steps):
                 logger.info(f"Terminated due to maximum episode steps : {step}")
                 self.model.deal_with_time_out()
-                return step
+                break
 
             try:
                 if self.model.is_motor_only_step:
@@ -154,13 +155,16 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 #       fully. For example, we know how many steps the policy will take,
                 #       so the experiment can set max steps based on that knowledge
                 #       alone.
-                self.model.set_done()
-                return step
+                stop_requested = True
 
-            if self._recognition_complete(step):
-                return step
+            stop_requested = stop_requested or self._recognition_complete(step)
 
+            if stop_requested:
+                self.model.set_done()  # TODO: remove `is_done` from Monty
+                break
             step += 1
+
+        return step
 
 
 class MontyGeneralizationExperiment(MontyObjectRecognitionExperiment):
