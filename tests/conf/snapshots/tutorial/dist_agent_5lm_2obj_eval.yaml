@@ -406,7 +406,6 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
-      wandb_group: gm_eval_runs
     max_train_steps: 1000
     max_eval_steps: 500
     max_total_steps: 6000
