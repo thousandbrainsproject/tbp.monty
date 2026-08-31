@@ -164,7 +164,7 @@ class TutorialsTest(TestCase):
                 overrides=[
                     "experiment=tutorial/monty_meets_world_2dimage_inference",
                     # Non-interactive
-                    "experiment.config.logging.wandb_handlers=[]",
+                    "experiment.config.logging.monty_data_logger.handlers=[{_target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}]",  # noqa: E501
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",

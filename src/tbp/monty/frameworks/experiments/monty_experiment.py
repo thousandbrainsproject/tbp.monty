@@ -37,15 +37,9 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
-from tbp.monty.frameworks.loggers.exp_logger import (
-    BaseMontyLogger,
-    LoggingCallbackHandler,
-)
+from tbp.monty.frameworks.loggers.exp_logger import LoggingCallbackHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.utils.dataclass_utils import (
-    get_subset_of_args,
-)
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 from tbp.monty.memento import Memento
 
@@ -322,46 +316,18 @@ class MontyExperiment:
         Args:
             logging_config: Logging configuration.
         """
-        self.monty_log_level = logging_config["monty_log_level"]
-        self.monty_handlers = logging_config["monty_handlers"]
-        self.wandb_handlers = logging_config["wandb_handlers"]
-
-        # Configure Monty logging
-        monty_handlers = []
+        self.monty_logger = logging_config["monty_data_logger"]
+        self.logs_to_wandb = False
         has_detailed_logger = False
-        for handler in self.monty_handlers:
-            if handler.log_level() == "DETAILED":
+        for handler in self.monty_logger.handlers:
+            if isinstance(handler, WandbWrapper):
+                self.logs_to_wandb = True
+                handler.wandb_init(run_name=self.run_name, config=self.config)
+                for wandb_handler in handler.wandb_handlers:
+                    if wandb_handler.log_level() == "DETAILED":
+                        has_detailed_logger = True
+            elif handler.log_level() == "DETAILED":
                 has_detailed_logger = True
-            handler_args = get_subset_of_args(logging_config, handler.__init__)
-            monty_handler = handler(**handler_args)
-            monty_handlers.append(monty_handler)
-
-        # Configure wandb logging
-        if len(self.wandb_handlers) > 0:
-            wandb_args = get_subset_of_args(logging_config, WandbWrapper.__init__)
-            wandb_args.update(
-                config=dict(self.config),
-                run_name=wandb_args["run_name"] + "_" + wandb_args["wandb_id"],
-            )
-            monty_handlers.append(WandbWrapper(**wandb_args))
-            for handler in self.wandb_handlers:
-                if handler.log_level() == "DETAILED":
-                    has_detailed_logger = True
-
-        if has_detailed_logger and self.monty_log_level != "DETAILED":
-            logger.warning(
-                f"Log level is set to {self.monty_log_level} but you "
-                "specified a detailed logging handler. Setting log level "
-                "to detailed."
-            )
-            self.monty_log_level = "DETAILED"
-
-        if self.monty_log_level == "DETAILED" and not has_detailed_logger:
-            logger.warning(
-                "You are setting the monty logging level to DETAILED, but all your "
-                "handlers are BASIC. Consider setting the level to BASIC, or adding a "
-                "DETAILED handler"
-            )
 
         for lm in self.model.learning_modules:
             lm.has_detailed_logger = has_detailed_logger
@@ -375,20 +341,6 @@ class MontyExperiment:
                         "Consider setting 'save_raw_obs' to True to log and visualize "
                         "the SM RGB raw values."
                     )
-
-        # monty_log_level determines if we used Basic or Detailed logger
-        # TODO: only defined for MontyForGraphMatching right now, need to add TM later
-        # NOTE: later, more levels that Basic or Detailed could be added
-
-        if self.monty_log_level in self.model.LOGGING_REGISTRY:
-            logger_class = self.model.LOGGING_REGISTRY[self.monty_log_level]
-            self.monty_logger = logger_class(handlers=monty_handlers)
-        else:
-            logger.warning(
-                "Unable to match monty logger to log level. "
-                "An empty logger will be used as a placeholder"
-            )
-            self.monty_logger = BaseMontyLogger(handlers=[])
 
         if "log_parallel_wandb" in logging_config:
             self.monty_logger.use_parallel_wandb_logging = logging_config[

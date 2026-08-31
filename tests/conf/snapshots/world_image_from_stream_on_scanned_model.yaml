@@ -96,18 +96,14 @@ experiment:
     eval_env_interface_args: {}
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.SaccadeOnImageFromStreamInterface}
     logging:
-      monty_log_level: BASIC
-      monty_handlers:
-      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
-      wandb_handlers: []
       python_log_level: INFO
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
-      resume_wandb_run: false
-      wandb_id:
-        _target_: wandb.util.generate_id
-      wandb_group: evidence_eval_runs
+      monty_data_logger:
+        _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
+        handlers:
+        - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       run_name: world_image_from_stream_on_scanned_model
     show_sensor_output: false
     max_train_steps: 1000

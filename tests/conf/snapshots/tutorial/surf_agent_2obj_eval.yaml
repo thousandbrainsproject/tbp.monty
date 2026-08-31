@@ -185,18 +185,15 @@ experiment:
         - ${np.array:[81.0, 33.0, 90.0]}
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
     logging:
-      monty_log_level: BASIC
-      monty_handlers:
-      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
-      wandb_handlers: []
       python_log_level: INFO
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       run_name: surf_agent_2obj_eval
-      resume_wandb_run: false
-      wandb_id:
-        _target_: wandb.util.generate_id
+      monty_data_logger:
+        _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
+        handlers:
+        - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       wandb_group: gm_eval_runs
     show_sensor_output: true
     max_train_steps: 1000

@@ -11,13 +11,12 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any, ClassVar, Sequence
+from typing import Any, Sequence
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     Monty,
@@ -35,8 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 class MontyBase(Monty):
-    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {"TEST": TestLogger}
-
     _is_done: bool
 
     def __init__(
