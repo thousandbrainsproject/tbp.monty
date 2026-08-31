@@ -598,7 +598,8 @@ jobs:
             --junitxml=test_results/pytest/results.xml --verbose \
             --doctest-modules --doctest-continue-on-failure \
             --ignore=src/tbp/monty/simulators/habitat \
-            --ignore=src/tbp/monty/simulators/tacto
+            --ignore=src/tbp/monty/simulators/tacto \
+            --durations=10 --durations-min=60
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
@@ -669,4 +670,5 @@ jobs:
           uv run --frozen pytest tests/mujoco/tutorials \
             --cov --cov-context test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml \
-            --verbose
+            --verbose \
+            --durations=10 --durations-min=60
