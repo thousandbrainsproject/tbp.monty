@@ -95,20 +95,19 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         ctx = RuntimeContext(rng=self.rng)
 
         # Collect data about the object (exploratory steps)
-        num_steps = 0
+        step = 0
         actions: list[Action] = []
         stop_requested: bool = False
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
 
-            num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
                     self.env_interface, SaccadeOnImageInterface
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observations, self.model),
-                    num_steps,
+                    step,
                     is_saccade_on_image_env_interface,
                 )
             try:
@@ -117,7 +116,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     ctx,
                     self.model,
                     self.supervised_lm_ids if self.supervised_lm_ids else [],
-                    num_steps,
+                    step,
                     observations,
                     actions,
                 )
@@ -132,8 +131,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 #       alone.
                 stop_requested = True
 
-            # TODO: use `num_steps` (off by 1?) instead?
-            step = self.model.episode_steps
             # Even if many exploratory steps have not sent information to learning
             # modules (so is_done remains False), eventually terminate exploration
             if step >= self.max_total_steps:
@@ -143,6 +140,8 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             if stop_requested:
                 self.model.set_done()  # TODO: remove `is_done` from Monty
                 break
+
+            step += 1
 
         # Pass target info to model --> will overwrite (where specified)
         # with the ground truth labels just before models are updated in memory.
@@ -189,7 +188,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                         )
 
         # Update the model in memory
-        self.post_episode(num_steps)
+        self.post_episode(step)
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
