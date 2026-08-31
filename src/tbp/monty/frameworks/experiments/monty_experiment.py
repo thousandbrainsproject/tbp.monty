@@ -523,12 +523,12 @@ class MontyExperiment:
                 #       alone.
                 stop_requested = True
 
-            self.post_step(step, observations)
-
             if step >= self.max_steps:
                 stop_requested = True
 
             stop_requested = stop_requested or self._recognition_complete(step)
+
+            self.post_step(step, observations)
 
             if stop_requested:
                 self.model.set_done()  # TODO: remove `is_done` from Monty
