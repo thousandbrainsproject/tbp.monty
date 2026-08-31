@@ -449,10 +449,11 @@ class MontyExperiment:
         step = 0
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
+        stop_requested: bool = False
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
-
             self.pre_step(step, observations)
+
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
                 actions = self._step_hook(
@@ -472,15 +473,18 @@ class MontyExperiment:
                 #       fully. For example, we know how many steps the policy will take,
                 #       so the experiment can set max steps based on that knowledge
                 #       alone.
-                break
-            finally:
-                self.post_step(step, observations)
+                stop_requested = True
 
             if step >= self.max_steps:
-                self.model.set_done()
-            if self._recognition_complete(step):
-                break
+                stop_requested = True
 
+            stop_requested = stop_requested or self._recognition_complete(step)
+
+            self.post_step(step, observations)
+
+            if stop_requested:
+                self.model.set_done()  # TODO: remove `is_done` from Monty
+                break
             step += 1
 
         self.post_episode(step)
