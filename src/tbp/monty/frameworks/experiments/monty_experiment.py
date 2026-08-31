@@ -435,14 +435,6 @@ class MontyExperiment:
             self.model.reset()
         self.model.set_experiment_mode(self.experiment_mode)
 
-    def pre_step(self, _step, _observation) -> None:
-        """Hook for anything you want to do before a step."""
-        self.logger_handler.pre_step(self.logger_args)
-
-    def post_step(self, _step, _observation) -> None:
-        """Hook for anything you want to do after a step."""
-        self.logger_handler.post_step(self.logger_args)
-
     def run_episode(self) -> None:
         """Run one episode until model.is_done."""
         self.pre_episode()
@@ -452,7 +444,6 @@ class MontyExperiment:
         stop_requested: bool = False
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
-            self.pre_step(step, observations)
 
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
@@ -479,8 +470,6 @@ class MontyExperiment:
                 stop_requested = True
 
             stop_requested = stop_requested or self._recognition_complete(step)
-
-            self.post_step(step, observations)
 
             if stop_requested:
                 self.model.set_done()  # TODO: remove `is_done` from Monty

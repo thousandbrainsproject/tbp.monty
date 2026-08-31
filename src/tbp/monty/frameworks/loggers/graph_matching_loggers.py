@@ -46,7 +46,7 @@ content is structured data. Perhaps the term DataReporter is more apt.
 NOTE: previously, we updated the data pool every episode, and logged at most once per
 episode. Reporting and flushing frequency were based on the size of self.data. To make
 things easier to think about for handlers, we moved reporting and flushing both to take
-place at the end of an episode. Why all the callbacks then, like post_step, post_train,
+place at the end of an episode. Why all the callbacks then, like post_train,
 etc.? We are building a plane while flying it. Best not to throw the landing gear out
 the window just because it isn't being used right now.
 """
