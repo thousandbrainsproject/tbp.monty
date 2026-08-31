@@ -536,7 +536,6 @@ jobs:
           uv run --frozen pytest tests/integration tests/mujoco/integration \
             --cov --cov-context=test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml --verbose \
-            --doctest-modules --doctest-continue-on-failure \
             --durations=10 --durations-min=60
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
