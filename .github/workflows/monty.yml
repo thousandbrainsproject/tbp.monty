@@ -593,7 +593,7 @@ jobs:
           export MUJOCO_GL=egl
           export EGL_PLATFORM=headless
           mkdir -p test_results/pytest
-          uv run --frozen pytest \
+          uv run --frozen pytest src tests/mujoco/conf tests/unit \
             --cov --cov-context=test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml --verbose \
             --doctest-modules --doctest-continue-on-failure \
