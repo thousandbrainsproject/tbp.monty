@@ -15,9 +15,6 @@ import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.environment import (
-    SaccadeOnImageInterface,
-)
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
@@ -74,42 +71,64 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         else:
             self.sensor_pos = np.array([0, 0, 0])
 
-    def run_episode(self) -> None:
-        """Run a supervised episode on one object in one pose.
+    def pre_episode(self):
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
 
-        In a supervised episode we only make exploratory steps (no object recognition
-        is attempted) since the target label is provided. The target label and pose
-        is then used to update the object model in memory.
-        For instance, this can be used to warm up the training by starting with some
-        models in memory instead of completely from scratch. It also makes testing
-        easier as long as we don't have a good solution for dealing with incomplete
-        objects.
-        """
-        self.pre_episode()
+        self.reset_episode_rng()
+
+        self._restore_monty()
+
+        self.model.fixme_set_ground_truth(self.env_interface.primary_target)
+        self.env_interface.pre_episode(self.rng)
+
+        self.max_steps = self.max_train_steps  # no eval mode here
+
+        self.logger_handler.pre_episode(self.logger_args)
+
+        # if it's the first time this object is shown, save its location. This is
+        # needed to provide the correct offset from the learned model when supervising.
+        current_object = self.env_interface.primary_target["object"]
+        if current_object not in self.first_epoch_object_location:
+            self.first_epoch_object_location[current_object] = (
+                self.env_interface.primary_target["position"]
+            )
+
+        if self.show_sensor_output:
+            self.live_plotter.initialize_online_plotting()
+
         # Save compute if we are providing labels to all models, so don't need to
         # perform matching parts of LM updates (default is matching_step)
         all_lm_ids = [lm.learning_module_id for lm in self.model.learning_modules]
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
 
-        ctx = RuntimeContext(rng=self.rng)
+    def run_episode_steps(self) -> int:
+        # In a supervised episode we only make exploratory steps (no object recognition
+        # is attempted) since the target label is provided. The target label and pose
+        # is then used to update the object model in memory.
+        # For instance, this can be used to warm up the training by starting with some
+        # models in memory instead of completely from scratch. It also makes testing
+        # easier as long as we don't have a good solution for dealing with incomplete
+        # objects.
 
-        # Collect data about the object (exploratory steps)
         step = 0
+        ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
         stop_requested: bool = False
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
 
-            if self.show_sensor_output:
-                is_saccade_on_image_env_interface = isinstance(
-                    self.env_interface, SaccadeOnImageInterface
-                )
-                self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
-                    step,
-                    is_saccade_on_image_env_interface,
-                )
+            self._fixme_generate_live_plot_frame(observations, step)
+
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
                 actions = self._step_hook(
@@ -143,6 +162,13 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
             step += 1
 
+        return step
+
+    def post_episode(self, steps) -> None:
+        self._pass_target_info_to_model()
+        return super().post_episode(steps)
+
+    def _pass_target_info_to_model(self) -> None:
         # Pass target info to model --> will overwrite (where specified)
         # with the ground truth labels just before models are updated in memory.
         target = self.env_interface.primary_target
@@ -186,44 +212,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                         lm.buffer.stats["detected_location_on_model"] += (
                             lm_offset_model_rf
                         )
-
-        # Update the model in memory
-        self.post_episode(step)
-
-    def pre_episode(self):
-        """Pre episode where we pass target object to the model for logging."""
-        if self.experiment_mode is ExperimentMode.TRAIN:
-            logger.info(
-                f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
-            )
-        else:
-            logger.info(
-                f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
-            )
-
-        self.reset_episode_rng()
-
-        self._restore_monty()
-
-        self.model.fixme_set_ground_truth(self.env_interface.primary_target)
-        self.env_interface.pre_episode(self.rng)
-
-        self.max_steps = self.max_train_steps  # no eval mode here
-
-        self.logger_handler.pre_episode(self.logger_args)
-
-        # if it's the first time this object is shown, save its location. This is
-        # needed to provide the correct offset from the learned model when supervising.
-        current_object = self.env_interface.primary_target["object"]
-        if current_object not in self.first_epoch_object_location:
-            self.first_epoch_object_location[current_object] = (
-                self.env_interface.primary_target["position"]
-            )
-
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
 
     def post_epoch(self):
         """Post epoch without saving state_dict."""

@@ -12,9 +12,6 @@ from __future__ import annotations
 import logging
 
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.environment import (
-    SaccadeOnImageInterface,
-)
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
@@ -83,15 +80,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
 
-            if self.show_sensor_output:
-                is_saccade_on_image_data_loader = isinstance(
-                    self.env_interface, SaccadeOnImageInterface
-                )
-                self.live_plotter.show_observations(
-                    *self.live_plotter.hardcoded_assumptions(observations, self.model),
-                    step,
-                    is_saccade_on_image_data_loader,
-                )
+            self._fixme_generate_live_plot_frame(observations, step)
 
             if self.model.check_reached_max_matching_steps(self.max_steps):
                 logger.info(

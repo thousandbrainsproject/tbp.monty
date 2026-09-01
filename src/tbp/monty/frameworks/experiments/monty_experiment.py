@@ -39,6 +39,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import LoggingCallbackHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 from tbp.monty.memento import Memento
@@ -58,6 +59,8 @@ class MontyExperiment:
 
     model: MontyBase
     env_interface: Interface | None
+    show_sensor_output: bool
+    live_plotter: LivePlotter
 
     _match_criterion: MatchCriterion
     _recreation_mode: bool
@@ -486,6 +489,8 @@ class MontyExperiment:
         while True:
             observations, proprioceptive_state = self.env_interface.step(actions)
 
+            self._fixme_generate_live_plot_frame(observations, step)
+
             try:
                 actions = self.model.step(ctx, observations, proprioceptive_state)
                 actions = self._step_hook(
@@ -529,6 +534,21 @@ class MontyExperiment:
             )
 
         return legacy_result
+
+    def _fixme_generate_live_plot_frame(
+        self, observations: Observations, step: int
+    ) -> None:
+        if not self.show_sensor_output:
+            return
+
+        is_saccade_on_image_data_loader = isinstance(
+            self.env_interface, SaccadeOnImageInterface
+        )
+        self.live_plotter.show_observations(
+            *self.live_plotter.hardcoded_assumptions(observations, self.model),
+            step,
+            is_saccade_on_image_data_loader,
+        )
 
     def post_episode(self, steps) -> None:
         """Call post_episode on elements in experiment and increment counters.
