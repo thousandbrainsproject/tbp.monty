@@ -38,18 +38,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     RGBA sensor and an up-close "patch" depth sensor.
     """
 
-    def run_episode(self):
-        """Episode that checks the terminal states of an object recognition episode."""
-        self.pre_episode()
-        last_step = self.run_episode_steps()
-        self.post_episode(last_step)
-
     def pre_episode(self) -> None:
-        """Pre-episode hook.
-
-        Passes the primary target object and the mapping from semantic IDs to labels
-        to the Monty model for logging and reporting evaluation results.
-        """
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
                 f"running train epoch {self.train_epochs} "
@@ -65,10 +54,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
         self._restore_monty()
 
-        # TODO, eventually it would be better to pass
-        # self.env_interface.semantic_id_to_label via an "Observation" object when this
-        # is eventually implemented, such that we can ensure this information is never
-        # inappropriately accessed and used
+        # Pass the primary target object and the mapping from semantic IDs to labels
+        # to the Monty model for logging and reporting evaluation results.
         if hasattr(self.env_interface, "semantic_id_to_label"):
             self.model.fixme_set_ground_truth(
                 self.env_interface.primary_target,
@@ -89,15 +76,6 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             self.live_plotter.initialize_online_plotting()
 
     def run_episode_steps(self) -> int:
-        """Runs one episode of the experiment.
-
-        At each step, observations are collected from the env_interface and either
-        passed to the model or sent directly to the motor system. We also check if a
-        terminal condition was reached at each step and increment step counters.
-
-        Returns:
-            The number of total steps taken in the episode.
-        """
         step = 0
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []

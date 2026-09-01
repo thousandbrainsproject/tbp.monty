@@ -435,9 +435,50 @@ class MontyExperiment:
             self.model.reset()
         self.model.set_experiment_mode(self.experiment_mode)
 
-    def run_episode(self) -> None:
-        """Run one episode until model.is_done."""
+    def run_episode(self):
+        """Runs an episode with `pre_episode` and `post_episode` hooks."""
         self.pre_episode()
+        last_step = self.run_episode_steps()
+        self.post_episode(last_step)
+
+    def pre_episode(self) -> None:
+        """Call pre_episode on elements in experiment and set mode."""
+        if self.experiment_mode is ExperimentMode.TRAIN:
+            logger.info(
+                f"running train epoch {self.train_epochs} "
+                f"train episode {self.train_episodes}"
+            )
+        else:
+            logger.info(
+                f"running eval epoch {self.eval_epochs} "
+                f"eval episode {self.eval_episodes}"
+            )
+
+        self.reset_episode_rng()
+
+        self._restore_monty()
+
+        self.env_interface.pre_episode(self.rng)
+
+        self.max_steps = self.max_train_steps
+        if self.experiment_mode is not ExperimentMode.TRAIN:
+            self.max_steps = self.max_eval_steps
+
+        self.logger_handler.pre_episode(self.logger_args)
+
+        if self.show_sensor_output:
+            self.live_plotter.initialize_online_plotting()
+
+    def run_episode_steps(self) -> int:
+        """Runs the steps of an episode.
+
+        At each step, observations are collected from the env_interface and either
+        passed to the model or sent directly to the motor system. We also check if a
+        terminal condition was reached at each step and increment step counters.
+
+        Returns:
+            The number of total steps taken in the episode.
+        """
         step = 0
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
@@ -476,7 +517,7 @@ class MontyExperiment:
                 break
             step += 1
 
-        self.post_episode(step)
+        return step
 
     def _recognition_complete(self, step: int) -> bool:
         legacy_result = self.model.is_done
@@ -488,34 +529,6 @@ class MontyExperiment:
             )
 
         return legacy_result
-
-    def pre_episode(self) -> None:
-        """Call pre_episode on elements in experiment and set mode."""
-        if self.experiment_mode is ExperimentMode.TRAIN:
-            logger.info(
-                f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
-            )
-        else:
-            logger.info(
-                f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
-            )
-
-        self.reset_episode_rng()
-
-        self._restore_monty()
-
-        self.env_interface.pre_episode(self.rng)
-
-        self.max_steps = self.max_train_steps
-        if self.experiment_mode is not ExperimentMode.TRAIN:
-            self.max_steps = self.max_eval_steps
-
-        self.logger_handler.pre_episode(self.logger_args)
-
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
 
     def post_episode(self, steps) -> None:
         """Call post_episode on elements in experiment and increment counters.
