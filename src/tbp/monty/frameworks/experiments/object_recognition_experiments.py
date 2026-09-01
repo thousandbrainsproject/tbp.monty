@@ -13,7 +13,6 @@ import logging
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
     MontyExperiment,
 )
@@ -36,20 +35,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     """
 
     def pre_episode(self) -> None:
-        if self.experiment_mode is ExperimentMode.TRAIN:
-            logger.info(
-                f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
-            )
-        else:
-            logger.info(
-                f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
-            )
-
-        self.reset_episode_rng()
-
-        self._restore_monty()
+        super().pre_episode()
 
         # Pass the primary target object and the mapping from semantic IDs to labels
         # to the Monty model for logging and reporting evaluation results.
@@ -60,17 +46,6 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             )
         else:
             self.model.fixme_set_ground_truth(self.env_interface.primary_target)
-
-        self.env_interface.pre_episode(self.rng)
-
-        self.max_steps = self.max_train_steps
-        if self.experiment_mode is not ExperimentMode.TRAIN:
-            self.max_steps = self.max_eval_steps
-
-        self.logger_handler.pre_episode(self.logger_args)
-
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
 
     def run_episode_steps(self) -> int:
         step = 0

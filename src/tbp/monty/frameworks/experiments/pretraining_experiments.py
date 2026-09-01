@@ -72,27 +72,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             self.sensor_pos = np.array([0, 0, 0])
 
     def pre_episode(self):
-        if self.experiment_mode is ExperimentMode.TRAIN:
-            logger.info(
-                f"running train epoch {self.train_epochs} "
-                f"train episode {self.train_episodes}"
-            )
-        else:
-            logger.info(
-                f"running eval epoch {self.eval_epochs} "
-                f"eval episode {self.eval_episodes}"
-            )
-
-        self.reset_episode_rng()
-
-        self._restore_monty()
+        super().pre_episode()
 
         self.model.fixme_set_ground_truth(self.env_interface.primary_target)
-        self.env_interface.pre_episode(self.rng)
-
-        self.max_steps = self.max_train_steps  # no eval mode here
-
-        self.logger_handler.pre_episode(self.logger_args)
 
         # if it's the first time this object is shown, save its location. This is
         # needed to provide the correct offset from the learned model when supervising.
@@ -101,9 +83,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             self.first_epoch_object_location[current_object] = (
                 self.env_interface.primary_target["position"]
             )
-
-        if self.show_sensor_output:
-            self.live_plotter.initialize_online_plotting()
 
         # Save compute if we are providing labels to all models, so don't need to
         # perform matching parts of LM updates (default is matching_step)
