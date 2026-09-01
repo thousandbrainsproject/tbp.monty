@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import logging
 
-import torch
-
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
@@ -23,7 +21,7 @@ from tbp.monty.frameworks.experiments.monty_experiment import (
     MontyExperiment,
 )
 
-__all__ = ["MontyGeneralizationExperiment", "MontyObjectRecognitionExperiment"]
+__all__ = ["MontyObjectRecognitionExperiment"]
 
 logger = logging.getLogger(__name__)
 
@@ -165,21 +163,3 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             step += 1
 
         return step
-
-
-class MontyGeneralizationExperiment(MontyObjectRecognitionExperiment):
-    """Remove the tested object model from memory to see what is recognized instead."""
-
-    def pre_episode(self):
-        """Pre episode where we pass target object to the model for logging."""
-        if "model.pt" not in self.model_path.parts:
-            model_path = self.model_path / "model.pt"
-        state_dict = torch.load(model_path, weights_only=False)
-        print(f"loading models again from {model_path}")
-        self.model.load_state_dict(state_dict)
-        super().pre_episode()
-        target_object = self.env_interface.primary_target["object"]
-        print(f"removing {target_object}")
-        for lm in self.model.learning_modules:
-            lm.graph_memory.remove_graph_from_memory(target_object)
-            print(f"graphs in memory: {lm.get_all_known_object_ids()}")
