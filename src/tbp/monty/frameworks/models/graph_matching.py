@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, ClassVar, Collection, Sequence
+from typing import Any, Collection, Sequence
 
 import numpy as np
 import torch
@@ -24,12 +24,6 @@ from tbp.monty.experiment.recognition_status import (
 )
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
-from tbp.monty.frameworks.loggers.graph_matching_loggers import (
-    BasicGraphMatchingLogger,
-    DetailedGraphMatchingLogger,
-    SelectiveEvidenceLogger,
-)
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     LMMemory,
@@ -51,17 +45,6 @@ class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing objects using graphs."""
 
     _match_criterion: MatchCriterion
-
-    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
-        # Don't do any formal logging, just save models. Used for pretraining.
-        "SILENT": BaseMontyLogger,
-        # Log things like basic stats.csv files, data to reproduce experiments
-        "BASIC": BasicGraphMatchingLogger,
-        # Utter deforestation
-        "DETAILED": DetailedGraphMatchingLogger,
-        # Save specific stats necessary for object similarity analysis.
-        "SELECTIVE": SelectiveEvidenceLogger,
-    }
 
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""

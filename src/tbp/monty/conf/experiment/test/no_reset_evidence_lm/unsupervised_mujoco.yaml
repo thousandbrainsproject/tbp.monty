@@ -27,6 +27,7 @@ experiment:
     seed: 42
     supervised_lm_ids: []
     logging:
-      monty_handlers: []
-      wandb_handlers: []
+      monty_data_logger:
+        _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
+        handlers: []
       run_name: ""

@@ -592,7 +592,6 @@ class AdvancedPolicyTest(unittest.TestCase):
             while True:
                 observations, proprioceptive_state = exp.env_interface.step(actions)
                 actions = exp.model.step(ctx, observations, proprioceptive_state)
-                exp.post_step(step, observations)
 
                 if step == 3:  # Surface agent should have re-oriented
                     break

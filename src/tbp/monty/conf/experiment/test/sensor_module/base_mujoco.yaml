@@ -27,7 +27,4 @@ experiment:
     seed: 42
     supervised_lm_ids: []
     logging:
-      monty_handlers:
-        - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
-        - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
       run_name: ""

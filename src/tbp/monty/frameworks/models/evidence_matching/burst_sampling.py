@@ -454,7 +454,7 @@ class BurstSamplingHypothesesUpdater:
               - `deletion_trigger_slope`: This dictates how many hypotheses to
                 delete. Hypotheses below this threshold are deleted.
               - `sampling_burst_steps`: The remaining number of burst steps. This value
-                is decremented in the `post_step` function.
+                is decremented in the `__exit__` function.
         """
         new_hypotheses_per_channel: dict[str, int] = {}
         if self.sampling_burst_steps > 0:

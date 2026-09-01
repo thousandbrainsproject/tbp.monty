@@ -494,6 +494,125 @@ jobs:
           mkdir -p test_results/pytest
           xvfb-run pytest tests/tutorials --junitxml=test_results/pytest/results.xml --verbose -n 1
 
+  test_uv_integration_monty:
+    name: test-uv-integration-monty
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-8core
+    timeout-minutes: 120
+    needs:
+      - should_run_monty
+      - test_uv_monty
+    steps:
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: tbp.monty
+      - name: Install dependencies
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          sudo apt update -y
+          sudo apt install -y --no-install-recommends libegl1-mesa-dev
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+      - name: Create uv environment
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          uv sync --locked --extra dev --extra simulator_mujoco
+      - name: Run tests
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export MUJOCO_GL=egl
+          export EGL_PLATFORM=headless
+          mkdir -p test_results/pytest
+          uv run --frozen pytest tests/integration tests/mujoco/integration \
+            --cov --cov-context=test --cov-report html --cov-report term \
+            --junitxml=test_results/pytest/results.xml --verbose \
+            --durations=10 --durations-min=60
+      - name: Store test results
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_results_uv_integration
+          path: tbp.monty/test_results/pytest
+      - name: Store coverage
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_coverage_uv_integration
+          path: tbp.monty/htmlcov
+
+
+  test_uv_monty:
+    name: test-uv-monty
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-8core
+    timeout-minutes: 120
+    needs:
+      # TODO: check all these using `uv` once we move off Conda
+      - check_dependencies_monty # Don't run if dependency check fails
+      - check_style_monty # Don't run if style check fails
+      - check_types_monty # Don't run if type check fails
+      - should_run_monty
+    steps:
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: tbp.monty
+      - name: Install dependencies
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          sudo apt update -y
+          sudo apt install -y --no-install-recommends libegl1-mesa-dev
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+      - name: Create uv environment
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          uv sync --locked --extra dev --extra simulator_mujoco
+      - name: Run tests
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export MUJOCO_GL=egl
+          export EGL_PLATFORM=headless
+          mkdir -p test_results/pytest
+          uv run --frozen pytest src tests/mujoco/conf tests/unit \
+            --cov --cov-context=test --cov-report html --cov-report term \
+            --junitxml=test_results/pytest/results.xml --verbose \
+            --doctest-modules --doctest-continue-on-failure \
+            --ignore=src/tbp/monty/simulators/habitat \
+            --ignore=src/tbp/monty/simulators/tacto \
+            --durations=10 --durations-min=60
+      - name: Store test results
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_results_uv
+          path: tbp.monty/test_results/pytest
+      - name: Store coverage
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_coverage_uv
+          path: tbp.monty/htmlcov
+
   test_uv_tutorials_monty:
     name: test-uv-tutorials-monty
     runs-on:
@@ -551,67 +670,5 @@ jobs:
           uv run --frozen pytest tests/mujoco/tutorials \
             --cov --cov-context test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml \
-            --verbose
-
-  test_uv_monty:
-    name: test-uv-monty
-    runs-on:
-      group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-8core
-    timeout-minutes: 120
-    needs:
-      # TODO: check all these using `uv` once we move off Conda
-      - check_dependencies_monty # Don't run if dependency check fails
-      - check_style_monty # Don't run if style check fails
-      - check_types_monty # Don't run if type check fails
-      - should_run_monty
-    steps:
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          path: tbp.monty
-      - name: Install dependencies
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        run: |
-          sudo apt update -y
-          sudo apt install -y --no-install-recommends libegl1-mesa-dev
-      - name: Install uv
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "**/uv.lock"
-      - name: Create uv environment
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        continue-on-error: true
-        run: |
-          uv sync --locked --extra dev --extra simulator_mujoco
-      - name: Run tests
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export MUJOCO_GL=egl
-          export EGL_PLATFORM=headless
-          mkdir -p test_results/pytest
-          uv run --frozen pytest src tests \
-            --cov --cov-context=test --cov-report html --cov-report term \
-            --junitxml=test_results/pytest/results.xml --verbose \
-            --doctest-modules --doctest-continue-on-failure \
-            --ignore=src/tbp/monty/simulators/habitat \
-            --ignore=src/tbp/monty/simulators/tacto \
-            --ignore=tests/mujoco/tutorials
-      - name: Store test results
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: test_results_uv
-          path: tbp.monty/test_results/pytest
-      - name: Store coverage
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: test_coverage_uv
-          path: tbp.monty/htmlcov
+            --verbose \
+            --durations=10 --durations-min=60
