@@ -13,10 +13,12 @@ from typing import Protocol
 
 from typing_extensions import Self
 
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.models.monty_base import MontyBase
 
 __all__ = [
     "MinimumCount",
+    "MontyIsDone",
     "RecognitionPolicy",
     "RecognitionResult",
 ]
@@ -37,10 +39,13 @@ class RecognitionPolicy(Protocol):
     of whether Monty has recognized the object.
     """
 
-    def __call__(self: Self, model: MontyBase, step: int) -> RecognitionResult:
+    def __call__(
+        self: Self, exp: MontyExperiment, model: MontyBase, step: int
+    ) -> RecognitionResult:
         """Apply this policy to produce a Recognition Result from per-LM status.
 
         Args:
+            exp: The Experiment to be queried.
             model: The Monty model to be queried.
             step: The Experiment step number.
 
@@ -51,60 +56,41 @@ class RecognitionPolicy(Protocol):
 
 
 class MontyIsDone(RecognitionPolicy):
-    """Monty `model.is_done == True` (legacy policy)."""
+    """Legacy (default) policy."""
 
-    _max_steps: int | None
-    """The maximum number of Monty steps before reaching a conclusion."""
-
-    def __init__(self: Self, max_steps: int | None = None) -> None:
-        """Initialize the policy.
-
-        Args:
-            max_steps: The maximum number of Monty steps before reaching a conclusion.
-
-        Raises:
-            ValueError: If `max_steps` is not `None` and not positive.
-        """
-        if max_steps is not None and max_steps <= 0:
-            raise ValueError("max_steps must be positive")
-        self._max_steps = max_steps
-
-    def __call__(self: Self, model: MontyBase, step: int) -> RecognitionResult:
-        if self._max_steps is not None and step >= self._max_steps:
+    def __call__(
+        self: Self, exp: MontyExperiment, model: MontyBase, step: int
+    ) -> RecognitionResult:
+        if step >= exp.max_steps:
             return RecognitionResult(is_done=True)
+
         return RecognitionResult(is_done=model.is_done)
 
 
 class MinimumCount(RecognitionPolicy):
-    """`count` LMs have reached a conclusion, or `max_steps` have been taken."""
+    """`count` LMs have reached a conclusion"""
 
     _count: int
     """The minimum number of LMs that must reach a conclusion."""
 
-    _max_steps: int
-    """The maximum number of Monty steps before reaching a conclusion."""
-
-    def __init__(self: Self, count: int, max_steps: int) -> None:
+    def __init__(self: Self, count: int) -> None:
         """Initialize the policy.
 
         Args:
             count: The number of Learning Modules that must reach a conclusion for
                 the policy to be satisfied.
-            max_steps: The maximum number of Monty steps before reaching a conclusion.
 
         Raises:
-            ValueError: If `count` or `max_steps` are not positive.
+            ValueError: If `count` is not positive.
         """
         if count <= 0:
             raise ValueError("count must be positive")
         self._count = count
 
-        if max_steps <= 0:
-            raise ValueError("max_steps must be positive")
-        self._max_steps = max_steps
-
-    def __call__(self: Self, model: MontyBase, step: int) -> RecognitionResult:
-        if step >= self._max_steps:
+    def __call__(
+        self: Self, exp: MontyExperiment, model: MontyBase, step: int
+    ) -> RecognitionResult:
+        if step >= exp.max_steps:
             return RecognitionResult(is_done=True)
 
         num_matched = sum(
@@ -113,4 +99,5 @@ class MinimumCount(RecognitionPolicy):
             if lm.recognition_status.conclusion is not None
         )
         is_done = num_matched >= self._count
+
         return RecognitionResult(is_done=is_done)

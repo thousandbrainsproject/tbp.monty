@@ -19,8 +19,15 @@ from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
     RecognitionStatus,
 )
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.monty_base import MontyBase
+
+
+def _an_experiment(max_steps: int = 1) -> MontyExperiment:
+    exp: MontyExperiment = MagicMock()
+    exp.max_steps = max_steps
+    return exp
 
 
 def _model_is_done(is_done: bool) -> MontyBase:
@@ -43,25 +50,14 @@ def _model_with_conclusions(
 
 
 class MontyIsDoneTest(unittest.TestCase):
-    @given(max_steps=st.integers(max_value=0))
-    def test_raises_if_max_steps_is_not_positive(self, max_steps: int) -> None:
-        with self.assertRaises(ValueError):
-            MontyIsDone(max_steps=max_steps)
-
-    @given(is_done=st.booleans(), step=st.integers(min_value=0))
-    def test_mirrors_model_when_no_max_steps(self, is_done: bool, step: int) -> None:
-        policy = MontyIsDone(max_steps=None)
-        result = policy(model=_model_is_done(is_done), step=step)
-        self.assertEqual(result.is_done, is_done)
-
     @given(max_steps=st.integers(min_value=1), extra_steps=st.integers(min_value=0))
     def test_times_out_at_or_after_max_steps(
         self, max_steps: int, extra_steps: int
     ) -> None:
-        policy = MontyIsDone(max_steps=max_steps)
-        result = policy(
-            model=_model_is_done(is_done=False), step=max_steps + extra_steps
-        )
+        exp = _an_experiment(max_steps)
+        model=_model_is_done(False)
+        policy = MontyIsDone()
+        result = policy(exp, model, max_steps + extra_steps)
         self.assertTrue(result.is_done)
 
     @given(
@@ -73,25 +69,18 @@ class MontyIsDoneTest(unittest.TestCase):
         self, is_done: bool, max_steps: int, step: int
     ) -> None:
         assume(step < max_steps)
-        policy = MontyIsDone(max_steps=max_steps)
-        result = policy(model=_model_is_done(is_done), step=step)
+        exp = _an_experiment(max_steps)
+        model=_model_is_done(is_done)
+        policy = MontyIsDone()
+        result = policy(exp, model, step)
         self.assertEqual(result.is_done, is_done)
 
 
 class MinimumCountTest(unittest.TestCase):
-    @given(count=st.integers(max_value=0), max_steps=st.integers(min_value=1))
-    def test_raises_value_error_if_count_is_not_positive(
-        self, count: int, max_steps: int
-    ) -> None:
+    @given(count=st.integers(max_value=0))
+    def test_raises_value_error_if_count_is_not_positive(self, count: int) -> None:
         with self.assertRaises(ValueError):
-            MinimumCount(count=count, max_steps=max_steps)
-
-    @given(count=st.integers(min_value=1), max_steps=st.integers(max_value=0))
-    def test_raises_value_error_if_max_steps_is_not_positive(
-        self, count: int, max_steps: int
-    ) -> None:
-        with self.assertRaises(ValueError):
-            MinimumCount(count=count, max_steps=max_steps)
+            MinimumCount(count=count)
 
     @given(
         num_concluded=st.integers(min_value=0, max_value=10),
@@ -101,22 +90,28 @@ class MinimumCountTest(unittest.TestCase):
     def test_done_iff_conclusion_count_reaches_count(
         self, num_concluded: int, num_pending: int, count: int
     ) -> None:
-        policy = MinimumCount(count=count, max_steps=10)
+        exp = _an_experiment()
         conclusions = [RecognitionConclusion.MATCH] * num_concluded + [
             None
         ] * num_pending
         model = _model_with_conclusions(conclusions)
-        self.assertEqual(policy(model=model, step=0).is_done, num_concluded >= count)
+        policy = MinimumCount(count=count)
+        result = policy(exp, model, 0)
+        self.assertEqual(result.is_done, num_concluded >= count)
 
     def test_counts_any_conclusion_not_just_match(self) -> None:
-        policy = MinimumCount(count=2, max_steps=10)
+        exp = _an_experiment()
         model = _model_with_conclusions(
             [RecognitionConclusion.NO_MATCH, RecognitionConclusion.TIME_OUT]
         )
-        self.assertTrue(policy(model=model, step=0).is_done)
+        policy = MinimumCount(count=2)
+        result = policy(exp, model, 0)
+        self.assertTrue(result.is_done)
 
     @given(extra=st.integers(min_value=0))
     def test_times_out_at_or_after_max_steps(self, extra: int) -> None:
-        policy = MinimumCount(count=1, max_steps=10)
+        exp = _an_experiment(10)
         model = _model_with_conclusions([None, None])
-        self.assertTrue(policy(model=model, step=10 + extra).is_done)
+        policy = MinimumCount(count=1)
+        result = policy(exp, model, 10 + extra)
+        self.assertTrue(result.is_done)

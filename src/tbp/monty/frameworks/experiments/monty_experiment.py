@@ -512,9 +512,6 @@ class MontyExperiment:
                 #       alone.
                 stop_requested = True
 
-            if step >= self.max_steps:
-                stop_requested = True
-
             stop_requested = stop_requested or self._recognition_complete(step)
 
             if stop_requested:
@@ -528,7 +525,7 @@ class MontyExperiment:
         legacy_result = self.model.is_done
 
         if self._recognition_policy is not None:
-            rr = self._recognition_policy(model=self.model, step=step)
+            rr = self._recognition_policy(self, self.model, step)
             assert rr.is_done == legacy_result, (
                 f"wrong recognition result: expected {legacy_result}, got {rr.is_done}"
             )
