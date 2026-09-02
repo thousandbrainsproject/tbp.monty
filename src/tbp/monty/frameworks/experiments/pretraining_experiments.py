@@ -14,8 +14,6 @@ from pathlib import Path
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.monty_experiment import (
     MontyExperiment,
@@ -89,59 +87,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         all_lm_ids = [lm.learning_module_id for lm in self.model.learning_modules]
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
-
-    def run_episode_steps(self) -> int:
-        # In a supervised episode we only make exploratory steps (no object recognition
-        # is attempted) since the target label is provided. The target label and pose
-        # is then used to update the object model in memory.
-        # For instance, this can be used to warm up the training by starting with some
-        # models in memory instead of completely from scratch. It also makes testing
-        # easier as long as we don't have a good solution for dealing with incomplete
-        # objects.
-
-        step = 0
-        ctx = RuntimeContext(rng=self.rng)
-        actions: list[Action] = []
-        stop_requested: bool = False
-        while True:
-            observations, proprioceptive_state = self.env_interface.step(actions)
-
-            self._fixme_generate_live_plot_frame(observations, step)
-
-            try:
-                actions = self.model.step(ctx, observations, proprioceptive_state)
-                actions = self._step_hook(
-                    ctx,
-                    self.model,
-                    self.supervised_lm_ids if self.supervised_lm_ids else [],
-                    step,
-                    observations,
-                    actions,
-                )
-            except StopIteration:
-                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
-                #       episode termination. This is a holdover from when we used
-                #       iterators. However, this also abdicates control of the
-                #       experiment to the policy. We should find a better way to handle
-                #       this, so that the experiment can control the episode termination
-                #       fully. For example, we know how many steps the policy will take,
-                #       so the experiment can set max steps based on that knowledge
-                #       alone.
-                stop_requested = True
-
-            # Even if many exploratory steps have not sent information to learning
-            # modules (so is_done remains False), eventually terminate exploration
-            if step >= self.max_total_steps:
-                stop_requested = True
-            stop_requested = stop_requested or self._recognition_complete(step)
-
-            if stop_requested:
-                self.model.set_done()  # TODO: remove `is_done` from Monty
-                break
-
-            step += 1
-
-        return step
 
     def post_episode(self, steps) -> None:
         self._pass_target_info_to_model()

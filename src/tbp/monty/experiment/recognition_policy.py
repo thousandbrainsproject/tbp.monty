@@ -16,8 +16,11 @@ from typing_extensions import Self
 from tbp.monty.frameworks.models.monty_base import MontyBase
 
 __all__ = [
+    "MaxTotalSteps",
+    "MaximumSteps",
     "MinimumLMs",
     "MontyIsDone",
+    "RecognitionCounter",
     "RecognitionPolicy",
     "RecognitionResult",
 ]
@@ -118,3 +121,33 @@ class MinimumLMs(RecognitionPolicy):
         is_done = num_matched >= self._min_lms
 
         return RecognitionResult(is_done=is_done)
+
+
+class MaxTotalSteps(RecognitionPolicy):
+    """`count.steps >= count.max_total_steps` or `model.is_done`."""
+
+    _max_total_steps: int
+    """The maximum number of steps before terminating the episode."""
+
+    def __init__(self: Self, max_total_steps: int) -> None:
+        """Initialize the policy.
+
+        Args:
+            max_total_steps: The maximum number of steps before terminating the episode.
+
+        Raises:
+            ValueError: If `max_total_steps` is not positive.
+        """
+        if max_total_steps <= 0:
+            raise ValueError("max_total_steps must be positive")
+        self._max_total_steps = max_total_steps
+
+    def __call__(
+        self: Self, model: MontyBase, count: RecognitionCounter
+    ) -> RecognitionResult:
+        # Even if many exploratory steps have not sent information to learning
+        # modules (so is_done remains False), eventually terminate exploration
+        if count.step >= self._max_total_steps:
+            return RecognitionResult(is_done=True)
+
+        return RecognitionResult(is_done=model.is_done)

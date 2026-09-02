@@ -16,6 +16,7 @@ from hypothesis import strategies as st
 
 from tbp.monty.experiment.recognition_policy import (
     MaximumSteps,
+    MaxTotalSteps,
     MinimumLMs,
     MontyIsDone,
     RecognitionCounter,
@@ -128,3 +129,30 @@ class MinimumCountTest(unittest.TestCase):
         count = RecognitionCounter(step=10 + extra, max_steps=10)
         result = policy(model, count)
         self.assertTrue(result.is_done)
+
+
+class MaxTotalStepsTest(unittest.TestCase):
+    @given(max_total_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
+    def test_times_out_at_or_after_max_total_steps(
+        self, max_total_steps: int, extra: int
+    ) -> None:
+        model = _model_is_done(is_done=False)
+        policy = MaxTotalSteps(max_total_steps=max_total_steps)
+        count = RecognitionCounter(step=max_total_steps + extra, max_steps=0)
+        result = policy(model, count)
+        self.assertTrue(result.is_done)
+
+    @given(
+        is_done=st.booleans(),
+        max_total_steps=st.integers(min_value=1),
+        step=st.integers(min_value=0),
+    )
+    def test_defers_to_model_before_max_total_steps(
+        self, is_done: bool, max_total_steps: int, step: int
+    ) -> None:
+        assume(step < max_total_steps)
+        model = _model_is_done(is_done)
+        policy = MaxTotalSteps(max_total_steps=max_total_steps)
+        count = RecognitionCounter(step=step, max_steps=0)
+        result = policy(model, count)
+        self.assertEqual(result.is_done, is_done)
