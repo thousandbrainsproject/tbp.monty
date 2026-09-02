@@ -29,7 +29,6 @@ from unittest import mock
 import hydra
 import magnum as mn
 import numpy as np
-from omegaconf import OmegaConf
 
 from tbp.monty.frameworks.run import main
 from tbp.monty.simulators.habitat import SingleSensorAgent
@@ -109,7 +108,6 @@ class MontyRunTest(unittest.TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_main(self):
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.cfg)
 
         output_dir = Path(self.cfg.experiment.config.logging.output_dir)

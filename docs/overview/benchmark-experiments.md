@@ -129,6 +129,8 @@ We want to determine the ability of a Monty system with a heterarchy of LMs to b
 
 The monolithic baseline uses the same two child SM/LM pairs and third high-level SM/LM pair, and follows the same staged training process: the low-level LMs first learn the 3D objects and logos, and then the high-level LM is trained on the compositional objects. However, there are no connections between LMs. Each LM receives input only from its paired SM, so the high-level LM learns each object as a monolithic model rather than as a composition of detected child objects.
 
+The accuracy, Used MLH, average rotation error, and average prediction error in the results below are reported for `LM_2`, rather than using episode-level aggregate metrics. In the compositional configuration, `LM_2` is the higher-level parent LM that receives outputs from `LM_0` and `LM_1`. The monolithic control also reports `LM_2` so the two configurations measure the same high-level LM, although `LM_2` is not a parent in the monolithic configuration because there are no LM-to-LM connections. Matching steps and runtime remain experiment-level metrics.
+
 
 ### Results
 

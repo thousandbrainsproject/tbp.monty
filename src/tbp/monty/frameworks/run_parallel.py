@@ -41,7 +41,7 @@ from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_file,
     overall_accuracy,
 )
-from tbp.monty.hydra import instantiate_experiment, register_resolvers
+from tbp.monty.hydra import instantiate_experiment
 
 __all__ = ["main"]
 
@@ -478,15 +478,29 @@ def get_overall_stats(stats):
 
 
 def per_lm_stats(eval_stats):
-    """Reconstruct LM accuracy metrics from the merged evaluation rows.
+    """Reconstruct per-LM metrics from the merged evaluation rows.
 
     Returns:
-        Named per-LM accuracy percentages.
+        Named per-LM accuracy, MLH usage, rotation error, and prediction error metrics.
     """
-    return {
-        f"{lm_id}/overall/percent_correct": overall_accuracy(lm_stats)
-        for lm_id, lm_stats in eval_stats.groupby("lm_id")
-    }
+    stats = {}
+    for lm_id, lm_stats in eval_stats.groupby("lm_id"):
+        performance = lm_stats["primary_performance"]
+        recognized = performance.isin(["correct", "correct_mlh"])
+        used_mlh = performance.isin(["correct_mlh", "confused_mlh"])
+        lm_metrics = {
+            f"{lm_id}/overall/percent_correct": overall_accuracy(lm_stats),
+            f"{lm_id}/overall/percent_used_mlh_after_timeout": (used_mlh.mean() * 100),
+            f"{lm_id}/overall/avg_rotation_error": lm_stats.loc[
+                recognized, "rotation_error"
+            ].mean(),
+        }
+        if "episode_avg_prediction_error" in lm_stats:
+            lm_metrics[f"{lm_id}/overall/avg_prediction_error"] = lm_stats[
+                "episode_avg_prediction_error"
+            ].mean()
+        stats.update(lm_metrics)
+    return stats
 
 
 def print_benchmark_stats(overall_stats: dict) -> None:
@@ -765,7 +779,6 @@ def main(cfg: DictConfig):
         os.environ["HABITAT_SIM_LOG"] = "quiet"
 
     print_config(cfg)
-    register_resolvers()
 
     if cfg.experiment.config.do_train:
         assert issubclass(
