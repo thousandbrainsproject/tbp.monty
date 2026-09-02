@@ -65,6 +65,17 @@ class MontyIsDone(RecognitionPolicy):
     """Legacy (default) policy."""
 
     def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,  # noqa: ARG002
+    ) -> RecognitionResult:
+        return RecognitionResult(is_done=model.is_done)
+
+
+class MaximumSteps(RecognitionPolicy):
+    """`count.steps >= count.max_steps` or `model.is_done`."""
+
+    def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
         if count.step >= count.max_steps:
