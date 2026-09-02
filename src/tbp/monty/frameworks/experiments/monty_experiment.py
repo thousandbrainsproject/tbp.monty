@@ -31,6 +31,8 @@ from tbp.monty.experiment.environment import (
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.recognition_policy import (
+    MontyIsDone,
+    RecognitionCounter,
     RecognitionPolicy,
 )
 from tbp.monty.frameworks.actions.actions import Action
@@ -67,7 +69,7 @@ class MontyExperiment:
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
     _step_hook: StepHook
-    _recognition_policy: RecognitionPolicy | None
+    _recognition_policy: RecognitionPolicy
 
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
@@ -114,7 +116,7 @@ class MontyExperiment:
         self._rng_seed_history: list[int] = []
 
         self._step_hook = config.pop("step_hook", NoOpStepHook())
-        self._recognition_policy = config.pop("recognition_policy", None)
+        self._recognition_policy = config.pop("recognition_policy", MontyIsDone())
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -512,9 +514,6 @@ class MontyExperiment:
                 #       alone.
                 stop_requested = True
 
-            if step >= self.max_steps:
-                stop_requested = True
-
             stop_requested = stop_requested or self._recognition_complete(step)
 
             if stop_requested:
@@ -525,15 +524,9 @@ class MontyExperiment:
         return step
 
     def _recognition_complete(self, step: int) -> bool:
-        legacy_result = self.model.is_done
-
-        if self._recognition_policy is not None:
-            rr = self._recognition_policy(model=self.model, step=step)
-            assert rr.is_done == legacy_result, (
-                f"wrong recognition result: expected {legacy_result}, got {rr.is_done}"
-            )
-
-        return legacy_result
+        rc = RecognitionCounter(step=step, max_steps=self.max_steps)
+        rr = self._recognition_policy(self.model, rc)
+        return rr.is_done
 
     def _fixme_generate_live_plot_frame(
         self, observations: Observations, step: int
