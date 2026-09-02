@@ -13,15 +13,22 @@ from typing import Protocol
 
 from typing_extensions import Self
 
-from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.models.monty_base import MontyBase
 
 __all__ = [
-    "MinimumCount",
+    "MinimumLMs",
     "MontyIsDone",
     "RecognitionPolicy",
     "RecognitionResult",
 ]
+
+
+@dataclass
+class RecognitionCounter:
+    """Experiment counters and limits."""
+
+    step: int = 0
+    max_steps: int = 0
 
 
 @dataclass
@@ -40,14 +47,13 @@ class RecognitionPolicy(Protocol):
     """
 
     def __call__(
-        self: Self, exp: MontyExperiment, model: MontyBase, step: int
+        self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
         """Apply this policy to produce a Recognition Result from per-LM status.
 
         Args:
-            exp: The Experiment to be queried.
             model: The Monty model to be queried.
-            step: The Experiment step number.
+            count: The Experiment counters and limits.
 
         Returns:
             An aggregate Recognition Result based on this policy.
@@ -59,38 +65,38 @@ class MontyIsDone(RecognitionPolicy):
     """Legacy (default) policy."""
 
     def __call__(
-        self: Self, exp: MontyExperiment, model: MontyBase, step: int
+        self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        if step >= exp.max_steps:
+        if count.step >= count.max_steps:
             return RecognitionResult(is_done=True)
 
         return RecognitionResult(is_done=model.is_done)
 
 
-class MinimumCount(RecognitionPolicy):
-    """`count` LMs have reached a conclusion"""
+class MinimumLMs(RecognitionPolicy):
+    """`min_lms` have reached a conclusion."""
 
-    _count: int
+    _min_lms: int
     """The minimum number of LMs that must reach a conclusion."""
 
-    def __init__(self: Self, count: int) -> None:
+    def __init__(self: Self, min_lms: int) -> None:
         """Initialize the policy.
 
         Args:
-            count: The number of Learning Modules that must reach a conclusion for
+            min_lms: The number of Learning Modules that must reach a conclusion for
                 the policy to be satisfied.
 
         Raises:
-            ValueError: If `count` is not positive.
+            ValueError: If `min_lms` is not positive.
         """
-        if count <= 0:
-            raise ValueError("count must be positive")
-        self._count = count
+        if min_lms <= 0:
+            raise ValueError("min_lms must be positive")
+        self._min_lms = min_lms
 
     def __call__(
-        self: Self, exp: MontyExperiment, model: MontyBase, step: int
+        self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        if step >= exp.max_steps:
+        if count.step >= count.max_steps:
             return RecognitionResult(is_done=True)
 
         num_matched = sum(
@@ -98,6 +104,6 @@ class MinimumCount(RecognitionPolicy):
             for lm in model.learning_modules
             if lm.recognition_status.conclusion is not None
         )
-        is_done = num_matched >= self._count
+        is_done = num_matched >= self._min_lms
 
         return RecognitionResult(is_done=is_done)
