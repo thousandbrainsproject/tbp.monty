@@ -1,3 +1,5 @@
 Experiment,Correct (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Avg Prediction Error|align right,Run Time (mins)|align right,Num Episodes|hidden
 base_infer_objects_with_stickers_monolithic_models,36.84,82.33,90,59.24,0.37,41,266
 base_infer_objects_with_stickers_comp_models,34.96,78.95,89,67.74,0.39,38,266
+randrot_noise_infer_objects_with_stickers_monolithic_models,18.95,78.95,85,112.55,0.65,22,190
+randrot_noise_infer_objects_with_stickers_comp_models,21.58,76.84,84,113.74,0.66,21,190
