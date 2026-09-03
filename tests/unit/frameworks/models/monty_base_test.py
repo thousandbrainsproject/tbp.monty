@@ -38,7 +38,6 @@ class MontyBasePrivateTest(unittest.TestCase):
             min_eval_steps=10,
             min_train_steps=10,
             num_exploratory_steps=10,
-            max_total_steps=100,
         )
 
     def test_pass_goals_collects_all_goals_from_learning_and_sensor_modules(

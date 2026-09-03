@@ -8,7 +8,6 @@ experiment:
         num_exploratory_steps: 1000
         min_eval_steps: 100
         min_train_steps: 3
-        max_total_steps: 2500
       motor_system_config:
         policy_selector:
           policy:

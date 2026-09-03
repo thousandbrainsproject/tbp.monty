@@ -5,4 +5,3 @@ monty_args:
   num_exploratory_steps: 20
   min_eval_steps: 3
   min_train_steps: 3
-  max_total_steps: 2500

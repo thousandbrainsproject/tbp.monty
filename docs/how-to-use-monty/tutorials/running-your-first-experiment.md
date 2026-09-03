@@ -157,7 +157,7 @@ and **this is exactly the procedure that was executed when you ran** `python run
 
 ## Model
 
-The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3_tot2500` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, 3 minimum train steps, and 2 500 maximum total steps.
+The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3_tot2500` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, and 3 minimum train steps.
 
 ```yaml
 # @package experiment.config.monty_config
@@ -167,7 +167,6 @@ monty_args:
   num_exploratory_steps: 1000
   min_eval_steps: 3
   min_train_steps: 3
-  max_total_steps: 2500
 ```
 
 The model requires additional configuration in form of the motor system, learning modules, sensor modules, and the overall connectivity. These are specified respectively in the `/monty/motor_system_config`, `/monty/learning_module`, `/monty/sensor_module`, and `/monty/connectivity` sections of `defaults`. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
