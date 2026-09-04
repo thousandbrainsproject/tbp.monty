@@ -974,7 +974,7 @@ class GraphLM(LearningModule):
 
         self._update_possible_matches(ctx, query=query)
 
-    def _update_possible_matches(self, ctx: RuntimeContext):
+    def _update_possible_matches(self, ctx: RuntimeContext, query):
         # QUESTION: Should we give this a more general name? Like update_hypotheses
         # or update_state?
         # QUESTION: Should this actually be something handled in LMs?
