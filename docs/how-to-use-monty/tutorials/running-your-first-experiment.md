@@ -32,8 +32,8 @@ Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf
 # specify.
 defaults:
   # /monty defines what Monty we will use and how many exploration, evaluation,
-  # training, and total steps to configure it with.
-  - /monty: graph_exp1000_e3_t3_tot2500
+  # and training steps to configure it with.
+  - /monty: graph_exp1000_e3_t3
 
   # /monty/motor_system_config specifies what motor system and motor policy to
   # use within Monty. We use a motor system with an InformedPolicyRandomWalk where
@@ -157,7 +157,7 @@ and **this is exactly the procedure that was executed when you ran** `python run
 
 ## Model
 
-The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3_tot2500` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, and 3 minimum train steps.
+The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, and 3 minimum train steps.
 
 ```yaml
 # @package experiment.config.monty_config
@@ -183,7 +183,7 @@ The environment is specified in the `/environment` section of `defaults`. In thi
 
 By now, we know that an experiment starts with the `run` method calling `train` and `evaluate` methods, that each of these runs one or more `epochs`, which consists of one or more `episodes`, and finally each `episode` repeatedly calls `model.step`. Now we will start unpacking each of these levels, starting with the innermost loop over `steps`.
 
-As mentioned previously, in `/monty: graph_exp1000_e3_t3_tot2500`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
+As mentioned previously, in `/monty: graph_exp1000_e3_t3`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
 
 You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
 

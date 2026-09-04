@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty: graph_exp20_e3_t3
   - /monty/motor_system_config: informed_random_walk_5
   - /monty/learning_module: test_feature_1lm_mmd001_tol_p_pcl11
   - /monty/sensor_module: camera_dist
