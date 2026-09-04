@@ -47,61 +47,37 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         else:
             self.model.fixme_set_ground_truth(self.env_interface.primary_target)
 
-    def run_episode_steps(self) -> int:
-        step = 0
-        ctx = RuntimeContext(rng=self.rng)
-        actions: list[Action] = []
-        stop_requested: bool = False
-        while True:
-            observations, proprioceptive_state = self.env_interface.step(actions)
+    def run_step(
+        self, ctx: RuntimeContext, step: int, actions: list[Action]
+    ) -> list[Action]:
+        observations, proprioceptive_state = self.env_interface.step(actions)
 
-            self._fixme_generate_live_plot_frame(observations, step)
+        self._fixme_generate_live_plot_frame(observations, step)
 
-            if self.model.check_reached_max_matching_steps(self.max_steps):
-                logger.info(
-                    f"Terminated due to maximum matching steps : {self.max_steps}"
-                )
-                # Need to break here already, otherwise there are problems
-                # when the object is recognized in the last step
-                break
+        if self.model.check_reached_max_matching_steps(self.max_steps):
+            logger.info(f"Terminated due to maximum matching steps : {self.max_steps}")
+            # Need to break here already, otherwise there are problems
+            # when the object is recognized in the last step
+            raise StopIteration
 
-            if step >= (self.max_total_steps):
-                logger.info(f"Terminated due to maximum episode steps : {step}")
-                self.model.deal_with_time_out()
-                break
+        if step >= (self.max_total_steps):
+            logger.info(f"Terminated due to maximum episode steps : {step}")
+            self.model.deal_with_time_out()
+            raise StopIteration
 
-            try:
-                if self.model.is_motor_only_step:
-                    logger.debug("Performing a motor-only step")
-                    actions = self.model.motor_only_step(
-                        ctx, observations, proprioceptive_state
-                    )
-                else:
-                    actions = self.model.step(ctx, observations, proprioceptive_state)
-                    actions = self._step_hook(
-                        ctx,
-                        self.model,
-                        self.supervised_lm_ids if self.supervised_lm_ids else [],
-                        step,
-                        observations,
-                        actions,
-                    )
-            except StopIteration:
-                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
-                #       episode termination. This is a holdover from when we used
-                #       iterators. However, this also abdicates control of the
-                #       experiment to the policy. We should find a better way to handle
-                #       this, so that the experiment can control the episode termination
-                #       fully. For example, we know how many steps the policy will take,
-                #       so the experiment can set max steps based on that knowledge
-                #       alone.
-                stop_requested = True
-
-            stop_requested = stop_requested or self._recognition_complete(step)
-
-            if stop_requested:
-                self.model.set_done()  # TODO: remove `is_done` from Monty
-                break
-            step += 1
-
-        return step
+        if self.model.is_motor_only_step:
+            logger.debug("Performing a motor-only step")
+            actions = self.model.motor_only_step(
+                ctx, observations, proprioceptive_state
+            )
+        else:
+            actions = self.model.step(ctx, observations, proprioceptive_state)
+            actions = self._step_hook(
+                ctx,
+                self.model,
+                self.supervised_lm_ids if self.supervised_lm_ids else [],
+                step,
+                observations,
+                actions,
+            )
+        return actions
