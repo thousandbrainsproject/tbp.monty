@@ -215,22 +215,6 @@ class MontyBase(Monty):
         self._step_motor_system(ctx, observations, proprioceptive_state)
         return self._actions
 
-    def check_reached_max_matching_steps(self, max_steps):
-        """Check if max_steps was reached and deal with time_out.
-
-        Returns:
-            True if max_steps was reached, False otherwise.
-        """
-        if (
-            (not self.is_exploring) and (self.matching_steps >= max_steps)
-            # Since we increment matching steps from 0 (i.e. the first matching
-            # step is the "0th" step, this is set to >=, not >)
-        ):
-            self.deal_with_time_out()
-            return True
-
-        return False
-
     def deal_with_time_out(self):
         """Call any functions and logging in case of a time out."""
         pass
