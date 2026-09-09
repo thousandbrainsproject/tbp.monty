@@ -14,7 +14,7 @@ import os
 from typing import TYPE_CHECKING, Any, TypedDict
 from urllib.parse import urljoin
 
-import requests
+from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -22,57 +22,95 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 REQUEST_TIMEOUT_SECONDS = 60
-
-# Retry a request up to three times after the initial attempt.
 MAX_RETRIES = 3
-
-# Wait progressively longer between retries so temporary API or network
-# problems have time to recover.
 RETRY_BACKOFF_FACTOR = 3
-
-# Retry rate limiting and temporary server failures.
-#
-# Other client errors, such as 400, 401, 403, 404, and 409, normally mean
-# the request must be corrected and should not be automatically retried.
 RETRY_STATUS_CODES = (429, 500, 502, 503, 504)
+"""Retry rate limiting and temporary server failures.
+
+Other client errors, such as 400, 401, 403, 404, and 409, normally mean
+the request must be corrected and should not be automatically retried.
+"""
 
 logger = logging.getLogger(__name__)
 
+class ReadMeRequestError(Exception):
+    """Raised when a ReadMe API request returns an unsuccessful response."""
+
+
+class ReadMePrivacy(TypedDict, total=False):
+    """Privacy fields used in the ReadMeResource."""
+
+    view: str
+
+
+class ReadMeContent(TypedDict, total=False):
+    """Guide content fields used in the ReadMeResource."""
+
+    body: str | None
+    excerpt: str | None
+
+
+class ReadMeParent(TypedDict, total=False):
+    """Parent-resource fields used in the ReadMeResource."""
+
+    uri: str
+
+
+class ReadMeResource(TypedDict, total=False):
+    """ReadMe resource fields."""
+
+    children: list[ReadMeResource]
+    content: ReadMeContent | None
+    name: str
+    parent: ReadMeParent | None
+    privacy: ReadMePrivacy | None
+    slug: str
+    title: str
+    uri: str
+
+
+class ReadMePaging(TypedDict, total=False):
+    """Pagination field returned by collection endpoints."""
+
+    next: str | None
+
+
+class ReadMeCollectionResponse(TypedDict, total=False):
+    """Envelope returned for a ReadMe resource collection."""
+
+    data: list[ReadMeResource]
+    paging: ReadMePaging | None
 
 class ReadMeResponse(TypedDict):
-    """Expected structure shared by ReadMe API responses."""
+    """Envelope returned for a single ReadMe resource."""
 
-    data: object
+    data: ReadMeResource
 
 
-def _create_retry_session() -> requests.Session:
+def _create_retry_session() -> Session:
     """Create an HTTP session configured to retry failures.
 
     Returns:
         A session that retries requests after failures.
     """
     retry = Retry(
-        # Retry up to three times after the initial request.
         total=MAX_RETRIES,
-        # Increase the delay between retries instead of repeatedly sending
-        # requests to an API that may be temporarily unavailable.
+        # Wait progressively longer between retries so temporary API or network
+        # problems have time to recover.
         backoff_factor=RETRY_BACKOFF_FACTOR,
-        # Retry rate limiting and temporary server failures.
         status_forcelist=RETRY_STATUS_CODES,
         # Retry every HTTP method used by this module.
         allowed_methods=frozenset({"DELETE", "GET", "PATCH", "POST"}),
         # Follow ReadMe's Retry-After header when it tells us how long to
         # wait before sending another request.
         respect_retry_after_header=True,
-        # Return the final unsuccessful response after all retries fail.
-        #
         # This lets the existing code below raise its detailed RuntimeError
         # containing the response status code and body.
         raise_on_status=False,
     )
 
     adapter = HTTPAdapter(max_retries=retry)
-    session = requests.Session()
+    session = Session()
 
     # Install the retry behavior for both HTTP and HTTPS URLs.
     session.mount("http://", adapter)
@@ -105,7 +143,7 @@ def _auth_headers(
     return headers
 
 
-def _unwrap_object(payload: Mapping[str, Any]) -> dict[str, Any]:
+def _unwrap_object(payload: ReadMeResponse) -> ReadMeResource:
     """Return an object stored in a response envelope.
 
     Args:
@@ -133,14 +171,14 @@ def _unwrap_object(payload: Mapping[str, Any]) -> dict[str, Any]:
     return data
 
 
-def _unwrap_list(payload: Mapping[str, Any]) -> list[Any]:
+def _unwrap_list(payload: ReadMeCollectionResponse) -> list[ReadMeResource]:
     """Return a list stored in a response envelope.
 
     Args:
         payload: The decoded JSON response object.
 
     Returns:
-        The list stored under the response's ``data`` field.
+        The list of objects stored under the response's ``data`` field.
 
     Raises:
         ValueError: If the response does not contain a ``data`` field.
@@ -151,20 +189,36 @@ def _unwrap_list(payload: Mapping[str, Any]) -> list[Any]:
 
     data = payload["data"]
 
-    # JSON arrays are decoded into Python lists.
     if not isinstance(data, list):
         raise TypeError(
             "Expected ReadMe response data to be a list, "
             f"received {type(data).__name__}"
         )
 
+    if not all(isinstance(item, dict) for item in data):
+        raise TypeError("Expected ReadMe response data to be a list of objects")
+
     return data
 
+def _unwrap_next_page(payload: ReadMeCollectionResponse) -> str | None:
+    """Return the next-page link stored in a response envelope.
+
+    Args:
+        payload: The decoded JSON response object.
+
+    Returns:
+        The value of paging.next, or None when the response or paging is
+        not a dictionary, or when next is missing or None.
+    """
+
+    paging = payload.get("paging") if isinstance(payload, dict) else None
+    next_path = paging.get("next") if isinstance(paging, dict) else None
+    return next_path
 
 def get(
     url: str,
     headers: dict[str, str] | None = None,
-) -> dict[str, Any] | None:
+) -> ReadMeResource | None:
     headers = _auth_headers(headers)
     response = _SESSION.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
     logger.debug("get %s %s", url, response.status_code)
@@ -177,7 +231,7 @@ def get(
         # Other failures must stop the upload. Otherwise,
         # create_or_update_doc() interprets the failure as a missing page
         # and incorrectly creates a duplicate.
-        raise RuntimeError(
+        raise ReadMeRequestError(
             f"GET {url} failed with {response.status_code}: {response.text}"
         )
     payload: ReadMeResponse = response.json()
@@ -187,7 +241,7 @@ def get(
 def get_collection(
     url: str,
     headers: dict[str, str] | None = None,
-) -> list[dict[str, Any]]:
+) -> list[ReadMeResource]:
     """Retrieve every page from a paginated collection endpoint.
 
     Args:
@@ -198,11 +252,11 @@ def get_collection(
         A flat list containing the resources from every response page.
 
     Raises:
-        RuntimeError: If ReadMe returns an unsuccessful HTTP response.
+        ReadMeRequestError: If ReadMe returns an unsuccessful HTTP response.
     """
     headers = _auth_headers(headers)
-    items = []
-    next_url = url
+    items: list[ReadMeResource] = []
+    next_url: str | None = url
 
     while next_url:
         response = _SESSION.get(
@@ -217,23 +271,19 @@ def get_collection(
             response.status_code,
         )
 
-        if response.status_code == 404:
-            return items
-
         if response.status_code >= 400:
             # Do not return a partial collection. Some callers (cleanup code) use this
             # inventory to determine which documents should be deleted.
-            raise RuntimeError(
+            raise ReadMeRequestError(
                 f"GET {next_url} failed with {response.status_code}: {response.text}"
             )
 
-        payload = response.json()
+        payload: ReadMeCollectionResponse = response.json()
         data = _unwrap_list(payload)
 
         items.extend(data)
 
-        paging = payload.get("paging") if isinstance(payload, dict) else None
-        next_path = paging.get("next") if isinstance(paging, dict) else None
+        next_path = _unwrap_next_page(payload)
 
         # Resolve the next-page link relative to the current response URL.
         # This works whether ReadMe returns an absolute or relative URL.
@@ -246,16 +296,14 @@ def post(
     url: str,
     data: Mapping[str, Any],
     headers: dict[str, str] | None = None,
-) -> dict[str, Any]:
+) -> ReadMeResource:
     headers = _auth_headers(headers)
     response = _SESSION.post(
         url, json=data, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
     )
     logger.debug("post %s %s", url, response.status_code)
     if response.status_code >= 400:
-        # Preserve the API response, especially when strict slug handling
-        # produces a 409 Conflict.
-        raise RuntimeError(
+        raise ReadMeRequestError(
             f"POST {url} failed with {response.status_code}: {response.text}"
         )
 
@@ -279,10 +327,10 @@ def patch(
         headers: Optional additional request headers.
 
     Returns:
-        ``True`` when the resource is updated successfully.
+        True when the resource is updated successfully.
 
     Raises:
-        RuntimeError: If the request returns a client or server error.
+        ReadMeRequestError: If the request returns a client or server error.
     """
     headers = _auth_headers(headers)
     response = _SESSION.patch(
@@ -290,7 +338,7 @@ def patch(
     )
     logger.debug("patch %s %s", url, response.status_code)
     if response.status_code >= 400:
-        raise RuntimeError(
+        raise ReadMeRequestError(
             f"PATCH {url} failed with {response.status_code}: {response.text}"
         )
     return True
@@ -311,6 +359,6 @@ def delete(
     logger.debug("delete %s %s", url, response.status_code)
 
     if response.status_code >= 400:
-        raise RuntimeError(
+        raise ReadMeRequestError(
             f"DELETE {url} failed with {response.status_code}: {response.text}"
         )

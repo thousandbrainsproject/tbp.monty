@@ -52,13 +52,12 @@ def export(output_dir: str, rdme: ReadMe):
 
         # The API returns category pages as a flat collection.
         # Rebuild the hierarchy using each page's parent URI.
-        docs_from_server = rdme.get_category_doc_tree(category)
+        docs_from_server = rdme.get_category_page_tree(category)
 
         for server_doc in docs_from_server:
             hierarchy_doc = {
                 "title": server_doc["title"],
-                # Preserve the actual ReadMe slug. Do not derive a slug
-                # from the page title.
+                # Preserve the actual ReadMe slug.
                 "slug": server_doc["slug"],
                 "children": [],
             }

@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, call, patch
 
 from tools.github_readme_sync.req import (
     REQUEST_TIMEOUT_SECONDS,
+    ReadMeRequestError,
     delete,
     get,
     get_collection,
@@ -89,7 +90,7 @@ class TestReq(unittest.TestCase):
         mock_get.return_value = response
 
         with self.assertRaisesRegex(
-            RuntimeError,
+            ReadMeRequestError,
             r"GET https://api\.example\.com/data failed with 500",
         ):
             get("https://api.example.com/data")
@@ -134,24 +135,6 @@ class TestReq(unittest.TestCase):
         )
 
     @patch("tools.github_readme_sync.req._SESSION.get")
-    def test_get_collection_404_returns_items_already_collected(self, mock_get):
-        first_response = MagicMock()
-        first_response.status_code = 200
-        first_response.url = "https://api.readme.com/v2/items"
-        first_response.json.return_value = {
-            "data": [{"slug": "doc-1"}],
-            "paging": {"next": "/v2/items?page=2"},
-        }
-
-        second_response = MagicMock()
-        second_response.status_code = 404
-        mock_get.side_effect = [first_response, second_response]
-
-        result = get_collection("https://api.readme.com/v2/items")
-
-        self.assertEqual(result, [{"slug": "doc-1"}])
-
-    @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_collection_rejects_non_list_data(self, mock_get):
         response = MagicMock()
         response.status_code = 200
@@ -174,7 +157,7 @@ class TestReq(unittest.TestCase):
         response.text = "Rate limited"
         mock_get.return_value = response
 
-        with self.assertRaisesRegex(RuntimeError, "failed with 429"):
+        with self.assertRaisesRegex(ReadMeRequestError, "failed with 429"):
             get_collection("https://api.readme.com/v2/items")
 
     @patch("tools.github_readme_sync.req._SESSION.post")
@@ -218,7 +201,7 @@ class TestReq(unittest.TestCase):
         response.text = "Slug already exists"
         mock_post.return_value = response
 
-        with self.assertRaisesRegex(RuntimeError, "failed with 409"):
+        with self.assertRaisesRegex(ReadMeRequestError, "failed with 409"):
             post("https://api.example.com/data", {"slug": "doc"})
 
     @patch("tools.github_readme_sync.req._SESSION.patch")
@@ -247,7 +230,7 @@ class TestReq(unittest.TestCase):
         response.text = "Bad Request"
         mock_patch.return_value = response
 
-        with self.assertRaisesRegex(RuntimeError, "failed with 400"):
+        with self.assertRaisesRegex(ReadMeRequestError, "failed with 400"):
             patch_request("https://api.example.com/data", {})
 
     @patch("tools.github_readme_sync.req._SESSION.delete")
@@ -273,8 +256,38 @@ class TestReq(unittest.TestCase):
         response.text = "Bad Request"
         mock_delete.return_value = response
 
-        with self.assertRaisesRegex(RuntimeError, "failed with 400"):
+        with self.assertRaisesRegex(ReadMeRequestError, "failed with 400"):
             delete("https://api.example.com/data")
+
+    @patch("tools.github_readme_sync.req._SESSION.get")
+    def test_get_rejects_non_object_data(self, mock_get):
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = {"data": ["not-an-object"]}
+        mock_get.return_value = response
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Expected ReadMe response data to be an object, received list",
+        ):
+            get("https://api.example.com/data")
+
+    @patch("tools.github_readme_sync.req._SESSION.get")
+    def test_get_collection_rejects_non_object_items(self, mock_get):
+        response = MagicMock()
+        response.status_code = 200
+        response.url = "https://api.readme.com/v2/items"
+        response.json.return_value = {
+            "data": [{"slug": "doc-1"}, "not-an-object"],
+            "paging": {"next": None},
+        }
+        mock_get.return_value = response
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Expected ReadMe response data to be a list of objects",
+        ):
+            get_collection("https://api.readme.com/v2/items")
 
 
 if __name__ == "__main__":

@@ -33,10 +33,10 @@ class TestExport(unittest.TestCase):
         category = {"title": "How to Use Monty"}
         rdme.get_categories.return_value = [category]
 
-        # get_category_doc_tree() has already reconstructed the flat v2 page
+        # get_category_page_tree() has already reconstructed the flat v2 page
         # collection using parent URIs. Deliberately use titles that do not
         # match the slugs to ensure export preserves server-provided slugs.
-        rdme.get_category_doc_tree.return_value = [
+        rdme.get_category_page_tree.return_value = [
             {
                 "title": "Getting Started with Monty",
                 "slug": "getting-started",
@@ -106,7 +106,7 @@ class TestExport(unittest.TestCase):
             "---\ntitle: Windows Setup via WSL\n---\nChild",
         )
 
-        rdme.get_category_doc_tree.assert_called_once_with(category)
+        rdme.get_category_page_tree.assert_called_once_with(category)
         self.assertEqual(
             rdme.get_doc_by_slug.call_args_list,
             [

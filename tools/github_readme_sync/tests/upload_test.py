@@ -12,6 +12,7 @@ import unittest
 from unittest.mock import MagicMock, call, patch
 
 from tools.github_readme_sync.upload import (
+    ReadMeItem,
     get_all_categories_docs,
     process_children,
     set_do_not_delete,
@@ -36,8 +37,8 @@ class TestUpload(unittest.TestCase):
         # The inventory is category-first. upload() reverses it so pages are
         # deleted before their categories, then makes the version stable.
         mock_get_all_categories_docs.return_value = [
-            {"title": "Old Category", "type": "category"},
-            {"slug": "old-doc", "type": "doc"},
+            ReadMeItem(id="Old Category", type="category"),
+            ReadMeItem(id="old-doc", type="doc"),
         ]
 
         hierarchy = [
@@ -58,8 +59,8 @@ class TestUpload(unittest.TestCase):
             file_path="/path/to/files",
             rdme=rdme,
             to_be_deleted=[
-                {"title": "Old Category", "type": "category"},
-                {"slug": "old-doc", "type": "doc"},
+                ReadMeItem(id="Old Category", type="category"),
+                ReadMeItem(id="old-doc", type="doc"),
             ],
         )
 
@@ -95,7 +96,7 @@ class TestUpload(unittest.TestCase):
             "slug": "parent",
             "children": [{"slug": "child-1", "children": []}],
         }
-        to_be_deleted = [{"slug": "child-1", "type": "doc"}]
+        to_be_deleted = [ReadMeItem(id="child-1", type="doc")]
 
         process_children(
             parent=parent,
@@ -125,31 +126,30 @@ class TestUpload(unittest.TestCase):
         )
         self.assertEqual(to_be_deleted, [])
 
-    def test_set_do_not_delete_removes_document_by_slug(self):
+    def test_set_do_not_delete_removes_document_by_id(self):
         to_be_deleted = [
-            {"slug": "test-doc", "type": "doc"},
-            {"title": "Test Category", "type": "category"},
+            ReadMeItem(id="test-doc", type="doc"),
+            ReadMeItem(id="Test Category", type="category"),
         ]
 
         set_do_not_delete(to_be_deleted, "test-doc")
 
         self.assertEqual(
             to_be_deleted,
-            [{"title": "Test Category", "type": "category"}],
+            [ReadMeItem(id="Test Category", type="category")],
         )
 
-    def test_set_do_not_delete_removes_category_by_title(self):
+    def test_set_do_not_delete_removes_category_by_id(self):
         to_be_deleted = [
-            {"slug": "test-doc", "type": "doc"},
-            {"title": "Test Category", "type": "category"},
+            ReadMeItem(id="test-doc", type="doc"),
+            ReadMeItem(id="Test Category", type="category"),
         ]
 
-        # API v2 categories are identified by title, not by category slug.
         set_do_not_delete(to_be_deleted, "Test Category")
 
         self.assertEqual(
             to_be_deleted,
-            [{"slug": "test-doc", "type": "doc"}],
+            [ReadMeItem(id="test-doc", type="doc")],
         )
 
     def test_get_all_categories_docs_uses_flat_v2_page_collection(self):
@@ -176,16 +176,16 @@ class TestUpload(unittest.TestCase):
 
         result = get_all_categories_docs(rdme)
 
-        # Cleanup only needs category titles and page slugs. Parent nesting is
-        # irrelevant because pages are returned as one flat v2 collection.
+        # Cleanup only needs a common identifier and resource type. Category titles
+        # and page slugs become the ReadMeItem IDs; parent nesting is irrelevant.
         self.assertEqual(
             result,
             [
-                {"title": "Category 1", "type": "category"},
-                {"slug": "parent-doc", "type": "doc"},
-                {"slug": "child-doc", "type": "doc"},
-                {"title": "Category 2", "type": "category"},
-                {"slug": "other-doc", "type": "doc"},
+                ReadMeItem(id="Category 1", type="category"),
+                ReadMeItem(id="parent-doc", type="doc"),
+                ReadMeItem(id="child-doc", type="doc"),
+                ReadMeItem(id="Category 2", type="category"),
+                ReadMeItem(id="other-doc", type="doc"),
             ],
         )
         self.assertEqual(

@@ -107,7 +107,7 @@ class TestReadme(unittest.TestCase):
         )
 
     @patch.object(ReadMe, "get_category_docs")
-    def test_get_category_doc_tree_rebuilds_nested_pages(
+    def test_get_category_page_tree_rebuilds_nested_pages(
         self,
         mock_get_category_docs,
     ):
@@ -139,7 +139,7 @@ class TestReadme(unittest.TestCase):
             },
         ]
 
-        roots = self.readme.get_category_doc_tree({"title": "Category"})
+        roots = self.readme.get_category_page_tree({"title": "Category"})
 
         self.assertEqual(
             [page["slug"] for page in roots],
@@ -152,7 +152,7 @@ class TestReadme(unittest.TestCase):
         self.assertEqual(roots[1]["children"], [])
 
     @patch.object(ReadMe, "get_category_docs")
-    def test_get_category_doc_tree_rejects_page_without_uri(
+    def test_get_category_page_tree_rejects_page_without_uri(
         self,
         mock_get_category_docs,
     ):
@@ -161,10 +161,10 @@ class TestReadme(unittest.TestCase):
         ]
 
         with self.assertRaisesRegex(ValueError, "has no uri"):
-            self.readme.get_category_doc_tree({"title": "Category"})
+            self.readme.get_category_page_tree({"title": "Category"})
 
     @patch.object(ReadMe, "get_category_docs")
-    def test_get_category_doc_tree_rejects_duplicate_uri(
+    def test_get_category_page_tree_rejects_duplicate_uri(
         self,
         mock_get_category_docs,
     ):
@@ -175,10 +175,10 @@ class TestReadme(unittest.TestCase):
         ]
 
         with self.assertRaisesRegex(ValueError, "duplicate page URI"):
-            self.readme.get_category_doc_tree({"title": "Category"})
+            self.readme.get_category_page_tree({"title": "Category"})
 
     @patch.object(ReadMe, "get_category_docs")
-    def test_get_category_doc_tree_rejects_missing_parent(
+    def test_get_category_page_tree_rejects_missing_parent(
         self,
         mock_get_category_docs,
     ):
@@ -192,7 +192,7 @@ class TestReadme(unittest.TestCase):
         ]
 
         with self.assertRaisesRegex(ValueError, "refers to missing parent URI"):
-            self.readme.get_category_doc_tree({"title": "Category"})
+            self.readme.get_category_page_tree({"title": "Category"})
 
     @patch("tools.github_readme_sync.readme.get")
     def test_get_doc_by_slug_exports_v2_content_and_frontmatter(self, mock_get):

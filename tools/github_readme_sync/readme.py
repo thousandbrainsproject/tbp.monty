@@ -33,7 +33,7 @@ from tools.github_readme_sync.constants import (
     IGNORE_YOUTUBE,
     REGEX_CSV_TABLE,
 )
-from tools.github_readme_sync.req import delete, get, get_collection, patch, post
+from tools.github_readme_sync.req import ReadMeResource, delete, get, get_collection, patch, post
 
 logger = logging.getLogger(__name__)
 
@@ -76,27 +76,26 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
-    def _is_hidden(self, resource: dict) -> bool:
+    def _is_hidden(self, resource: ReadMeResource) -> bool:
         return (resource.get("privacy") or {}).get("view") == "anyone_with_link"
 
-    def branch_url(self, suffix: str = "") -> str:
-        # Every version-scoped call becomes …/branches/{self.version}{suffix}
+    def _branch_url(self, suffix: str = "") -> str:
         return f"{API_PREFIX}/branches/{self.version}{suffix}"
 
-    def get_categories(self) -> list[Any]:
+    def get_categories(self) -> list[ReadMeResource]:
         """Return guide categories in the order supplied by ReadMe."""
-        categories = get_collection(self.branch_url(f"/categories/{GUIDES_SECTION}"))
+        categories = get_collection(self._branch_url(f"/categories/{GUIDES_SECTION}"))
         if not categories:
             return []
 
         return categories
 
-    def get_category_docs(self, category: Any) -> list[Any]:
+    def get_category_docs(self, category: ReadMeResource) -> list[ReadMeResource]:
         """Return a category's pages as a flat v2 collection."""
         title = quote(category["title"], safe="")
 
         response = get_collection(
-            self.branch_url(f"/categories/{GUIDES_SECTION}/{title}/pages")
+            self._branch_url(f"/categories/{GUIDES_SECTION}/{title}/pages")
         )
 
         if not response:
@@ -104,7 +103,7 @@ class ReadMe:
 
         return response
 
-    def get_category_doc_tree(self, category: Any) -> list[Any]:
+    def get_category_page_tree(self, category: ReadMeResource) -> list[ReadMeResource]:
         """Rebuild a nested page tree from the APIs flat page collection.
 
         Args:
@@ -123,16 +122,16 @@ class ReadMe:
         if not pages:
             return []
 
-        pages_by_uri = {}
+        pages_by_uri: dict[str, ReadMeResource] = {}
 
         # First create independent page dictionaries with empty children lists.
         # We use resource URIs as the API uses URIs as resource identifiers.
         for raw_page in pages:
-            page = dict(raw_page)
+            page: ReadMeResource = dict(raw_page)
             page["children"] = []
 
             uri = page.get("uri")
-            if not uri:
+            if uri is None:
                 raise ValueError(f"ReadMe page {page.get('slug')!r} has no uri")
 
             if uri in pages_by_uri:
@@ -140,7 +139,7 @@ class ReadMe:
 
             pages_by_uri[uri] = page
 
-        roots = []
+        roots: list[ReadMeResource] = []
 
         # Iterate over the original API order so sibling ordering remains
         # the same as the order returned by ReadMe.
@@ -148,7 +147,7 @@ class ReadMe:
             page = pages_by_uri[original_page["uri"]]
             parent_uri = (page.get("parent") or {}).get("uri")
 
-            if not parent_uri:
+            if parent_uri is None:
                 # A page without a parent is a category-level root page.
                 roots.append(page)
                 continue
@@ -177,8 +176,6 @@ class ReadMe:
         if self._is_hidden(doc):
             front_matter["hidden"] = True
 
-        # Include a fallback for the excerpt in case the content is None
-        # which can happen if the document has no content.
         excerpt = (doc.get("content") or {}).get("excerpt")
         if excerpt:
             front_matter["description"] = excerpt
@@ -202,7 +199,7 @@ class ReadMe:
 
         return front_matter_str + body
 
-    def get_doc(self, slug: str) -> dict | None:
+    def get_doc(self, slug: str) -> ReadMeResource | None:
         """Return one guide and verify its slug and URI.
 
         Args:
@@ -215,7 +212,7 @@ class ReadMe:
             ValueError: If ReadMe resolves the request to a different slug or
                 returns a guide without a URI.
         """
-        doc = get(self.branch_url(f"/guides/{slug}"))
+        doc = get(self._branch_url(f"/guides/{slug}"))
 
         if doc is None:
             # None can only mean an actual 404.
@@ -286,11 +283,11 @@ class ReadMe:
 
     def delete_category(self, title: str):
         logger.info(f"{GRAY}Deleting category {title}{RESET}")
-        delete(self.branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}"))
+        delete(self._branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}"))
 
     def delete_doc(self, slug: str):
         logger.info(f"{GRAY}Deleting doc {slug}{RESET}")
-        delete(self.branch_url(f"/guides/{slug}"))
+        delete(self._branch_url(f"/guides/{slug}"))
 
     def validate_csv_align_param(self, align_value: str) -> None:
         if align_value not in ["left", "right"]:
@@ -300,14 +297,15 @@ class ReadMe:
 
     def create_category_if_not_exists(self, title: str) -> tuple[str, bool]:
         category = get(
-            self.branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}")
+            self._branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}")
         )
         if category is None:
             created = post(
-                self.branch_url("/categories"),
+                self._branch_url("/categories"),
                 {"title": title, "section": GUIDES_SECTION_BODY},
             )
-            if created is None:
+            created_uri = created.get("uri")
+            if not created_uri:
                 raise ValueError(f"Failed to create category {title}")
 
             return created["uri"], True
@@ -461,7 +459,7 @@ class ReadMe:
 
         if existing_doc is not None:
             patch(
-                self.branch_url(f"/guides/{doc['slug']}"),
+                self._branch_url(f"/guides/{doc['slug']}"),
                 update_doc_request,
             )
             return existing_doc["uri"], False
@@ -471,7 +469,7 @@ class ReadMe:
         create_doc_request["slug"] = doc["slug"]
 
         created = post(
-            self.branch_url("/guides"),
+            self._branch_url("/guides"),
             create_doc_request,
             # Prevent ReadMe from silently changing a duplicate slug into slug-1.
             # A slug collision will instead cause the request to fail.

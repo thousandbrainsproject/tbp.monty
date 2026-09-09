@@ -8,8 +8,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import logging
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from tools.github_readme_sync.colors import BLUE, CYAN, GRAY, RESET, WHITE
 from tools.github_readme_sync.hierarchy import INDENTATION_UNIT
@@ -18,6 +22,10 @@ from tools.github_readme_sync.readme import ReadMe
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class ReadMeItem:
+    id: str
+    type: Literal["category", "doc"]
 
 def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     logger.info(f"Uploading export folder: {file_path}")
@@ -49,10 +57,10 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     if len(to_be_deleted) > 0:
         # Delete all docs and categories in reverse order
         for item in reversed(to_be_deleted):
-            if item["type"] == "doc":
-                rdme.delete_doc(item["slug"])
-            elif item["type"] == "category":
-                rdme.delete_category(item["title"])
+            if item.type == "doc":
+                rdme.delete_doc(item.id)
+            elif item.type == "category":
+                rdme.delete_category(item.id)
 
     # Only expose a stable release after every create, update, and delete
     # operation has completed successfully.
@@ -64,7 +72,7 @@ def process_children(
     cat_id,
     file_path,
     rdme,
-    to_be_deleted,
+    to_be_deleted: list[ReadMeItem],
     path_prefix="",
     parent_doc_id=None,
 ):
@@ -99,33 +107,31 @@ def process_children(
             )
 
 
-def set_do_not_delete(to_be_deleted: list, identifier: str):
+def set_do_not_delete(to_be_deleted: list[ReadMeItem], identifier: str):
     for item in to_be_deleted:
-        key = "title" if item["type"] == "category" else "slug"
-        if item.get(key) == identifier:
-            # remove the item from the list
+        if item.id == identifier:
             to_be_deleted.remove(item)
             return
 
 
 def get_all_categories_docs(rdme: ReadMe):
-    all_categories_and_docs = []
+    all_categories_and_docs: list[ReadMeItem] = []
 
     for category in rdme.get_categories():
         all_categories_and_docs.append(
-            {
-                "title": category["title"],
-                "type": "category",
-            }
+            ReadMeItem(
+                id=category["title"],
+                type="category",
+            )
         )
 
         # The API returns the category's pages as a flat collection.
         for doc in rdme.get_category_docs(category):
             all_categories_and_docs.append(
-                {
-                    "slug": doc["slug"],
-                    "type": "doc",
-                }
+                ReadMeItem(
+                    id=doc["slug"],
+                    type="doc",
+                )
             )
 
     return all_categories_and_docs
