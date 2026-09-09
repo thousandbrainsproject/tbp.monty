@@ -187,6 +187,9 @@ experiment:
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_total_steps: 5000
     seed: 42
     supervised_lm_ids: []
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

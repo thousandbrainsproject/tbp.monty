@@ -17,13 +17,16 @@ experiment:
     show_sensor_output: false
     max_train_steps: 30
     max_eval_steps: 30
-    max_total_steps: 60
+    max_total_steps: 1030
     n_train_epochs: 1
     n_eval_epochs: 1
     model_name_or_path: ''
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_total_steps: 1030
     seed: 42
     supervised_lm_ids: []
     monty_config:
