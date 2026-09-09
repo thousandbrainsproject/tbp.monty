@@ -497,14 +497,6 @@ class MontyExperiment:
             try:
                 actions = self.run_step(ctx, step, actions)
             except StopIteration:
-                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
-                #       episode termination. This is a holdover from when we used
-                #       iterators. However, this also abdicates control of the
-                #       experiment to the policy. We should find a better way to handle
-                #       this, so that the experiment can control the episode termination
-                #       fully. For example, we know how many steps the policy will take,
-                #       so the experiment can set max steps based on that knowledge
-                #       alone.
                 break
             step += 1
         return step
@@ -526,22 +518,15 @@ class MontyExperiment:
 
         self._fixme_generate_live_plot_frame(observations, step)
 
-        if self.model.is_motor_only_step:
-            logger.debug("Performing a motor-only step")
-            actions = self.model.motor_only_step(
-                ctx, observations, proprioceptive_state
-            )
-        else:
-            actions = self.model.step(ctx, observations, proprioceptive_state)
-            actions = self._step_hook(
-                ctx,
-                self.model,
-                self.supervised_lm_ids if self.supervised_lm_ids else [],
-                step,
-                observations,
-                actions,
-            )
-        return actions
+        actions = self.model.step(ctx, observations, proprioceptive_state)
+        return self._step_hook(
+            ctx,
+            self.model,
+            self.supervised_lm_ids if self.supervised_lm_ids else [],
+            step,
+            observations,
+            actions,
+        )
 
     def _recognition_complete(self, step: int) -> bool:
         rc = RecognitionCounter(step=step, max_steps=self.max_steps)

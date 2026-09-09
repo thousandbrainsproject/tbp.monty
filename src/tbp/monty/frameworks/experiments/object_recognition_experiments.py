@@ -65,19 +65,12 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             self.model.deal_with_time_out()
             raise StopIteration
 
-        if self.model.is_motor_only_step:
-            logger.debug("Performing a motor-only step")
-            actions = self.model.motor_only_step(
-                ctx, observations, proprioceptive_state
-            )
-        else:
-            actions = self.model.step(ctx, observations, proprioceptive_state)
-            actions = self._step_hook(
-                ctx,
-                self.model,
-                self.supervised_lm_ids if self.supervised_lm_ids else [],
-                step,
-                observations,
-                actions,
-            )
-        return actions
+        actions = self.model.step(ctx, observations, proprioceptive_state)
+        return self._step_hook(
+            ctx,
+            self.model,
+            self.supervised_lm_ids if self.supervised_lm_ids else [],
+            step,
+            observations,
+            actions,
+        )
