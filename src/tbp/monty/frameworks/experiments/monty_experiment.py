@@ -495,6 +495,11 @@ class MontyExperiment:
             step += 1
         return step
 
+    def _recognition_complete(self, step: int) -> bool:
+        rc = RecognitionCounter(step=step, max_steps=self.max_steps)
+        rr = self._recognition_policy(self.model, rc)
+        return rr.is_done
+
     def run_step(
         self, ctx: RuntimeContext, step: int, actions: list[Action]
     ) -> list[Action]:
@@ -521,11 +526,6 @@ class MontyExperiment:
             observations,
             actions,
         )
-
-    def _recognition_complete(self, step: int) -> bool:
-        rc = RecognitionCounter(step=step, max_steps=self.max_steps)
-        rr = self._recognition_policy(self.model, rc)
-        return rr.is_done
 
     def _fixme_generate_live_plot_frame(
         self, observations: Observations, step: int
