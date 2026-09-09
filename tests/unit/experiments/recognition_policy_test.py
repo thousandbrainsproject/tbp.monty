@@ -20,6 +20,7 @@ from tbp.monty.experiment.recognition_policy import (
     MinimumLMs,
     MontyIsDone,
     NaiveScan,
+    ObjectRecognition,
     RecognitionCounter,
 )
 from tbp.monty.experiment.recognition_status import (
@@ -198,6 +199,40 @@ class NaiveScanTest(unittest.TestCase):
     def test_defers_to_model_before_step_limit(self, is_done: bool, step: int) -> None:
         model = _model_is_done(is_done)
         policy = NaiveScan(max_total_steps=500, fixed_amount=5)
+        count = RecognitionCounter(step=step, max_steps=0)
+        result = policy(model, count)
+        self.assertEqual(result.is_done, is_done)
+
+
+class ObjectRecognitionTest(unittest.TestCase):
+    @given(max_total_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_total_steps_is_not_positive(
+        self, max_total_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            ObjectRecognition(max_total_steps)
+
+    @given(max_total_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
+    def test_times_out_at_or_after_max_total_steps(
+        self, max_total_steps: int, extra: int
+    ) -> None:
+        model = _model_is_done(is_done=False)
+        policy = ObjectRecognition(max_total_steps=max_total_steps)
+        count = RecognitionCounter(step=max_total_steps + extra, max_steps=0)
+        result = policy(model, count)
+        self.assertTrue(result.is_done)
+
+    @given(
+        is_done=st.booleans(),
+        max_total_steps=st.integers(min_value=1),
+        step=st.integers(min_value=0),
+    )
+    def test_defers_to_model_before_max_total_steps(
+        self, is_done: bool, max_total_steps: int, step: int
+    ) -> None:
+        assume(step < max_total_steps)
+        model = _model_is_done(is_done)
+        policy = ObjectRecognition(max_total_steps=max_total_steps)
         count = RecognitionCounter(step=step, max_steps=0)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
