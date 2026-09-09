@@ -43,6 +43,6 @@ Usage example::
     telemeter.debug(TelemetryEvent(kind="DebugEvent", ...))
 """
 
-from tbp.monty.telemetry._api import getTelemeter
+from tbp.monty.telemetry.telemeter import getTelemeter
 
 __all__ = ["getTelemeter"]

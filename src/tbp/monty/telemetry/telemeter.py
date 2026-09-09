@@ -15,9 +15,7 @@ from tbp.monty.telemetry.factories import _TelemetryLoggerFactory
 from tbp.monty.telemetry.publishers import TelemetryPublisher
 
 
-def getTelemeter(  # noqa: N802 - needed to mirror getLogger camelCase
-    name: str,
-) -> TelemetryPublisher:
+def getTelemeter(name: str) -> TelemetryPublisher:  # noqa: N802
     """Returns a telemetry logger with the specified name.
 
     This method is essentially a wrapper for `logger.getLogger`. It prefixes the logger
