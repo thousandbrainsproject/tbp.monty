@@ -187,7 +187,6 @@ experiment:
     show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500
-    max_total_steps: 5000
     # We will evaluate each of the 3 test rotations
     n_train_epochs: 3
     # Specify the path where we saved the pretrained model

@@ -92,7 +92,6 @@ class MontyExperiment:
         self.experiment_mode = ExperimentMode.TRAIN
         self.max_eval_steps = config["max_eval_steps"]
         self.max_train_steps = config["max_train_steps"]
-        self.max_total_steps = config["max_total_steps"]
         self.n_eval_epochs = config["n_eval_epochs"]
         self.n_train_epochs = config["n_train_epochs"]
         if config["model_name_or_path"]:
@@ -408,20 +407,11 @@ class MontyExperiment:
             sm_to_lm_matrix=sm_to_lm_matrix,
             lm_to_lm_matrix=lm_to_lm_matrix,
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
+            # Pass any leftover configuration parameters downstream to monty_class
             **config,
             **monty_args,
         )
         model._match_criterion = self._match_criterion
-
-        if monty_args["num_exploratory_steps"] > self.max_total_steps:
-            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            logger.warning(
-                "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
-            )
-            self.max_total_steps = new_max_steps
-
         self.model = model
 
     def _snapshot_monty(self) -> None:

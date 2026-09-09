@@ -45,7 +45,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                     "experiment.config.max_train_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -64,7 +64,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -80,7 +80,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                     "experiment.config.max_train_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -96,7 +96,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                     "experiment.config.max_train_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -113,7 +113,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -129,7 +129,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                     "experiment.config.max_train_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))
@@ -146,7 +146,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -165,7 +165,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                     "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )

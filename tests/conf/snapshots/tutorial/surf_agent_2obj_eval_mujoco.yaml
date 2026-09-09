@@ -179,7 +179,6 @@ experiment:
     show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500
-    max_total_steps: 5000
     n_train_epochs: 3
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train_mujoco/pretrained"}
     n_eval_epochs: 3

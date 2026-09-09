@@ -39,7 +39,6 @@ experiment:
   config:
     max_train_steps: 1000
     max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3 # unused but required
     model_name_or_path: ''
@@ -124,7 +123,6 @@ experiment:
   config:
     max_train_steps: 1000
     max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: 1 # unused but required
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}

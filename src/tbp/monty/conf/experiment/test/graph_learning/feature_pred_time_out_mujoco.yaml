@@ -17,7 +17,6 @@ experiment:
     show_sensor_output: false
     max_train_steps: 30
     max_eval_steps: 30
-    max_total_steps: 60
     n_train_epochs: 3
     n_eval_epochs: 3
     model_name_or_path: ''

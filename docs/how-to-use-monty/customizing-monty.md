@@ -41,7 +41,6 @@ experiment:
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: 3
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
     n_eval_epochs: ${constants.rotations_all_count}
