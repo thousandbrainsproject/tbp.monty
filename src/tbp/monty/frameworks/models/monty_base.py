@@ -145,6 +145,11 @@ class MontyBase(Monty):
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
+        # If we're performing a "motor only" step, the normal step logic is skipped.
+        if self.is_motor_only_step:
+            logger.debug("Performing a motor-only step")
+            return self.motor_only_step(ctx, observations, proprioceptive_state)
+
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
@@ -153,6 +158,7 @@ class MontyBase(Monty):
             self._exploratory_step(ctx, observations, proprioceptive_state)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
+
         # TODO: Once this works, refactor to be more functional and less side-effect
         #       driven. For now, we're minimizing changes to the existing side-effect
         #       driven pattern and return `self._actions` that got updated at some

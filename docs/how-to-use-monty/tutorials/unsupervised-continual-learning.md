@@ -24,7 +24,7 @@ defaults:
   # collect more information about it. It also requires at least 100 train steps (`t100`) before
   # recognizing an object to avoid early misclassifications when we have few objects in
   # memory.
-  - /monty: graph_exp1000_e3_t100_tot2500
+  - /monty: graph_exp1000_e3_t100
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
   # We will use the default surface sensor modules (one habitat surface patch, one logging view finder)

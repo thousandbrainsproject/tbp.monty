@@ -368,7 +368,8 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 3
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
+      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
+      fixed_amount: 5
       max_total_steps: 6000
     seed: 42
     supervised_lm_ids:

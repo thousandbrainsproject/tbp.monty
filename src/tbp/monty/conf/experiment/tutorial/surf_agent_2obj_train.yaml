@@ -2,7 +2,7 @@
 # The configuration for the pretraining experiment.
 defaults:
   # The Monty configuration details.
-  - /monty: graph_exp500_e3_t3_tot2500
+  - /monty: graph_exp500_e3_t3
   # The Monty motor system configuration specific to a surface agent.
   - /monty/motor_system_config: surface_curvature_informed_5_goal0
   # The Monty learning module configuration.

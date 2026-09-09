@@ -24,7 +24,7 @@ To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm
 # @package _global_
 
 defaults:
-  - /monty: graph_exp500_e3_t3_tot2500
+  - /monty: graph_exp500_e3_t3
   - /monty/motor_system_config: naive_scan_5
   - /monty/learning_module: displacement_5lm
   - /monty/sensor_module: 5sm_camera
@@ -109,7 +109,7 @@ To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty: evidencegraph_exp1000_emin_t3
   - /monty/motor_system_config: informed_5_goal1
   - /monty/learning_module: tutorial_evidence_5lm
   - /monty/sensor_module: 5sm_camera

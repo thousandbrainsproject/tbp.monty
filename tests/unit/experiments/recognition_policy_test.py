@@ -19,6 +19,7 @@ from tbp.monty.experiment.recognition_policy import (
     MaxTotalSteps,
     MinimumLMs,
     MontyIsDone,
+    NaiveScan,
     RecognitionCounter,
 )
 from tbp.monty.experiment.recognition_status import (
@@ -92,7 +93,7 @@ class MaximumStepsTest(unittest.TestCase):
 
 class MinimumCountTest(unittest.TestCase):
     @given(min_lms=st.integers(max_value=0))
-    def test_raises_value_error_if_count_is_not_positive(self, min_lms: int) -> None:
+    def test_raises_value_error_if_min_lms_is_not_positive(self, min_lms: int) -> None:
         with self.assertRaises(ValueError):
             MinimumLMs(min_lms)
 
@@ -132,6 +133,13 @@ class MinimumCountTest(unittest.TestCase):
 
 
 class MaxTotalStepsTest(unittest.TestCase):
+    @given(max_total_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_total_steps_is_not_positive(
+        self, max_total_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MaxTotalSteps(max_total_steps)
+
     @given(max_total_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
     def test_times_out_at_or_after_max_total_steps(
         self, max_total_steps: int, extra: int
@@ -153,6 +161,43 @@ class MaxTotalStepsTest(unittest.TestCase):
         assume(step < max_total_steps)
         model = _model_is_done(is_done)
         policy = MaxTotalSteps(max_total_steps=max_total_steps)
+        count = RecognitionCounter(step=step, max_steps=0)
+        result = policy(model, count)
+        self.assertEqual(result.is_done, is_done)
+
+
+class NaiveScanTest(unittest.TestCase):
+    @given(
+        max_total_steps=st.integers(max_value=0), fixed_amount=st.integers(min_value=1)
+    )
+    def test_raises_value_error_if_max_total_steps_is_not_positive(
+        self, max_total_steps: int, fixed_amount: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            NaiveScan(max_total_steps, fixed_amount=fixed_amount)
+
+    @given(
+        max_total_steps=st.integers(min_value=1), fixed_amount=st.integers(max_value=0)
+    )
+    def test_raises_value_error_if_fixed_amount_is_not_positive(
+        self, max_total_steps: int, fixed_amount: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            NaiveScan(max_total_steps, fixed_amount=fixed_amount)
+
+    @given(step=st.integers(min_value=0))
+    def test_fixed_amount_5_yields_307_steps(self, step: int) -> None:
+        model = _model_is_done(is_done=False)
+        policy = NaiveScan(max_total_steps=500, fixed_amount=5)
+        count = RecognitionCounter(step=step, max_steps=0)
+        result = policy(model, count)
+        is_done = step >= 307
+        self.assertEqual(result.is_done, is_done)
+
+    @given(is_done=st.booleans(), step=st.integers(min_value=0, max_value=306))
+    def test_defers_to_model_before_step_limit(self, is_done: bool, step: int) -> None:
+        model = _model_is_done(is_done)
+        policy = NaiveScan(max_total_steps=500, fixed_amount=5)
         count = RecognitionCounter(step=step, max_steps=0)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)

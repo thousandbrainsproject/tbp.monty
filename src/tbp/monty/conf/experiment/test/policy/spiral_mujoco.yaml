@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty: graph_exp20_e3_t3
   - /monty/motor_system_config: naive_scan_5
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_dist
@@ -24,6 +24,10 @@ experiment:
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
+      fixed_amount: 5
+      max_total_steps: 60
     seed: 42
     supervised_lm_ids: []
     logging:

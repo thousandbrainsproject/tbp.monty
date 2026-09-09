@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty: graph_exp20_e3_t3
   - /monty/motor_system_config: test_predefined_off_object
   - /monty/learning_module: test_evidence_1lm_fw_p_hsv010202_mmd0001
   - /monty/sensor_module: camera_dist

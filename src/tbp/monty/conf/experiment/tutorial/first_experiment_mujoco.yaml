@@ -11,7 +11,7 @@
 defaults:
   # /monty defines what Monty we will use and how many exploration, evaluation,
   # training, and total steps to configure it with.
-  - /monty: graph_exp1000_e3_t3_tot2500
+  - /monty: graph_exp1000_e3_t3
 
   # /monty/motor_system_config specifies what motor system and motor policy to
   # use within Monty. We use a motor system with an InformedPolicyRandomWalk where

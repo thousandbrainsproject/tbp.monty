@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty: graph_exp20_e3_t3
   - /monty/motor_system_config: surface_curvature_informed_goal1
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_surf

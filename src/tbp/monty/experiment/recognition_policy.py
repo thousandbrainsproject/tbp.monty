@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -20,6 +21,7 @@ __all__ = [
     "MaximumSteps",
     "MinimumLMs",
     "MontyIsDone",
+    "NaiveScan",
     "RecognitionCounter",
     "RecognitionPolicy",
     "RecognitionResult",
@@ -148,6 +150,45 @@ class MaxTotalSteps(RecognitionPolicy):
         # Even if many exploratory steps have not sent information to learning
         # modules (so is_done remains False), eventually terminate exploration
         if count.step >= self._max_total_steps:
+            return RecognitionResult(is_done=True)
+
+        return RecognitionResult(is_done=model.is_done)
+
+
+class NaiveScan(RecognitionPolicy):
+    """`count.steps >= count.max_total_steps` or `model.is_done`.
+
+    The step limit also accounts for the number of steps the Naive Scan motor policy
+    takes before its spiral completes.
+    """
+
+    _step_limit: int
+    """The maximum number of steps before terminating the episode."""
+
+    def __init__(self: Self, max_total_steps: int, fixed_amount: int) -> None:
+        """Initialize the policy.
+
+        Args:
+            max_total_steps: The maximum number of steps before terminating the episode.
+            fixed_amount: The Naive Scan step size.
+
+        Raises:
+            ValueError: If `max_total_steps` or `fixed_amount` are not positive.
+        """
+        if max_total_steps <= 0:
+            raise ValueError("max_total_steps must be positive")
+
+        if fixed_amount <= 0:
+            raise ValueError("fixed_amount must be positive")
+        k = math.ceil(90 / fixed_amount)  # arm length when angular extent >= 90
+        max_scan_steps = k * (k - 1) + 1  # 0 when k <= 1 (i.e.: fixed_amount >= 90)
+
+        self._step_limit = min(max_total_steps, max_scan_steps)
+
+    def __call__(
+        self: Self, model: MontyBase, count: RecognitionCounter
+    ) -> RecognitionResult:
+        if count.step >= self._step_limit:
             return RecognitionResult(is_done=True)
 
         return RecognitionResult(is_done=model.is_done)

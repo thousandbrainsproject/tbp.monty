@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: graph_exp10_e3_t3_tot2500
+  - /monty: graph_exp10_e3_t3
   - /monty/motor_system_config: test_predefined
   - /monty/learning_module: test_feature_5lm_mmd001_tol_p_hsv_pcl
   - /monty/sensor_module: 5sm_camera

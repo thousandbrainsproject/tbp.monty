@@ -24,7 +24,7 @@ You custom experiment config could look like this:
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty: evidencegraph_exp1000_emin_t3
   - /monty/motor_system_config: distant_5
   - /monty/learning_module: my_custom_learning_module
   - /monty/sensor_module: camera_dist_delta
