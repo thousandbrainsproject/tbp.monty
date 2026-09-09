@@ -33,6 +33,7 @@ the request must be corrected and should not be automatically retried.
 
 logger = logging.getLogger(__name__)
 
+
 class ReadMeRequestError(Exception):
     """Raised when a ReadMe API request returns an unsuccessful response."""
 
@@ -80,6 +81,7 @@ class ReadMeCollectionResponse(TypedDict, total=False):
 
     data: list[ReadMeResource]
     paging: ReadMePaging | None
+
 
 class ReadMeResponse(TypedDict):
     """Envelope returned for a single ReadMe resource."""
@@ -200,6 +202,7 @@ def _unwrap_list(payload: ReadMeCollectionResponse) -> list[ReadMeResource]:
 
     return data
 
+
 def _unwrap_next_page(payload: ReadMeCollectionResponse) -> str | None:
     """Return the next-page link stored in a response envelope.
 
@@ -214,6 +217,7 @@ def _unwrap_next_page(payload: ReadMeCollectionResponse) -> str | None:
     paging = payload.get("paging") if isinstance(payload, dict) else None
     next_path = paging.get("next") if isinstance(paging, dict) else None
     return next_path
+
 
 def get(
     url: str,

@@ -33,7 +33,14 @@ from tools.github_readme_sync.constants import (
     IGNORE_YOUTUBE,
     REGEX_CSV_TABLE,
 )
-from tools.github_readme_sync.req import ReadMeResource, delete, get, get_collection, patch, post
+from tools.github_readme_sync.req import (
+    ReadMeResource,
+    delete,
+    get,
+    get_collection,
+    patch,
+    post,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +290,9 @@ class ReadMe:
 
     def delete_category(self, title: str):
         logger.info(f"{GRAY}Deleting category {title}{RESET}")
-        delete(self._branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}"))
+        delete(
+            self._branch_url(f"/categories/{GUIDES_SECTION}/{quote(title, safe='')}")
+        )
 
     def delete_doc(self, slug: str):
         logger.info(f"{GRAY}Deleting doc {slug}{RESET}")

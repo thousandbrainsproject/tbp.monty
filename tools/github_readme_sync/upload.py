@@ -22,10 +22,12 @@ from tools.github_readme_sync.readme import ReadMe
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class ReadMeItem:
     id: str
     type: Literal["category", "doc"]
+
 
 def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     logger.info(f"Uploading export folder: {file_path}")
