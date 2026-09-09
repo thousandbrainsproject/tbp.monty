@@ -23,6 +23,7 @@ __all__ = [
     "MinimumLMs",
     "MontyIsDone",
     "NaiveScan",
+    "ObjectRecognition",
     "RecognitionCounter",
     "RecognitionPolicy",
     "RecognitionResult",
@@ -202,40 +203,32 @@ class ObjectRecognition(RecognitionPolicy):
 
     Terminal conditions include:
     - `model.is_done`
-    - `count.steps >= count.max_steps`
-    - `count.steps >= count.max_total_steps`
+    - `model.matching_steps >= count.max_steps`
+    - `count.step >= max_total_steps`
     """
-
-    _max_steps: int
-    """The maximum number of matching steps before terminating."""
 
     _max_total_steps: int
     """The maximum total number of steps before terminating."""
 
-    def __init__(self: Self, max_steps: int, max_total_steps: int) -> None:
+    def __init__(self: Self, max_total_steps: int) -> None:
         """Initialize the policy.
 
         Args:
-            max_steps: The maximum number of matching steps before terminating.
             max_total_steps: The maximum total number of steps before terminating.
 
         Raises:
-            ValueError: If `max_steps` or `max_total_steps` are not positive.
+            ValueError: If `max_total_steps` is not positive.
         """
-        if max_steps <= 0:
-            raise ValueError("max_steps must be positive")
-
         if max_total_steps <= 0:
             raise ValueError("max_total_steps must be positive")
 
-        self._max_steps = max_steps
         self._max_total_steps = max_total_steps
 
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        if (not model.is_exploring) and (model.matching_steps >= self._max_steps):
-            logger.info(f"Terminated due to maximum matching steps : {self._max_steps}")
+        if (not model.is_exploring) and (model.matching_steps >= count.max_steps):
+            logger.info(f"Terminated due to maximum matching steps : {count.max_steps}")
             model.deal_with_time_out()
             return RecognitionResult(is_done=True)
 

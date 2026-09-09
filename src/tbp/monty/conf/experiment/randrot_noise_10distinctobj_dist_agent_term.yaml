@@ -27,7 +27,6 @@ experiment:
       count: 1
     recognition_policy:
       _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
-      max_steps: 500
       max_total_steps: 6000
     seed: 42
     supervised_lm_ids: []
