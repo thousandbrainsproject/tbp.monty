@@ -28,25 +28,34 @@ from tbp.monty.experiment.recognition_status import (
     RecognitionStatus,
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
-from tbp.monty.frameworks.models.monty_base import MontyBase
 
 
-def _model_is_done(is_done: bool) -> MontyBase:
-    model: MontyBase = MagicMock()
+def _model_is_done(is_done: bool) -> MagicMock:
+    model = MagicMock()
     model.is_done = is_done
     return model
 
 
 def _model_with_conclusions(
     conclusions: list[RecognitionConclusion | None],
-) -> MontyBase:
+) -> MagicMock:
     learning_modules: list[LearningModule] = []
     for conclusion in conclusions:
         lm = MagicMock()
         lm.recognition_status = RecognitionStatus(conclusion=conclusion)
         learning_modules.append(lm)
-    model: MontyBase = MagicMock()
+    model = MagicMock()
     model.learning_modules = learning_modules
+    return model
+
+
+def _model_with_recognition(
+    is_done: bool, is_exploring: bool, matching_steps: int
+) -> MagicMock:
+    model = MagicMock()
+    model.is_done = is_done
+    model.is_exploring = is_exploring
+    model.matching_steps = matching_steps
     return model
 
 
@@ -212,27 +221,80 @@ class ObjectRecognitionTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             ObjectRecognition(max_total_steps)
 
-    @given(max_total_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
-    def test_times_out_at_or_after_max_total_steps(
-        self, max_total_steps: int, extra: int
+    @given(
+        is_done=st.booleans(),
+        max_total_steps=st.integers(min_value=1),
+        max_steps=st.integers(min_value=0),
+        matching_steps=st.integers(min_value=1),
+        step=st.integers(min_value=0),
+    )
+    def test_times_out_at_or_after_max_matching_steps(
+        self,
+        is_done: bool,
+        max_total_steps: int,
+        max_steps: int,
+        matching_steps: int,
+        step: int,
     ) -> None:
-        model = _model_is_done(is_done=False)
+        assume(matching_steps >= max_steps)
+        model = _model_with_recognition(
+            is_done=is_done, is_exploring=False, matching_steps=matching_steps
+        )
         policy = ObjectRecognition(max_total_steps=max_total_steps)
-        count = RecognitionCounter(step=max_total_steps + extra, max_steps=0)
+        count = RecognitionCounter(step=step, max_steps=max_steps)
         result = policy(model, count)
         self.assertTrue(result.is_done)
+        model.deal_with_time_out.assert_called_once()
+
+    @given(
+        max_total_steps=st.integers(min_value=1),
+        extra=st.integers(min_value=0),
+        is_exploring=st.booleans(),
+        max_steps=st.integers(min_value=0),
+        matching_steps=st.integers(min_value=1),
+    )
+    def test_times_out_at_or_after_max_total_steps(
+        self,
+        max_total_steps: int,
+        extra: int,
+        is_exploring: bool,
+        max_steps: int,
+        matching_steps: int,
+    ) -> None:
+        assume(matching_steps < max_steps)
+        model = _model_with_recognition(
+            is_done=False, is_exploring=is_exploring, matching_steps=matching_steps
+        )
+        policy = ObjectRecognition(max_total_steps=max_total_steps)
+        count = RecognitionCounter(step=max_total_steps + extra, max_steps=max_steps)
+        result = policy(model, count)
+        self.assertTrue(result.is_done)
+        model.deal_with_time_out.assert_called_once()
 
     @given(
         is_done=st.booleans(),
         max_total_steps=st.integers(min_value=1),
+        is_exploring=st.booleans(),
+        max_steps=st.integers(min_value=0),
+        matching_steps=st.integers(min_value=1),
         step=st.integers(min_value=0),
     )
     def test_defers_to_model_before_max_total_steps(
-        self, is_done: bool, max_total_steps: int, step: int
+        self,
+        is_done: bool,
+        max_total_steps: int,
+        is_exploring: bool,
+        max_steps: int,
+        matching_steps: int,
+        step: int,
     ) -> None:
+        assume(matching_steps < max_steps)
         assume(step < max_total_steps)
-        model = _model_is_done(is_done)
+        model = _model_with_recognition(
+            is_done=is_done, is_exploring=is_exploring, matching_steps=matching_steps
+        )
         policy = ObjectRecognition(max_total_steps=max_total_steps)
-        count = RecognitionCounter(step=step, max_steps=0)
+        count = RecognitionCounter(step=step, max_steps=max_steps)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
+        model.deal_with_time_out.assert_not_called()
