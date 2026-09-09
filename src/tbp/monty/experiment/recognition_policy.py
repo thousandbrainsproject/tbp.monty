@@ -28,12 +28,31 @@ __all__ = [
 ]
 
 
-@dataclass
 class RecognitionCounter:
     """Experiment counters and limits."""
 
-    step: int = 0
-    max_steps: int = 0
+    _step: int
+    """The current step number."""
+
+    _max_steps: int
+    """The maximum number of steps before terminating the episode."""
+
+    def __init__(
+        self: Self,
+        step: int = 0,
+        max_steps: int = 0,
+    ) -> None:
+        """Initialize counters and limits."""
+        self._step = step
+        self._max_steps = max_steps
+
+    @property
+    def step(self) -> int:
+        return self._step
+
+    @property
+    def max_steps(self) -> int:
+        return self._max_steps
 
 
 @dataclass
