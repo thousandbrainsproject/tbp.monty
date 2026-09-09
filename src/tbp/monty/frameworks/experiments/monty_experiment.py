@@ -488,10 +488,7 @@ class MontyExperiment:
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
         while not self._recognition_complete(step):
-            try:
-                actions = self.run_step(ctx, step, actions)
-            except StopIteration:
-                break
+            actions = self.run_step(ctx, step, actions)
             step += 1
         return step
 
