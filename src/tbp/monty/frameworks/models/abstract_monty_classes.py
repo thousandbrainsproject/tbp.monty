@@ -15,7 +15,7 @@ from typing import Any, Collection, Dict, Protocol, Sequence, TypedDict
 import numpy as np
 import numpy.typing as npt
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.learning_module import ExperimentLearningModule
 from tbp.monty.experiment.monty import ExperimentMonty
@@ -357,6 +357,20 @@ class RuntimeLearningModule(Protocol):
         """
         ...
 
+    def receive_goal_attempt(self, goal: Goal) -> None:
+        """Receive an efferent copy of a goal of this LM the motor system attempted.
+
+        Called when the motor system began executing a goal-driven movement
+        (e.g. a hypothesis-testing jump) toward a goal proposed by this LM's
+        GSG. The signal carries no information about the movement's outcome;
+        the LM can combine it with its subsequent sensory input to judge
+        whether the attempt succeeded.
+
+        Args:
+            goal: The goal the motor system attempted.
+        """
+        ...
+
     def get_output(self) -> Message | None:
         """Return learning module output (same format as input)."""
         ...
@@ -421,6 +435,19 @@ class LearningModule(
     def propose_goals(self) -> list[Goal]:
         pass
 
+    def receive_goal_attempt(self, goal: Goal) -> None:
+        """Receive an efferent copy of a goal of this LM the motor system attempted.
+
+        By default this signal is ignored. LMs that use goal-driven movements
+        (e.g. hypothesis-testing jumps) can override this to combine the
+        efferent copy with subsequent sensory input, e.g. to detect failed
+        jumps and accumulate negative evidence for the hypothesis that
+        proposed the goal.
+
+        Args:
+            goal: The goal the motor system attempted.
+        """
+
     @abc.abstractmethod
     def get_output(self) -> Message | None:
         pass
@@ -440,6 +467,14 @@ class LearningModule(
     @abc.abstractmethod
     def load_state_dict(self, memento: Memento) -> None:
         pass
+
+    def propose_region(self) -> AttentionRegion | None:
+        """Propose an attention region.
+
+        Returns:
+            The proposed region, or None.
+        """
+        return None
 
 
 class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
@@ -569,3 +604,6 @@ class SensorModule(RuntimeSensorModule, ExperimentSensorModule, metaclass=abc.AB
     @abc.abstractmethod
     def reset(self) -> None:
         pass
+
+    def propose_region(self) -> AttentionRegion | None:
+        return None

@@ -13,7 +13,11 @@ import copy
 import logging
 from typing import Any, Sequence
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty.attention.attention_system import (
+    AttentionSystemProtocol,
+    NoopAttentionSystem,
+)
+from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -48,6 +52,7 @@ class MontyBase(Monty):
         min_eval_steps,
         min_train_steps,
         num_exploratory_steps,
+        attention_system: AttentionSystemProtocol | None = None,
     ) -> None:
         """Initialize the base class.
 
@@ -76,6 +81,10 @@ class MontyBase(Monty):
             min_eval_steps: Minimum number of steps required for evaluations.
             min_train_steps: Minimum number of steps required for training.
             num_exploratory_steps: Number of steps required by the exploratory phase.
+            attention_system: The attention system to use. Defaults to a
+                NoopAttentionSystem, which filters nothing; configure an
+                AttentionSystem (e.g. the /monty/attention_system config
+                group) to attend.
 
         Raises:
             ValueError: If `sm_to_lm_matrix` is not defined
@@ -138,6 +147,14 @@ class MontyBase(Monty):
         self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
+        self._regions: list[AttentionRegion] = []
+        self._attention_system = (
+            NoopAttentionSystem() if attention_system is None else attention_system
+        )
+
+    @property
+    def attention_system(self) -> AttentionSystemProtocol:
+        return self._attention_system
 
     def step(
         self,
@@ -332,6 +349,18 @@ class MontyBase(Monty):
             goals = sm.propose_goals()
             self._goals.extend(goals)
 
+        # Regions are collected fresh each step. An LM's region proposers
+        # read that LM's own goals off it, so a goal can attract attention
+        # to its own target; SM goals stay out of region proposal.
+        regions = [lm.propose_region() for lm in self.learning_modules]
+        regions.extend(sm.propose_region() for sm in self.sensor_modules)
+        regions = [r for r in regions if r is not None]
+        self._regions = regions
+
+        # The attention system folds the proposed regions into its voxel grid and
+        # returns only the goals that fall within it.
+        self._goals = self._attention_system.step(self._goals, self._regions)
+
     def _step_motor_system(
         self,
         ctx: RuntimeContext,
@@ -345,6 +374,25 @@ class MontyBase(Monty):
             self.sensor_module_outputs[0],
             self._goals,
         )
+        self._route_attempted_goal()
+
+    def _route_attempted_goal(self) -> None:
+        """Route the motor system's efferent goal copy back to the proposing LM.
+
+        If the motor system began executing a goal-driven movement this step
+        (e.g. a hypothesis-testing jump), notify the LM whose GSG proposed the
+        goal that its goal was attempted. The LM can combine this efferent
+        copy with its subsequent sensory input to judge whether the attempt
+        succeeded (e.g. to accumulate negative evidence for the hypothesis
+        behind a failed jump). Goals not sent by an LM's GSG are ignored.
+        """
+        attempted_goal = self.motor_system.attempted_goal
+        if attempted_goal is None or attempted_goal.sender_type != "GSG":
+            return
+        for lm in self.learning_modules:
+            if lm.learning_module_id == attempted_goal.sender_id:
+                lm.receive_goal_attempt(attempted_goal)
+                return
 
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type.
@@ -392,6 +440,8 @@ class MontyBase(Monty):
 
         self.motor_system.reset()
         self._goals = []
+        self._regions = []
+        self._attention_system.reset()
 
     def snapshot(self) -> Memento:
         memo = {}

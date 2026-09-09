@@ -107,6 +107,16 @@ class MotorPolicyResult:
     motor_only_step: bool = False
     telemetry: SurfacePolicyTelemetry | None = None
     status: PolicyStatus = PolicyStatus.READY
+    attempted_goal: Goal | None = None
+    """Efferent copy of a goal the motor system began executing this step.
+
+    Set when the policy initiates a goal-driven movement (e.g. a
+    hypothesis-testing jump) toward the goal. It carries no information about
+    the movement's outcome; the sender of the goal can combine this efferent
+    copy with its subsequent sensory input to judge whether the attempt
+    succeeded. Goals that were never attempted (e.g. because another goal won
+    the confidence comparison) do not produce this signal.
+    """
 
 
 class RuntimeMotorPolicy(Protocol):
@@ -551,6 +561,8 @@ class JumpToGoal(MotorPolicy):
         return MotorPolicyResult(
             self._jump(state, goal),
             status=PolicyStatus.IN_PROGRESS,
+            # Efferent copy so the goal's sender knows its goal was attempted.
+            attempted_goal=goal,
         )
 
     def _maybe_undo(
@@ -807,7 +819,8 @@ class InformedPolicy(BasePolicy):
 
         if goal is not None:
             actions = self._jump(state, goal)
-            return MotorPolicyResult(actions)
+            # Efferent copy so the goal's sender knows its goal was attempted.
+            return MotorPolicyResult(actions, attempted_goal=goal)
 
         return None
 

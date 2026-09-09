@@ -1,0 +1,14 @@
+# @package experiment.config.monty_config.attention_system
+
+# No decay, and one inhibitory proposal flips the whole remembered grid to
+# inhibition (InhibitionFlipsGrid). Select this group rather than overriding
+# the default's decay inline: an inline override merges into LinearDecay's
+# node and leaves its `rate` behind.
+_target_: tbp.monty.attention.attention_system.AttentionSystem
+voxel_size: 0.005
+decay:
+  _target_: tbp.monty.attention.decay.NoopDecay
+merge:
+  _target_: tbp.monty.attention.merge.InhibitionFlipsGrid
+goal_filter:
+  _target_: tbp.monty.attention.goal_filter.HardGoalFilter

@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Protocol
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 import numpy as np
 import quaternion as qt
 from skimage.color import rgb2hsv
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -26,6 +26,13 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     SensorState,
+)
+from tbp.monty.frameworks.models.sm_goal_generation import (
+    NoopSMGoalGenerator,
+    SMGoalGenerator,
+)
+from tbp.monty.frameworks.models.sm_region_proposal.context import (
+    CameraSMRegionContext,
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.sensor_processing import (
@@ -39,6 +46,13 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from tbp.monty.frameworks.models.sm_region_proposal.protocol import (
+        SMRegionProposer,
+    )
 
 __all__ = [
     "CameraSM",
@@ -144,6 +158,7 @@ class ObservationProcessor:
         "coords_for_TM",
         "edge_strength",
         "coherence",
+        "view_direction",
     ]
 
     def __init__(
@@ -313,6 +328,12 @@ class ObservationProcessor:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
+        if "view_direction" in self._features:
+            # The camera looks along its own -Z axis: in body coordinates that
+            # is the negated third column of cam_to_world. Lets a receiver
+            # tell how obliquely the patch views the surface.
+            optical_axis = cam_to_world[:3, 2]
+            features["view_direction"] = -optical_axis / np.linalg.norm(optical_axis)
 
         # Note we only determine curvature if we could determine a valid surface normal
         if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
@@ -549,6 +570,8 @@ class CameraSM(SensorModule):
         noise_params: dict[str, Any] | None = None,
         is_surface_sm: bool = False,
         delta_thresholds: dict[str, Any] | None = None,
+        gsg: SMGoalGenerator | None = None,
+        region_proposers: Sequence[SMRegionProposer] = (),
     ) -> None:
         """Initialize Sensor Module.
 
@@ -569,6 +592,13 @@ class CameraSM(SensorModule):
                 check whether the current state's features are significantly different
                 from the previous with tolerances set according to `delta_thresholds`.
                 Defaults to None.
+            gsg: The module's goal generator (see ``SMGoalGenerator``, e.g.
+                ``FaceOnReorientation``); its goals are what this module
+                proposes to the motor system. Proposes nothing by default.
+            region_proposers: Strategies that turn this module's step (its
+                percept, sensor pose, and goals) into attention regions for
+                the attention system (see ``SMRegionProposer``); none by
+                default.
 
         Note:
             When using feature-at-location matching with graphs, surface_normal and
@@ -600,6 +630,12 @@ class CameraSM(SensorModule):
         else:
             self._percept_filter = PassthroughPerceptFilter()
         self._snapshot_telemetry = SnapshotTelemetry()
+        self._gsg: SMGoalGenerator = NoopSMGoalGenerator() if gsg is None else gsg
+        self._region_proposers = tuple(region_proposers)
+        # This step's goals and percept (before the percept filter), for
+        # the motor system and the region proposers.
+        self._goals: list[Goal] = []
+        self._percept: Message | None = None
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
         self.is_exploring = False
@@ -611,6 +647,11 @@ class CameraSM(SensorModule):
     def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self._percept_filter.reset()
+        self._gsg.reset()
+        for proposer in self._region_proposers:
+            proposer.reset()
+        self._goals = []
+        self._percept = None
         self.is_exploring = False
         self.processed_obs = []
 
@@ -624,8 +665,38 @@ class CameraSM(SensorModule):
 
     def state_dict(self) -> Memento:
         state_dict = self._snapshot_telemetry.state_dict()
-        state_dict.update(processed_observations=self.processed_obs)
+        state_dict.update(
+            processed_observations=self.processed_obs,
+            gsg=self._gsg.state_dict(),
+        )
         return state_dict
+
+    def propose_goals(self) -> list[Goal]:
+        return self._goals
+
+    def propose_region(self) -> AttentionRegion | None:
+        """Collect the regions this module's region proposers emit.
+
+        Returns:
+            The concatenated proposals of every configured region proposer,
+            evaluated against this step's context (the percept, the sensor
+            pose, and the goals); None when none of them proposed anything.
+        """
+        if not self._region_proposers:
+            return None
+        context = CameraSMRegionContext(
+            self.sensor_module_id, tuple(self._goals), self._percept, self.state
+        )
+        regions = []
+        for proposer in self._region_proposers:
+            region = proposer(context)
+            if region is not None:
+                regions.append(region)
+        if len(regions) == 0:
+            return None
+        if len(regions) == 1:
+            return regions[0]
+        return AttentionRegion.concat(regions, sender_id=self.sensor_module_id)
 
     def step(
         self,
@@ -651,6 +722,10 @@ class CameraSM(SensorModule):
 
         percept = self._observation_processor.process(observation)
         percept = self._message_noise(percept, rng=ctx.rng)
+        # Before the percept filter: an unchanged patch is still a valid view
+        # for the goal generator and the region proposers to judge.
+        self._percept = percept
+        self._goals = self._gsg(percept, self.state, motor_only_step=motor_only_step)
 
         if motor_only_step:
             percept.pass_message = False

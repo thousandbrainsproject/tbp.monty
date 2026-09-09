@@ -1,0 +1,26 @@
+# @package experiment.config.logging
+
+# DETAILED-level logging through the NpzHandler: the same per-episode
+# stats DetailedJSONHandler writes, as telemetry/episode_NNNNNN.npz (the
+# stats as JSON in one member, every array as a member of its own), with
+# path filters (include / exclude) over the stats.
+monty_log_level: DETAILED
+monty_handlers:
+- ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+- ${monty.class:tbp.monty.frameworks.loggers.npz_handler.NpzHandler}
+wandb_handlers: []
+# Global episode ids to save; null or [] saves every episode.
+episodes: null
+include: []
+exclude:
+- SM_*/raw_observations/*/sensor_frame_data
+- SM_*/raw_observations/*/cam_to_world
+python_log_level: DEBUG
+python_log_to_file: true
+python_log_to_stderr: true
+output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
+run_name: ""
+resume_wandb_run: false
+wandb_id:
+  _target_: wandb.util.generate_id
+wandb_group: debugging

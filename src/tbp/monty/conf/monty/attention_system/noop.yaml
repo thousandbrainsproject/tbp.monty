@@ -1,0 +1,3 @@
+# @package experiment.config.monty_config.attention_system
+
+_target_: tbp.monty.attention.attention_system.NoopAttentionSystem

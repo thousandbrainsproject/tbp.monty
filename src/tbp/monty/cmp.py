@@ -9,7 +9,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any, Literal, Sequence
+from dataclasses import dataclass
+from typing import Any, Iterable, Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -353,6 +354,32 @@ class Goal(Message):
         assert isinstance(self.info, dict), "info must be a dictionary"
 
 
+def goals_to_columns(goals: Sequence[Goal]) -> dict[str, np.ndarray]:
+    """One step's goals as columns, for telemetry.
+
+    Thousands of goals a step are far cheaper to keep, write and read as a
+    few arrays than as ``Goal`` objects.
+
+    Args:
+        goals: The goals.
+
+    Returns:
+        ``locations`` (N, 3) float, NaN for a goal without one;
+        ``confidences`` (N,) float; ``sender_ids`` (N,) str.
+    """
+    locations = np.array(
+        [
+            np.full(3, np.nan) if goal.location is None else goal.location
+            for goal in goals
+        ],
+    ).reshape(-1, 3)
+    return {
+        "locations": locations,
+        "confidences": np.array([goal.confidence for goal in goals]),
+        "sender_ids": np.array([goal.sender_id for goal in goals]),
+    }
+
+
 def encode_goal(goal: Goal) -> dict[str, Any]:
     """Encode a goal into a dictionary.
 
@@ -376,6 +403,12 @@ def encode_goal(goal: Goal) -> dict[str, Any]:
     }
 
 
+# Bounds of an attention weight: full excitation and full inhibition. A
+# freshly attended location is proposed at MAX_ATTENTION_WEIGHT.
+MIN_ATTENTION_WEIGHT = -1.0
+MAX_ATTENTION_WEIGHT = 1.0
+
+
 def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None:
     """Compute the mean location across messages.
 
@@ -389,3 +422,105 @@ def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None
     if not locations:
         return None
     return np.mean(locations, axis=0)
+
+
+@dataclass(frozen=True)
+class AttentionRegion:
+    """A set of locations, each carrying an attention weight.
+
+    The unit a sensor or learning module proposes to the attention system
+    each step. Weights are bounded by ``MIN_ATTENTION_WEIGHT`` (full
+    inhibition) and ``MAX_ATTENTION_WEIGHT`` (full excitation).
+
+    Attributes:
+        locations: (N, 3) body-frame locations.
+        weights: (N,) attention weight of each location.
+        sender_id: The id of the module that proposed the region (e.g.
+            ``"SM_3"`` or ``"learning_module_2"``); empty when the region has
+            no single sender, such as after merging several.
+        inhibit_all: A signal asking the attention system to inhibit
+            everything it holds, not just these locations. It rides along
+            without any locations, so an empty region can carry it.
+    """
+
+    locations: npt.NDArray[np.floating]
+    weights: npt.NDArray[np.floating]
+    sender_id: str = ""
+    inhibit_all: bool = False
+
+    def __post_init__(self) -> None:
+        """Coerce the arrays and check they describe the same N locations.
+
+        Raises:
+            ValueError: If ``locations`` is not (N, 3) or ``weights`` is not
+                (N,) for the same N.
+        """
+        locations = np.asarray(self.locations).reshape(-1, 3)
+        weights = np.asarray(self.weights)
+        if len(locations) != len(weights):
+            raise ValueError(
+                "locations and weights must describe the same number of points, "
+                f"got {len(locations)} locations and {len(weights)} weights."
+            )
+        # frozen: assign through the base class.
+        object.__setattr__(self, "locations", locations)
+        object.__setattr__(self, "weights", weights)
+
+    @classmethod
+    def empty(cls, sender_id: str = "", inhibit_all: bool = False) -> AttentionRegion:
+        """Return a region holding no locations.
+
+        Args:
+            sender_id: The id of the proposing module.
+            inhibit_all: Whether the region carries the inhibit-all signal.
+
+        Returns:
+            The empty region.
+        """
+        return cls(np.empty((0, 3)), np.empty(0), sender_id, inhibit_all)
+
+    @classmethod
+    def uniform(
+        cls, locations: npt.ArrayLike, weight: float, sender_id: str = ""
+    ) -> AttentionRegion:
+        """Return a region giving every location the same weight.
+
+        Args:
+            locations: (N, 3) body-frame locations.
+            weight: The attention weight shared by all of them.
+            sender_id: The id of the proposing module.
+
+        Returns:
+            The region.
+        """
+        locations = np.asarray(locations, dtype=np.float64).reshape(-1, 3)
+        return cls(locations, np.full(len(locations), weight), sender_id)
+
+    @classmethod
+    def concat(
+        cls, regions: Iterable[AttentionRegion], sender_id: str = ""
+    ) -> AttentionRegion:
+        """Join regions into one, keeping their order.
+
+        Args:
+            regions: The regions to join.
+            sender_id: The id to give the joined region; the inputs' own ids
+                are not carried over, since a merge has no single sender.
+
+        Returns:
+            One region holding every location of every input region; it
+            carries the inhibit-all signal if any input does.
+        """
+        regions = list(regions)
+        if not regions:
+            return cls.empty(sender_id)
+        return cls(
+            np.concatenate([region.locations for region in regions]),
+            np.concatenate([region.weights for region in regions]),
+            sender_id,
+            any(region.inhibit_all for region in regions),
+        )
+
+    def __len__(self) -> int:
+        """Return the number of locations in the region."""
+        return len(self.locations)

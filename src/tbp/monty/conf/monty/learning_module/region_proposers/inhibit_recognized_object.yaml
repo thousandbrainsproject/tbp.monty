@@ -1,0 +1,7 @@
+# Once this LM has recognized an object with a unique pose, inhibit the
+# object's whole learned surface in the attention system so the sensor moves
+# on to something it has not recognized yet.
+region_proposers:
+  - _target_: tbp.monty.frameworks.models.evidence_matching.region_proposal.inhibit_recognized_object.InhibitRecognizedObject
+    thickness: 0.02
+    num_layers: 10

@@ -19,7 +19,41 @@ from tbp.monty.frameworks.models.motor_policy_selectors import (
     DistantPolicySelector,
     SinglePolicySelector,
     highest_confidence_goal,
+    specifies_pose,
 )
+
+
+def pose_goal(sender_type: str = "GSG", **kwargs) -> Mock:
+    """A goal asking for an agent pose, as an LM's GSG or a re-orienting SM sends.
+
+    Returns:
+        The goal.
+    """
+    return Mock(
+        sender_type=sender_type,
+        morphological_features={"pose_vectors": [[0.0, 0.0, -1.0]]},
+        **kwargs,
+    )
+
+
+def look_goal(**kwargs) -> Mock:
+    """A goal only naming a location to look toward, as a salience SM sends.
+
+    Returns:
+        The goal.
+    """
+    return Mock(sender_type="SM", morphological_features=None, **kwargs)
+
+
+class SpecifiesPoseTest(unittest.TestCase):
+    def test_true_with_pose_vectors(self):
+        self.assertTrue(specifies_pose(pose_goal()))
+
+    def test_false_without_morphological_features(self):
+        self.assertFalse(specifies_pose(look_goal()))
+
+    def test_false_when_features_lack_pose_vectors(self):
+        self.assertFalse(specifies_pose(Mock(morphological_features={"on_object": 1})))
 
 
 class HighestConfidenceGoalTest(unittest.TestCase):
@@ -143,12 +177,12 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
         )
         self.assertIs(result, default_policy_result)
 
-    def test_returns_jump_to_goal_result_when_gsg_goal_is_present(self):
-        gsg_goal = Mock(sender_type="GSG")
+    def test_returns_jump_to_goal_result_when_pose_goal_is_present(self):
+        gsg_goal = pose_goal()
         goals = [
-            Mock(sender_type="SM"),
+            look_goal(),
             gsg_goal,
-            Mock(sender_type="SM"),
+            look_goal(),
         ]
         jump_to_goal_result = Mock(spec=MotorPolicyResult)
         self.jump_to_goal.return_value = jump_to_goal_result
@@ -167,16 +201,16 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
         self.assertIs(result, jump_to_goal_result)
 
     @patch("tbp.monty.frameworks.models.motor_policy_selectors.highest_confidence_goal")
-    def test_invokes_jump_to_goal_with_highest_confidence_gsg_goal(
+    def test_invokes_jump_to_goal_with_highest_confidence_pose_goal(
         self, highest_confidence_goal_mock: Mock
     ):
-        best_gsg_goal = Mock(sender_type="GSG")
-        gsg_goal = Mock(sender_type="GSG")
+        best_gsg_goal = pose_goal()
+        gsg_goal = pose_goal()
         goals = [
-            Mock(sender_type="SM"),
+            look_goal(),
             gsg_goal,
             best_gsg_goal,
-            Mock(sender_type="SM"),
+            look_goal(),
         ]
         highest_confidence_goal_mock.return_value = best_gsg_goal
         jump_to_goal_result = Mock(spec=MotorPolicyResult)
@@ -198,10 +232,30 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
         )
         self.assertIs(result, jump_to_goal_result)
 
-    def test_returns_look_at_goal_result_when_only_sm_goals_are_present(self):
+    def test_jumps_to_a_sensor_modules_pose_goal(self):
+        sm_pose_goal = pose_goal(sender_type="SM")
+        goals = [look_goal(), sm_pose_goal]
+        jump_to_goal_result = Mock(spec=MotorPolicyResult)
+        self.jump_to_goal.return_value = jump_to_goal_result
+
+        result = self.selector(
+            self.ctx,
+            self.observations,
+            self.state,
+            self.percept,
+            goals,
+        )
+
+        self.jump_to_goal.assert_called_once_with(
+            self.ctx, self.observations, self.state, self.percept, sm_pose_goal
+        )
+        self.look_at_goal.assert_not_called()
+        self.assertIs(result, jump_to_goal_result)
+
+    def test_returns_look_at_goal_result_when_only_location_goals_are_present(self):
         goals = [
-            Mock(sender_type="SM", confidence=0.9),
-            Mock(sender_type="SM", confidence=0.8),
+            look_goal(confidence=0.9),
+            look_goal(confidence=0.8),
         ]
         look_at_goal_result = Mock(spec=MotorPolicyResult)
         self.look_at_goal.return_value = look_at_goal_result
@@ -220,11 +274,11 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
         self.assertIs(result, look_at_goal_result)
 
     @patch("tbp.monty.frameworks.models.motor_policy_selectors.highest_confidence_goal")
-    def test_invokes_look_at_goal_with_highest_confidence_gsg_goal(
+    def test_invokes_look_at_goal_with_highest_confidence_location_goal(
         self, highest_confidence_goal_mock: Mock
     ):
-        best_sm_goal = Mock(sender_type="SM")
-        sm_goal = Mock(sender_type="SM")
+        best_sm_goal = look_goal()
+        sm_goal = look_goal()
         goals = [
             sm_goal,
             best_sm_goal,
@@ -302,7 +356,7 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
         return a result with (non-empty) actions and IN_PROGRESS status.
         """
         # Put the selector into a jumping state.
-        init_goal = Mock(sender_type="GSG", confidence=1.0)
+        init_goal = pose_goal(confidence=1.0)
         init_result_mock = Mock(
             spec=MotorPolicyResult,
             actions=[Mock(), Mock()],
@@ -329,7 +383,7 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
         self.assertIs(init_result, init_result_mock)
 
         # Setup inputs and outputs for the post-jump step.
-        lm_goal = Mock(sender_type="GSG", confidence=1.0) if new_lm_goal else None
+        lm_goal = pose_goal(confidence=1.0) if new_lm_goal else None
         if lm_goal is not None:
             highest_confidence_goal_mock.return_value = lm_goal
         goals: list[Goal] = list(
@@ -337,7 +391,7 @@ class DistantPolicySelectorTest(ParametrizedTestCase):
                 lambda g: g is not None,
                 [
                     lm_goal,
-                    Mock(sender_type="SM", confidence=1.0) if new_sm_goal else None,
+                    look_goal(confidence=1.0) if new_sm_goal else None,
                 ],
             )
         )

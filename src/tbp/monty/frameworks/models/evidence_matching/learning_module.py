@@ -19,7 +19,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial import KDTree
 
-from tbp.monty.cmp import Message, location_mean
+from tbp.monty.cmp import AttentionRegion, Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
@@ -33,6 +33,16 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
     HypothesesUpdater,
     HypothesesUpdaterTelemetry,
 )
+from tbp.monty.frameworks.models.evidence_matching.region_proposal.context import (
+    EvidenceLMRegionContext,
+)
+from tbp.monty.frameworks.models.evidence_matching.region_proposal.protocol import (
+    RegionProposer,
+)
+from tbp.monty.frameworks.models.evidence_matching.telemetry import (
+    EvidenceGraphLMTelemetryProtocol,
+    NoopEvidenceGraphLMTelemetry,
+)
 from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.utils.graph_matching_utils import (
@@ -40,6 +50,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_scaled_evidences,
 )
 from tbp.monty.geometry import Rotation
+from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["EvidenceGraphLM", "InvalidEvidenceThresholdConfig"]
@@ -165,6 +176,20 @@ class EvidenceGraphLM(GraphLM):
             when being added to the overall evidence of a hypothesis. If past_weight
             and present_weight add up to 1, it is used as a weight in np.average to
             keep the evidence in a fixed range.
+        failed_goal_evidence_penalty: How strongly to penalize the hypothesis
+            behind a hypothesis-testing jump that the LM judges to have failed
+            (i.e. the agent landed in empty space or inside the object and was
+            moved back to its previous position). The penalty subtracted from
+            the hypothesis's evidence is present_weight *
+            failed_goal_evidence_penalty. Set to 0 to disable judging goal
+            attempts altogether.
+        failed_goal_displacement_eta: Displacement threshold (in meters, "eta")
+            used to judge whether an attempted hypothesis-testing jump
+            succeeded. A jump that fails returns the agent to its previous
+            position, so the LM senses a displacement close to 0; a sensed
+            displacement below eta is therefore judged a failure. Goals whose
+            predicted displacement is itself below eta are not judged at all,
+            since success and failure cannot be distinguished for them.
 
     Terminal Condition Attributes:
         object_evidence_threshold: Minimum required evidence for an object to be
@@ -190,6 +215,14 @@ class EvidenceGraphLM(GraphLM):
             unique when checking for the terminal condition (in radians).
         required_symmetry_evidence: number of steps with unchanged possible poses
             to classify an object as symmetric and go into terminal condition.
+        output_max_model_distance: How far (in meters) the most likely hypothesis
+            may lie from the nearest stored point of its object for the LM to
+            still send its output to higher-level LMs. Keeps a recognized object
+            from being reported once the sensor has moved off the learned model.
+        output_min_evidence: The least evidence the most likely hypothesis needs
+            for the LM to send its output to higher-level LMs. A floor of 0
+            (the default) adds no condition; a positive floor stops a match
+            whose evidence has decayed toward nothing from being reported.
 
     Model Attributes:
         graph_delta_thresholds: Thresholds used to compare nodes in the graphs being
@@ -244,11 +277,15 @@ class EvidenceGraphLM(GraphLM):
         past_weight=1,
         present_weight=1,
         vote_weight=1,
+        failed_goal_evidence_penalty=1,
+        failed_goal_displacement_eta=0.01,
         object_evidence_threshold=1,
         x_percent_threshold=10,
         path_similarity_threshold=0.1,
         pose_similarity_threshold=0.35,
         required_symmetry_evidence=5,
+        output_max_model_distance=0.01,
+        output_min_evidence=0.0,
         graph_delta_thresholds=None,
         max_graph_size=0.3,  # 30cm
         max_nodes_per_graph=2000,
@@ -257,11 +294,20 @@ class EvidenceGraphLM(GraphLM):
         gsg: EvidenceGoalGenerator | None = None,
         hypotheses_updater_class: type[HypothesesUpdater] = DefaultHypothesesUpdater,
         hypotheses_updater_args: dict | None = None,
+        region_proposers: Sequence[RegionProposer] = (),
+        telemetry: EvidenceGraphLMTelemetryProtocol | None = None,
         *args,
         **kwargs,
     ) -> None:
         kwargs["initialize_base_modules"] = False
         super().__init__(*args, **kwargs)
+        # Strategies that turn this LM's recognition state into attention
+        # weights for the attention system; none by default.
+        self._region_proposers = tuple(region_proposers)
+        # Records what the LM proposed each step; nothing by default.
+        self._telemetry = (
+            NoopEvidenceGraphLMTelemetry() if telemetry is None else telemetry
+        )
         # --- LM components ---
         self.graph_memory = EvidenceGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
@@ -284,12 +330,17 @@ class EvidenceGraphLM(GraphLM):
         self.past_weight = past_weight
         self.present_weight = present_weight
         self.vote_weight = vote_weight
+        self.failed_goal_evidence_penalty = failed_goal_evidence_penalty
+        self.failed_goal_displacement_eta = failed_goal_displacement_eta
         # --- Terminal Condition Params ---
         self.object_evidence_threshold = object_evidence_threshold
         self.x_percent_threshold = x_percent_threshold
         self.path_similarity_threshold = path_similarity_threshold
         self.pose_similarity_threshold = pose_similarity_threshold
         self.required_symmetry_evidence = required_symmetry_evidence
+        # --- Output Params ---
+        self.output_max_model_distance = output_max_model_distance
+        self.output_min_evidence = output_min_evidence
         # --- Model Params ---
         self.max_graph_size = max_graph_size
         # --- Debugging Params ---
@@ -330,6 +381,10 @@ class EvidenceGraphLM(GraphLM):
         self.symmetry_evidence = 0
         self._hypotheses = {}
 
+        # Efferent copy of a goal of this LM the motor system attempted but
+        # whose outcome the LM has not yet judged from its sensory input.
+        self._pending_goal_attempt: Goal | None = None
+
         self.hypotheses_updater.reset()  # FIXME: move reset() logic to __init__()
 
         self.current_mlh = {
@@ -352,9 +407,45 @@ class EvidenceGraphLM(GraphLM):
             # TODO: could do this in the object model class
             self.graph_memory.initialize_feature_arrays()
 
+    def state_dict(self) -> Memento:
+        # What the telemetry recorded rides along under "telemetry"; the
+        # detailed logger lifts it into the LM's block. load_state_dict
+        # ignores it.
+        return {**super().state_dict(), "telemetry": self._telemetry.state_dict()}
+
     def reset_stm(self) -> None:
         super().reset_stm()
         self._init_EvidenceGraphLM()
+        for proposer in self._region_proposers:
+            proposer.reset()
+        self._telemetry.reset()
+
+    def propose_region(self) -> AttentionRegion | None:
+        """Collect the regions this LM's region proposers emit.
+
+        Returns:
+            The concatenated proposals of every configured region proposer,
+            evaluated against the LM's current recognition state (its goals
+            included, through the region context); None when none of them
+            proposed anything.
+        """
+        context = EvidenceLMRegionContext(self)
+        regions = []
+        for proposer in self._region_proposers:
+            region = proposer(context)
+            if region is not None:
+                regions.append(region)
+        if len(regions) == 0:
+            proposed = None
+        elif len(regions) == 1:
+            proposed = regions[0]
+        else:
+            proposed = AttentionRegion.concat(
+                regions,
+                sender_id=self.learning_module_id,
+            )
+        self._telemetry.attention_region(proposed)
+        return proposed
 
     def matching_step(
         self,
@@ -362,6 +453,11 @@ class EvidenceGraphLM(GraphLM):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
+        # Judge a pending goal attempt before this step's percepts update the
+        # buffer, so the sensed displacement is measured from the location at
+        # which the goal was generated.
+        self._evaluate_pending_goal_attempt(percepts)
+
         if is_location_only_step(percepts):
             self._displace_hypotheses(percepts)
             return
@@ -404,6 +500,104 @@ class EvidenceGraphLM(GraphLM):
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
+
+    def receive_goal_attempt(self, goal: Goal) -> None:
+        """Register that the motor system attempted a goal proposed by this LM.
+
+        The efferent copy carries no information about the movement's outcome.
+        Instead, the LM judges success itself on its next sensed location by
+        comparing the displacement it senses against the displacement the goal
+        predicted (see `_evaluate_pending_goal_attempt`).
+
+        Goals whose predicted displacement is smaller than
+        `failed_goal_displacement_eta` are ignored, since a successful jump
+        would then be indistinguishable from a failed one (which produces a
+        near-zero displacement).
+
+        Args:
+            goal: The goal the motor system attempted.
+        """
+        if self.failed_goal_evidence_penalty == 0:
+            return
+        info = goal.info if goal.info is not None else {}
+        predicted_displacement = info.get("predicted_displacement")
+        if (
+            predicted_displacement is None
+            or info.get("hypothesis_to_test_graph_id") is None
+            or info.get("hypothesis_to_test_mlh_id") is None
+        ):
+            # Without a predicted displacement and the identity of the
+            # hypothesis that proposed the goal, the outcome can neither be
+            # judged nor attributed.
+            return
+        if (
+            np.linalg.norm(predicted_displacement)
+            < self.failed_goal_displacement_eta
+        ):
+            return
+        self._pending_goal_attempt = goal
+
+    def _evaluate_pending_goal_attempt(self, percepts: Sequence[Message]) -> None:
+        """Judge the outcome of a pending goal attempt from sensory input.
+
+        Called at the start of a matching step, before the buffer is updated
+        with this step's percepts. If a goal attempt (hypothesis-testing jump)
+        is pending, the sensed displacement since the goal was generated is
+        the distance between the currently sensed location and the last
+        location stored in the buffer. A successful jump displaces the sensor
+        by approximately the goal's predicted displacement, whereas a failed
+        jump returns the agent to its previous position, yielding a sensed
+        displacement close to 0. A sensed displacement below
+        `failed_goal_displacement_eta` is therefore judged a failure, and the
+        evidence of the hypothesis that proposed the jump is decremented by
+        present_weight * failed_goal_evidence_penalty. On success nothing
+        extra happens; evidence matching proceeds in the normal way.
+
+        Args:
+            percepts: The percepts of this matching step.
+        """
+        goal = self._pending_goal_attempt
+        if goal is None:
+            return
+        if self.buffer.last_location is None:
+            # No reference location to measure the displacement from.
+            self._pending_goal_attempt = None
+            return
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        if current_location is None:
+            # No location sensed this step; keep waiting for one.
+            return
+        self._pending_goal_attempt = None
+
+        sensed_displacement = np.linalg.norm(
+            current_location - self.buffer.last_location
+        )
+        if sensed_displacement >= self.failed_goal_displacement_eta:
+            # The sensor was displaced, so the jump succeeded; the new
+            # observation is matched against the models in the normal way.
+            return
+
+        # The agent is (approximately) back where it was, so the jump failed
+        # (it landed in empty space or inside the object): accumulate negative
+        # evidence for the hypothesis that proposed it.
+        graph_id = goal.info["hypothesis_to_test_graph_id"]
+        mlh_id = goal.info["hypothesis_to_test_mlh_id"]
+        graph_hypotheses = self._hypotheses.get(graph_id)
+        if graph_hypotheses is None or mlh_id >= len(graph_hypotheses.evidence):
+            return
+        penalty = self.present_weight * self.failed_goal_evidence_penalty
+        graph_hypotheses.evidence[mlh_id] -= penalty
+        logger.debug(
+            f"Hypothesis-testing jump for hypothesis {mlh_id} of {graph_id} "
+            f"failed (sensed displacement {sensed_displacement} < eta "
+            f"{self.failed_goal_displacement_eta}); decremented its evidence "
+            f"by {penalty}."
+        )
+        # Refresh the recognition state so the decrement is reflected even on
+        # steps that do not run a full evidence update (location-only steps).
+        self.possible_matches = self._threshold_possible_matches()
+        self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def receive_votes(self, vote_data):
         """Get evidence count votes and use to update own evidence counts.
@@ -532,13 +726,19 @@ class EvidenceGraphLM(GraphLM):
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the LM has not reached a "match" terminal state, pass_message == False.
+        pass_message is False unless the LM has reached a "match" terminal state,
+        its sensor is on the object, the most likely hypothesis has at least
+        output_min_evidence, and it lies within output_max_model_distance of the
+        recognized object's stored points.
         """
         mlh = self._get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
         object_id_features = self._object_id_to_features(mlh["graph_id"])
         pass_message = bool(
-            self.buffer.get_currently_on_object() and self.terminal_state == "match"
+            self.buffer.get_currently_on_object()
+            and self.terminal_state == "match"
+            and mlh["evidence"] >= self.output_min_evidence
+            and self._mlh_on_model(mlh)
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
@@ -1168,6 +1368,32 @@ class EvidenceGraphLM(GraphLM):
         # Equivalent to applying the pose rotation to the rf spanning unit vectors
         # -> pose.as_matrix().dot(pose_vectors.T).T
         return pose.as_matrix().T
+
+    def _mlh_on_model(self, mlh) -> bool:
+        """Whether the MLH location lies near the stored points of its object.
+
+        Args:
+            mlh: The most likely hypothesis, with ``graph_id`` and ``location``
+                in the object's reference frame.
+
+        Returns:
+            True if the location is within output_max_model_distance of the
+            nearest stored point in any of the object's input channels; False
+            when the object is unknown or the hypothesis has no location.
+        """
+        graph_id, location = mlh["graph_id"], mlh["location"]
+        if location is None or graph_id not in self.get_all_known_object_ids():
+            return False
+        query = np.asarray(location, dtype=float).reshape(1, 3)
+        distances = [
+            float(
+                self.graph_memory.get_graph(graph_id, channel).find_nearest_neighbors(
+                    query, num_neighbors=1, return_distance=True
+                )[0]
+            )
+            for channel in self.get_input_channels_in_graph(graph_id)
+        ]
+        return min(distances) <= self.output_max_model_distance
 
     def _object_id_to_features(self, object_id):
         """Turn object ID into features that express object similarity.

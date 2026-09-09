@@ -32,6 +32,9 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    apply_rf_transform_to_points,
+)
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
@@ -1162,7 +1165,26 @@ class GraphMemory(LMMemory):
                     )
                 else:
                     logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
-                    print(f"building graph for {input_channel}")
+                    if object_rotation is not None:
+                        # A new input channel can be added to an object that already
+                        # exists in memory (e.g. a child LM whose output first
+                        # converges in a later episode). The object's pose in the
+                        # current episode may then differ from the pose that defined
+                        # the model's reference frame, so the new points need the
+                        # same transform that _extend_graph applies. If the object
+                        # pose is unknown (e.g. learning a new object without
+                        # supervision), the locations are stored as-is and define
+                        # the model's reference frame.
+                        (
+                            input_channel_locations,
+                            input_channel_features,
+                        ) = apply_rf_transform_to_points(
+                            locations=input_channel_locations,
+                            features=input_channel_features,
+                            location_rel_model=location_rel_model,
+                            object_location_rel_body=object_location_rel_body,
+                            object_rotation=object_rotation,
+                        )
                     self._build_graph(
                         input_channel_locations,
                         input_channel_features,

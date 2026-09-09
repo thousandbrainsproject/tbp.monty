@@ -13,7 +13,7 @@ import copy
 
 import numpy as np
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
@@ -305,6 +305,172 @@ class EvidenceLMTest(BaseGraphTest):
             err_msg="last_location should advance to the new sensed location.",
         )
 
+    def _elm_after_matching_steps(self) -> EvidenceGraphLM:
+        """An LM that ran matching steps on the learned object, in EVAL mode.
+
+        Returns:
+            The learning module.
+        """
+        graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
+        graph_lm.mode = ExperimentMode.EVAL
+        graph_lm.reset_stm()
+        graph_lm.fixme_reset_ground_truth(primary_target=self.placeholder_target)
+        for observation in copy.deepcopy(self.fake_obs_learn):
+            graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
+            graph_lm.matching_step(self.ctx, [observation])
+        return graph_lm
+
+    def _goal_attempt_for_hypothesis(self, graph_id, mlh_id, predicted_displacement):
+        """An efferent copy of an attempted hypothesis-testing goal.
+
+        Returns:
+            The goal, carrying the hypothesis identity snapshot and predicted
+            displacement that the GSG attaches at goal creation.
+        """
+        return Goal(
+            location=None,
+            morphological_features=None,
+            non_morphological_features=None,
+            confidence=1.0,
+            pass_message=True,
+            sender_id="learning_module_0",
+            sender_type="GSG",
+            process_features_in_lm=False,
+            goal_tolerances=None,
+            info={
+                "hypothesis_to_test_graph_id": graph_id,
+                "hypothesis_to_test_mlh_id": mlh_id,
+                "predicted_displacement": np.array(predicted_displacement),
+            },
+        )
+
+    def _step_with_location_only_percept(self, graph_lm, displacement):
+        """Run a location-only matching step displaced from the last location."""
+        percept_args = copy.deepcopy(self.default_percept_args)
+        percept_args["location"] = graph_lm.buffer.last_location + np.array(
+            displacement
+        )
+        percept_args["process_features_in_lm"] = False
+        graph_lm.add_lm_processing_to_buffer_stats(lm_processed=False)
+        graph_lm.matching_step(self.ctx, [Message(**percept_args)])
+
+    def test_failed_goal_attempt_decrements_evidence_of_culprit_hypothesis(self):
+        """A near-zero displacement after an attempted jump is judged a failure.
+
+        A failed hypothesis-testing jump returns the agent to its previous
+        position, so the next sensed displacement is (close to) 0 m, far
+        smaller than the goal's predicted displacement. The LM should judge
+        this a failure and decrement the evidence of exactly the hypothesis
+        that proposed the jump.
+        """
+        graph_lm = self._elm_after_matching_steps()
+        mlh = graph_lm._get_current_mlh()
+        graph_id, mlh_id = mlh["graph_id"], mlh["mlh_id"]
+        evidence_before = graph_lm._hypotheses[graph_id].evidence.copy()
+
+        graph_lm.receive_goal_attempt(
+            self._goal_attempt_for_hypothesis(
+                graph_id, mlh_id, predicted_displacement=[0.5, 0.0, 0.0]
+            )
+        )
+        self._step_with_location_only_percept(graph_lm, displacement=[0.0, 0.0, 0.0])
+
+        evidence_after = graph_lm._hypotheses[graph_id].evidence
+        expected_penalty = (
+            graph_lm.present_weight * graph_lm.failed_goal_evidence_penalty
+        )
+        self.assertEqual(
+            evidence_after[mlh_id],
+            evidence_before[mlh_id] - expected_penalty,
+            "The hypothesis that proposed the failed jump should lose evidence.",
+        )
+        other_ids = np.arange(len(evidence_before)) != mlh_id
+        np.testing.assert_array_equal(
+            evidence_after[other_ids],
+            evidence_before[other_ids],
+            err_msg="Only the culprit hypothesis should be penalized.",
+        )
+        self.assertIsNone(
+            graph_lm._pending_goal_attempt,
+            "The attempt should be judged only once.",
+        )
+
+    def test_successful_goal_attempt_leaves_evidence_unchanged(self):
+        """A displacement near the predicted one means the jump succeeded."""
+        graph_lm = self._elm_after_matching_steps()
+        mlh = graph_lm._get_current_mlh()
+        graph_id, mlh_id = mlh["graph_id"], mlh["mlh_id"]
+        evidence_before = graph_lm._hypotheses[graph_id].evidence.copy()
+
+        graph_lm.receive_goal_attempt(
+            self._goal_attempt_for_hypothesis(
+                graph_id, mlh_id, predicted_displacement=[0.5, 0.0, 0.0]
+            )
+        )
+        self._step_with_location_only_percept(graph_lm, displacement=[0.5, 0.0, 0.0])
+
+        np.testing.assert_array_equal(
+            graph_lm._hypotheses[graph_id].evidence,
+            evidence_before,
+            err_msg="A successful jump should not penalize any hypothesis.",
+        )
+        self.assertIsNone(
+            graph_lm._pending_goal_attempt,
+            "The attempt should be judged (as a success) and cleared.",
+        )
+
+    def test_goal_attempt_with_small_predicted_displacement_is_not_judged(self):
+        """Jumps whose predicted displacement is below eta cannot be judged.
+
+        For such a jump, success would also produce a near-zero sensed
+        displacement, so failure cannot be distinguished from success and no
+        penalty should ever be applied.
+        """
+        graph_lm = self._elm_after_matching_steps()
+        mlh = graph_lm._get_current_mlh()
+        graph_id, mlh_id = mlh["graph_id"], mlh["mlh_id"]
+        evidence_before = graph_lm._hypotheses[graph_id].evidence.copy()
+
+        small_displacement = [graph_lm.failed_goal_displacement_eta / 2, 0.0, 0.0]
+        graph_lm.receive_goal_attempt(
+            self._goal_attempt_for_hypothesis(
+                graph_id, mlh_id, predicted_displacement=small_displacement
+            )
+        )
+        self.assertIsNone(
+            graph_lm._pending_goal_attempt,
+            "An attempt that cannot be judged should not be registered.",
+        )
+
+        self._step_with_location_only_percept(graph_lm, displacement=[0.0, 0.0, 0.0])
+
+        np.testing.assert_array_equal(
+            graph_lm._hypotheses[graph_id].evidence,
+            evidence_before,
+            err_msg="No hypothesis should be penalized when the attempt cannot "
+            "be judged.",
+        )
+
+    def test_goal_attempt_with_zero_penalty_is_ignored(self):
+        graph_lm = self._elm_after_matching_steps()
+        graph_lm.failed_goal_evidence_penalty = 0
+        mlh = graph_lm._get_current_mlh()
+        graph_id, mlh_id = mlh["graph_id"], mlh["mlh_id"]
+        evidence_before = graph_lm._hypotheses[graph_id].evidence.copy()
+
+        graph_lm.receive_goal_attempt(
+            self._goal_attempt_for_hypothesis(
+                graph_id, mlh_id, predicted_displacement=[0.5, 0.0, 0.0]
+            )
+        )
+        self._step_with_location_only_percept(graph_lm, displacement=[0.0, 0.0, 0.0])
+
+        np.testing.assert_array_equal(
+            graph_lm._hypotheses[graph_id].evidence,
+            evidence_before,
+            err_msg="With a zero penalty, failed jumps should not affect evidence.",
+        )
+
     def test_reverse_sequence_recognition_elm(self):
         """Test that object is recognized irrespective of sampling order."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
@@ -480,10 +646,15 @@ class EvidenceLMTest(BaseGraphTest):
         # Based on most recent observation, propose the most misaligned graph
         # sub-regions
         graph_lm.gsg.focus_on_pose = focus_on_pose
-        target_loc_id = graph_lm.gsg._compute_graph_mismatch()
+        target_channel, target_loc_id = graph_lm.gsg._compute_graph_mismatch(self.ctx)
 
         target_graph = graph_lm.get_graph(target_object)
         first_input_channel = graph_lm.get_input_channels_in_graph(target_object)[0]
+        self.assertEqual(
+            target_channel,
+            first_input_channel,
+            "Spatially-distinct graphs should propose a target on the sensory channel.",
+        )
         target_loc = target_graph[first_input_channel].pos[target_loc_id]
 
         assert np.all(np.isclose(target_loc, self.fake_obs_house[4].location)), (

@@ -18,6 +18,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_right_hand_angle,
     normalize,
 )
+from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
 
@@ -347,7 +348,18 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         surface_normals_to_use = np.logical_not(surface_normals_to_use)
     # Take the mean of all surface normals pointing in the same half sphere spanned by
     # the cds and make sure the mean vector still has unit length.
-    norm_mean = normalize(np.mean(surface_normals[surface_normals_to_use], axis=0))
+    raw_norm_mean = np.mean(surface_normals[surface_normals_to_use], axis=0)
+    if np.linalg.norm(raw_norm_mean) < DEFAULT_TOLERANCE:
+        # The selected normals cancel out (e.g. opposite sides of a thin surface
+        # binned into the same voxel where the half-sphere test above could not
+        # separate them because the reference cds are ambiguous). Averaging is
+        # meaningless here, so fall back to the first valid normal.
+        logger.debug(
+            "Surface normals in voxel cancel out; falling back to first valid normal."
+        )
+        norm_mean = surface_normals[0]
+    else:
+        norm_mean = normalize(raw_norm_mean)
 
     if sum(pose_fully_defined) < len(pose_fully_defined) // 2:
         # print(

@@ -1,0 +1,77 @@
+# @package _global_
+
+defaults:
+  - /monty: evidencegraph_exp1000_emin_t3
+  - /monty/motor_system_config: distant_5
+  - /monty/learning_module: evidence_3lm_heterarchy
+  - /monty/sensor_module: 3sm_2d3d_dist_slic
+  - /monty/connectivity: 3lm_3sm_heterarchy
+  - /monty/attention_system: default
+  - /environment: mujoco_dist_agent_sensors3_256
+  - /env_interface: eval_objects_with_stickers_predefined_one_view
+  - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
+  - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4_256
+  - /logging: basic_warning_wandb_evidence_eval_runs
+
+experiment:
+  _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+  config:
+    show_sensor_output: false
+    max_train_steps: 1000
+    max_eval_steps: 100
+    max_total_steps: 500
+    n_train_epochs: 3
+    n_eval_epochs: ${constants.rotations_one_count}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_objects_with_stickers_comp_models_mujoco/pretrained/}
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+      ids:
+        - learning_module_2
+    seed: 42
+    supervised_lm_ids: []
+    python_log_level: DEBUG
+    logging:
+      run_name: base_infer_objects_with_stickers_comp_models_mujoco
+      output_dir: ${path.expanduser:'~/tbp/results/comp_benefits_figures'}
+    monty_config:
+      motor_system_config:
+        telemetry:
+          _target_: tbp.monty.frameworks.models.motor_system_telemetry.NoopMotorSystemTelemetry
+      learning_modules:
+        learning_module_0:
+          # When recognizing compositional object, LM_2 is prioritized over LM_0
+          gsg: null
+        learning_module_1:
+          gsg: null
+          # Lower the threshold for passing object IDs during inference
+          output_min_evidence: 5.0
+        learning_module_2:
+          region_proposers:
+            - _target_: tbp.monty.frameworks.models.evidence_matching.region_proposal.excite_goal_locations.ExciteGoalLocations
+          telemetry:
+            _target_: tbp.monty.frameworks.models.evidence_matching.telemetry.NoopEvidenceGraphLMTelemetry
+          gsg:
+            min_post_goal_success_steps: 20
+      sensor_modules:
+        sensor_module_0:
+          # Random rotations often leave the sticker at a steep angle, where the
+          # sticker LM stalls. The patch SM asks for a face-on view when the
+          # smoothed view angle says the surface sits steeply to the camera
+          gsg:
+            _target_: tbp.monty.frameworks.models.face_on_reorientation.FaceOnReorientation
+            max_view_angle: 60.0
+            window: 2
+            min_steps_between_goals: 25
+          region_proposers:
+            - _target_: tbp.monty.frameworks.models.sm_region_proposal.excite_goal_locations.ExciteGoalLocations
+        sensor_module_3:
+          segmentation_strategy:
+            _target_: tbp.monty.frameworks.models.salience.segmentation.strategies.slic_merge.SlicMerge
+          # Nothing reads this telemetry during pretraining, and recording every
+          # step's frames, maps, and grids exhausts memory over a long run.
+          snapshot_telemetry:
+            _target_: tbp.monty.frameworks.models.salience.telemetry.NoopSalienceSMTelemetry
+      attention_system:
+        telemetry:
+          _target_: tbp.monty.attention.telemetry.NoopAttentionSystemTelemetry
+

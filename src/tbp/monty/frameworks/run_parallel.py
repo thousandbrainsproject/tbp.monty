@@ -36,6 +36,8 @@ from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
 from tbp.monty.frameworks.experiments.profile import ProfileExperimentMixin
+from tbp.monty.frameworks.loggers.npz_handler import EXPERIMENT_SUBDIRECTORY
+from tbp.monty.frameworks.run import output_dir_from_run_name, save_config_yaml
 from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_dir,
     maybe_rename_existing_file,
@@ -526,6 +528,14 @@ def collect_detailed_episodes_names(parallel_dirs: Iterable[Path]) -> list[Path]
     return filenames
 
 
+def collect_telemetry_episode_names(parallel_dirs: Iterable[Path]) -> list[Path]:
+    # Every per-episode file NpzHandler wrote.
+    filenames = []
+    for pdir in parallel_dirs:
+        filenames.extend((pdir / EXPERIMENT_SUBDIRECTORY).glob("episode_*"))
+    return filenames
+
+
 def post_parallel_eval(experiments: list[Mapping], base_dir: Path) -> None:
     """Post-execution cleanup after running evaluation in parallel.
 
@@ -779,6 +789,11 @@ def main(cfg: DictConfig):
         os.environ["HABITAT_SIM_LOG"] = "quiet"
 
     print_config(cfg)
+
+    if not cfg.print_cfg:
+        # The same reference config single runs write (run.py); the chunked
+        # parallel configs derive from it.
+        save_config_yaml(cfg, output_dir_from_run_name(cfg))
 
     if cfg.experiment.config.do_train:
         assert issubclass(

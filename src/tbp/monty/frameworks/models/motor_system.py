@@ -25,6 +25,10 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
+from tbp.monty.frameworks.models.motor_system_telemetry import (
+    MotorSystemTelemetryProtocol,
+    NoopMotorSystemTelemetry,
+)
 from tbp.monty.memento import Memento
 
 __all__ = [
@@ -74,13 +78,20 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
     _policy_selector: MotorPolicySelector
     _action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]]
 
-    def __init__(self, policy_selector: MotorPolicySelector) -> None:
+    def __init__(
+        self,
+        policy_selector: MotorPolicySelector,
+        telemetry: MotorSystemTelemetryProtocol | None = None,
+    ) -> None:
         """Initialize the motor system with a motor policy.
 
         Args:
             policy_selector: The motor policy selector to use.
+            telemetry: Records the goals the motor system receives; nothing
+                by default.
         """
         self._policy_selector = policy_selector
+        self._telemetry = NoopMotorSystemTelemetry() if telemetry is None else telemetry
 
         # TODO: When the motor system is encapsulated within Monty, then motor_only_step
         #       attribute should be moved to Monty itself instead.
@@ -110,10 +121,24 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
+    @property
+    def attempted_goal(self) -> Goal | None:
+        """Efferent copy of a goal the motor system began executing this step.
+
+        Set when the selected motor policy initiated a goal-driven movement
+        (e.g. a hypothesis-testing jump). It carries no information about the
+        movement's outcome; the sender of the goal can combine this signal with
+        its subsequent sensory input to judge whether the attempt succeeded.
+        `None` when no goal-driven movement was initiated this step.
+        """
+        return self._attempted_goal
+
     def _init_MotorSystem(self) -> None:  # noqa: N802
         # For each step, we store the actions produced by the policy and the current
         # motor system state as a (actions, state) tuple.
         self._action_sequence = []
+
+        self._attempted_goal: Goal | None = None
 
         # TODO: Get rid of this once we have another path for telemetry.
         self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
@@ -125,9 +150,15 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
     def reset(self) -> None:
         self._init_MotorSystem()
         self._policy_selector.reset()
+        self._telemetry.reset()
 
     def state_dict(self) -> Memento:
-        return self._policy_selector.state_dict()
+        # What the telemetry recorded rides along under "telemetry"; the
+        # detailed logger lifts it into the motor system's block.
+        return {
+            **self._policy_selector.state_dict(),
+            "telemetry": self._telemetry.state_dict(),
+        }
 
     def __call__(
         self,
@@ -137,12 +168,14 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
         percept: Message,
         goals: Sequence[Goal],
     ) -> list[Action]:
+        self._telemetry.goals_in(goals)
         motor_system_state = MotorSystemState(proprioceptive_state)
         policy_result = self._policy_selector(
             ctx, observations, motor_system_state, percept, goals
         )
 
         self.motor_only_step = policy_result.motor_only_step
+        self._attempted_goal = policy_result.attempted_goal
 
         self._action_sequence.append((policy_result.actions, motor_system_state))
 

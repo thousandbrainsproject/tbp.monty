@@ -40,6 +40,23 @@ __all__ = [
 ]
 
 
+def specifies_pose(goal: Goal) -> bool:
+    """Whether a goal asks for an agent pose rather than just a place to look at.
+
+    A goal carrying pose vectors (an LM's hypothesis-testing goal, a sensor
+    module's re-orienting goal) wants the agent moved into that pose; one
+    without (a salience goal) only names a location to look toward.
+
+    Args:
+        goal: The goal.
+
+    Returns:
+        True when the goal's morphological features hold pose vectors.
+    """
+    features = goal.morphological_features
+    return bool(features) and features.get("pose_vectors") is not None
+
+
 def highest_confidence_goal(goals: Sequence[Goal]) -> Goal:
     """Return the goal with the highest confidence.
 
@@ -120,6 +137,13 @@ class SinglePolicySelector(MotorPolicySelector):
 
 
 class DistantPolicySelector(MotorPolicySelector):
+    """Pick the distant agent's policy from the goals it was given.
+
+    Goals that specify a pose (see ``specifies_pose``) are jumped to, the
+    highest-confidence one first; goals that only name a location are looked
+    at; with no goals at all, the default policy explores.
+    """
+
     def __init__(
         self,
         jump_to_goal: JumpToGoal,
@@ -167,10 +191,10 @@ class DistantPolicySelector(MotorPolicySelector):
         percept: Message,
         goals: Sequence[Goal],
     ) -> MotorPolicyResult:
-        gsg_goals = [g for g in goals if g.sender_type == "GSG"]
-        # Handle possibly undoing a jump or jumping to a new LM GSG goal.
+        pose_goals = [g for g in goals if specifies_pose(g)]
+        # Handle possibly undoing a jump or jumping to a new pose goal.
         if self._is_jumping:
-            goal = highest_confidence_goal(gsg_goals) if gsg_goals else None
+            goal = highest_confidence_goal(pose_goals) if pose_goals else None
             result = self._jump_to_goal(
                 ctx,
                 observations,
@@ -183,9 +207,9 @@ class DistantPolicySelector(MotorPolicySelector):
                 self._update_telemetry(policy=self._jump_to_goal, goal=goal)
                 return result
 
-        # Handle jumping to an LM GSG's goal.
-        if gsg_goals:
-            goal = highest_confidence_goal(gsg_goals)
+        # Handle jumping to a pose goal.
+        if pose_goals:
+            goal = highest_confidence_goal(pose_goals)
             result = self._jump_to_goal(
                 ctx,
                 observations,
@@ -198,10 +222,10 @@ class DistantPolicySelector(MotorPolicySelector):
             self._update_telemetry(policy=self._jump_to_goal, goal=goal)
             return result
 
-        # Handle looking at an SM's goal.
-        sm_goals = [g for g in goals if g.sender_type == "SM"]
-        if sm_goals:
-            goal = highest_confidence_goal(sm_goals)
+        # Handle looking at a location-only goal.
+        look_goals = [g for g in goals if not specifies_pose(g)]
+        if look_goals:
+            goal = highest_confidence_goal(look_goals)
             result = self._look_at_goal(
                 ctx,
                 observations,

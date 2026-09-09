@@ -13,6 +13,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
+from scipy.cluster.hierarchy import fcluster, linkage
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -161,7 +162,7 @@ class GraphGoalGenerator(GoalGenerator):
         self._update_gsg_logging(output_goal_achieved)
 
         if self._check_need_new_output_goal(ctx, output_goal_achieved):
-            self._set_output_goal(new_goal=self._generate_goal(observations))
+            self._set_output_goal(new_goal=self._generate_goal(ctx, observations))
         elif self._check_keep_current_output_goal():
             pass
         else:
@@ -182,7 +183,7 @@ class GraphGoalGenerator(GoalGenerator):
         """
         return
 
-    def _generate_goal(self, _observations):
+    def _generate_goal(self, _ctx: RuntimeContext, _observations):
         """Generate a new Goal to send out to other LMs and/or motor actuators.
 
         Given the driving Goal, and information from the parent LM of the GSG
@@ -471,6 +472,10 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         x_percent_scale_factor=0.75,
         desired_object_distance=0.03,
         wait_growth_multiplier=2,
+        *,
+        feature_mismatch_distance_threshold=0.02,
+        cluster_distance_threshold=0.01,
+        min_hue_mismatch=0.1,
         **kwargs,
     ) -> None:
         """Initialize the Evidence GSG.
@@ -515,6 +520,20 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
                 0.03.
             wait_growth_multiplier: Multiplier used to increase the `wait_factor`, which
                 in turn controls how long to wait before the next jump attempt.
+            feature_mismatch_distance_threshold: Spatial distance (in meters) below
+                which the two candidate graphs are considered too similar in shape
+                for Euclidean distance to be a useful discriminator. When the largest
+                nearest-neighbor separation between the two graphs falls below this
+                threshold, the GSG instead looks for mismatches in the features
+                stored at graph nodes (object IDs from LM input channels, or hue from
+                sensor channels). Defaults to 0.02 (2cm).
+            cluster_distance_threshold: Distance (in meters) used when spatially
+                clustering nodes with mismatching discrete features; any node farther
+                than this from all other members of a cluster is treated as an
+                outlier. Defaults to 0.01 (1cm).
+            min_hue_mismatch: Minimum circular distance in hue space (hue is in the
+                range [0, 1]) between two nearest-neighbor nodes for a color-based
+                mismatch to be considered meaningful. Defaults to 0.1.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(goal_tolerances, **kwargs)
@@ -524,6 +543,9 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         self.x_percent_scale_factor = x_percent_scale_factor
         self.desired_object_distance = desired_object_distance
         self.wait_growth_multiplier = wait_growth_multiplier
+        self.feature_mismatch_distance_threshold = feature_mismatch_distance_threshold
+        self.cluster_distance_threshold = cluster_distance_threshold
+        self.min_hue_mismatch = min_hue_mismatch
 
     # ======================= Public ==========================
 
@@ -547,20 +569,29 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
 
     # ------------------- Main Algorithm -----------------------
 
-    def _generate_goal(self, observations) -> Goal:
+    def _generate_goal(self, ctx: RuntimeContext, observations) -> Goal:
         """Use the hypothesis-testing policy to generate a Goal.
 
         The Goal will rapidly disambiguate the pose and/or ID of the object the
         LM is currently observing.
 
         Returns:
-            A Goal for the motor system.
+            A Goal for the motor system, or a None-type Goal if no informative
+            location to test could be found.
         """
         # Determine where we want to test in the MLH graph
-        target_loc_id = self._compute_graph_mismatch()
+        mismatch = self._compute_graph_mismatch(ctx)
+
+        if mismatch is None:
+            # The two most likely graphs could not be meaningfully distinguished
+            # either spatially or by node features, so there is no informative
+            # location to propose.
+            return self._generate_none_goal()
+
+        input_channel, target_loc_id = mismatch
 
         # Get pose information for the target point
-        target_info = self._get_target_loc_info(target_loc_id)
+        target_info = self._get_target_loc_info(target_loc_id, input_channel)
 
         # Estimate how important this Goal will be for the Monty-system as a
         # whole
@@ -573,7 +604,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             goal_confidence=goal_confidence,
         )
 
-    def _compute_graph_mismatch(self):
+    def _compute_graph_mismatch(self, ctx: RuntimeContext):
         """Propose a point for the model to test.
 
         The aim is to propose a point for the model to test, with the aim of performing
@@ -582,9 +613,14 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         is a local mismatch in the graphs (e.g. the presence of a handle in one and not
         the other), this should return the necessary coordinates to move there.
 
-        Returns the index of the point in the graph of the most likely object that
-        should be tested, along with the size of the L-2 separation of this point to
-        the nearest point in the graph of the second most likely object.
+        If the two graphs are spatially near-identical (i.e. the largest
+        nearest-neighbor separation between the two point clouds is below
+        `feature_mismatch_distance_threshold`), Euclidean distance is not a useful
+        discriminator. In that case, we instead compare the features stored at the
+        graphs' nodes, considering the input channels present in both graphs:
+        - Discrete features: object IDs provided by input from other LMs; these are
+          prioritized over continuous features when present.
+        - Continuous features: hue (from HSV) provided by input from sensor modules.
 
         --- Some Details ---
         Part of this method transforms the graph of the most likely object into
@@ -618,7 +654,9 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         including our current location.
 
         Returns:
-            The index of the point in the model to test.
+            A tuple of (input_channel, target_loc_id), where target_loc_id is the
+            index of the point to test in the top MLH graph of the given input
+            channel, or None if no informative location could be found.
         """
         logger.debug("Proposing an evaluation location based on graph mismatch")
 
@@ -631,9 +669,9 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
 
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
 
-        top_mlh_graph = self.parent_lm.get_graph(
-            top_id, input_channel=sensor_channel_name
-        ).pos
+        top_mlh_graph = np.asarray(
+            self.parent_lm.get_graph(top_id, input_channel=sensor_channel_name).pos
+        )
 
         if self.focus_on_pose:
             # Overwrite the second most likely hypothesis with the second most likely
@@ -646,34 +684,13 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         else:
             second_mlh = second_mlh_object
 
-        # == Corrective transformation ==
-        # Fully correct the origin and rotation of the top object's graph so it is in
-        # the same reference frame as the second object's graph was learned
-        # Note the graph of the second most likely object is already in the same
-        # reference frame (i.e. the one from learning) used when constructing the KDTree
-
-        # Convert to environmental coordinates, and normalize by current MLH location
-        # TODO M refactor this into a function that can be reapplied to arbitrary graphs
-        # Note the MLH rotation is the rotation required to match a displacement to
-        # a model, so it is the *inverse* of e.g. the ground-truth rotation
-        # TODO M: See if apply_rf_transform_to_points could be used here
-        rotated_graph = top_mlh["rotation"].inv().apply(top_mlh_graph)
-        current_mlh_location = top_mlh["rotation"].inv().apply(top_mlh["location"])
-        top_mlh_graph = rotated_graph - current_mlh_location
-        # Convert from environmental coordinates to the learned coordinate of 2nd object
-        # Thus we don't need to invert the stored rotation, as we would like to actually
-        # apply the inverse form.
-        top_mlh_graph = (
-            second_mlh["rotation"].apply(top_mlh_graph) + second_mlh["location"]
+        top_mlh_graph = self._transform_to_second_mlh_rf(
+            top_mlh_graph, top_mlh, second_mlh
         )
 
         # Perform the same transformation to the estimated location (sanity check)
-        transformed_current_loc = top_mlh["rotation"].inv().apply(
-            top_mlh["location"]
-        ) - top_mlh["rotation"].inv().apply(top_mlh["location"])
-        transformed_current_loc = (
-            second_mlh["rotation"].apply(transformed_current_loc)
-            + second_mlh["location"]
+        transformed_current_loc = self._transform_to_second_mlh_rf(
+            top_mlh["location"], top_mlh, second_mlh
         )
         assert np.all(transformed_current_loc == second_mlh["location"]), (
             "Graph transformation to 2nd object reference frame not returning correct "
@@ -697,13 +714,293 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
 
         self.prev_top_mlhs = [top_mlh, second_mlh_object]
 
-        return target_loc_id
+        if (
+            radius_node_dists[target_loc_id]
+            >= self.feature_mismatch_distance_threshold
+        ):
+            # The graphs are sufficiently different spatially, so the most separated
+            # point is an informative location to test
+            return sensor_channel_name, target_loc_id
 
-    def _get_target_loc_info(self, target_loc_id):
-        """Given a target location ID, get the target location and pose vectors.
+        # The point clouds are near-identical in shape; fall back to comparing the
+        # features stored at the graphs' nodes, over the channels present in both
+        logger.debug(
+            "Graphs spatially near-identical; comparing node features instead"
+        )
+
+        top_channels = self.parent_lm.get_input_channels_in_graph(top_id)
+        second_channels = self.parent_lm.get_input_channels_in_graph(second_id)
+        shared_channels = [
+            channel for channel in top_channels if channel in second_channels
+        ]
+
+        discrete_mismatch = self._compute_discrete_feature_mismatch(
+            shared_channels,
+            top_id=top_id,
+            second_id=second_id,
+            top_mlh=top_mlh,
+            second_mlh=second_mlh,
+        )
+        if discrete_mismatch is not None:
+            return discrete_mismatch
+
+        return self._compute_continuous_feature_mismatch(
+            ctx,
+            shared_channels,
+            top_id=top_id,
+            second_id=second_id,
+            top_mlh=top_mlh,
+            second_mlh=second_mlh,
+        )
+
+    def _transform_to_second_mlh_rf(self, points, top_mlh, second_mlh):
+        """Transform points from the top MLH graph's frame to the second MLH's frame.
+
+        Fully correct the origin and rotation of points defined in the reference frame
+        in which the top object's graph was learned, so they are in the reference
+        frame in which the second object's graph was learned. Note the graph of the
+        second most likely object is already in the reference frame from learning that
+        was used when constructing its KDTree, hence transforming into that frame
+        allows re-using the KDTree for nearest-neighbor queries.
+
+        Args:
+            points: Array of points (or a single point) in the top MLH graph's
+                learned reference frame.
+            top_mlh: The most-likely hypothesis (dict with "rotation" and "location").
+            second_mlh: The second most-likely hypothesis.
+
+        Returns:
+            The points transformed into the second MLH graph's learned reference frame.
+        """
+        # Convert to environmental coordinates, and normalize by current MLH location
+        # Note the MLH rotation is the rotation required to match a displacement to
+        # a model, so it is the *inverse* of e.g. the ground-truth rotation
+        # TODO M: See if apply_rf_transform_to_points could be used here
+        rotated_points = top_mlh["rotation"].inv().apply(points)
+        current_mlh_location = top_mlh["rotation"].inv().apply(top_mlh["location"])
+        env_points = rotated_points - current_mlh_location
+        # Convert from environmental coordinates to the learned coordinate of 2nd
+        # object. Thus we don't need to invert the stored rotation, as we would like
+        # to actually apply the inverse form.
+        return second_mlh["rotation"].apply(env_points) + second_mlh["location"]
+
+    def _compute_discrete_feature_mismatch(
+        self, shared_channels, *, top_id, second_id, top_mlh, second_mlh
+    ):
+        """Find a target location based on mismatching discrete (object ID) features.
+
+        For every input channel (present in both graphs) that stores an "object_id"
+        feature (i.e. input from another LM), compare the object ID stored at each
+        node of the top MLH graph to the object ID stored at its nearest neighbor in
+        the second MLH graph. Nodes with differing object IDs are spatially clustered
+        (nodes more than `cluster_distance_threshold` from all other members are
+        outliers), and the largest cluster is retained for each channel.
+
+        When several channels contain mismatching nodes, the channel whose largest
+        cluster contains the most points wins, as object IDs are discrete (same or
+        different), so cluster size is the best available proxy for how informative
+        the region is.
+
+        Returns:
+            A tuple of (input_channel, target_loc_id) where target_loc_id is the
+            node of the winning cluster that sits closest to the cluster's center,
+            or None if no channel has mismatching object IDs.
+        """
+        best_channel = None
+        best_cluster_size = 0
+        best_target_loc_id = None
+
+        for channel in shared_channels:
+            top_graph = self.parent_lm.get_graph(top_id, input_channel=channel)
+            second_graph = self.parent_lm.get_graph(second_id, input_channel=channel)
+
+            if (
+                "object_id" not in top_graph.feature_mapping
+                or "object_id" not in second_graph.feature_mapping
+            ):
+                continue
+
+            top_pos = np.asarray(top_graph.pos)
+            nearest_node_ids = self._nearest_second_graph_nodes(
+                top_pos, second_graph, top_mlh, second_mlh
+            )
+
+            top_object_ids = self._get_feature_values(top_graph, "object_id")
+            second_object_ids = self._get_feature_values(second_graph, "object_id")
+
+            mismatching_nodes = np.nonzero(
+                top_object_ids.flatten()
+                != second_object_ids[nearest_node_ids].flatten()
+            )[0]
+
+            if len(mismatching_nodes) == 0:
+                continue
+
+            cluster_members = self._largest_spatial_cluster(
+                top_pos[mismatching_nodes]
+            )
+            cluster_node_ids = mismatching_nodes[cluster_members]
+
+            if len(cluster_node_ids) > best_cluster_size:
+                # Use the learned point closest to the cluster's geometric mean as
+                # the target, i.e. an actual model point approximately at the center
+                # of the cluster
+                cluster_positions = top_pos[cluster_node_ids]
+                cluster_center = cluster_positions.mean(axis=0)
+                closest_member = np.argmin(
+                    np.linalg.norm(cluster_positions - cluster_center, axis=1)
+                )
+                best_channel = channel
+                best_cluster_size = len(cluster_node_ids)
+                best_target_loc_id = cluster_node_ids[closest_member]
+
+        if best_channel is None:
+            return None
+
+        logger.debug(
+            f"Object-ID mismatch found on channel {best_channel} "
+            f"(cluster of {best_cluster_size} nodes)"
+        )
+        return best_channel, best_target_loc_id
+
+    def _compute_continuous_feature_mismatch(
+        self,
+        ctx: RuntimeContext,
+        shared_channels,
+        *,
+        top_id,
+        second_id,
+        top_mlh,
+        second_mlh,
+    ):
+        """Find a target location based on mismatching continuous (hue) features.
+
+        For every input channel (present in both graphs) that stores an "hsv"
+        feature (i.e. input from a sensor module), compute the circular distance in
+        hue space between each node of the top MLH graph and its nearest neighbor in
+        the second MLH graph. The target is the node with the maximally different
+        hue; in the event of a tie, one of the tied nodes is chosen at random.
+
+        Returns:
+            A tuple of (input_channel, target_loc_id), or None if no channel has a
+            hue difference exceeding `min_hue_mismatch`.
+        """
+        best_channel = None
+        best_hue_dist = self.min_hue_mismatch
+        best_target_loc_id = None
+
+        for channel in shared_channels:
+            top_graph = self.parent_lm.get_graph(top_id, input_channel=channel)
+            second_graph = self.parent_lm.get_graph(second_id, input_channel=channel)
+
+            if (
+                "hsv" not in top_graph.feature_mapping
+                or "hsv" not in second_graph.feature_mapping
+            ):
+                continue
+
+            top_pos = np.asarray(top_graph.pos)
+            nearest_node_ids = self._nearest_second_graph_nodes(
+                top_pos, second_graph, top_mlh, second_mlh
+            )
+
+            # Hue is the first dimension of the HSV feature
+            top_hues = self._get_feature_values(top_graph, "hsv")[:, 0]
+            second_hues = self._get_feature_values(second_graph, "hsv")[
+                nearest_node_ids, 0
+            ]
+
+            # Circular distance in hue space (hue lives on a circle in [0, 1])
+            abs_diff = np.abs(top_hues - second_hues)
+            hue_dists = np.minimum(abs_diff, 1.0 - abs_diff)
+
+            max_hue_dist = hue_dists.max()
+            if max_hue_dist <= best_hue_dist:
+                continue
+
+            tied_nodes = np.nonzero(hue_dists == max_hue_dist)[0]
+            best_channel = channel
+            best_hue_dist = max_hue_dist
+            best_target_loc_id = (
+                tied_nodes[0] if len(tied_nodes) == 1 else ctx.rng.choice(tied_nodes)
+            )
+
+        if best_channel is None:
+            logger.debug("No feature mismatch found; not proposing a target location")
+            return None
+
+        logger.debug(
+            f"Hue mismatch found on channel {best_channel} "
+            f"(circular hue distance {best_hue_dist:.3f})"
+        )
+        return best_channel, best_target_loc_id
+
+    def _nearest_second_graph_nodes(self, top_pos, second_graph, top_mlh, second_mlh):
+        """For each top-graph point, find its nearest neighbor in the second graph.
+
+        Transforms the top MLH graph's points into the second MLH graph's learned
+        reference frame (so the second graph's KDTree can be re-used), then queries
+        for each point's single nearest neighbor.
+
+        Returns:
+            Array of node indices into the second graph, one per top-graph point.
+        """
+        transformed_pos = self._transform_to_second_mlh_rf(
+            top_pos, top_mlh, second_mlh
+        )
+        return second_graph.find_nearest_neighbors(
+            transformed_pos,
+            num_neighbors=1,
+            return_distance=False,
+        )
+
+    def _largest_spatial_cluster(self, points):
+        """Find the largest spatially-contiguous cluster among points.
+
+        Uses single-linkage hierarchical clustering: points are in the same cluster
+        if they can be chained together via steps no larger than
+        `cluster_distance_threshold`; any point farther than this from all members
+        of a cluster is therefore excluded from it (i.e. treated as an outlier with
+        respect to that cluster).
+
+        Args:
+            points: Array of shape (N, 3) of point locations.
+
+        Returns:
+            Indices (into `points`) of the members of the largest cluster.
+        """
+        if len(points) == 1:
+            return np.array([0])
+
+        cluster_labels = fcluster(
+            linkage(points, method="single"),
+            t=self.cluster_distance_threshold,
+            criterion="distance",
+        )
+        unique_labels, counts = np.unique(cluster_labels, return_counts=True)
+        largest_cluster_label = unique_labels[np.argmax(counts)]
+        return np.nonzero(cluster_labels == largest_cluster_label)[0]
+
+    @staticmethod
+    def _get_feature_values(graph, feature) -> np.ndarray:
+        """Get the values of a feature for all nodes of a graph.
+
+        Returns:
+            Array of shape (num_nodes, feature_dim) of the feature's values.
+        """
+        feature_idx = graph.feature_mapping[feature]
+        return np.asarray(graph.x[:, feature_idx[0] : feature_idx[1]])
+
+    def _get_target_loc_info(self, target_loc_id, input_channel):
+        """Given a target location ID and channel, get the location and pose vectors.
 
         Note:
             Currently assumes we are computing with the MLH graph.
+
+        Args:
+            target_loc_id: Index of the target node in the graph of the given
+                input channel.
+            input_channel: The input channel whose graph the target node belongs to.
 
         Returns:
             A dictionary containing the hypothesis to test, the target location and
@@ -714,12 +1011,31 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
 
         target_object = self.parent_lm.get_graph(mlh_id)
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
-        target_graph = target_object[sensor_channel_name]
+        target_graph = target_object[input_channel]
         target_loc = target_graph.pos[target_loc_id]
-        surface_normal_mapping = target_graph.feature_mapping["pose_vectors"]
-        target_surface_normal = target_graph.x[
-            target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3
-        ]
+
+        if input_channel == sensor_channel_name:
+            surface_normal_mapping = target_graph.feature_mapping["pose_vectors"]
+            target_surface_normal = target_graph.x[
+                target_loc_id,
+                surface_normal_mapping[0] : surface_normal_mapping[0] + 3,
+            ]
+        else:
+            # The pose vectors stored on nodes of an LM input channel describe the
+            # child object's pose, not the surface of the parent object, so we
+            # retrieve the surface normal from the nearest node in the sensory
+            # channel's graph instead
+            sensor_graph = target_object[sensor_channel_name]
+            nearest_sensor_node = sensor_graph.find_nearest_neighbors(
+                np.atleast_2d(np.asarray(target_loc)),
+                num_neighbors=1,
+                return_distance=False,
+            )[0]
+            surface_normal_mapping = sensor_graph.feature_mapping["pose_vectors"]
+            target_surface_normal = sensor_graph.x[
+                nearest_sensor_node,
+                surface_normal_mapping[0] : surface_normal_mapping[0] + 3,
+            ]
 
         return {
             "hypothesis_to_test": mlh,
@@ -795,9 +1111,28 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         # Extra metadata for logging. 'achieved' and
         # 'matching_step_when_output_goal_set' should be updated at the next step.
         # We initialize them as `None` to indicate that no valid values have been set.
+        # The model-frame target location and graph id are snapshotted here because
+        # they cannot be reconstructed later (the sensor location used to derive the
+        # world-frame goal is not stored) and `hypothesis_to_test` is a live dict
+        # whose graph_id may change after the goal is created; visualizers use them
+        # to mark the goal on the hypothesized object model.
+        # The hypothesis identity ('hypothesis_to_test_graph_id' / '..._mlh_id') is
+        # snapshotted for the same reason: if the motor system attempts this goal,
+        # the parent LM uses these to decrement the evidence of the hypothesis that
+        # proposed the jump when the jump is judged to have failed.
+        # 'predicted_displacement' is the sensory displacement the parent LM should
+        # experience if the jump succeeds; the LM compares it against the actually
+        # sensed displacement to judge success.
         info = {
             "proposed_surface_loc": proposed_surface_loc,
+            "model_frame_target_loc": np.array(target_info["target_loc"]),
+            "model_frame_graph_id": target_info["hypothesis_to_test"]["graph_id"],
             "hypothesis_to_test": target_info["hypothesis_to_test"],
+            "hypothesis_to_test_graph_id": target_info["hypothesis_to_test"][
+                "graph_id"
+            ],
+            "hypothesis_to_test_mlh_id": target_info["hypothesis_to_test"]["mlh_id"],
+            "predicted_displacement": np.array(rotated_disp),
             "achieved": None,
             "matching_step_when_output_goal_set": None,
         }

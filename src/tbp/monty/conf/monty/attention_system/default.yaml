@@ -1,0 +1,11 @@
+# @package experiment.config.monty_config.attention_system
+
+_target_: tbp.monty.attention.attention_system.AttentionSystem
+voxel_size: 0.005
+decay:
+  _target_: tbp.monty.attention.decay.LinearDecay
+  rate: 0.1
+merge:
+  _target_: tbp.monty.attention.merge.Union
+goal_filter:
+  _target_: tbp.monty.attention.goal_filter.HardGoalFilter

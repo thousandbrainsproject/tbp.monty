@@ -15,6 +15,10 @@ import unittest
 import hydra
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.loggers.npz_handler import (
+    EXPERIMENT_SUBDIRECTORY,
+    load_episode,
+)
 from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
@@ -60,3 +64,37 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
             (exp.output_dir / "detailed_run_stats.json").exists(),
             "Expected detailed_run_stats.json file to be created",
         )
+
+
+class TelemetryLoggingConfigTest(unittest.TestCase):
+    """The telemetry logging config composes, instantiates, and writes an episode."""
+
+    def setUp(self) -> None:
+        self.output_dir = tempfile.mkdtemp()
+
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+            self.cfg = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=test/evidence_lm/base_mujoco",
+                    "logging=telemetry_detailed",
+                    f"++experiment.config.logging.output_dir={self.output_dir}",
+                    "++experiment.config.logging.exclude=[motor_system]",
+                ],
+            )
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.output_dir)
+
+    def test_running_an_episode_writes_a_filtered_npz_file(self) -> None:
+        exp = instantiate_experiment(self.cfg.experiment)
+        with exp:
+            exp.model.set_experiment_mode(ExperimentMode.EVAL)
+            exp.run_epoch()
+
+        episodes_dir = exp.output_dir / EXPERIMENT_SUBDIRECTORY
+        episode = load_episode(episodes_dir / "episode_000000.npz")["0"]
+        self.assertIn("LM_0", episode)
+        self.assertIn("target", episode)
+        self.assertIn("attention_system", episode)
+        self.assertNotIn("motor_system", episode)

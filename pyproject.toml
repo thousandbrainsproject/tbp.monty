@@ -44,6 +44,8 @@ dependencies = [
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
+    "orjson>=3.10.15",
+    "ipykernel>=6.29.5",
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']
@@ -68,6 +70,10 @@ simulator_mujoco = [
 analysis = [
     'ipython',
     'seaborn',
+]
+viz = [
+    # Interactive 3D inspection of learned object models (analysis/scripts/inspect_models.py)
+    'vedo',
 ]
 build = [
     'build'
@@ -136,6 +142,7 @@ exclude = ['venv', '\.venv', '\.direnv', '\.git', 'setup\.py']
 experimental_namespace_package = true # recognize tbp.monty as a namespace package
 ignore = ['DEP002']
 known_first_party = [
+    'analysis',
     'attr', # transitive dependency bundled with habitat-sim
     'magnum', # transitive dependency bundled with habitat-sim
     'quaternion', # transitive add-on for numpy installed via conda (conda-forge::quaternion)
@@ -320,7 +327,10 @@ convention = "google"
 version = { attr = "tbp.monty.__version__" }
 
 [tool.setuptools.packages.find]
-where = ["src"]
+# src holds the tbp.monty distribution; the repo-root analysis package rides
+# along so sibling repos (tbp.telemetry_viewer) can import it editably.
+where = ["src", "."]
+include = ["tbp*", "analysis*"]
 
 [tool.setuptools.package-data]
 'tbp.monty.conf' = ['**/*.yaml']

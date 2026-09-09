@@ -49,6 +49,25 @@ def output_dir_from_run_name(config: DictConfig) -> Path:
     return output_dir
 
 
+def save_config_yaml(config: DictConfig, output_dir: Path) -> Path:
+    """Write the composed config into the run's directory, for reference.
+
+    The same unresolved notation as the conf snapshots
+    (``tests/conf/snapshots/``), so a run's config diffs cleanly against
+    the snapshot of the experiment it came from.
+
+    Args:
+        config: Hydra config.
+        output_dir: The run's output directory.
+
+    Returns:
+        The written path.
+    """
+    path = Path(output_dir) / "config.yaml"
+    path.write_text(OmegaConf.to_yaml(config))
+    return path
+
+
 @hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
     if cfg.quiet_habitat_logs:
@@ -57,7 +76,9 @@ def main(cfg: DictConfig):
 
     print_config(cfg)
 
-    cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
+    output_dir = output_dir_from_run_name(cfg)
+    save_config_yaml(cfg, output_dir)
+    cfg.experiment.config.logging.output_dir = str(output_dir)
 
     experiment = instantiate_experiment(cfg.experiment)
     start_time = time.time()
