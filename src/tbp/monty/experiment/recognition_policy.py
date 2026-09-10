@@ -37,7 +37,10 @@ class RecognitionCounter:
     """Experiment counters and limits."""
 
     step: int = 0
+    """The current step number."""
+
     max_steps: int = 0
+    """The maximum number of steps before terminating the episode."""
 
 
 @dataclass
