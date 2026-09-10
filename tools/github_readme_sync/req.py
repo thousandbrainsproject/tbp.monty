@@ -71,7 +71,7 @@ class ReadMeResource(TypedDict, total=False):
 
 
 class ReadMePaging(TypedDict, total=False):
-    """Pagination field returned by collection endpoints."""
+    """Pagination field returned by collection endpoint."""
 
     next: str | None
 
