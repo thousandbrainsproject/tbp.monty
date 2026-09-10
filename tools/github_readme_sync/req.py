@@ -213,10 +213,9 @@ def _unwrap_next_page(payload: ReadMeCollectionResponse) -> str | None:
         The value of paging.next, or None when the response or paging is
         not a dictionary, or when next is missing or None.
     """
-
     paging = payload.get("paging") if isinstance(payload, dict) else None
-    next_path = paging.get("next") if isinstance(paging, dict) else None
-    return next_path
+    return paging.get("next") if isinstance(paging, dict) else None
+
 
 
 def get(
