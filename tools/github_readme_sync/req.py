@@ -217,7 +217,6 @@ def _unwrap_next_page(payload: ReadMeCollectionResponse) -> str | None:
     return paging.get("next") if isinstance(paging, dict) else None
 
 
-
 def get(
     url: str,
     headers: dict[str, str] | None = None,
