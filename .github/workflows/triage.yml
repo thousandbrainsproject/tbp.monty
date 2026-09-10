@@ -2,13 +2,13 @@ name: Triage
 on:
   pull_request_target:
     branches:
-    - main
+      - main
     types:
-    - edited
-    - labeled
-    - opened
-    - unlabeled
-    - synchronize
+      - edited
+      - labeled
+      - opened
+      - unlabeled
+      - synchronize
 
 permissions:
   pull-requests: write
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           lfs: true
