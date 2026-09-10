@@ -129,7 +129,7 @@ An experiment config for training on the Omniglot dataset can then look like thi
 # @package _global_
 
 defaults:
-  - /monty: graph_exp1000_emin_t3_tot2500
+  - /monty: graph_exp1000_emin_t3
   - /monty/motor_system_config: informed_random_walk_1
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_dist_omniglot_tutorial
@@ -149,7 +149,9 @@ experiment:
     n_train_epochs: 1
     n_eval_epochs: 3
     model_name_or_path: ""
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: all
     logging:
@@ -196,7 +198,7 @@ And a config for inference on those trained models could look like this:
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty: evidencegraph_exp1000_e3_t3
   - /monty/motor_system_config: informed_random_walk_5
   - /monty/learning_module: evidence_omniglot_tutorial
   - /monty/sensor_module: camera_dist_omniglot_tutorial
@@ -216,7 +218,9 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     logging:
@@ -273,7 +277,7 @@ An experiment config can then look like this:
 # @package _global_
 
 defaults:
-  - /monty: graph_exp1000_emin_t3_tot2500
+  - /monty: graph_exp1000_emin_t3
   - /monty/motor_system_config: informed_random_walk_20 # move 20 pixels at a time
   - /monty/learning_module: evidence_1lm_nn10_dod003_dts02_gsg0
   - /monty/sensor_module: camera_dist
@@ -293,7 +297,9 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: 1
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
@@ -314,7 +320,7 @@ For more configs to test on different subsets of the Monty Meets World dataset (
 >
 > You will also need to [download the pre-trained models](https://docs.thousandbrains.org/docs/getting-started#42-download-pretrained-models). Alternatively, you can run pre-training yourself by running `python run.py experiment=only_surf_agent_training_numenta_lab_obj`. Running pre-training requires the Habitat simulator and [downloading the `numenta_lab` 3D mesh dataset](https://docs.thousandbrains.org/docs/benchmark-experiments#monty-meets-world).
 
-To run the experiment, call `python run.py experiment=tutorial/monty_meets_world_2dimage_inference`. If you don't want to log to wandb, set the `WANDB_MODE=disabled` environment variable, or change to a logging configuration without any wandb handlers (i.e., set `wandb_handlers: []` under the `logging`). If you just want to run a quick test on a few of the images, adjust the `scenes` and `versions` parameters in `config.eval_env_interface_args`.
+To run the experiment, call `python run.py experiment=tutorial/monty_meets_world_2dimage_inference`. If you don't want to log to wandb, set the `WANDB_MODE=disabled` environment variable, or change to a logging configuration without any wandb configured (e.g., `basic_info_monty_runs`). If you just want to run a quick test on a few of the images, adjust the `scenes` and `versions` parameters in `config.eval_env_interface_args`.
 
 # Other Things You May Need to Customize
 If your application uses sensors different from our commonly used cameras and depth sensors, or you want to extract specific features from your sensory input, you will need to define a custom sensor module. The sensor module receives the raw observations from the environment interface and converts them into the CMP, which contains features at poses. For more details on converting raw observations into the CMP, see our [documentation on sensor modules](https://docs.thousandbrains.org/docs/sensor-module).

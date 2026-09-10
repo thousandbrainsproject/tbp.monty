@@ -55,7 +55,6 @@ We can see the details at `src/tbp/monty/conf/env_interface/tutorial_eval_2obj_p
 
 do_eval: true
 eval_env_interface_args:
-  parent_to_child_mapping: null
   # Specify objects to test.
   object_names:
   - mug
@@ -172,7 +171,7 @@ We then integrate these sensor and learning module configs into the overall expe
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_emin_t3_tot2500
+  - /monty: evidencegraph_exp1000_emin_t3
   - /monty/motor_system_config: surface_curvature_informed_goal1
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj
   - /monty/sensor_module: camera_tutorial_surf_agent_2obj
@@ -194,7 +193,9 @@ experiment:
     # Specify the path where we saved the pretrained model
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train/pretrained"}
     n_eval_epochs: 3
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG

@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /monty: graph_exp20_e3_t3_tot2500
+  - /monty: graph_exp20_e3_t3
   - /monty/motor_system_config: surface
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_surf
@@ -21,7 +21,9 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: 3
     model_name_or_path: ''
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     logging:

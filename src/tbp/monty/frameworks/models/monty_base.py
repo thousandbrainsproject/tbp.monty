@@ -11,13 +11,12 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any, ClassVar, Sequence
+from typing import Any, Sequence
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     Monty,
@@ -35,8 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 class MontyBase(Monty):
-    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {"TEST": TestLogger}
-
     _is_done: bool
 
     def __init__(
@@ -51,7 +48,6 @@ class MontyBase(Monty):
         min_eval_steps,
         min_train_steps,
         num_exploratory_steps,
-        max_total_steps,
     ) -> None:
         """Initialize the base class.
 
@@ -80,7 +76,6 @@ class MontyBase(Monty):
             min_eval_steps: Minimum number of steps required for evaluations.
             min_train_steps: Minimum number of steps required for training.
             num_exploratory_steps: Number of steps required by the exploratory phase.
-            max_total_steps: Maximum number of steps to run the experiment.
 
         Raises:
             ValueError: If `sm_to_lm_matrix` is not defined
@@ -100,11 +95,9 @@ class MontyBase(Monty):
         self.min_eval_steps = min_eval_steps
         self.min_train_steps = min_train_steps
         self.num_exploratory_steps = num_exploratory_steps
-        self.max_total_steps = max_total_steps
 
         # Counters, logging, default step_type
         self.step_type = "matching_step"
-        self.is_seeking_match = True  # for consistency with custom monty experiments
         self.experiment_mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
         )
@@ -152,6 +145,11 @@ class MontyBase(Monty):
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
+        # If we're performing a "motor only" step, the normal step logic is skipped.
+        if self.is_motor_only_step:
+            logger.debug("Performing a motor-only step")
+            return self.motor_only_step(ctx, observations, proprioceptive_state)
+
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
@@ -160,6 +158,7 @@ class MontyBase(Monty):
             self._exploratory_step(ctx, observations, proprioceptive_state)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
+
         # TODO: Once this works, refactor to be more functional and less side-effect
         #       driven. For now, we're minimizing changes to the existing side-effect
         #       driven pattern and return `self._actions` that got updated at some
@@ -223,7 +222,7 @@ class MontyBase(Monty):
             True if max_steps was reached, False otherwise.
         """
         if (
-            self.is_seeking_match and self.matching_steps >= max_steps
+            (not self.is_exploring) and (self.matching_steps >= max_steps)
             # Since we increment matching steps from 0 (i.e. the first matching
             # step is the "0th" step, this is set to >=, not >)
         ):
@@ -288,14 +287,14 @@ class MontyBase(Monty):
         combined_inputs = [
             inputs_from_sms[i]
             for i in range(len(inputs_from_sms))
-            if inputs_from_sms[i].use_state
+            if inputs_from_sms[i].pass_message
         ]
         if len(combined_inputs) == 0:
             # If we have no sensory input, we also don't use LM input
             return combined_inputs
 
         for lm_input in inputs_from_lms:
-            if lm_input.use_state:
+            if lm_input.pass_message:
                 combined_inputs.append(lm_input)
         return combined_inputs
 
@@ -370,9 +369,6 @@ class MontyBase(Monty):
                         f"finished evaluating after {self.matching_steps} steps"
                     )
 
-    def _post_step(self):
-        pass
-
     ###
     # Methods (other than step) that interact with the experiment
     ###
@@ -397,16 +393,21 @@ class MontyBase(Monty):
         self.motor_system.reset()
         self._goals = []
 
-    def snapshot_ltm(self) -> Memento:
-        return {"lms": [copy.deepcopy(lm.state_dict()) for lm in self.learning_modules]}
+    def snapshot(self) -> Memento:
+        memo = {}
+        lm_dict = {
+            lm.learning_module_id: lm.state_dict() for lm in self.learning_modules
+        }
+        memo["lm_dict"] = copy.deepcopy(lm_dict)
+        return memo
 
-    def restore_ltm(self, memo: Memento) -> None:
-        memo_lms: list[Memento] = memo["lms"]
+    def restore(self, memo: Memento) -> None:
+        lm_dict = memo["lm_dict"]
         # TODO: this is a weak compatibility check, make it stronger.
-        if len(memo_lms) != len(self.learning_modules):
+        if len(lm_dict) != len(self.learning_modules):
             raise ValueError("Incompatible Memento (different number of LMs)")
-        for idx, lm in enumerate(self.learning_modules):
-            m: Memento = memo_lms[idx]
+        for lm in self.learning_modules:
+            m: Memento = lm_dict[lm.learning_module_id]
             lm.load_state_dict(copy.deepcopy(m))
 
     def fixme_set_ground_truth(
@@ -502,6 +503,10 @@ class MontyBase(Monty):
         return self.motor_system.motor_only_step
 
     @property
+    def is_exploring(self) -> bool:
+        return self.step_type == "exploratory_step"
+
+    @property
     def is_done(self) -> bool:
         return self._is_done
 
@@ -548,10 +553,8 @@ class MontyBase(Monty):
 
     def switch_to_matching_step(self):
         self.step_type = "matching_step"
-        self.is_seeking_match = True
         logger.debug(f"Going into matching mode after {self.episode_steps} steps")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
-        self.is_seeking_match = False
         logger.info(f"Going into exploratory mode after {self.matching_steps} steps")

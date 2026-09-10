@@ -40,7 +40,13 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/surf_agent_2obj_train"],
+                overrides=[
+                    "experiment=tutorial/surf_agent_2obj_train",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
             )
             config.experiment.config.logging.output_dir = str(
                 output_dir_from_run_name(config)
@@ -85,7 +91,13 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/dist_agent_5lm_2obj_train"],
+                overrides=[
+                    "experiment=tutorial/dist_agent_5lm_2obj_train",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
             )
             config.experiment.config.logging.output_dir = str(
                 output_dir_from_run_name(config)
@@ -112,7 +124,13 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/omniglot_training"],
+                overrides=[
+                    "experiment=tutorial/omniglot_training",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.max_train_steps=3",
+                    "experiment.config.max_total_steps=3",
+                ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))
             config.experiment.config.logging.output_dir = inference_output_dir
@@ -142,7 +160,7 @@ class TutorialsTest(TestCase):
                 overrides=[
                     "experiment=tutorial/monty_meets_world_2dimage_inference",
                     # Non-interactive
-                    "experiment.config.logging.wandb_handlers=[]",
+                    "experiment.config.logging.monty_data_logger.handlers=[{_target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}]",  # noqa: E501
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",

@@ -54,7 +54,7 @@ Note that all benchmark experiments were performed with the total least-squares 
 
 ## Shorter Experiments with 10 Objects
 
-The following results are obtained from experiments using the 10-object subsets of the YCB dataset described above. `base` configs test with all 14 known rotations (10 objects * 14 rotations each = 140 episodes), and `randrot` configs test with 10 random rotations (10 objects * 10 rotation each = 100 episodes). All experiments were run on 16 CPUs with parallelization except for `base_10multi_distinctobj_dist_agent`; this experiment must be run without parallelization.
+The following results are obtained from experiments using the 10-object subsets of the YCB dataset described above. `base` configs test with all 14 known rotations (10 objects * 14 rotations each = 140 episodes), and `randrot` configs test with 10 random rotations (10 objects * 10 rotation each = 100 episodes). All experiments were run on 16 CPUs with parallelization.
 
 ### Results
 
@@ -121,16 +121,17 @@ These experiments are currently run without multiprocessing (using `run.py`).
 
 ## Logos on Objects
 
-The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP logo bent half-way along the logo at 45 degrees.
+The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically.
 
 ![](../figures/overview/comp_logo_dataset_examples.png)
 
-We want to determine the ability of a Monty system with a hierarchy of LMs (here, a single low-level LM sending input to a single high-level LM) to build compositional models of these kinds of objects. To enable learning such models, we provide some amount of supervision to the LMs. The low and high-level LMs begin by learning the 3D objects and logos in isolation, as standalone objects. These are referred to as object "parts" in the configs. We then present Monty the compositional objects, while the low-level LM is set to perform unsupervised inference. Any object IDs it detects to the high level LM. The high level LM continues learning, and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
+We want to determine the ability of a Monty system with a heterarchy of LMs to build compositional models of these kinds of objects. Two low-level SM/LM pairs operate independently: one learns the 3D objects and the other learns the 2D logos. Both low-level LMs send detected object IDs to a high-level LM, which also receives direct input from a third 3D SM through a skip connection. To enable learning such models, we provide some amount of supervision to the LMs. The low-level LMs first learn the 3D objects and logos in isolation as standalone objects. We then present Monty with the compositional objects while the low-level LMs perform unsupervised inference. The high-level LM continues learning and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
 
-To measure performance, we introduced two new metrics:
+The monolithic baseline uses the same two child SM/LM pairs and third high-level SM/LM pair, and follows the same staged training process: the low-level LMs first learn the 3D objects and logos, and then the high-level LM is trained on the compositional objects. However, there are no connections between LMs. Each LM receives input only from its paired SM, so the high-level LM learns each object as a monolithic model rather than as a composition of detected child objects.
 
-* `consistent_child_obj`, which measures when a learning module detects an object within the set of plausible children objects. For example, the consistent child objects for `mug_tbp_horz` would be `mug` and `tbp_logo`. We use this since the lower level LM doesn't have the compositional model and we have no ability, e.g. a semantic sensor, to know which part it was sensing.
-* `mlh_prediction_error`, which measures how closely the prediction of the most likely hypothesis matches the current input.
+The accuracy, Used MLH, average rotation error, and average prediction error in the results below are reported for `LM_2`, rather than using episode-level aggregate metrics. In the compositional configuration, `LM_2` is the higher-level parent LM that receives outputs from `LM_0` and `LM_1`. The monolithic control also reports `LM_2` so the two configurations measure the same high-level LM, although `LM_2` is not a parent in the monolithic configuration because there are no LM-to-LM connections. Matching steps and runtime remain experiment-level metrics.
+
+For each model type, we report a baseline inference configuration and a `randrot_noise` inference configuration.
 
 ### Results
 
@@ -149,26 +150,45 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Dataset | Archive Format | Download Link |
 > | --- | --- | --- |
-> | compositional_objects_1.1 | tgz | [compositional_objects_1.1.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz) |
-> | compositional_objects_1.1 | zip | [compositional_objects_1.1.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip) |
+> | compositional_objects_1.2 | tgz | [compositional_objects_1.2.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.tgz) |
+> | compositional_objects_1.2 | zip | [compositional_objects_1.2.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.zip) |
 > 
-> Unpack the archive in the `~/tbp/data/` folder. For example:
+> Unpack the archive in the `~/tbp/data/habitat/versioned_data/` folder. For example:
 >
 > ```plaintext tgz
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/habitat/versioned_data/
 >
-> cd ~/tbp/data/
+> cd ~/tbp/data/habitat/versioned_data/
 >
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.tgz | tar -xzf -
 > ```
+>
+> or
+>
 > ```plaintext zip
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/habitat/versioned_data/
 > 
-> cd ~/tbp/data/
+> cd ~/tbp/data/habitat/versioned_data/
 > 
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.1.zip
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.zip
 > 
-> unzip compositional_objects_1.1.zip
+> unzip compositional_objects_1.2.zip
+> ```
+>
+> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder. If this is the first time you are doing this, you can use:
+>
+> ```plaintext
+> mkdir -p ~/tbp/data/habitat/objects/
+>
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
+> ```
+>
+> If you have a pre-existing symlink for an old version of the dataset, then you will need to remove this first, i.e.:
+>
+> ```plaintext
+> rm ~/tbp/data/habitat/objects/compositional_objects
+>
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
 > ```
 >
 > To generate the pretrained models, run the following experiments in order:
@@ -184,8 +204,8 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Models | Archive Format | Download Link |
 > | --- | --- | --- |
-> | pretrained_compositional_objects_v4 | tgz | [pretrained_compositional_objects_v4.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.tgz) |
-> | pretrained_compositional_objects_v4 | zip | [pretrained_compositional_objects_v4.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.zip) |
+> | pretrained_compositional_objects_v6 | tgz | [pretrained_compositional_objects_v6.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.tgz) |
+> | pretrained_compositional_objects_v6 | zip | [pretrained_compositional_objects_v6.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.zip) |
 >
 > Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 >
@@ -194,16 +214,16 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.tgz | tar -xzf -
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.tgz | tar -xzf -
 > ```
 > ```plaintext zip
 > mkdir -p ~/tbp/results/monty/pretrained_models/
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v4.zip
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.zip
 >
-> unzip pretrained_compositional_objects_v4.zip
+> unzip pretrained_compositional_objects_v6.zip
 > ```
 
 

@@ -163,7 +163,8 @@ class AdvancedPolicyTest(unittest.TestCase):
                 "hsv": [0, 1, 1],
             },
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
+            process_features_in_lm=True,
             sender_id=fake_sender_id,
             sender_type="SM",
         )
@@ -591,7 +592,6 @@ class AdvancedPolicyTest(unittest.TestCase):
             while True:
                 observations, proprioceptive_state = exp.env_interface.step(actions)
                 actions = exp.model.step(ctx, observations, proprioceptive_state)
-                exp.post_step(step, observations)
 
                 if step == 3:  # Surface agent should have re-oriented
                     break
@@ -954,7 +954,8 @@ class AdvancedPolicyTest(unittest.TestCase):
                 "hsv": [0, 1, 1],
             },
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
+            process_features_in_lm=True,
             sender_id="patch",
             sender_type="SM",
         )

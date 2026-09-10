@@ -61,11 +61,15 @@ def add_patch_outline_to_view_finder(view_finder_image, center_pixel_id, patch_s
     y2 = center_pixel_id[1] + patch_size // 2
     marked_image = np.array(view_finder_image.copy())
 
-    # Set the outline pixels to blue
-    marked_image[x1 : x1 + 2, y1:y2] = [0, 0, 255, 0]
-    marked_image[x2 : x2 + 2, y1:y2] = [0, 0, 255, 0]
-    marked_image[x1:x2, y1 : y1 + 2] = [0, 0, 255, 0]
-    marked_image[x1:x2, y2 : y2 + 2] = [0, 0, 255, 0]
+    # Set the outline pixels to blue, sized to the image's channel count so a
+    # 3-channel RGB view finder works as well as a 4-channel RGBA one (a bare
+    # RGB image otherwise raises a broadcasting error).
+    n_channels = marked_image.shape[-1] if marked_image.ndim == 3 else 1
+    outline_color = [0, 0, 255, 0][:n_channels]
+    marked_image[x1 : x1 + 2, y1:y2] = outline_color
+    marked_image[x2 : x2 + 2, y1:y2] = outline_color
+    marked_image[x1:x2, y1 : y1 + 2] = outline_color
+    marked_image[x1:x2, y2 : y2 + 2] = outline_color
     return marked_image
 
     # TODO when separating detection and logging from this plotting code, re-use

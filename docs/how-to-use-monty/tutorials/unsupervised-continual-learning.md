@@ -24,7 +24,7 @@ defaults:
   # collect more information about it. It also requires at least 100 train steps (`t100`) before
   # recognizing an object to avoid early misclassifications when we have few objects in
   # memory.
-  - /monty: graph_exp1000_e3_t100_tot2500
+  - /monty: graph_exp1000_e3_t100
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
   # We will use the default surface sensor modules (one habitat surface patch, one logging view finder)
@@ -45,7 +45,9 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: 3
     model_name_or_path: ''
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: []
     do_eval: false
@@ -110,7 +112,6 @@ Additionally, we inspect the configuration in `src/tbp/monty/conf/env_interface/
 
 do_train: true
 train_env_interface_args:
-  parent_to_child_mapping: null
   # Here we specify which objects to learn. We are going to use the mug and bowl
   # from the YCB dataset.
   object_names:

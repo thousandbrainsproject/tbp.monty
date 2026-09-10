@@ -11,7 +11,7 @@
 defaults:
   # /monty defines what Monty we will use and how many exploration, evaluation,
   # training, and total steps to configure it with.
-  - /monty: graph_exp1000_e3_t3_tot2500
+  - /monty: graph_exp1000_e3_t3
 
   # /monty/motor_system_config specifies what motor system and motor policy to
   # use within Monty. We use a motor system with an InformedPolicyRandomWalk where
@@ -73,7 +73,12 @@ experiment:
     n_eval_epochs: 3
     # The path to the model to load, if any.
     model_name_or_path: ""
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
+      max_total_steps: 6000
     # The random seed for the experiment.
     seed: 42
     # The list of learning module IDs to supervise, or "all" to supervise all

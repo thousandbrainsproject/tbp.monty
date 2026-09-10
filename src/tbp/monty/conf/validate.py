@@ -14,7 +14,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.frameworks.run_env import setup_env
-from tbp.monty.hydra import instantiate_experiment, register_resolvers
+from tbp.monty.hydra import instantiate_experiment
 
 
 @hydra.main(config_path=".", config_name="experiment", version_base=None)
@@ -36,5 +36,4 @@ def validate(cfg: DictConfig):
 
 if __name__ == "__main__":
     setup_env()
-    register_resolvers()
     validate()

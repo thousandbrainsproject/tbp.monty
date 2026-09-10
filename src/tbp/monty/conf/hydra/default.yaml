@@ -1,0 +1,5 @@
+# @package _global_
+
+hydra:
+  run:
+    dir: ${experiment.config.logging.output_dir}/${experiment.config.logging.run_name}/${now:%Y%m%dT%H%M%S}
