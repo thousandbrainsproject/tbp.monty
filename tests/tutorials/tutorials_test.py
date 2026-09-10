@@ -96,7 +96,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                     "experiment.config.max_train_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=503",
                 ],
             )
             config.experiment.config.logging.output_dir = str(
