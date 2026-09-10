@@ -281,12 +281,11 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
                 ~/tbp/data/worldimages/labeled_scenes/
             hfov: horizontal field of view (degrees) of the camera that captured
                 the images, used to unproject depth into 3D. Defaults to 54.201,
-                the iPad front camera; set it to your camera's HFOV for other
-                devices.
+                the iPad front camera. Source for the default value:
+                https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html
             depth_clip_value: depth (meters) beyond which points are treated as
                 background when unprojecting. Defaults to 1.1, tuned for the
-                iPad-range Monty Meets World captures; raise it for cameras
-                imaging farther scenes.
+                iPad-range Monty Meets World captures.
         """
         self.patch_size = patch_size
         self.hfov = hfov
@@ -583,9 +582,6 @@ class SaccadeOnImageEnvironment(SimulatedEnvironment):
             resolutions=[self.current_depth_image.shape],
             world_coord=True,
             zooms=1,
-            # Camera HFOV. Defaults to the iPad front camera (54.201 deg,
-            # https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html)
-            # but is configurable so images from other cameras unproject correctly.
             hfov=self.hfov,
             get_all_points=True,
             use_semantic_sensor=False,
@@ -719,10 +715,9 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
                 ~/tbp/data/worldimages/world_data_stream/
             hfov: horizontal field of view (degrees) of the capturing camera,
                 used to unproject depth into 3D. Defaults to 54.201 (iPad front
-                camera); set it to your camera's HFOV for other devices.
+                camera).
             depth_clip_value: depth (meters) beyond which points are treated as
-                background when unprojecting. Defaults to 1.1; raise it for
-                cameras imaging farther scenes.
+                background when unprojecting. Defaults to 1.1.
         """
         # TODO: use super() to avoid repeating lines of code
         self.patch_size = patch_size
