@@ -36,7 +36,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           lfs: true
-          path: pr_docs
+          # WARNING: DO NOT execute code from this path, as it is untrusted and
+          # this workflow is running under the 'pull_request_target' action which
+          # has escalated privileges and access to secrets.
+          path: pr_code
+          allow-unsafe-pr-checkout: 'true'
       - name: Create initial PR comment
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
