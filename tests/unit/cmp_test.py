@@ -14,6 +14,9 @@ from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
+from hypothesis import given
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
@@ -104,8 +107,57 @@ class EncodeGoalTest(unittest.TestCase):
         )
 
 
+@st.composite
+def shape_not_n_by_3(draw: st.DrawFn) -> tuple[int, ...]:
+    """Returns a shape that is not N by 3."""
+    return draw(
+        st.one_of(
+            st.tuples(
+                # 1D
+                st.integers(min_value=0, max_value=10),
+                # 2D, not N by 3
+                st.tuples(
+                    st.integers(min_value=0, max_value=10),
+                    st.one_of(
+                        st.integers(min_value=0, max_value=2),
+                        st.integers(min_value=4, max_value=10),
+                    ),
+                ),
+                # 3D+
+                st.tuples(
+                    *(
+                        st.integers(min_value=0, max_value=10)
+                        for _ in range(draw(st.integers(min_value=3, max_value=10)))
+                    )
+                ),
+            )
+        )
+    )
+
+
+@st.composite
+def locations_not_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
+    """Returns an array of locations that is not N by 3."""
+    return draw(
+        arrays(
+            dtype=np.float64,
+            shape=shape_not_n_by_3(),
+            elements=st.just(0.0),
+            fill=st.just(0.0),
+        )
+    )
+
+
 class AttentionRegionTest(unittest.TestCase):
-    def test_initialized_with_locations_that_does_not_have_3_columns_raises_value_error(
+    @given(locations=locations_not_n_by_3())
+    def test_initialized_with_locations_not_n_by_3_raises_value_error(
+        self,
+        locations: npt.NDArray[np.float64],
+    ):
+        with self.assertRaises(ValueError):
+            AttentionRegion(locations=locations, weights=np.ones(locations.shape[0]))
+
+    def test_initialized_with_weights_that_does_not_have_1_column_raises_value_error(
         self,
     ):
         pass
@@ -113,4 +165,10 @@ class AttentionRegionTest(unittest.TestCase):
     def test_initialized_with_mismatched_number_of_locations_and_weights_raises_value_error(  # noqa: E501
         self,
     ):
+        pass
+
+    def test_uniform_gives_every_location_the_weight(self):
+        pass
+
+    def test_concat_keeps_every_location_and_weight_in_order(self):
         pass
