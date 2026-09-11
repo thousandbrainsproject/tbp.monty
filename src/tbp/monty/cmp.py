@@ -394,15 +394,11 @@ def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None
 
 @dataclass(frozen=True)
 class AttentionRegion:
-    """A set of locations, each carrying an attention weight.
-
-    The unit a sensor or learning module proposes to the attention system
-    each step. Weights are bounded by ``MIN_ATTENTION_WEIGHT`` (full
-    inhibition) and ``MAX_ATTENTION_WEIGHT`` (full excitation).
+    """A sequence of locations, each carrying an attention weight.
 
     Attributes:
         locations: (N, 3) body-frame locations.
-        weights: (N,) attention weight of each location.
+        weights: (N,) attention weight associated with each location.
     """
 
     locations: npt.NDArray[np.floating]
@@ -436,7 +432,7 @@ class AttentionRegion:
 
     @classmethod
     def empty(cls) -> AttentionRegion:
-        """Return a region holding no locations.
+        """Return a region consisting of zero locations and weights.
 
         Returns:
             The empty region.
@@ -453,7 +449,7 @@ class AttentionRegion:
 
         Args:
             locations: (N, 3) body-frame locations.
-            weight: The attention weight shared by all of them.
+            weight: The attention weight shared by all locations.
 
         Returns:
             The region.
@@ -466,11 +462,11 @@ class AttentionRegion:
         """Join regions into one, keeping their order.
 
         Args:
-            regions: The regions to join.
+            regions: Zero or more regions to join.
 
         Returns:
-            One region holding every location of every input region; it
-            carries the inhibit-all signal if any input does.
+            One region holding every location of every input region, in order, with
+            their associated weights.
         """
         regions = list(regions)
         if not regions:

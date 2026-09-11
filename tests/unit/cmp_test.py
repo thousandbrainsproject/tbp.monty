@@ -14,7 +14,7 @@ from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -179,7 +179,7 @@ def locations_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
         arrays(
             dtype=np.float64,
             shape=st.tuples(st.integers(min_value=0, max_value=10), st.just(3)),
-            elements=st.just(0.0),
+            elements=st.floats(allow_nan=False, allow_infinity=False),
             fill=st.just(0.0),
         )
     )
@@ -214,11 +214,31 @@ def mismatched_locations_and_weights(
 @st.composite
 def locations_and_a_weight(
     draw: st.DrawFn,
-) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+) -> tuple[npt.NDArray[np.float64], float]:
     """Returns a tuple of locations and weights with matching first dimensions."""
     locations = draw(locations_n_by_3())
-    weight = draw(st.floats(allow_nan=False))
+    weight = draw(st.floats(allow_nan=False, allow_infinity=False))
     return locations, weight
+
+@st.composite
+def attention_region(draw: st.DrawFn) -> AttentionRegion:
+    """Returns an AttentionRegion with valid locations and weights."""
+    locations = draw(locations_n_by_3())
+    weights = draw(
+        arrays(
+            dtype=np.float64,
+            shape=st.tuples(st.just(locations.shape[0])),
+            elements=st.floats(allow_nan=False, allow_infinity=False),
+            fill=st.just(0.0),
+        )
+    )
+    return AttentionRegion(locations=locations, weights=weights)
+
+
+@st.composite
+def attention_regions(draw: st.DrawFn) -> list[AttentionRegion]:
+    """Returns a list of AttentionRegions with valid locations and weights."""
+    return draw(st.lists(attention_region(), min_size=0, max_size=10))
 
 
 class AttentionRegionTest(unittest.TestCase):
@@ -250,7 +270,7 @@ class AttentionRegionTest(unittest.TestCase):
     @given(locations_and_a_weight=locations_and_a_weight())
     def test_uniform_gives_every_location_the_weight(
         self,
-        locations_and_a_weight: tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]],
+        locations_and_a_weight: tuple[npt.NDArray[np.float64], float],
     ):
         locations, weight = locations_and_a_weight
         attention_region = AttentionRegion.uniform(locations=locations, weight=weight)
@@ -258,5 +278,25 @@ class AttentionRegionTest(unittest.TestCase):
             attention_region.weights, np.full(locations.shape[0], weight)
         )
 
-    def test_concat_keeps_every_location_and_weight_in_order(self):
-        pass
+    @settings(deadline=None)
+    @given(attention_regions=attention_regions())
+    def test_concat_keeps_every_location_and_weight_in_order(
+        self, attention_regions: list[AttentionRegion]
+    ):
+        attention_region = AttentionRegion.concat(attention_regions)
+        if len(attention_regions) == 0:
+            self.assertEqual(len(attention_region.locations), 0)
+            self.assertEqual(len(attention_region.weights), 0)
+            self.assertEqual(len(attention_region), 0)
+        else:
+            np.testing.assert_array_equal(
+                attention_region.locations,
+                np.concatenate([ar.locations for ar in attention_regions]),
+            )
+            np.testing.assert_array_equal(
+                attention_region.weights,
+                np.concatenate([ar.weights for ar in attention_regions]),
+            )
+            self.assertEqual(
+                len(attention_region), sum(len(ar) for ar in attention_regions)
+            )
