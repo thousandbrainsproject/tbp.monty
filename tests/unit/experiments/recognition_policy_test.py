@@ -70,14 +70,11 @@ class MontyIsDoneTest(unittest.TestCase):
     @given(
         is_done=st.booleans(),
         step=st.integers(min_value=0),
-        variance=st.integers(min_value=-5, max_value=5),
     )
-    def test_defers_to_model_regardless_of_step(
-        self, is_done: bool, step: int, variance: int
-    ) -> None:
+    def test_defers_to_model_regardless_of_step(self, is_done: bool, step: int) -> None:
         model = _model_is_done(is_done)
         policy = MontyIsDone()
-        count = RecognitionCounter(step, max_steps=step + variance)
+        count = RecognitionCounter(step)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
 
@@ -86,8 +83,8 @@ class MaximumStepsTest(unittest.TestCase):
     @given(max_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
     def test_times_out_at_or_after_max_steps(self, max_steps: int, extra: int) -> None:
         model = _model_is_done(is_done=False)
-        policy = MaximumSteps()
-        count = RecognitionCounter(step=max_steps + extra, max_steps=max_steps)
+        policy = MaximumSteps(max_steps, max_steps)
+        count = RecognitionCounter(step=max_steps + extra)
         result = policy(model, count)
         self.assertTrue(result.is_done)
 
@@ -100,8 +97,8 @@ class MaximumStepsTest(unittest.TestCase):
     ) -> None:
         (step, max_steps) = asc
         model = _model_is_done(is_done)
-        policy = MaximumSteps()
-        count = RecognitionCounter(step=step, max_steps=max_steps)
+        policy = MaximumSteps(max_steps, max_steps)
+        count = RecognitionCounter(step=step)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
 
@@ -110,7 +107,7 @@ class MinimumCountTest(unittest.TestCase):
     @given(min_lms=st.integers(max_value=0))
     def test_raises_value_error_if_min_lms_is_not_positive(self, min_lms: int) -> None:
         with self.assertRaises(ValueError):
-            MinimumLMs(min_lms)
+            MinimumLMs(min_lms, 1, 1)
 
     @given(
         num_concluded=st.integers(min_value=0, max_value=10),
@@ -124,8 +121,8 @@ class MinimumCountTest(unittest.TestCase):
             None
         ] * num_pending
         model = _model_with_conclusions(conclusions)
-        policy = MinimumLMs(min_lms)
-        count = RecognitionCounter(step=0, max_steps=1)
+        policy = MinimumLMs(min_lms, 1, 1)
+        count = RecognitionCounter()
         result = policy(model, count)
         self.assertEqual(result.is_done, num_concluded >= min_lms)
 
@@ -133,16 +130,16 @@ class MinimumCountTest(unittest.TestCase):
         model = _model_with_conclusions(
             [RecognitionConclusion.NO_MATCH, RecognitionConclusion.TIME_OUT]
         )
-        policy = MinimumLMs(2)
-        count = RecognitionCounter(step=0, max_steps=1)
+        policy = MinimumLMs(2, 1, 1)
+        count = RecognitionCounter()
         result = policy(model, count)
         self.assertTrue(result.is_done)
 
-    @given(extra=st.integers(min_value=0))
-    def test_times_out_at_or_after_max_steps(self, extra: int) -> None:
+    @given(max_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
+    def test_times_out_at_or_after_max_steps(self, max_steps: int, extra: int) -> None:
         model = _model_with_conclusions([None, None])
-        policy = MinimumLMs(1)
-        count = RecognitionCounter(step=10 + extra, max_steps=10)
+        policy = MinimumLMs(1, max_steps, max_steps)
+        count = RecognitionCounter(max_steps + extra)
         result = policy(model, count)
         self.assertTrue(result.is_done)
 
@@ -223,11 +220,11 @@ class ObjectRecognitionTest(unittest.TestCase):
         self, max_total_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            ObjectRecognition(max_total_steps)
+            ObjectRecognition(1, 1, max_total_steps)
 
     @given(
         is_done=st.booleans(),
-        max_steps=st.integers(min_value=0, max_value=500),
+        max_steps=st.integers(min_value=1, max_value=500),
         extra=st.integers(min_value=0, max_value=500),
         step=st.integers(min_value=0, max_value=2000),
     )
@@ -243,8 +240,8 @@ class ObjectRecognitionTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=is_done, is_exploring=False, matching_steps=matching_steps
         )
-        policy = ObjectRecognition(max_total_steps=max_total_steps)
-        count = RecognitionCounter(step, max_steps=max_steps)
+        policy = ObjectRecognition(max_steps, max_steps, max_total_steps)
+        count = RecognitionCounter(step)
         result = policy(model, count)
         self.assertTrue(result.is_done)
         model.deal_with_time_out.assert_called_once()
@@ -266,8 +263,8 @@ class ObjectRecognitionTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=False, is_exploring=is_exploring, matching_steps=matching_steps
         )
-        policy = ObjectRecognition(max_total_steps=max_total_steps)
-        count = RecognitionCounter(max_total_steps + extra, max_steps=max_steps)
+        policy = ObjectRecognition(max_steps, max_steps, max_total_steps)
+        count = RecognitionCounter(max_total_steps + extra)
         result = policy(model, count)
         self.assertTrue(result.is_done)
         model.deal_with_time_out.assert_called_once()
@@ -290,8 +287,8 @@ class ObjectRecognitionTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=is_done, is_exploring=is_exploring, matching_steps=matching_steps
         )
-        policy = ObjectRecognition(max_total_steps=max_total_steps)
-        count = RecognitionCounter(step, max_steps=max_steps)
+        policy = ObjectRecognition(max_steps, max_steps, max_total_steps)
+        count = RecognitionCounter(step)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
         model.deal_with_time_out.assert_not_called()
