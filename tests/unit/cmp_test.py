@@ -15,7 +15,7 @@ from typing import Literal
 import numpy as np
 import numpy.typing as npt
 
-from tbp.monty.cmp import Goal, Message, encode_goal, location_mean
+from tbp.monty.cmp import AttentionRegion, Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.geometry import Rotation
 
@@ -102,3 +102,15 @@ class EncodeGoalTest(unittest.TestCase):
             json.loads(json.dumps(self.goal, cls=BufferEncoder)),
             json.loads(json.dumps(self.goal_dict, cls=BufferEncoder)),
         )
+
+
+class AttentionRegionTest(unittest.TestCase):
+    def test_initialized_with_locations_that_does_not_have_3_columns_raises_value_error(
+        self,
+    ):
+        pass
+
+    def test_initialized_with_mismatched_number_of_locations_and_weights_raises_value_error(  # noqa: E501
+        self,
+    ):
+        pass
