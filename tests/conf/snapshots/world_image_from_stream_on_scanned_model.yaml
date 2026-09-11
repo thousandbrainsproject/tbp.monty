@@ -105,8 +105,6 @@ experiment:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       run_name: world_image_from_stream_on_scanned_model
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: 3
     n_eval_epochs: 1
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
@@ -115,6 +113,8 @@ experiment:
       count: 1
     recognition_policy:
       _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_train_steps: 1000
+      max_eval_steps: 500
       max_total_steps: 6000
     seed: 42
     supervised_lm_ids: []

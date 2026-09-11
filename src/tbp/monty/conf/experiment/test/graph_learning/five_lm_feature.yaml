@@ -15,8 +15,6 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: false
-    max_train_steps: 30
-    max_eval_steps: 30
     n_train_epochs: 3
     n_eval_epochs: 3
     model_name_or_path: ''
@@ -25,6 +23,8 @@ experiment:
       count: 3
     recognition_policy:
       _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_train_steps: 30
+      max_eval_steps: 30
       max_total_steps: 60
     seed: 42
     supervised_lm_ids: []

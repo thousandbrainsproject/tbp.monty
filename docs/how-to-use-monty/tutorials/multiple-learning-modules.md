@@ -37,8 +37,6 @@ defaults:
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   config:
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3 # unused but required
     model_name_or_path: ''
@@ -121,8 +119,6 @@ defaults:
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: 1 # unused but required
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}

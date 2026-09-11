@@ -61,10 +61,6 @@ experiment:
   config:
     # `show_sensor_output: true` will display a live plot of the sensor output.
     show_sensor_output: false
-    # The maximum number of steps to train for.
-    max_train_steps: 1
-    # The maximum number of steps to evaluate for.
-    max_eval_steps: 500
     # The number of epochs to train for.
     n_train_epochs: 1
     # The number of epochs to evaluate for.

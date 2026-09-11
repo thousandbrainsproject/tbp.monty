@@ -15,14 +15,16 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
   config:
     show_sensor_output: false
-    max_train_steps: 10
-    max_eval_steps: 5
     n_train_epochs: 2
     n_eval_epochs: 1
     model_name_or_path: ""
     match_criterion:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.MaximumSteps
+      max_train_steps: 10
+      max_eval_steps: 5
     seed: 42
     supervised_lm_ids: []
     logging:

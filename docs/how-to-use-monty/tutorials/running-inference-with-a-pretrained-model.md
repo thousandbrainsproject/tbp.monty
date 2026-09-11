@@ -185,8 +185,6 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: true
-    max_train_steps: 1000
-    max_eval_steps: 500
     # We will evaluate each of the 3 test rotations
     n_train_epochs: 3
     # Specify the path where we saved the pretrained model

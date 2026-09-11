@@ -99,8 +99,6 @@ experiment:
         handlers: []
       run_name: omniglot_training
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: 1
     n_eval_epochs: 3
     model_name_or_path: ''

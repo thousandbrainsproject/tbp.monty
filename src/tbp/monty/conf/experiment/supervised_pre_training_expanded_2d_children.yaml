@@ -17,8 +17,6 @@ experiment:
   config:
     skip_on_object_not_visible: true
     show_sensor_output: false
-    max_train_steps: 250
-    max_eval_steps: 500
     n_train_epochs: 7
     n_eval_epochs: 7
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_expanded_3d_children/pretrained/}

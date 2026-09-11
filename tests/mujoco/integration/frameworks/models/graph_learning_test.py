@@ -338,7 +338,7 @@ class GraphLearningTest(BaseGraphTest):
                     exp.pre_epoch()
                 if e >= 2:
                     # Set max steps low & raise mmd to get pose time outs
-                    exp.max_train_steps = 3
+                    exp._recognition_policy._max_train_steps = 3
                     if exp._recreation_mode:
                         lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
                         lm_cfg["max_match_distance"] = 0.1

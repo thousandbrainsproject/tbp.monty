@@ -421,8 +421,6 @@ experiment:
         handlers: []
       run_name: supervised_pre_training_expanded_comp_models_mujoco
     show_sensor_output: false
-    max_train_steps: 250
-    max_eval_steps: 500
     n_train_epochs: ${constants.rotations_cube_faces_count}
     n_eval_epochs: 3
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_expanded_2d_children_mujoco/pretrained/}

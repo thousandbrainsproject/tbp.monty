@@ -276,8 +276,6 @@ experiment:
           wandb_group: benchmark_experiments
       run_name: base_77obj_dist_agent
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: 3
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
     n_eval_epochs: ${constants.rotations_3_count}
@@ -286,6 +284,8 @@ experiment:
       count: 1
     recognition_policy:
       _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_train_steps: 1000
+      max_eval_steps: 500
       max_total_steps: 6000
     seed: 42
     supervised_lm_ids: []

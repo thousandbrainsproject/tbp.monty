@@ -143,8 +143,6 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   config:
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: 1
     n_eval_epochs: 3
     model_name_or_path: ""
@@ -211,8 +209,6 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: 3
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
@@ -289,8 +285,6 @@ experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: true
-    max_train_steps: 1000
-    max_eval_steps: 500
     n_train_epochs: 3
     n_eval_epochs: 1
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
