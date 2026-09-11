@@ -18,7 +18,6 @@ experiment:
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 100
-    max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: ${constants.rotations_all_count}
     model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_stickers_comp_models/pretrained/
@@ -26,6 +25,9 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
       ids:
         - learning_module_2
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_total_steps: 6000
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
