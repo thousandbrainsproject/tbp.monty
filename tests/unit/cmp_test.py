@@ -134,6 +134,19 @@ def shape_not_n_by_3(draw: st.DrawFn) -> tuple[int, ...]:
 
 
 @st.composite
+def shape_not_1d(draw: st.DrawFn) -> tuple[int, ...]:
+    """Returns a shape that is not 1D."""
+    return draw(
+        st.tuples(
+            *(
+                st.integers(min_value=0, max_value=10)
+                for _ in range(draw(st.integers(min_value=2, max_value=10)))
+            )
+        ),
+    )
+
+
+@st.composite
 def locations_not_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
     """Returns an array of locations that is not N by 3."""
     return draw(
@@ -146,6 +159,68 @@ def locations_not_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
     )
 
 
+@st.composite
+def weights_not_1d(draw: st.DrawFn) -> npt.NDArray[np.float64]:
+    """Returns an array of weights that is not 1D."""
+    return draw(
+        arrays(
+            dtype=np.float64,
+            shape=shape_not_1d(),
+            elements=st.just(0.0),
+            fill=st.just(0.0),
+        )
+    )
+
+
+@st.composite
+def locations_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
+    """Returns an array of locations that is N by 3."""
+    return draw(
+        arrays(
+            dtype=np.float64,
+            shape=st.tuples(st.integers(min_value=0, max_value=10), st.just(3)),
+            elements=st.just(0.0),
+            fill=st.just(0.0),
+        )
+    )
+
+
+@st.composite
+def mismatched_locations_and_weights(
+    draw: st.DrawFn,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Returns a tuple of locations and weights with mismatched first dimensions."""
+    locations = draw(locations_n_by_3())
+    loc_length = len(locations)
+    if loc_length == 0:
+        weight_length = st.integers(min_value=1, max_value=10)
+    else:
+        weight_length = st.one_of(
+            st.integers(min_value=0, max_value=loc_length - 1),
+            st.integers(min_value=loc_length + 1, max_value=loc_length + 10),
+        )
+
+    weights = draw(
+        arrays(
+            dtype=np.float64,
+            shape=st.tuples(weight_length),
+            elements=st.just(0.0),
+            fill=st.just(0.0),
+        )
+    )
+    return locations, weights
+
+
+@st.composite
+def locations_and_a_weight(
+    draw: st.DrawFn,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Returns a tuple of locations and weights with matching first dimensions."""
+    locations = draw(locations_n_by_3())
+    weight = draw(st.floats(allow_nan=False))
+    return locations, weight
+
+
 class AttentionRegionTest(unittest.TestCase):
     @given(locations=locations_not_n_by_3())
     def test_initialized_with_locations_not_n_by_3_raises_value_error(
@@ -155,18 +230,33 @@ class AttentionRegionTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             AttentionRegion(locations=locations, weights=np.ones(locations.shape[0]))
 
-    def test_initialized_with_weights_that_does_not_have_1_column_raises_value_error(
+    @given(weights=weights_not_1d())
+    def test_initialized_with_weights_not_1d_raises_value_error(
         self,
+        weights: npt.NDArray[np.float64],
     ):
-        pass
+        with self.assertRaises(ValueError):
+            AttentionRegion(locations=np.ones((weights.shape[0], 3)), weights=weights)
 
+    @given(mismatched=mismatched_locations_and_weights())
     def test_initialized_with_mismatched_number_of_locations_and_weights_raises_value_error(  # noqa: E501
         self,
+        mismatched: tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]],
     ):
-        pass
+        locations, weights = mismatched
+        with self.assertRaises(ValueError):
+            AttentionRegion(locations=locations, weights=weights)
 
-    def test_uniform_gives_every_location_the_weight(self):
-        pass
+    @given(locations_and_a_weight=locations_and_a_weight())
+    def test_uniform_gives_every_location_the_weight(
+        self,
+        locations_and_a_weight: tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]],
+    ):
+        locations, weight = locations_and_a_weight
+        attention_region = AttentionRegion.uniform(locations=locations, weight=weight)
+        np.testing.assert_array_equal(
+            attention_region.weights, np.full(locations.shape[0], weight)
+        )
 
     def test_concat_keeps_every_location_and_weight_in_order(self):
         pass
