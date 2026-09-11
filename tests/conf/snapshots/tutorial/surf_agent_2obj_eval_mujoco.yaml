@@ -176,6 +176,10 @@ experiment:
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       wandb_group: gm_eval_runs
+    telemetry:
+      loggers:
+        telemetry.tbp.monty:
+          level: INFO
     show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500

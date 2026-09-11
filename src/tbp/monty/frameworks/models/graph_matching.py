@@ -15,6 +15,7 @@ from typing import Any, Collection, Sequence
 import numpy as np
 import torch
 
+from tbp.monty import telemetry
 from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
@@ -35,10 +36,12 @@ from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
+from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
 
 logger = logging.getLogger(__name__)
+telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyForGraphMatching(MontyBase):
@@ -1353,6 +1356,7 @@ class GraphMemory(LMMemory):
         self.models_in_memory[graph_id][input_channel] = model
 
         logger.info(f"Added new graph with id {graph_id} to memory.")
+        telemeter.info(TelemetryEvent(kind="NewGraphAdded", graph_id=graph_id))
 
     def _extend_graph(
         self,

@@ -13,6 +13,7 @@ import copy
 import logging
 from typing import Any, Sequence
 
+from tbp.monty import telemetry
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -27,10 +28,12 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.memento import Memento
+from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = ["MontyBase"]
 
 logger = logging.getLogger(__name__)
+telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyBase(Monty):
@@ -532,6 +535,11 @@ class MontyBase(Monty):
         if self.step_type == "matching_step":
             self.matching_steps += 1
             logger.info(f"--- Global Matching Step {self.matching_steps} ---")
+            telemeter.info(
+                TelemetryEvent(
+                    kind="GlobalMatchingStep", matching_steps=self.matching_steps
+                )
+            )
         elif self.step_type == "exploratory_step":
             self.exploratory_steps += 1
 

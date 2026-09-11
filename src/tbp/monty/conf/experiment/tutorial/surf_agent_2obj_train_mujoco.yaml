@@ -21,6 +21,7 @@ defaults:
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   # The logging configuration.
   - /logging: silent_warning_train
+  - /telemetry: info
 
 experiment:
   # The MontySupervisedObjectPretrainingExperiment will provide the model with the

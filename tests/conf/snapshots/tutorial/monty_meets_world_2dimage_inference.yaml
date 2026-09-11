@@ -196,6 +196,10 @@ experiment:
             _target_: wandb.util.generate_id
           wandb_group: benchmark_experiments
       run_name: monty_meets_world_2dimage_inference
+    telemetry:
+      loggers:
+        telemetry.tbp.monty:
+          level: INFO
     show_sensor_output: true
     max_train_steps: 1000
     max_eval_steps: 500

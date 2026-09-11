@@ -10,6 +10,7 @@ defaults:
   - /env_interface: train_omniglot
   - /env_interface/transform: depthto3d_sensor1
   - /logging: silent_warning_train
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment

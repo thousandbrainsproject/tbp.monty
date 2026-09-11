@@ -22,6 +22,7 @@ import torch
 from omegaconf import DictConfig
 from typing_extensions import Self
 
+from tbp.monty import telemetry
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
     Interface,
@@ -49,6 +50,7 @@ from tbp.monty.memento import Memento
 __all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
+telemeter = telemetry.getTelemeter("tbp.monty")
 
 
 class MontyExperiment:
@@ -139,7 +141,7 @@ class MontyExperiment:
         Args:
             config: config specifying variables of the experiment.
         """
-        self.init_loggers(self.config["logging"])
+        self.init_loggers(self.config["logging"], self.config.get("telemetry", {}))
         logger.info(self.config)
 
         self._create_monty()
@@ -257,11 +259,14 @@ class MontyExperiment:
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: dict[str, Any]) -> None:
-        """Initialize logger with specified log level.
+    def init_loggers(
+        self, logging_config: dict[str, Any], telemetry_config: dict[str, Any]
+    ) -> None:
+        """Initialize logger and telemeter with specified log level.
 
         Args:
             logging_config: Logging configuration.
+            telemetry_config: Telemetry configuration.
         """
         # Unpack individual logging arguments
         self.python_log_level = logging_config["python_log_level"]
@@ -312,6 +317,7 @@ class MontyExperiment:
             "incremental": True,
         }
         final_config.update(logging_config)
+        final_config.update(telemetry_config)
         logging.config.dictConfig(final_config)
 
     def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:

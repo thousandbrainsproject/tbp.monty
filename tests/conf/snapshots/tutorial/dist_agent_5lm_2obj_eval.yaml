@@ -405,6 +405,10 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
+    telemetry:
+      loggers:
+        telemetry.tbp.monty:
+          level: INFO
     max_train_steps: 1000
     max_eval_steps: 500
     n_train_epochs: 1

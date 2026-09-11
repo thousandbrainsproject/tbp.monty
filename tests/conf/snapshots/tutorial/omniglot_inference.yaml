@@ -114,6 +114,10 @@ experiment:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler
       run_name: omniglot_inference
+    telemetry:
+      loggers:
+        telemetry.tbp.monty:
+          level: INFO
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500

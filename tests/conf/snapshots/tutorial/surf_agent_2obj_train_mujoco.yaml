@@ -139,6 +139,10 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
       run_name: surf_agent_1lm_2obj_train_mujoco
+    telemetry:
+      loggers:
+        telemetry.tbp.monty:
+          level: INFO
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
