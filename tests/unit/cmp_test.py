@@ -220,6 +220,7 @@ def locations_and_a_weight(
     weight = draw(st.floats(allow_nan=False, allow_infinity=False))
     return locations, weight
 
+
 @st.composite
 def attention_region(draw: st.DrawFn) -> AttentionRegion:
     """Returns an AttentionRegion with valid locations and weights."""
