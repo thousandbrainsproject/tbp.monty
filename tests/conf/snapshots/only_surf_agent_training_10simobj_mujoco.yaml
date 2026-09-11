@@ -80,7 +80,7 @@ experiment:
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/numenta_lab}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
         agents:
         - _target_: tbp.monty.simulators.mujoco.agents.SurfaceAgent
           _partial_: true
@@ -88,24 +88,29 @@ experiment:
           sensor_configs:
             patch:
               _target_: tbp.monty.frameworks.sensors.SensorConfig
+              position:
+              - 0.0
+              - 0.0
+              - 0.0
               resolution:
                 width: 64
                 height: 64
               zoom: 10.0
             view_finder:
               _target_: tbp.monty.frameworks.sensors.SensorConfig
-              resolution:
-                width: 64
-                height: 64
               position:
               - 0.0
               - 0.0
               - 0.03
+              resolution:
+                width: 64
+                height: 64
               zoom: 1.0
           position:
           - 0.0
           - 1.5
           - 0.1
+        raise_actuate_missing: false
       env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
@@ -132,18 +137,16 @@ experiment:
         clip_value: 0.05
     train_env_interface_args:
       object_names:
-      - numenta_mug
-      - terracotta_mug
-      - montys_brain
-      - montys_heart
-      - ramen_pack
-      - kashmiri_chilli
-      - chip_pack
-      - harissa_oil
-      - cocktail_bitters
-      - cocktail_bible
-      - thousand_brains_jp
-      - hot_sauce
+      - mug
+      - e_cups
+      - knife
+      - fork
+      - spoon
+      - c_cups
+      - d_cups
+      - cracker_box
+      - sugar_box
+      - pudding_box
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_all}
@@ -156,7 +159,7 @@ experiment:
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
-      run_name: surf_agent_1lm_numenta_lab_obj
+      run_name: surf_agent_1lm_10similarobj
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
