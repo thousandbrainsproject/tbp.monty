@@ -17,7 +17,7 @@ from tbp.monty.memento import Memento
 
 class AttentionSystemProtocol(Protocol):
     def step(
-        self, goals: list[Goal], regions: Sequence[AttentionRegion]
+        self, goals: Sequence[Goal], regions: Sequence[AttentionRegion]
     ) -> list[Goal]: ...
 
     def reset(self) -> None: ...
@@ -28,7 +28,7 @@ class AttentionSystemProtocol(Protocol):
 class NoopAttentionSystem(AttentionSystemProtocol):
     def step(
         self,
-        goals: list[Goal],
+        goals: Sequence[Goal],
         regions: Sequence[AttentionRegion],  # noqa: ARG002
     ) -> list[Goal]:
         return list(goals)
