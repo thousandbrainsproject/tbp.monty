@@ -93,8 +93,6 @@ class MontyExperiment:
         self.do_train = config["do_train"]
         self.do_eval = config["do_eval"]
         self.experiment_mode = ExperimentMode.TRAIN
-        self.max_eval_steps = config["max_eval_steps"]
-        self.max_train_steps = config["max_train_steps"]
         self.n_eval_epochs = config["n_eval_epochs"]
         self.n_train_epochs = config["n_train_epochs"]
         self.skip_on_object_not_visible = config.get(
@@ -455,10 +453,6 @@ class MontyExperiment:
 
         self.env_interface.pre_episode(self.rng)
 
-        self.max_steps = self.max_train_steps
-        if self.experiment_mode is not ExperimentMode.TRAIN:
-            self.max_steps = self.max_eval_steps
-
         self.logger_handler.pre_episode(self.logger_args)
 
         if self.show_sensor_output:
@@ -512,7 +506,7 @@ class MontyExperiment:
         return step
 
     def _recognition_complete(self, step: int) -> bool:
-        rc = RecognitionCounter(step=step, max_steps=self.max_steps)
+        rc = RecognitionCounter(step, self.experiment_mode)
         rr = self._recognition_policy(self.model, rc)
         return rr.is_done
 
