@@ -27,6 +27,7 @@ from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
     RecognitionStatus,
 )
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 
 
@@ -107,6 +108,22 @@ class MaximumStepsTest(unittest.TestCase):
         self.assertTrue(result.is_done)
 
     @given(
+        mode=st.sampled_from(ExperimentMode),
+        max_train_steps=st.integers(min_value=1),
+        max_eval_steps=st.integers(min_value=1),
+    )
+    def test_selects_max_steps_by_mode(
+        self, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
+    ) -> None:
+        max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
+        model = _model_is_done(is_done=False)
+        policy = MaximumSteps(max_train_steps, max_eval_steps)
+        at_limit = policy(model, RecognitionCounter(max_steps, mode))
+        self.assertTrue(at_limit.is_done)
+        before_limit = policy(model, RecognitionCounter(max_steps - 1, mode))
+        self.assertFalse(before_limit.is_done)
+
+    @given(
         is_done=st.booleans(),
         asc=ascending_ints(min_value=0),
     )
@@ -178,6 +195,22 @@ class MinimumCountTest(unittest.TestCase):
         count = RecognitionCounter(max_steps + extra)
         result = policy(model, count)
         self.assertTrue(result.is_done)
+
+    @given(
+        mode=st.sampled_from(ExperimentMode),
+        max_train_steps=st.integers(min_value=1),
+        max_eval_steps=st.integers(min_value=1),
+    )
+    def test_selects_max_steps_by_mode(
+        self, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
+    ) -> None:
+        max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
+        model = _model_with_conclusions([None, None])
+        policy = MinimumLMs(1, max_train_steps, max_eval_steps)
+        at_limit = policy(model, RecognitionCounter(max_steps, mode))
+        self.assertTrue(at_limit.is_done)
+        before_limit = policy(model, RecognitionCounter(max_steps - 1, mode))
+        self.assertFalse(before_limit.is_done)
 
 
 class MaxTotalStepsTest(unittest.TestCase):
@@ -299,6 +332,25 @@ class ObjectRecognitionTest(unittest.TestCase):
         result = policy(model, count)
         self.assertTrue(result.is_done)
         model.deal_with_time_out.assert_called_once()
+
+    @given(
+        mode=st.sampled_from(ExperimentMode),
+        max_train_steps=st.integers(min_value=1),
+        max_eval_steps=st.integers(min_value=1),
+    )
+    def test_selects_max_matching_steps_by_mode(
+        self, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
+    ) -> None:
+        max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
+        policy = ObjectRecognition(max_train_steps, max_eval_steps, 5000)
+        at_limit = _model_with_recognition(
+            is_done=False, is_exploring=False, matching_steps=max_steps
+        )
+        self.assertTrue(policy(at_limit, RecognitionCounter(0, mode)).is_done)
+        before_limit = _model_with_recognition(
+            is_done=False, is_exploring=False, matching_steps=max_steps - 1
+        )
+        self.assertFalse(policy(before_limit, RecognitionCounter(0, mode)).is_done)
 
     @given(
         max_total_steps=st.integers(min_value=1),
