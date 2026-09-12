@@ -397,7 +397,7 @@ class JumpToGoalTest(ParametrizedTestCase):
             qt.as_float_array(sensor_state.rotation),
         )
 
-        post_jump_percept.get_on_object.assert_called_once_with()
+        post_jump_percept.get_on_object.assert_called_once()
 
     @given(
         goal_location=vectors_3d(min_value=-1, max_value=1, dtype=np.float64),
@@ -480,7 +480,7 @@ class JumpToGoalTest(ParametrizedTestCase):
             atol=DEFAULT_TOLERANCE,
         )
 
-        post_jump_percept.get_on_object.assert_called_once_with()
+        post_jump_percept.get_on_object.assert_called_once()
 
     def test_returns_no_actions_status_ready_if_undo_is_not_needed_after_jump_and_goal_is_none(  # noqa: E501
         self,
@@ -513,7 +513,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         self.assertEqual(policy_result.status, PolicyStatus.READY)
         self.assertEqual(len(policy_result.actions), 0)
 
-        post_jump_percept.get_on_object.assert_called_once_with()
+        post_jump_percept.get_on_object.assert_called_once()
 
 
 class InformedPolicyRandomWalkTest(unittest.TestCase):
@@ -567,7 +567,7 @@ class InformedPolicyRandomWalkTest(unittest.TestCase):
             goal=Mock(),
         )
 
-        percept.get_on_object.assert_called_once_with()
+        percept.get_on_object.assert_called_once()
         action_sampler_mock.sample.assert_called_once_with(self.agent_id, rng_mock)
         assert isinstance(result, MotorPolicyResult)
         self.assertEqual(result.actions, [action])
