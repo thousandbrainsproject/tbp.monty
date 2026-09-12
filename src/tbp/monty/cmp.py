@@ -9,7 +9,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any, Literal, Sequence
+from dataclasses import dataclass
+from typing import Any, Iterable, Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -389,3 +390,92 @@ def location_mean(messages: Sequence[Message]) -> npt.NDArray[np.float64] | None
     if not locations:
         return None
     return np.mean(locations, axis=0)
+
+
+@dataclass(frozen=True)
+class AttentionRegion:
+    """A sequence of locations, each carrying an attention weight.
+
+    Attributes:
+        locations: (N, 3) body-frame locations.
+        weights: (N,) attention weight associated with each location.
+    """
+
+    locations: npt.NDArray[np.floating]
+    weights: npt.NDArray[np.floating]
+
+    def __post_init__(self) -> None:
+        """Coerce the arrays and check they describe the same N locations.
+
+        Raises:
+            ValueError: If ``locations`` is not (N, 3) or ``weights`` is not
+                (N,) for the same N.
+        """
+        locations = np.asarray(self.locations)
+        if locations.ndim != 2 or locations.shape[1] != 3:
+            raise ValueError(
+                f"locations must be of shape (N, 3), got {locations.shape}."
+            )
+
+        weights = np.asarray(self.weights)
+        if weights.ndim != 1:
+            raise ValueError(f"weights must be of shape (N,), got {weights.shape}.")
+
+        if len(locations) != len(weights):
+            raise ValueError(
+                "locations and weights must describe the same number of points, "
+                f"got {len(locations)} locations and {len(weights)} weights."
+            )
+        # frozen: assign through the base class.
+        object.__setattr__(self, "locations", locations)
+        object.__setattr__(self, "weights", weights)
+
+    @classmethod
+    def empty(cls) -> AttentionRegion:
+        """Return a region consisting of zero locations and weights.
+
+        Returns:
+            The empty region.
+        """
+        return cls(np.empty((0, 3)), np.empty(0))
+
+    @classmethod
+    def uniform(
+        cls,
+        locations: npt.ArrayLike,
+        weight: float,
+    ) -> AttentionRegion:
+        """Return a region giving every location the same weight.
+
+        Args:
+            locations: (N, 3) body-frame locations.
+            weight: The attention weight shared by all locations.
+
+        Returns:
+            The region.
+        """
+        locations = np.asarray(locations, dtype=np.float64)
+        return cls(locations, np.full(len(locations), weight))
+
+    @classmethod
+    def concat(cls, regions: Iterable[AttentionRegion]) -> AttentionRegion:
+        """Join regions into one, keeping their order.
+
+        Args:
+            regions: Zero or more regions to join.
+
+        Returns:
+            One region holding every location of every input region, in order, with
+            their associated weights.
+        """
+        regions = list(regions)
+        if not regions:
+            return cls.empty()
+        return cls(
+            np.concatenate([region.locations for region in regions]),
+            np.concatenate([region.weights for region in regions]),
+        )
+
+    def __len__(self) -> int:
+        """Return the number of locations in the region."""
+        return len(self.locations)
