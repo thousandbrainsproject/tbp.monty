@@ -80,6 +80,24 @@ class MontyIsDoneTest(unittest.TestCase):
 
 
 class MaximumStepsTest(unittest.TestCase):
+    @given(
+        max_train_steps=st.integers(max_value=0),
+    )
+    def test_raises_value_error_if_max_train_steps_is_not_positive(
+        self, max_train_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MaximumSteps(max_train_steps, 1)
+
+    @given(
+        max_eval_steps=st.integers(max_value=0),
+    )
+    def test_raises_value_error_if_max_eval_steps_is_not_positive(
+        self, max_eval_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MaximumSteps(1, max_eval_steps)
+
     @given(max_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
     def test_times_out_at_or_after_max_steps(self, max_steps: int, extra: int) -> None:
         model = _model_is_done(is_done=False)
@@ -108,6 +126,24 @@ class MinimumCountTest(unittest.TestCase):
     def test_raises_value_error_if_min_lms_is_not_positive(self, min_lms: int) -> None:
         with self.assertRaises(ValueError):
             MinimumLMs(min_lms, 1, 1)
+
+    @given(
+        max_train_steps=st.integers(max_value=0),
+    )
+    def test_raises_value_error_if_max_train_steps_is_not_positive(
+        self, max_train_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MinimumLMs(1, max_train_steps, 1)
+
+    @given(
+        max_eval_steps=st.integers(max_value=0),
+    )
+    def test_raises_value_error_if_max_eval_steps_is_not_positive(
+        self, max_eval_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MinimumLMs(1, 1, max_eval_steps)
 
     @given(
         num_concluded=st.integers(min_value=0, max_value=10),
@@ -221,6 +257,24 @@ class ObjectRecognitionTest(unittest.TestCase):
     ) -> None:
         with self.assertRaises(ValueError):
             ObjectRecognition(1, 1, max_total_steps)
+
+    @given(
+        max_train_steps=st.integers(max_value=0),
+    )
+    def test_raises_value_error_if_max_train_steps_is_not_positive(
+        self, max_train_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            ObjectRecognition(max_train_steps, 1, 1)
+
+    @given(
+        max_eval_steps=st.integers(max_value=0),
+    )
+    def test_raises_value_error_if_max_eval_steps_is_not_positive(
+        self, max_eval_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            ObjectRecognition(1, max_eval_steps, 1)
 
     @given(
         is_done=st.booleans(),
