@@ -137,7 +137,7 @@ class MinimumLMs(RecognitionPolicy):
 
     Terminal conditions include:
     - `num_matched >= self._min_lms`
-    - `model.matching_steps >= {max_train_steps | max_eval_steps}`
+    - `count.step >= {max_train_steps | max_eval_steps}`
     """
 
     _min_lms: int
