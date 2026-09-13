@@ -519,18 +519,34 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         return overall_stats
 
 
-class BasicUnsupervisedGraphMatchingLogger(BasicGraphMatchingLogger):
+class BasicUnsupervisedGraphMatchingLogger(BaseMontyLogger):
     """Basic graph-matching logger with unsupervised benchmark stats."""
 
     def __init__(self, handlers):
         """Initialize logger."""
-        super().__init__(handlers)
+        self.basic_logger = BasicGraphMatchingLogger(handlers)
+        self.handlers = self.basic_logger.handlers
         self.unsupervised_train_stats = {}
 
+    @property
+    def data(self):
+        return self.basic_logger.data
+
+    @property
+    def use_parallel_wandb_logging(self):
+        return self.basic_logger.use_parallel_wandb_logging
+
+    @use_parallel_wandb_logging.setter
+    def use_parallel_wandb_logging(self, value):
+        self.basic_logger.use_parallel_wandb_logging = value
+
+    def flush(self):
+        self.basic_logger.flush()
+
     def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, model)
+        self.basic_logger.update_episode_data(logger_args, model)
         self.update_unsupervised_overall_stats(logger_args, model)
-        self.log_episode(logger_args, output_dir, model)
+        self.basic_logger.log_episode(logger_args, output_dir, model)
 
     def update_unsupervised_overall_stats(self, logger_args, model):
         """Add unsupervised benchmark stats to current overall stats."""
@@ -538,7 +554,7 @@ class BasicUnsupervisedGraphMatchingLogger(BasicGraphMatchingLogger):
         if mode is not ExperimentMode.TRAIN:
             return
 
-        if logger_args.get("supervised_lm_ids"):
+        if not logger_args.get("update_unsupervised_overall_stats", False):
             return
 
         episode = logger_args[f"{mode}_episodes"]

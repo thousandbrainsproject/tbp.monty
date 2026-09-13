@@ -18,6 +18,7 @@ from collections import deque
 from itertools import chain
 from pathlib import Path
 from sys import getsizeof
+from typing import TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -467,13 +468,28 @@ def print_overall_stats(stats):
     )
 
 
-def get_unsupervised_benchmark_stats(stats, epoch_len):
-    """Return stats of unsupervised learning experiment."""
+class UnsupervisedBenchmarkStats(TypedDict, total=False):
+    """Stats reported for unsupervised learning benchmarks."""
+
+    percent_correct_first_epoch: float
+    percent_correct_after_first_epoch: float
+    mean_objects_per_graph: float
+    mean_graphs_per_object: float
+    merged_graphs: list[str]
+
+
+def get_unsupervised_benchmark_stats(
+    stats: pd.DataFrame, epoch_len: int
+) -> UnsupervisedBenchmarkStats:
+    """Return benchmark-style unsupervised learning stats."""
     if epoch_len <= 0 or len(stats) == 0:
         return {}
 
     first_epoch_stats = stats.iloc[:epoch_len]
     later_epoch_stats = stats.iloc[epoch_len:]
+
+    if len(first_epoch_stats) == 0:
+        return {}
 
     first_epoch_acc = (
         len(first_epoch_stats[first_epoch_stats["primary_performance"] == "no_match"])
@@ -501,25 +517,19 @@ def get_unsupervised_benchmark_stats(stats, epoch_len):
     else:
         later_acc = np.nan
 
-    stats_summary = {
+    stats_summary: UnsupervisedBenchmarkStats = {
         "percent_correct_first_epoch": first_epoch_acc,
         "percent_correct_after_first_epoch": later_acc,
-        "mean_objects_per_graph": list(stats["mean_objects_per_graph"])[-1],
-        "mean_graphs_per_object": list(stats["mean_graphs_per_object"])[-1],
+        "mean_objects_per_graph": float(stats["mean_objects_per_graph"].iloc[-1]),
+        "mean_graphs_per_object": float(stats["mean_graphs_per_object"].iloc[-1]),
     }
 
     if "possible_match_sources" in stats:
         stats_summary["merged_graphs"] = [
             string
             for string in np.unique(list(stats["possible_match_sources"]))
-            if "-" in string
+            if isinstance(string, str) and "-" in string
         ]
-
-    if "time" in stats:
-        rt = np.sum(stats["time"])
-        stats_summary["run_time"] = rt
-        stats_summary["run_time_minutes"] = rt / 60
-        stats_summary["episode_run_time"] = rt / len(stats)
 
     return stats_summary
 
@@ -543,7 +553,7 @@ def print_unsupervised_stats(stats, epoch_len):
     for string in stats_summary.get("merged_graphs", []):
         print(" " + string)
 
-    rt = stats_summary["run_time"]
+    rt = np.sum(stats["time"])
     print(
         f"overall run time: {np.round(rt, 2)} seconds "
         f"({np.round(rt / 60, 2)} minutes),"
