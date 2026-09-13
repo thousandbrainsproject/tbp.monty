@@ -8,12 +8,8 @@ env_init_args:
       agent_id: agent_id_0
       sensor_configs:
         patch:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
           position:
-            - 0.0
-            - 0.0
-            - 0.0
-          rotation:
-            - 1.0
             - 0.0
             - 0.0
             - 0.0
@@ -22,15 +18,11 @@ env_init_args:
             height: 64
           zoom: 10.0
         view_finder:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
           position:
             - 0.0
             - 0.0
             - 0.03
-          rotation:
-            - 1.0
-            - 0.0
-            - 0.0
-            - 0.0
           resolution:
             width: 64
             height: 64

@@ -3,7 +3,7 @@ title: Logging and Analysis
 ---
 # Monty Loggers
 
-To manage the logging for an experiment you can specify the handlers that should be used in the `logging` config. The logging config has two fields for handlers. One for `monty_handlers` and one for `wandb_handlers`. The latter will start a wandb session if it does not contain an empty list. The former can contain all other non-wandb handlers.
+To manage the logging for an experiment you can specify the handlers that should be used by the `monty_data_logger` in the `logging` config. If you want to report data to Wandb, you can use the `tbp.monty.frameworks.loggers.wandb_handlers.WandbWrapper` as one of the `monty_data_logger` handlers, it will start a Wandb session. Inside this wrapper, you can then specify the individual types of `wandb_handlers`.
 
 ## List of all Logging Handlers
 
@@ -25,7 +25,34 @@ The first time you run experiments that log to wandb you will need to set your W
 
 # Analysis
 
-## Analyzing Data From `monty_handlers`
+## Live Visualization with `tbp.teleop`
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="../figures/teleop.gif" width="100%">
+    </td>
+  </tr>
+</table>
+
+For controlling the Monty agent while stepping through the experiment in real-time, we provide a separate companion repository called **`tbp.teleop`**.
+
+[`tbp.teleop`](https://github.com/thousandbrainsproject/tbp.teleop) hooks into a running Monty experiment via the existing `StepHook` interface and visualizes the simulator, Monty's graphs and hypotheses, and per-channel details live as the experiment runs. This is the `monitor` mode.
+
+`tbp.teleop` also offers an `interactive` mode that lets you override the agent's action at every step. This is similar to controlling an agent in a video game, and is a useful way to understand how Monty's representations change as a function of a particular policy.
+
+### How to Use `tbp.teleop`
+
+`tbp.teleop` expects `tbp.monty` to be installed alongside it (at `../tbp.monty`). Once the `tbp.teleop` environment is set up, you attach one of its step hooks to an experiment as an inline Hydra override and run it from the `tbp.teleop` repository:
+
+```zsh
+python run.py -cd src/tbp/teleop/conf experiment=example +hooks=monitor      # watch only
+python run.py -cd src/tbp/teleop/conf experiment=example +hooks=interactive  # watch + control
+```
+
+See the [`tbp.teleop`](https://github.com/thousandbrainsproject/tbp.teleop) repository for full installation and usage instructions.
+
+## Analyzing Data From Locally Logged Data
 
 The [`plot_utils.py`](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/utils/plot_utils.py) contains utils for plotting the logged data. The [`logging_utils.py`](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/utils/logging_utils.py) file contains some useful utils for loading logs and printing some summary statistics on them.
 
@@ -51,7 +78,7 @@ import os
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 
 pretrain_path = os.path.expanduser("~/tbp/results/monty/pretrained_models/")
-pretrained_dict = pretrain_path + "pretrained_ycb_v12/surf_agent_1lm_10distinctobj/pretrained/"
+pretrained_dict = pretrain_path + "pretrained_ycb_v13/surf_agent_1lm_10distinctobj/pretrained/"
 
 log_path = os.path.expanduser("~/tbp/results/monty/projects/evidence_eval_runs/logs/")
 exp_name = "randrot_10distinctobj_surf_agent"
@@ -129,15 +156,17 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 
 > 📘 To Follow Along Here You Need to Use the Detailed Logger
 >
-> Detailed JSON stats are not logged by default since they can get large quickly. To be able to run the following analysis, you need to ensure the experiment `config.logging.monty_handlers` configuration includes `DetailedJSONHandler`:
+> Detailed JSON stats are not logged by default since they can get large quickly. To be able to run the following analysis, you need to ensure the experiment `config.logging.monty_data_logger.handlers` configuration includes `DetailedJSONHandler`:
 >
 > ```yaml
 > config:
 >   logging:
->     monty_handlers:
->       - ...
->       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
->       - ...
+>     monty_data_logger:
+>       _target_: ...
+>       handlers:
+>         - ...
+>         - _target_: tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler
+>         - ...
 > ```
 >
 > It is also recommended to not log too many episodes with the detailed logger so to keep the file size small, we recommend to also update the number of objects tested and number of epochs like this:
@@ -146,10 +175,12 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 > config:
 >   n_eval_epochs: 1 # <--- Setting n_eval_epochs to 1
 >   logging:
->     monty_handlers:
->       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
->       # <--- Include detailed logging handler
->       - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
+>     monty_data_logger:
+>       _target_: ...
+>       handlers:
+>         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
+>         # <--- Include detailed logging handler
+>         - _target_: tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler
 >   eval_env_interface_args:
 >     object_names:
 >       - mug # <--- Only testing one object
@@ -273,7 +304,7 @@ For interactive inspection, debugging and visualization of Monty experiment runs
 
 ### How to Use `tbp.plot`
 
-A typical workflow is to first run a Monty experiment and then analyze the generated logs using `tbp.plot`. Most interactive visualizations rely on **per-step data**, so experiments are usually run with detailed logging enabled. In practice, this means running an experiment with the `DetailedJSONHandler` included in `config.logging.monty_handlers`, and keeping the number of episodes and objects small to keep the JSON log size manageable.
+A typical workflow is to first run a Monty experiment and then analyze the generated logs using `tbp.plot`. Most interactive visualizations rely on **per-step data**, so experiments are usually run with detailed logging enabled. In practice, this means running an experiment with the `DetailedJSONHandler` included in `config.logging.monty_data_logger.handlers`, and keeping the number of episodes and objects small to keep the JSON log size manageable.
 
 A quick and convenient way to achieve this is to override the configuration from the command-line interface, for example:
 ```zsh
@@ -289,5 +320,6 @@ python run_parallel.py \
 
 
 You can find the [tutorials](https://github.com/thousandbrainsproject/tbp.plot/blob/main/README.md#tutorials) and [gallery](https://github.com/thousandbrainsproject/tbp.plot/blob/main/README.md#gallery) of available tools in the `tbp.plot` repository.
+
 
 

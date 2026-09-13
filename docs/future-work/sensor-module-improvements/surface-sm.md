@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: large
 improved-metric: features-and-morphology, transfer, deformations, generalization
 output-type: prototype, monty-feature, PR
-skills: python, research, monty, computer-vision
+skills: python, research, monty-beginner, computer-vision
 contributor: hlee9212
 status: completed
 ---

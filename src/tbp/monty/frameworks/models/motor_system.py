@@ -71,6 +71,9 @@ class RuntimeMotorSystem(Protocol):
 class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
     """The basic motor system implementation."""
 
+    _policy_selector: MotorPolicySelector
+    _action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]]
+
     def __init__(self, policy_selector: MotorPolicySelector) -> None:
         """Initialize the motor system with a motor policy.
 
@@ -78,20 +81,21 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
             policy_selector: The motor policy selector to use.
         """
         self._policy_selector = policy_selector
-        # For each step, we store the actions produced by the policy and the current
-        # motor system state as a (actions, state) tuple.
-        self._action_sequence: list[tuple[list[Action], dict[AgentID, Any] | None]] = []
 
         # TODO: When the motor system is encapsulated within Monty, then motor_only_step
         #       attribute should be moved to Monty itself instead.
         self._motor_only_step = False
 
-        # TODO: Get rid of this once we have another path for telemetry.
-        self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
-            pc_heading=[],
-            avoidance_heading=[],
-            z_defined_pc=[],
-        )
+        # TODO: Passing self to policy selector is a hack. What we should be
+        # doing is using more sophisticated actions for surface agents instead.
+        # We only do this so that SurfacePolicy and its descendants can set
+        # motor_only_step to True.
+        # Undoing this hack should probably happen when motor_only_step is moved
+        # to Monty itself.
+        self._policy_selector.fixme_provide_motor_system(self)
+
+        # TODO: make this part of `__init__()` after `reset()` is removed.
+        self._init_MotorSystem()
 
     @property
     def motor_only_step(self) -> bool:
@@ -106,20 +110,21 @@ class MotorSystem(RuntimeMotorSystem, ExperimentMotorSystem):
     def action_sequence(self) -> list[tuple[list[Action], dict[AgentID, Any] | None]]:
         return self._action_sequence
 
-    def reset(self) -> None:
-        # TODO: Passing self to policy reset() is a hack. What we should be
-        # doing is using a positioning procedure for surface agents instead.
-        # We only do this so that SurfacePolicy and its descendants can set
-        # motor_only_step to True.
-        # Undoing this hack should probably happen when motor_only_step is moved
-        # to Monty itself.
-        self._policy_selector.reset(self)
+    def _init_MotorSystem(self) -> None:  # noqa: N802
+        # For each step, we store the actions produced by the policy and the current
+        # motor system state as a (actions, state) tuple.
         self._action_sequence = []
+
+        # TODO: Get rid of this once we have another path for telemetry.
         self._telemetry_surface_action_details = SurfacePolicyActionDetailsTelemetry(
             pc_heading=[],
             avoidance_heading=[],
             z_defined_pc=[],
         )
+
+    def reset(self) -> None:
+        self._init_MotorSystem()
+        self._policy_selector.reset()
 
     def state_dict(self) -> Memento:
         return self._policy_selector.state_dict()

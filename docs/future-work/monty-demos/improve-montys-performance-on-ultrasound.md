@@ -5,7 +5,7 @@ rfc: not-required
 estimated-scope: medium
 improved-metric: real-world, accuracy, noise, numsteps
 output-type: experiments, analysis, publication, demo
-skills: python, computer-vision, research
+skills: python, computer-vision, research, monty-beginner
 contributor: nleadholm
 status: evergreen
 ---

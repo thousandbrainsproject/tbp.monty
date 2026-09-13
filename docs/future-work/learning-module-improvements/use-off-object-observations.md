@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: numsteps
 output-type: analysis, PR
-skills: python, research, monty, refactoring
+skills: python, research, monty-beginner, refactoring
 contributor: hlee9212
 status: paused
 ---

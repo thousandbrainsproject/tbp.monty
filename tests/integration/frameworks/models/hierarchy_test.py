@@ -9,6 +9,7 @@
 
 import pytest
 
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -179,7 +180,7 @@ class HierarchyTest(unittest.TestCase):
         of this longer run if we already have it? Maybe in the future we want to change
         this but this is my current reasoning.
         """
-        exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_heterarchy_cfg.experiment)
         with exp:
             exp.run()
 
@@ -210,7 +211,7 @@ class HierarchyTest(unittest.TestCase):
         - Extending a graph with a new input channel
         - logging prediction errors
         """
-        exp = hydra.utils.instantiate(self.two_lms_constrained_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_constrained_cfg.experiment)
         with exp:
             exp.run()
             # check that both LMs have learned both objects.
@@ -229,7 +230,7 @@ class HierarchyTest(unittest.TestCase):
                     f"objects: {learned_objects}",
                 )
 
-        exp = hydra.utils.instantiate(self.two_lms_semisupervised_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_semisupervised_cfg.experiment)
         with exp:
             # check that models for both objects are loaded into memory correctly.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
@@ -256,8 +257,7 @@ class HierarchyTest(unittest.TestCase):
                 )
                 self.assertEqual(updated_graph, lm_0_memory_before_learning[object_id])
             # check that LM_1 models now contain learning_module_0 input channel.
-            # TODO: also get it to recognize cubeSolid
-            for object_id in ["capsule3DSolid"]:
+            for object_id in ["capsule3DSolid", "cubeSolid"]:
                 updated_graph = exp.model.learning_modules[1].graph_memory.get_graph(
                     graph_id=object_id
                 )
@@ -268,7 +268,7 @@ class HierarchyTest(unittest.TestCase):
                     f"graph: {updated_graph} with keys: {updated_graph.keys()}",
                 )
 
-        exp = hydra.utils.instantiate(self.two_lms_eval_cfg.experiment)
+        exp = instantiate_experiment(self.two_lms_eval_cfg.experiment)
         with exp:
             exp.run()
             eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")

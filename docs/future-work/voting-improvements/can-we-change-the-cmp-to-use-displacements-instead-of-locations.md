@@ -5,13 +5,13 @@ rfc: required
 estimated-scope: medium
 improved-metric: 
 output-type: RFC
-skills: monty
+skills: monty-advanced
 contributor: 
 status: open
 ---
 
 > [!NOTE]
-> Although, there is reasonable evidence that the brain may be using movements instead of locations, it is unclear whether there are any computational benefits to doing this. Since we haven't identified concrete benefits, the `improved-metric` field is left open. A first step to tackling this task would be to think through any functional implications of this change.
+> Although there is reasonable evidence that the brain may be using movements instead of locations, it is unclear whether there are any computational benefits to doing this. As such, the `improved-metric` field is left open. A first step to tackling this task would be to think through any functional implications of this change. In the meantime, we include this task because choosing the right assumptions about a system is key to developing long-term, successful solutions. Using displacements rather than locations affects how both voting and motor actions can be implemented. Continuing to use locations, and diverging from a more brain-like approach, may therefore lead us into a "local minimum" style solution for some elements in Monty.
 
 Movement is core to how LMs process and model the world. Currently, an LM receives an observation encoded with a body-centric location, and then infers a displacement in object-centric coordinates. Similarly, goals are specified as a target location in body-centric coordinates, which are then acted upon.
 
@@ -19,4 +19,4 @@ However, a more general formulation might be to use displacements as the core sp
 
 Such an approach might align well with adding information about flow (see [Detect Local and Global Flow](../sensor-module-improvements/detect-local-and-global-flow.md)), modeling moving objects (see [Deal With Moving Objects](../learning-module-improvements/deal-with-moving-objects.md)), and supporting abstract movements like the transition from grandchild to grandparent. It would also result in a reformulation of "goals" to "goal-displacements".
 
-Note that whatever approach is taken, we would still need to have some information about shared location representations at some level of the system in order to enable coordination and voting between LMs. This may relate to the division of "what" and "where" pathways in the brain, although this is not yet clear and requires further investigation.
+While this Future Work item could be viewed as falling in the category of [CMP/hierarchy improvements](../cmp-hierarchy-improvements.md), the most significant obstacle for this change is the requirement to reformulate voting such that a shared coordinate system with locations is not necessary. A voting algorithm of this kind remains a theoretical gap, although we discuss recent ideas [in this video](https://youtu.be/7bnPWJ-k3YE?si=qjFZup2tH9JixAiu&t=2923).

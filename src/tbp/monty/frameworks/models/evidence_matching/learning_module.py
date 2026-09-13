@@ -10,15 +10,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
 import time
+from typing import Any, Sequence
 
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial import KDTree
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
@@ -39,6 +41,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_scaled_evidences,
 )
 from tbp.monty.geometry import Rotation
+from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["EvidenceGraphLM", "InvalidEvidenceThresholdConfig"]
 
@@ -223,6 +226,14 @@ class EvidenceGraphLM(GraphLM):
             for debugging purposes.
     """
 
+    current_mlh: dict[str, Any]
+
+    # Dictionary with graph_ids as keys. For each graph we initialize a set of
+    # hypotheses at the first step of an episode. Each Hypotheses bundles the
+    # evidence, possible_locations, possible_poses, and a boolean possible mask
+    # used for symmetry checks.
+    _hypotheses: dict[str, Hypotheses]
+
     def __init__(
         self,
         max_match_distance,
@@ -292,21 +303,6 @@ class EvidenceGraphLM(GraphLM):
         # Set feature weights to 1 if not otherwise specified
         self._fill_feature_weights_with_default(default=1)
 
-        # Dictionary with graph_ids as keys. For each graph we initialize a set of
-        # hypotheses at the first step of an episode. Each Hypotheses bundles the
-        # evidence, possible_locations, possible_poses, and a boolean possible mask
-        # used for symmetry checks.
-        self._hypotheses: dict[str, Hypotheses] = {}
-
-        self.current_mlh = {
-            "graph_id": "no_observations_yet",
-            "location": [0, 0, 0],
-            "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
-            "scale": 1,
-            "evidence": 0,
-        }
-        self.previous_mlh = self.current_mlh
-
         if hypotheses_updater_args is None:
             hypotheses_updater_args = {}
         # Every HypothesesUpdater gets at least the following arguments because they are
@@ -328,11 +324,26 @@ class EvidenceGraphLM(GraphLM):
         self.hypotheses_updater = hypotheses_updater_class(**hypotheses_updater_args)
         self.hypotheses_updater_telemetry: HypothesesUpdaterTelemetry = {}
 
-    # =============== Public Interface Functions ===============
+        # TODO: make this part of `__init__()` after `reset_stm()` is removed.
+        self._init_EvidenceGraphLM()
 
-    # ------------------- Main Algorithm -----------------------
-    def reset(self):
-        """Reset evidence count and other variables."""
+    def _init_EvidenceGraphLM(self) -> None:  # noqa: N802
+        self.symmetry_evidence = 0
+        self._hypotheses = {}
+
+        self.hypotheses_updater.reset()  # FIXME: move reset() logic to __init__()
+
+        self.current_mlh = {
+            "graph_id": "no_observations_yet",
+            "mlh_id": None,
+            "location": [0, 0, 0],
+            "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
+            "scale": 1,
+            "evidence": 0,
+        }
+        self.previous_mlh = self.current_mlh
+
+    def init_from_ltm(self) -> None:
         # Now here, as opposed to the displacement and feature-location LMs,
         # possible_matches is a list of IDs, not a dictionary with the object graphs.
         self.possible_matches = self.graph_memory.get_initial_hypotheses()
@@ -341,15 +352,59 @@ class EvidenceGraphLM(GraphLM):
             # TODO H: Differentiate between features from different input channels
             # TODO: could do this in the object model class
             self.graph_memory.initialize_feature_arrays()
-        self.symmetry_evidence = 0
-        self._hypotheses = {}
-        self.hypotheses_updater.reset()
 
-        self.current_mlh["graph_id"] = "no_observations_yet"
-        self.current_mlh["location"] = [0, 0, 0]
-        self.current_mlh["rotation"] = Rotation.from_euler("xyz", [0, 0, 0])
-        self.current_mlh["scale"] = 1
-        self.current_mlh["evidence"] = 0
+    def reset_stm(self) -> None:
+        super().reset_stm()
+        self._init_EvidenceGraphLM()
+
+    def matching_step(
+        self,
+        ctx: RuntimeContext,
+        percepts: Sequence[Message],
+    ) -> None:
+        """Update the possible matches given an observation."""
+        if is_location_only_step(percepts):
+            self._displace_hypotheses(percepts)
+            return
+
+        first_movement_detected = self._agent_moved_since_reset()
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
+
+        if first_movement_detected:
+            logger.debug("performing matching step.")
+        else:
+            logger.debug("we have not moved yet.")
+
+        feature_percepts = [p for p in percepts if p.process_features_in_lm]
+
+        self._compute_possible_matches(
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
+        )
+
+        if len(self.get_possible_matches()) == 0:
+            self.set_individual_ts(terminal_state="no_match")
+
+        if self.gsg is not None:
+            self.gsg.step(ctx, feature_percepts)
+
+        stats = self.collect_stats_to_save()
+        self.buffer.update_stats(stats, append=self.has_detailed_logger)
+
+    def exploratory_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        percepts: Sequence[Message],
+    ) -> None:
+        """Step without trying to recognize object (updating possible matches)."""
+        if is_location_only_step(percepts):
+            self._displace_hypotheses(percepts)
+            return
+
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
 
     def receive_votes(self, vote_data):
         """Get evidence count votes and use to update own evidence counts.
@@ -456,10 +511,10 @@ class EvidenceGraphLM(GraphLM):
                                 "pose_vectors": graph_hyps.poses[hyp_id].T,
                                 "pose_fully_defined": True,
                             },
-                            # No feature when voting.
                             non_morphological_features=None,
                             confidence=evidences[graph_id][hyp_id],
-                            use_state=True,
+                            pass_message=True,
+                            process_features_in_lm=True,
                             sender_id=self.learning_module_id,
                             sender_type="LM",
                         )
@@ -478,21 +533,13 @@ class EvidenceGraphLM(GraphLM):
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the evidence for mlh is < object_evidence_threshold,
-        interesting_features == False
+        If the LM has not reached a "match" terminal state, pass_message == False.
         """
-        mlh = self.get_current_mlh()
+        mlh = self._get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
         object_id_features = self._object_id_to_features(mlh["graph_id"])
-        # Pass object ID to next LM if:
-        #       1) The last input it received was on_object (+getting SM input
-        #           check will make sure that we are also currently on object)
-        #           NOTE: May want to relax this check but still need a motor input
-        #       2) Its most likely hypothesis has an evidence >
-        #           object_evidence_threshold
-        use_state = bool(
-            self.buffer.get_currently_on_object()
-            and mlh["evidence"] > self.object_evidence_threshold
+        pass_message = bool(
+            self.buffer.get_currently_on_object() and self.terminal_state == "match"
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
@@ -500,27 +547,14 @@ class EvidenceGraphLM(GraphLM):
             if len(self.buffer) == 0
             else np.clip(mlh["evidence"] / len(self.buffer), 0, 1)
         )
-        # TODO H1: update this to send detected object location
-        # Use something like this + incorporate mlh location. -> while on same object,
-        # this should not change, even when moving over the object. Would also have to
-        # update mlh during exploration (just add displacements).
-        # Discuss this first before implementing. This would make higher level models
-        # much simpler but also require some arbitrary object center and give less
-        # resolution of where on a compositional object we are (in this lm). Would
-        # also require update in terminal condition re. path_similarity_th.
-        # object_loc_rel_body = (
-        #     self.buffer.get_current_location(input_channel="first") - mlh["location"]
-        # )
+
         return Message(
             # Same as input location from patch (rel body)
-            # NOTE: Just for common format at the moment, movement information will be
-            # taken from the sensor. For higher level LMs, we may want to transmit the
-            # motor efference copy here.
+            # NOTE: The receiving LM extracts the location information directly from
+            # the SM, so we set the location to `None` here.
             # TODO: get motor efference copy here. Need to refactor motor command
             # selection for this.
-            # location rel. body -> same as sensor input to higher LM (assuming they are
-            # colocated) so it is not used.
-            location=self.buffer.get_current_location(input_channel="first"),
+            location=None,
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),
@@ -535,7 +569,8 @@ class EvidenceGraphLM(GraphLM):
                 # of top-down connections).
             },
             confidence=confidence,
-            use_state=use_state,
+            pass_message=pass_message,
+            process_features_in_lm=True,
             sender_id=self.learning_module_id,
             sender_type="LM",
         )
@@ -569,7 +604,7 @@ class EvidenceGraphLM(GraphLM):
             "time_out",
             "pose_time_out",
         }:
-            mlh = self.get_current_mlh()
+            mlh = self._get_current_mlh()
             if "evidence" in mlh and (mlh["evidence"] > self.object_evidence_threshold):
                 # Use most likely hypothesis
                 graph_id = mlh["graph_id"]
@@ -590,7 +625,7 @@ class EvidenceGraphLM(GraphLM):
         possible_object_hypotheses_ids = self.get_possible_hypothesis_ids(object_id)
         # Only try to determine object pose if the evidence for it is high enough.
         if len(possible_object_hypotheses_ids) > 0:
-            mlh = self.get_current_mlh()
+            mlh = self._get_current_mlh()
 
             # Check if all possible poses are similar
             pose_is_unique = self._check_for_unique_poses(
@@ -625,9 +660,7 @@ class EvidenceGraphLM(GraphLM):
                 lm_episode_stats = {
                     "detected_path": mlh["location"],
                     "detected_location_on_model": mlh["location"],
-                    "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel="first"
-                    ),
+                    "detected_location_rel_body": self.buffer.last_location,
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r_inv.as_quat(),
                     "detected_scale": 1,  # TODO: scale doesn't work yet
@@ -650,13 +683,24 @@ class EvidenceGraphLM(GraphLM):
         self._hypotheses[object_id].possible[:] = False
         return None
 
-    def get_current_mlh(self):
+    def _get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
 
+        The MLH location is refreshed from the current hypothesis space so that it
+        reflects any displacement applied since the MLH was last computed (e.g. on
+        location-only steps). The MLH identity is invariant under displacement, so
+        its stored index still points at the same hypothesis. `mlh_id` is None until
+        an MLH has been computed from a hypothesis space, in which case there is no
+        location to update from.
+
         Returns:
-            dict with keys: graph_id, location, rotation, scale, evidence
+            dict with keys: graph_id, mlh_id, location, rotation, scale, evidence
         """
-        return self.current_mlh
+        mlh = self.current_mlh
+        graph_id = mlh["graph_id"]
+        if mlh["mlh_id"] is not None and graph_id in self._hypotheses:
+            mlh["location"] = self._hypotheses[graph_id].locations[mlh["mlh_id"]]
+        return mlh
 
     def get_mlh_for_object(self, object_id):
         """Get mlh for a specific object ID.
@@ -676,11 +720,11 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             The two most likely object IDs.
         """
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
-        # If all hypothesis spaces are empty return None for both mlh ids. The gsg will
-        # not generate a goal.
-        if len(graph_ids) == 0:
+        # If all hypothesis spaces are empty, or no current hypotheses have been
+        # initialized, return None for both MLH ids. The GSG will not generate a goal.
+        if not graph_ids or graph_ids[0] == "patch_off_object":
             return None, None
 
         # If we have a single hypothesis space, return the second object id as None.
@@ -763,12 +807,18 @@ class EvidenceGraphLM(GraphLM):
             return possible_object_hypotheses_ids
         return np.empty((0,), dtype=np.int64)
 
-    def get_evidence_for_each_graph(
+    def evidence_for_each_graph(
         self,
     ) -> tuple[list[str], npt.NDArray[np.float64]]:
-        """Return maximum evidence count for a pose on each graph."""
+        """Return maximum evidence count for a pose on each graph.
+
+        Returns:
+            The ids of the graphs with a non-empty hypothesis space and the
+            maximum hypotheses evidence on each of them. When no graph has any
+            hypotheses yet, returns `(["patch_off_object"], [0])`.
+        """
         graph_ids = self.get_all_known_object_ids()
-        if graph_ids[0] not in self._hypotheses:
+        if not graph_ids or graph_ids[0] not in self._hypotheses:
             return ["patch_off_object"], np.array([0])
 
         available_graph_ids = []
@@ -790,7 +840,7 @@ class EvidenceGraphLM(GraphLM):
         """
         stats = {
             "possible_matches": self.get_possible_matches(),
-            "current_mlh": self.get_current_mlh(),
+            "current_mlh": self._get_current_mlh(),
         }
         self._append_mlh_prediction_error_to_stats()
         if self.has_detailed_logger:
@@ -832,6 +882,30 @@ class EvidenceGraphLM(GraphLM):
             self.previous_mlh = self.current_mlh
             self.current_mlh = self._calculate_most_likely_hypothesis()
 
+    def _displace_hypotheses(self, percepts: Sequence[Message]) -> None:
+        """Displace all hypotheses by the movement since the last location.
+
+        Evidence is not changed, so the MLH identity is invariant under displacement.
+        Updates `self.buffer.last_location` to the current location.
+
+        Args:
+            percepts: Percepts for the current location-only step.
+        """
+        if self.buffer.last_location is None:
+            return
+
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
+        displacement = current_location - self.buffer.last_location
+        for graph_id, hypotheses in self._hypotheses.items():
+            self._hypotheses[graph_id] = self.hypotheses_updater.displace_hypotheses(
+                hypotheses, displacement, graph_id
+            )
+        self.buffer.last_location = current_location.copy()
+
     def _update_evidence(
         self,
         features: dict,
@@ -865,11 +939,13 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self._hypotheses[graph_id].evidence,
         )
 
+        displaced_hypotheses = self.hypotheses_updater.displace_hypotheses(
+            self._hypotheses[graph_id], displacement, graph_id
+        )
         hypotheses_update, hypotheses_update_telemetry = (
-            self.hypotheses_updater.update_hypotheses(
-                hypotheses=self._hypotheses[graph_id],
+            self.hypotheses_updater.update_evidence(
+                hypotheses=displaced_hypotheses,
                 features=features,
-                displacement=displacement,
                 graph_id=graph_id,
                 evidence_update_threshold=update_threshold,
             )
@@ -1095,14 +1171,14 @@ class EvidenceGraphLM(GraphLM):
         return pose.as_matrix().T
 
     def _object_id_to_features(self, object_id):
-        """Turn object ID into features that express object similarity.
+        """Convert an object ID to a stable categorical feature.
 
         Returns:
-            The object ID features.
+            A float32-safe 24-bit integer derived from SHA-256.
         """
         # TODO H: Make this based on object similarity
-        # For now just taking sum of character ids in object name
-        return sum(ord(i) for i in object_id)
+        digest = hashlib.sha256(object_id.encode("utf-8")).digest()
+        return int.from_bytes(digest[:3], byteorder="big")
 
     def _fill_feature_weights_with_default(self, default: int) -> None:
         for input_channel, channel_tolerances in self.tolerances.items():
@@ -1141,7 +1217,7 @@ class EvidenceGraphLM(GraphLM):
             logger.info("no objects in memory yet.")
             return []
 
-        graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+        graph_ids, graph_evidences = self.evidence_for_each_graph()
 
         if len(graph_ids) == 0:
             logger.info("All hypothesis spaces are empty. No possible matches.")
@@ -1191,6 +1267,7 @@ class EvidenceGraphLM(GraphLM):
         graph_hyps = self._hypotheses[graph_id]
         return {
             "graph_id": graph_id,
+            "mlh_id": mlh_id,
             "location": graph_hyps.locations[mlh_id],
             "rotation": Rotation.from_matrix(graph_hyps.poses[mlh_id]),
             "scale": self.get_object_scale(graph_id),
@@ -1204,7 +1281,7 @@ class EvidenceGraphLM(GraphLM):
             graph_id: If provided, find mlh pose for this object. If graph_id is None
                 look through all objects and finds most likely one.
 
-        Returns dict with keys: object_id, location, rotation, scale, evidence
+        Returns dict with keys: graph_id, mlh_id, location, rotation, scale, evidence
         """
         mlh = {}
         if graph_id is not None:

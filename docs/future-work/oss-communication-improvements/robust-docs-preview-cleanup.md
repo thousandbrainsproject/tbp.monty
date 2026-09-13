@@ -5,6 +5,7 @@ estimated-scope: medium
 improved-metric: infrastructure
 skills: github-actions, bash
 output-type: automation
+status: open
 ---
 
 Make the documentation preview GitHub Actions system more robust by tracking all preview versions created for a PR and cleaning them all up when the PR is merged or closed.

@@ -5,7 +5,7 @@ rfc:
 estimated-scope: large
 improved-metric: noise, multi-object
 output-type: prototype, monty-feature, PR, analysis
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: ramyamounir
 status: completed
 ---

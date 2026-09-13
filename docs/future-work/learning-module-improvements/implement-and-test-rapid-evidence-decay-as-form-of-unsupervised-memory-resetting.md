@@ -4,7 +4,7 @@ rfc:
 estimated-scope: medium
 improved-metric: multi-object
 output-type: experiments, analysis
-skills: python, research, monty
+skills: python, research, monty-beginner
 contributor: vkakerbeck, ramyamounir
 status: completed
 ---

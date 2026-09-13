@@ -5,6 +5,7 @@ estimated-scope: small
 improved-metric: community-engagement
 skills: github-actions, javascript, css
 output-type: documentation
+status: open
 ---
 
 Build an automated system that displays contributors' GitHub avatars on the root README.md file, providing visibility and recognition for community contributors.

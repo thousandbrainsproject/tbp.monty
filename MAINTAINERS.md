@@ -1,6 +1,7 @@
 ## Lead Maintainer
 
 - [@vkakerbeck](https://github.com/vkakerbeck)
+- [@nielsleadholm](https://github.com/nielsleadholm)
 
 ## Maintainers
 

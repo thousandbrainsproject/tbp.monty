@@ -92,7 +92,6 @@ Opening `src/tbp/monty/conf/env_interface/tutorial_train_2obj_predefined.yaml` w
 
 do_train: true
 train_env_interface_args:
-  parent_to_child_mapping: null
   # Here we specify which objects to learn. "mug" and "banana" come from the YCB dataset.
   # If you don't have the YCB dataset, replace with names from habitat (e.g.,
   # "capsule3DSolid", "cubeSolid", etc.).
@@ -118,7 +117,7 @@ Now we define the entire configuration that specifies one complete Monty experim
 # The configuration for the pretraining experiment.
 defaults:
   # The Monty configuration details.
-  - /monty: graph_exp500_e3_t3_tot2500
+  - /monty: graph_exp500_e3_t3
   # The Monty motor system configuration specific to a surface agent.
   - /monty/motor_system_config: surface_curvature_informed_5_goal0
   # The Monty learning module configuration.
@@ -146,11 +145,12 @@ experiment:
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
     model_name_or_path: ''
-    min_lms_match: 1
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
     seed: 42
     supervised_lm_ids: all
     logging:
@@ -161,8 +161,8 @@ experiment:
 
 Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md) and a training environment interface to initialize our objects at different orientations for each episode. `/monty/*` composes multiple configs that together describe the complete sensorimotor modeling system. Here is a short breakdown of its components:
 
-- `/monty: graph_exp500_e3_t3_tot2500`: The top-level Monty configuration that specifies how many exploratory, eval, train, and total steps to take.
-- `/monty/motor_system_config: surface_curvature_informed_5_goal0`: A motor system configuration that specifies a motor policy to use. This policy here will move orthogonal to the surface of the object with a preference of following principal curvatures that are sensed. When doing pretraining with the distant agent, one of the `/src/tbp/monty/conf/monty/motor_system_config/naive_scan_*` policies is recommended since they ensures even coverage of the object from the available view point.
+- `/monty: graph_exp500_e3_t3`: The top-level Monty configuration that specifies how many exploratory, eval, and train steps to take.
+- `/monty/motor_system_config: surface_curvature_informed_5_goal0`: A motor system configuration that specifies a motor policy to use. This policy here will move orthogonal to the surface of the object with a preference of following principal curvatures that are sensed.
 - `/monty/learning_module: graph_1lm`: Specifies a single `GraphLM` that constructs a graph of the object being explored.
 - `/monty/sensor_module: camera_surf_rgba_raw0`: Specifies two sensor modules. One will be a `CameraSM` with `is_surface_sm=True` (a small sensory patch for a surface agent). The sensor module will extract the given list of features for each patch. We won't save raw observations here since it is memory-intensive and only required for detailed logging/plotting. The other will be a `Probe` which we can use for logging. We could also store raw observations from the viewfinder for later visualization/analysis if needed. This sensor module is not connected to a learning module and, therefore, is not used for learning. It is called `view_finder` since it helps initialize each episode on the object.
 

@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: medium
 improved-metric: multi-object, speed
 output-type: theory, RFC
-skills: research, literature-review, monty
+skills: research, literature-review, monty-advanced
 contributor: thousandbrainsproject
 status: scoping
 ---

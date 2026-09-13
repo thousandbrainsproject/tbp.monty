@@ -1,0 +1,73 @@
+# @package experiment.config.environment
+
+env_init_args:
+  agents:
+    - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
+      _partial_: true
+      agent_id: agent_id_0
+      sensor_configs:
+        patch_0:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          position:
+            - 0.0
+            - 0.0
+            - 0.0
+          zoom: 10.0
+        patch_1:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          position:
+            - 0.0
+            - 0.01
+            - 0.0
+          zoom: 10.0
+        patch_2:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          position:
+            - 0.0
+            - -0.01
+            - 0.0
+          zoom: 10.0
+        patch_3:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          position:
+            - 0.01
+            - 0.0
+            - 0.0
+          zoom: 10.0
+        patch_4:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          position:
+            - -0.01
+            - 0.0
+            - 0.0
+          zoom: 10.0
+        view_finder:
+          _target_: tbp.monty.frameworks.sensors.SensorConfig
+          resolution:
+            width: 64
+            height: 64
+          position:
+            - 0.0
+            - 0.0
+            - 0.0
+          zoom: 1.0
+      position:
+        - 0.0
+        - 1.5
+        - 0.2
+env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}

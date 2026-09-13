@@ -239,9 +239,14 @@ class Rotation:
             The new `Rotation` object.
 
         Examples:
+            TODO: The use of `bool()` in the example below is to work around newer
+              versions of NumPy changing the representation of `np.True_`, in a
+              backwards-compatible way. Remove it and update the test once we fully
+              upgrade to Python 3.13.
+
             >>> fwd = Rotation.from_euler("y", -np.pi/6)  # yaw right 30°
             >>> inv = fwd.inv()
-            >>> inv.inv().approx_equal(fwd)
+            >>> bool(inv.inv().approx_equal(fwd))
             True
         """
         return Rotation(self._rot.inv())

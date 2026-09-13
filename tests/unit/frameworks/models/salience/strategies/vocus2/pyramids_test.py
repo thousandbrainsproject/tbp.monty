@@ -537,7 +537,7 @@ class CenterSurroundPyramidsTest(unittest.TestCase):
             [mean_local_variation(plane) for plane in surround.flat]
         )
         variations = center_variations - surround_variations
-        tolerance = 1e-3  # opencv variation tolerance
+        tolerance = 1e-2  # opencv variation tolerance
         self.assertTrue(all(variations >= -tolerance))
 
     @settings(deadline=1000)

@@ -5,6 +5,7 @@ estimated-scope: medium
 improved-metric: community-engagement
 skills: data-analysis, writing
 output-type: documentation
+status: evergreen
 ---
 
 Identify common themes in questions posted on the Thousand Brains Project forum that indicate missing or unclear documentation, then improve the documentation to address these gaps.

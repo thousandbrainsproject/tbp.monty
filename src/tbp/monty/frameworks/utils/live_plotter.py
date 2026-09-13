@@ -81,8 +81,8 @@ class LivePlotter:
         view_finder_rgba = observation[first_sensor_module_agent_id][
             SensorID("view_finder")
         ]["rgba"]
-        if hasattr(first_learning_module, "get_current_mlh"):
-            mlh = first_learning_module.get_current_mlh()
+        if hasattr(first_learning_module, "_get_current_mlh"):
+            mlh = first_learning_module._get_current_mlh()
             if mlh["graph_id"] == "no_observations_yet":
                 mlh_model = None
             else:
@@ -162,12 +162,10 @@ class LivePlotter:
                 ec="white",
             )
             self.ax[0].add_patch(square)
-        if hasattr(first_learning_module, "get_current_mlh"):
-            mlh = first_learning_module.get_current_mlh()
+        if hasattr(first_learning_module, "_get_current_mlh"):
+            mlh = first_learning_module._get_current_mlh()
             if mlh and mlh["graph_id"] != "no_observations_yet":
-                graph_ids, evidences = (
-                    first_learning_module.get_evidence_for_each_graph()
-                )
+                graph_ids, evidences = first_learning_module.evidence_for_each_graph()
                 self.add_text(
                     mlh,
                     pos=view_finder_rgba.shape[0],

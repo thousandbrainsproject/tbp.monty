@@ -57,6 +57,7 @@ def create_mock_message(
     location: npt.NDArray[np.float64],
     on_object: bool,
     pose_vectors: npt.NDArray[np.float64] | None = None,
+    process_features_in_lm: bool = True,
 ) -> Message:
     """Create a mock Message for testing the buffer.
 
@@ -66,6 +67,8 @@ def create_mock_message(
         location: 3D location array.
         on_object: Whether the observation is on the object.
         pose_vectors: Optional pose vectors (3x3 array). Defaults to identity.
+        process_features_in_lm: Whether the message carries features for processing by
+            the learning module.
 
     Returns:
         A mock Message compatible with FeatureAtLocationBuffer.append().
@@ -76,7 +79,9 @@ def create_mock_message(
     msg = Mock()
     msg.sender_id = sender_id
     msg.sender_type = sender_type
+    msg.is_from_sm = Mock(return_value=sender_type == "SM")
     msg.location = location
+    msg.process_features_in_lm = process_features_in_lm
     msg.morphological_features = {
         "pose_vectors": pose_vectors.flatten(),
         "pose_fully_defined": True,
@@ -91,9 +96,92 @@ def create_mock_message(
     return msg
 
 
-class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
-    """Tests for FeatureAtLocationBuffer focusing on padding and filtering behavior."""
+class BufferLocationsTest(unittest.TestCase):
+    def setUp(self):
+        self.buffer = FeatureAtLocationBuffer()
 
+    def test_get_all_locations_on_object_excludes_off_object_steps(self):
+        state_sm_1 = create_mock_message(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        self.buffer.append([state_sm_1])
+
+        state_sm_2 = create_mock_message(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([4.0, 5.0, 6.0]),
+            on_object=False,
+        )
+        self.buffer.append([state_sm_2])
+
+        locations = self.buffer.get_all_locations_on_object()
+
+        # Only the first (on-object) step is returned.
+        self.assertEqual(locations.shape, (1, 3))
+        np.testing.assert_array_equal(locations[0], np.array([1.0, 2.0, 3.0]))
+
+    def test_last_location_is_average_of_sm_channels(self):
+        state_sm0 = create_mock_message(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        state_sm1 = create_mock_message(
+            sender_id="SM_1",
+            sender_type="SM",
+            location=np.array([3.0, 4.0, 5.0]),
+            on_object=True,
+        )
+        state_lm = create_mock_message(
+            sender_id="LM_0",
+            sender_type="LM",
+            location=np.array([100.0, 100.0, 100.0]),
+            on_object=True,
+        )
+        self.buffer.append([state_sm0, state_sm1, state_lm])
+        # Only SM locations are averaged; LM locations are excluded
+        expected_avg = (state_sm0.location + state_sm1.location) / 2
+        np.testing.assert_array_equal(self.buffer.last_location, expected_avg)
+
+    def test_last_location_single_channel(self):
+        state_a = create_mock_message(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        self.buffer.append([state_a])
+        np.testing.assert_array_equal(
+            self.buffer.last_location, np.array([1.0, 2.0, 3.0])
+        )
+
+    def test_stores_displacement_from_first_observation(self):
+        disp = np.array([0.1, 0.2, 0.3])
+        state_a = create_mock_message(
+            sender_id="SM_0",
+            sender_type="SM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        state_a.displacement = {"displacement": disp.copy()}
+
+        state_b = create_mock_message(
+            sender_id="LM_0",
+            sender_type="LM",
+            location=np.array([1.0, 2.0, 3.0]),
+            on_object=True,
+        )
+        state_b.displacement = {"displacement": disp.copy()}
+
+        self.buffer.append([state_a, state_b])
+        np.testing.assert_array_almost_equal(self.buffer.current_displacement(), disp)
+
+
+class BufferFeaturesTest(unittest.TestCase):
     def setUp(self):
         self.buffer = FeatureAtLocationBuffer()
 
@@ -154,120 +242,26 @@ class FeatureAtLocationBufferPaddingTest(unittest.TestCase):
             "Expected nan padding for missing step 2, but got other values",
         )
 
-    def test_get_all_locations_on_object_pads_and_filters_like_features(self):
-        """Test that locations are padded and filtered consistently with features.
-
-        When get_all_locations_on_object() is called without an input_channel argument,
-        it should pad each channel's locations to the full buffer length using nans,
-        then filter by global_on_object_ids. This ensures the returned locations match
-        the shape of features returned by get_all_features_on_object().
-        """
-        # Step 1: Both channels send data
-        state_sm_1 = create_mock_message(
+    def test_only_feature_percepts_store_pose_vectors(self):
+        feature_sm = create_mock_message(
             sender_id="SM_0",
             sender_type="SM",
-            location=np.array([1.0, 2.0, 3.0]),
+            location=np.array([0.0, 0.0, 0.0]),
             on_object=True,
+            process_features_in_lm=True,
         )
-        state_lm_1 = create_mock_message(
-            sender_id="LM_0",
-            sender_type="LM",
-            location=np.array([1.0, 2.0, 3.0]),
-            on_object=True,
-        )
-        self.buffer.append([state_sm_1, state_lm_1])
-
-        # Step 2: Only SM sends data
-        state_sm_2 = create_mock_message(
-            sender_id="SM_0",
-            sender_type="SM",
-            location=np.array([4.0, 5.0, 6.0]),
-            on_object=True,
-        )
-        self.buffer.append([state_sm_2])
-
-        # Get locations and features for comparison
-        locations = self.buffer.get_all_locations_on_object()
-        features = self.buffer.get_all_features_on_object()
-
-        # Both should have the same channels
-        self.assertEqual(set(locations.keys()), set(features.keys()))
-
-        # For each channel, locations should have same number of rows as features
-        for channel in locations:
-            loc_rows = locations[channel].shape[0]
-            # Use any feature to compare (e.g., pose_vectors)
-            feat_rows = features[channel]["pose_vectors"].shape[0]
-            self.assertEqual(
-                loc_rows,
-                feat_rows,
-                f"Channel {channel}: locations has {loc_rows} rows but "
-                f"features has {feat_rows} rows",
-            )
-
-
-class GlobalLocationAveragingTest(unittest.TestCase):
-    """Tests that buffer stores the average location across all channels."""
-
-    def setUp(self):
-        self.buffer = FeatureAtLocationBuffer()
-
-    def test_last_location_is_average_of_sm_channels(self):
-        state_sm0 = create_mock_message(
-            sender_id="SM_0",
-            sender_type="SM",
-            location=np.array([1.0, 2.0, 3.0]),
-            on_object=True,
-        )
-        state_sm1 = create_mock_message(
+        location_only_sm = create_mock_message(
             sender_id="SM_1",
             sender_type="SM",
-            location=np.array([3.0, 4.0, 5.0]),
+            location=np.array([2.0, 2.0, 2.0]),
             on_object=True,
+            process_features_in_lm=False,
         )
-        state_lm = create_mock_message(
-            sender_id="LM_0",
-            sender_type="LM",
-            location=np.array([100.0, 100.0, 100.0]),
-            on_object=True,
-        )
-        self.buffer.append([state_sm0, state_sm1, state_lm])
-        # Only SM locations are averaged; LM locations are excluded
-        expected_avg = (state_sm0.location + state_sm1.location) / 2
-        np.testing.assert_array_equal(self.buffer.last_location, expected_avg)
+        self.buffer.append([feature_sm, location_only_sm])
 
-    def test_last_location_single_channel(self):
-        state_a = create_mock_message(
-            sender_id="SM_0",
-            sender_type="SM",
-            location=np.array([1.0, 2.0, 3.0]),
-            on_object=True,
-        )
-        self.buffer.append([state_a])
-        np.testing.assert_array_equal(
-            self.buffer.last_location, np.array([1.0, 2.0, 3.0])
-        )
-
-    def test_stores_displacement_from_first_observation(self):
-        disp = np.array([0.1, 0.2, 0.3])
-        state_a = create_mock_message(
-            sender_id="SM_0",
-            sender_type="SM",
-            location=np.array([1.0, 2.0, 3.0]),
-            on_object=True,
-        )
-        state_a.displacement = {"displacement": disp.copy()}
-
-        state_b = create_mock_message(
-            sender_id="LM_0",
-            sender_type="LM",
-            location=np.array([1.0, 2.0, 3.0]),
-            on_object=True,
-        )
-        state_b.displacement = {"displacement": disp.copy()}
-
-        self.buffer.append([state_a, state_b])
-        np.testing.assert_array_almost_equal(self.buffer.current_displacement(), disp)
+        # The feature channel stored a pose row; the location-only channel did not.
+        self.assertIn("pose_vectors", self.buffer.features["SM_0"])
+        self.assertNotIn("pose_vectors", self.buffer.features["SM_1"])
 
 
 class PadToTargetLengthTest(unittest.TestCase):

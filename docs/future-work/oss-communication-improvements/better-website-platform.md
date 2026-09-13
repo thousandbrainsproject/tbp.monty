@@ -5,6 +5,7 @@ estimated-scope: large
 improved-metric: community-engagement
 output-type: website
 skills: github-actions, s3, javascript, html, css, web-frameworks, css-frameworks
+status: open
 ---
 
 The current website (thousandbrains.org) is hosted on WordPress.  It has a number of drawbacks:

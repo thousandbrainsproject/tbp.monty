@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 pytest.importorskip(
@@ -26,7 +27,7 @@ from pathlib import Path
 import hydra
 import pandas as pd
 import torch
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from tbp.monty.frameworks.run_parallel import main
 
@@ -63,20 +64,20 @@ class RunParallelTest(unittest.TestCase):
 
     def test_run_parallel_equals_serial_for_various_n_eval_epochs(self):
         # serial run
-        exp = hydra.utils.instantiate(self.supervised_pre_training_cfg.experiment)
+        cfg = self.supervised_pre_training_cfg
+        exp = instantiate_experiment(cfg.experiment)
         with exp:
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
-        main(self.supervised_pre_training_cfg)
+        main(cfg)
 
         ###
         # Compare results
         ###
         parallel_model = torch.load(
             self.output_dir
-            / self.supervised_pre_training_cfg.experiment.config.logging.run_name
+            / cfg.experiment.config.logging.run_name
             / "pretrained"
             / "model.pt",
             weights_only=False,
@@ -114,12 +115,11 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs == len(eval_rotations)
         ###
         # serial run
-        exp = hydra.utils.instantiate(self.eval_cfg.experiment)
+        exp = instantiate_experiment(self.eval_cfg.experiment)
         with exp:
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_cfg)
 
         ###
@@ -151,12 +151,11 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs < len(eval_rotations)
         ###
         # serial run
-        exp = hydra.utils.instantiate(self.eval_lt_cfg.experiment)
+        exp = instantiate_experiment(self.eval_lt_cfg.experiment)
         with exp:
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_lt_cfg)
 
         eval_dir_lt = self.output_dir / "lt"
@@ -175,12 +174,11 @@ class RunParallelTest(unittest.TestCase):
         # n_eval_epochs > len(eval_rotations)
         ###
         # serial run
-        exp = hydra.utils.instantiate(self.eval_gt_cfg.experiment)
+        exp = instantiate_experiment(self.eval_gt_cfg.experiment)
         with exp:
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_gt_cfg)
 
         eval_dir_gt = self.output_dir / "gt"

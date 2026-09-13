@@ -8,9 +8,15 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import copy
+import logging
+from typing import Any, Sequence
+
 import numpy as np
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import Message, location_mean
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
@@ -23,8 +29,12 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
+from tbp.monty.memento import Memento
+from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
+
+logger = logging.getLogger(__name__)
 
 
 class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
@@ -49,30 +59,38 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Track whether `pre_episode` has been called at least once.
+        # Track whether `reset` has been called at least once.
         # There are two separate issues this helps avoid:
         #
         # 1. Some internal variables in SMs and LMs (e.g., `stepwise_targets_list`,
         #    `terminal_state`, `is_exploring`) are not initialized
-        #    in `__init__`, but only inside `pre_episode`. Ideally, these should be
-        #    initialized once in `__init__` and reset in `pre_episode`, but fixing
+        #    in `__init__`, but only inside `reset`. Ideally, these should be
+        #    initialized once in `__init__` and reset in `reset`, but fixing
         #    this would require changes across multiple classes.
         #
         # 2. The order of operations: Graphs are loaded into LMs *after* the Monty
-        #    object is constructed but *before* `pre_episode` is called. Some
+        #    object is constructed but *before* `reset` is called. Some
         #    functions (e.g., in `EvidenceGraphLM`) depend on the graph being loaded to
-        #    compute initial possible matches inside `pre_episode`, and this cannot
+        #    compute initial possible matches inside `reset`, and this cannot
         #    be safely moved into `__init__`.
         #
-        # As a workaround, we allow `pre_episode` to run normally once (to complete
+        # As a workaround, we allow `reset` to run normally once (to complete
         # required initialization), and skip full resets on subsequent calls.
-        # TODO: Remove initialization logic from `pre_episode`
-        self.init_pre_episode = False
+        # TODO: Remove initialization logic from `reset`
+        self._super_reset_called = False
+        self._super_set_ground_truth_called = False
 
-    def pre_episode(self, primary_target, semantic_id_to_label=None) -> None:
-        if not self.init_pre_episode:
-            self.init_pre_episode = True
-            return super().pre_episode(primary_target, semantic_id_to_label)
+    def snapshot(self) -> Memento:
+        memo: Memento = self.state_dict()
+        return copy.deepcopy(memo)
+
+    def restore(self, memo: Memento) -> None:
+        self.load_state_dict(copy.deepcopy(memo))
+
+    def reset(self) -> None:
+        if not self._super_reset_called:
+            self._super_reset_called = True
+            return super().reset()
 
         # reset terminal state
         self._is_done = False
@@ -80,15 +98,24 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         self.switch_to_matching_step()
         self._reset_terminal_states()
 
+        # reset LMs and SMs buffers to save memory
+        self._reset_modules_buffers()
+
+    def fixme_set_ground_truth(
+        self,
+        primary_target: dict[str, Any] | None = None,
+        semantic_id_to_label: dict[SemanticID, str] | None = None,
+    ) -> None:
+        if not self._super_set_ground_truth_called:
+            self._super_set_ground_truth_called = True
+            return super().fixme_set_ground_truth(primary_target, semantic_id_to_label)
+
         # keep target up-to-date for logging
         self.primary_target = primary_target
         self.semantic_id_to_label = semantic_id_to_label
         for lm in self.learning_modules:
             lm.primary_target = primary_target["object"]
             lm.primary_target_rotation_quat = primary_target["quat_rotation"]
-
-        # reset LMs and SMs buffers to save memory
-        self._reset_modules_buffers()
 
     def _reset_terminal_states(self):
         for lm in self.learning_modules:
@@ -109,18 +136,42 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         if not hasattr(kwargs, "hypotheses_updater_class"):
             kwargs["hypotheses_updater_class"] = BurstSamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
-        self.last_location = None
 
         # it does not make sense for the wait factor to exponentially
         # grow when objects are swapped without any supervisory signal.
         if self.gsg is not None:
             self.gsg.wait_growth_multiplier = 1
 
-    def reset(self) -> None:
-        super().reset()
+        # TODO: make this part of `__init__()` after `reset_stm()` is removed.
+        self._init_NoResetEvidenceGraphLM()
+
+    def _init_NoResetEvidenceGraphLM(self) -> None:  # noqa: N802
         self.last_location = None
 
-    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+    def reset_stm(self) -> None:
+        super().reset_stm()
+        self._init_NoResetEvidenceGraphLM()
+
+    def state_dict(self) -> Memento:
+        return {
+            "graph_memory": self.graph_memory.state_dict(),
+            "target_to_graph_id": self.target_to_graph_id,
+            "graph_id_to_target": self.graph_id_to_target,
+            "_hypotheses": self._hypotheses,
+        }
+
+    def load_state_dict(self, memento: Memento) -> None:
+        memo = dict(memento)
+        self._hypotheses = memo.pop("_hypotheses", {})
+        self.graph_memory.load_state_dict(memo.pop("graph_memory"))
+        self.target_to_graph_id = memo.pop("target_to_graph_id")
+        self.graph_id_to_target = memo.pop("graph_id_to_target")
+
+        # After loading the long-term memory, give the LM a chance to
+        # update any internal state based on the contents of memory.
+        self.init_from_ltm()
+
+    def _add_displacements(self, percepts: Sequence[Message]) -> Sequence[Message]:
         """Add displacements to the current percept.
 
         Computes the displacement vector by subtracting the current location from the
@@ -135,8 +186,11 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             The list of percepts, each updated with a displacement vector.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         if self.last_location is not None:
             displacement = current_location - self.last_location
         else:
@@ -145,7 +199,82 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         for p in percepts:
             p.set_displacement(displacement)
         self.last_location = current_location.copy()
+        self.buffer.last_location = current_location.copy()
         return percepts
+
+    def _displace_hypotheses(self, percepts: Sequence[Message]) -> None:
+        """Displace all hypotheses by the movement since the last location.
+
+        Evidence is not changed, so the MLH identity is invariant under displacement.
+        Updates `self.last_location` to the current location.
+
+        Args:
+            percepts: Percepts for the current location-only step.
+        """
+        if self.last_location is None:
+            return
+
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
+        displacement = current_location - self.last_location
+        for graph_id, hypotheses in self._hypotheses.items():
+            self._hypotheses[graph_id] = self.hypotheses_updater.displace_hypotheses(
+                hypotheses, displacement, graph_id
+            )
+        self.last_location = current_location.copy()
+        self.buffer.last_location = current_location.copy()
+
+    def matching_step(
+        self,
+        ctx: RuntimeContext,
+        percepts: Sequence[Message],
+    ) -> None:
+        """Update the possible matches given an observation."""
+        if is_location_only_step(percepts):
+            self._displace_hypotheses(percepts)
+            return
+
+        first_movement_detected = self._agent_moved_since_reset()
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
+
+        if first_movement_detected:
+            logger.debug("performing matching step.")
+        else:
+            logger.debug("we have not moved yet.")
+
+        feature_percepts = [p for p in percepts if p.process_features_in_lm]
+
+        self._compute_possible_matches(
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
+        )
+
+        if len(self.get_possible_matches()) == 0:
+            self.set_individual_ts(terminal_state="no_match")
+
+        if self.gsg is not None:
+            self.gsg.step(ctx, feature_percepts)
+
+        stats = self.collect_stats_to_save()
+        self.buffer.update_stats(stats, append=self.has_detailed_logger)
+
+    def exploratory_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        percepts: Sequence[Message],
+    ) -> None:
+        """Step without trying to recognize object (updating possible matches)."""
+        if is_location_only_step(percepts):
+            self._displace_hypotheses(percepts)
+            return
+
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
 
     def _agent_moved_since_reset(self):
         """Overwrites the logic of whether the agent has moved since the last reset.

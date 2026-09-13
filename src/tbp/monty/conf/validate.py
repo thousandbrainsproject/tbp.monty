@@ -14,7 +14,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.frameworks.run_env import setup_env
-from tbp.monty.hydra import register_resolvers
+from tbp.monty.hydra import instantiate_experiment
 
 
 @hydra.main(config_path=".", config_name="experiment", version_base=None)
@@ -26,7 +26,7 @@ def validate(cfg: DictConfig):
     os.environ["MAGNUM_LOG"] = "quiet"
     os.environ["HABITAT_SIM_LOG"] = "quiet"
 
-    app = hydra.utils.instantiate(cfg.experiment)
+    app = instantiate_experiment(cfg.experiment)
     with app:
         # exercise .setup_experiment method
         pass
@@ -36,5 +36,4 @@ def validate(cfg: DictConfig):
 
 if __name__ == "__main__":
     setup_env()
-    register_resolvers()
     validate()

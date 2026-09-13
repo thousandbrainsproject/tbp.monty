@@ -5,7 +5,7 @@ rfc: optional
 estimated-scope: medium
 improved-metric: compositional
 output-type: PR, experiments, monty-feature
-skills: python, monty
+skills: python, monty-advanced
 contributor: nielsleadholm, vkakerbeck, jeremyshoemaker
 status: completed
 ---

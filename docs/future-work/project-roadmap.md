@@ -14,9 +14,9 @@ Click on the name to view the detail page for that task.  Click on the any of th
 [block:embed]
 {
   "html": false,
-  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,status,improved-metric,skills",
+  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,status,estimated-scope,output-type,skills,improved-metric,rfc",
   "provider": "futureworkwidget.thousandbrains.ai",
-  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,status,improved-metric,skills,",
+  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,status,estimated-scope,output-type,skills,improved-metric,rfc,",
   "typeOfEmbed": "iframe",
   "height": "800px",
   "iframe": true
@@ -41,9 +41,9 @@ Some of the tasks are under active development by our team or external contribut
 We also have two stars that mark the current top two priorities of the TBP team.
 
 ## Current Quarterly Goals
-To get a more concrete idea of our goals and roadmap for Q2 - 2026, have a look at this video:
+To get a more concrete idea of our goals and roadmap for Q3 - 2026, have a look at this video:
 
-[2026/04 - Q2 Roadmap and Q1 Review](https://youtu.be/8YpHx2AfRHw?si=uLQK1a6HqUA0JdFr)
+[2026/07 - Q3 Roadmap and Q2 Review](https://youtu.be/MtrvhYQ6VFw?si=KfjmQFwhIKiVcfJy)
 
 ## Direction and Goals for 2026
 For a high-level overview of our goals for 2026, see this video:

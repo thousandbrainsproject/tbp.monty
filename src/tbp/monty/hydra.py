@@ -11,10 +11,13 @@ from __future__ import annotations
 import contextlib
 import importlib
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
+import hydra
 import numpy as np
 from omegaconf import OmegaConf
+
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 
 
 def monty_class_resolver(class_name: str) -> type:
@@ -57,9 +60,7 @@ def tests_dir_resolver(path: str) -> str:
 def register_resolvers() -> None:
     """Register custom OmegaConf resolvers for Monty configs.
 
-    Skips resolvers that are already registered rather than raising
-    a ValueError, since multiple entry points (e.g. tests/__init__.py
-    and update_snapshots.py) may call this function in the same process.
+    Skips resolvers that are already registered rather than raising a ValueError.
     """
     resolvers: dict[str, Callable[..., Any]] = {
         "monty.class": monty_class_resolver,
@@ -72,3 +73,20 @@ def register_resolvers() -> None:
     for name, resolver in resolvers.items():
         with contextlib.suppress(ValueError):
             OmegaConf.register_new_resolver(name, resolver)
+
+
+def instantiate_experiment(cfg_exp: Mapping[str, Any]) -> MontyExperiment:
+    """Return MontyExperiment initialized from Hydra configuration.
+
+    Raises:
+        TypeError: If the config does not produce a MontyExperiment.
+    """
+    exp = hydra.utils.instantiate(cfg_exp)
+    if not isinstance(exp, MontyExperiment):
+        raise TypeError(f"Hydra did not produce a MontyExperiment from {cfg_exp}")
+    exp._monty_cfg = cfg_exp["config"]["monty_config"]
+    return exp
+
+
+# Idempotently register resolvers on import.
+register_resolvers()

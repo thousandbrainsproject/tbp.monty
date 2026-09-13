@@ -5,7 +5,7 @@ rfc: required
 estimated-scope: large
 improved-metric: infrastructure, real-world, numsteps, goal-policy
 output-type: RFC, PR, monty-feature
-skills: python, monty
+skills: python, monty-advanced
 contributor: 
 status: open
 ---

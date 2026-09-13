@@ -69,15 +69,6 @@ class ObjectMetadataDecoderTest(TestCase):
         ):
             load_object_metadata(self.invalid_json, "test_object")
 
-    def test_metadata_missing_required_fields(self):
-        with pytest.raises(InvalidObjectMetadata, match=r"missing fields: {'refquat'}"):
-            load_object_metadata(self.missing_field_json, "test_object")
-
     def test_metadata_extra_fields(self):
         with pytest.raises(InvalidObjectMetadata, match=r"extra fields: {'extra'}"):
             load_object_metadata(self.extra_field_json, "test_object")
-
-    def test_metadata_missing_extra_fields(self):
-        match_str = r"missing fields: {'refquat'} and extra fields: {'extra'}"
-        with pytest.raises(InvalidObjectMetadata, match=match_str):
-            load_object_metadata(self.missing_extra_field_json, "test_object")

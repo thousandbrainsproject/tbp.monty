@@ -34,6 +34,8 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import (
     DEFAULT_TOLERANCE,
@@ -44,11 +46,9 @@ from tbp.monty.math import (
 )
 from tbp.monty.simulators.mujoco import MuJoCoSimulator
 from tbp.monty.simulators.mujoco.agents import Axis, DistantAgent, SurfaceAgent
-from tbp.monty.simulators.mujoco.simulator import ActuateMethodMissing
-from tests.unit.simulators.mujoco.noop_agent_test import (
-    TEST_AGENT_ID,
-    TEST_SENSOR_ID,
-    default_agent_args,
+from tbp.monty.simulators.mujoco.simulator import (
+    DEFAULT_RESOLUTION,
+    ActuateMethodMissing,
 )
 from tests.unit.simulators.mujoco.strategies import (
     constrained_angle,
@@ -56,6 +56,9 @@ from tests.unit.simulators.mujoco.strategies import (
     unit_quaternion,
     x_rotation_quaterion,
 )
+
+AGENT_ID = AgentID("agent_id_0")
+PATCH_SENSOR_ID = SensorID("sensor_id_0")
 
 P = ParamSpec("P")
 
@@ -176,7 +179,12 @@ class ActionsTest(TestCase):
             agents=[
                 partial(
                     cls.agent_class,
-                    **default_agent_args(),
+                    agent_id=AGENT_ID,
+                    sensor_configs={
+                        PATCH_SENSOR_ID: SensorConfig(
+                            resolution=DEFAULT_RESOLUTION,
+                        ),
+                    },
                 )
             ]
         )
@@ -199,13 +207,13 @@ class ActionsTest(TestCase):
         self: Self, /, final_position: VectorXYZ, final_rotation: QuaternionWXYZ
     ) -> None:
         action = SetAgentPose(
-            agent_id=TEST_AGENT_ID,
+            agent_id=AGENT_ID,
             location=final_position,
             rotation_quat=final_rotation,
         )
         self.sim.step([action])
 
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         assert agent_state.position == final_position
         assert agent_state.rotation == qt.quaternion(*final_rotation)
 
@@ -221,12 +229,10 @@ class ActionsTest(TestCase):
     def test_set_sensor_rotation(
         self: Self, /, sensor_rotation: QuaternionWXYZ
     ) -> None:
-        action = SetSensorRotation(
-            agent_id=TEST_AGENT_ID, rotation_quat=sensor_rotation
-        )
+        action = SetSensorRotation(agent_id=AGENT_ID, rotation_quat=sensor_rotation)
         self.sim.step([action])
 
-        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_state = self.sim.states[AGENT_ID].sensors[PATCH_SENSOR_ID]
         assert sensor_state.position == (0.0, 0.0, 0.0)
         # Due to the transformations that happen to sensor.rotation, some of the
         # quaternions are rotated to their negative, which represents the same rotation.
@@ -240,11 +246,11 @@ class ActionsTest(TestCase):
     @skip_on_missing_actuate()
     @sim_reset
     def test_move_forward(self: Self, /, distance: float) -> None:
-        action = MoveForward(agent_id=TEST_AGENT_ID, distance=distance)
+        action = MoveForward(agent_id=AGENT_ID, distance=distance)
 
         self.sim.step([action])
 
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         # Moving forward moves the agent in the negative Z direction, so the
         # moved distance will be the negative of the requested distance.
         assert agent_state.position == (0.0, 0.0, -distance)
@@ -254,11 +260,11 @@ class ActionsTest(TestCase):
     @skip_on_missing_actuate()
     @sim_reset
     def test_turn_right(self: Self, /, delta_theta: float) -> None:
-        action = TurnRight(agent_id=TEST_AGENT_ID, rotation_degrees=delta_theta)
+        action = TurnRight(agent_id=AGENT_ID, rotation_degrees=delta_theta)
 
         self.sim.step([action])
 
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
         expected_rot = Rotation.from_euler(
             "xyz", [0.0, -delta_theta, 0.0], degrees=True
@@ -271,11 +277,11 @@ class ActionsTest(TestCase):
     @skip_on_missing_actuate()
     @sim_reset
     def test_turn_left(self: Self, /, delta_theta: float) -> None:
-        action = TurnLeft(agent_id=TEST_AGENT_ID, rotation_degrees=delta_theta)
+        action = TurnLeft(agent_id=AGENT_ID, rotation_degrees=delta_theta)
 
         self.sim.step([action])
 
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
         expected_rot = Rotation.from_euler("xyz", [0.0, delta_theta, 0.0], degrees=True)
 
@@ -289,14 +295,14 @@ class ActionsTest(TestCase):
         """Test LookUp actions with angles less than constraint move by that angle."""
         angle, constraint = angles
         action = LookUp(
-            agent_id=TEST_AGENT_ID,
+            agent_id=AGENT_ID,
             rotation_degrees=angle,
             constraint_degrees=constraint,
         )
         expected_rot = Rotation.from_euler("xyz", [angle, 0.0, 0.0], degrees=True)
 
         self.sim.step([action])
-        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_state = self.sim.states[AGENT_ID].sensors[PATCH_SENSOR_ID]
         sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
         assert sensor_rot.approx_equal(expected_rot)
@@ -315,19 +321,19 @@ class ActionsTest(TestCase):
         """Test that multiple LookUp actions are properly constrained."""
         actions = [
             LookUp(
-                agent_id=TEST_AGENT_ID,
+                agent_id=AGENT_ID,
                 rotation_degrees=delta_phi1,
                 constraint_degrees=phi_limit,
             ),
             LookUp(
-                agent_id=TEST_AGENT_ID,
+                agent_id=AGENT_ID,
                 rotation_degrees=delta_phi2,
                 constraint_degrees=phi_limit,
             ),
         ]
 
         self.sim.step(actions)
-        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_state = self.sim.states[AGENT_ID].sensors[PATCH_SENSOR_ID]
         sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
         pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
@@ -341,14 +347,14 @@ class ActionsTest(TestCase):
         """Test LookDown actions with angles less than constraint move by that angle."""
         angle, constraint = angles
         action = LookDown(
-            agent_id=TEST_AGENT_ID,
+            agent_id=AGENT_ID,
             rotation_degrees=angle,
             constraint_degrees=constraint,
         )
         expected_rot = Rotation.from_euler("xyz", [-angle, 0.0, 0.0], degrees=True)
 
         self.sim.step([action])
-        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_state = self.sim.states[AGENT_ID].sensors[PATCH_SENSOR_ID]
         sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
         assert sensor_rot.approx_equal(expected_rot)
@@ -367,19 +373,19 @@ class ActionsTest(TestCase):
         """Test that multiple LookDown actions are properly constrained."""
         actions = [
             LookDown(
-                agent_id=TEST_AGENT_ID,
+                agent_id=AGENT_ID,
                 rotation_degrees=delta_phi1,
                 constraint_degrees=phi_limit,
             ),
             LookDown(
-                agent_id=TEST_AGENT_ID,
+                agent_id=AGENT_ID,
                 rotation_degrees=delta_phi2,
                 constraint_degrees=phi_limit,
             ),
         ]
 
         self.sim.step(actions)
-        sensor_state = self.sim.states[TEST_AGENT_ID].sensors[TEST_SENSOR_ID]
+        sensor_state = self.sim.states[AGENT_ID].sensors[PATCH_SENSOR_ID]
         sensor_rot = Rotation.from_quat(qt.as_float_array(sensor_state.rotation))
 
         pitch, _, _ = sensor_rot.as_euler("xyz", degrees=True)
@@ -413,14 +419,14 @@ class ActionsTest(TestCase):
         as we expect it to without over-complicating the test.
         """
         action = OrientHorizontal(
-            agent_id=TEST_AGENT_ID,
+            agent_id=AGENT_ID,
             rotation_degrees=delta_theta,
             forward_distance=forward_distance,
             left_distance=left_distance,
         )
 
         self.sim.step([action])
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
         agent_pos = agent_state.position
 
@@ -465,14 +471,14 @@ class ActionsTest(TestCase):
         See note in `test_orient_horizontal`.
         """
         action = OrientVertical(
-            agent_id=TEST_AGENT_ID,
+            agent_id=AGENT_ID,
             rotation_degrees=delta_phi,
             forward_distance=forward_distance,
             down_distance=down_distance,
         )
 
         self.sim.step([action])
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
         agent_pos = agent_state.position
 
@@ -518,13 +524,13 @@ class ActionsTest(TestCase):
             [np.cos(theta - offset), np.sin(theta + offset), 0.0]
         )
         action = MoveTangentially(
-            agent_id=TEST_AGENT_ID,
+            agent_id=AGENT_ID,
             distance=distance,
             direction=tuple(direction_vector),
         )
 
         self.sim.step([action])
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
 
         expected_pos = direction_vector * distance
@@ -557,20 +563,20 @@ class ActionsTest(TestCase):
             [np.cos(theta - offset), np.sin(theta + offset), 0.0]
         )
         action = MoveTangentially(
-            agent_id=TEST_AGENT_ID, distance=distance, direction=tuple(direction_vector)
+            agent_id=AGENT_ID, distance=distance, direction=tuple(direction_vector)
         )
         # We can only invert one of the two values to get an inverse action, so
         # we test both possibilties.
         inverse_distance = distance if invert_vector else -distance
         inverse_direction = direction_vector * -1 if invert_vector else direction_vector
         inverse_action = MoveTangentially(
-            agent_id=TEST_AGENT_ID,
+            agent_id=AGENT_ID,
             distance=inverse_distance,
             direction=cast("VectorXYZ", tuple(inverse_direction)),
         )
 
         self.sim.step([action, inverse_action])
-        agent_state = self.sim.states[TEST_AGENT_ID]
+        agent_state = self.sim.states[AGENT_ID]
         agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
 
         assert agent_rot.approx_equal(Rotation.from_quat(IDENTITY_QUATERNION))

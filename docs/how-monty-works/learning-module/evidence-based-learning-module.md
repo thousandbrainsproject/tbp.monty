@@ -74,7 +74,9 @@ To incorporate some knowledge about surface into this search we do not use a cir
 
 We modulate the influence of the surface normal (or the flatness of the search sphere) by the sensed curvature. If we sense a curvature close to 0 we are on a flat surface and want to have a flat search radius. If we sense a curvature with high magnitude we want to use an almost circular search radius.
 
-To implement these notions we use a **custom distance measure** that takes the surface normal and curvature magnitude into account. This distance is then used for thresholding and leads to considering more points along the surface and fewer outside the surface (see above figure, bottom row).
+To implement these notions we use a **custom distance measure** that takes the surface normal and curvature magnitude into account. This distance is then used for thresholding and leads to considering more points along the surface and fewer outside the surface (see above figure, bottom row). 
+
+Note that the distance between hypothesized location and stored point in the model is only used for thresholding whether a point is in the radius or not, and not for weighting the absolute evidence increment. This is to reduce the influence of how the model is sampled during learning and where points are stored in the model.
 
 # Features and Morphology
 
@@ -133,6 +135,26 @@ Once the votes are in the receiving LMs reference frame, the receiving LM update
 
 In our current experiment set up, we divide time into episodes. **Each episode ends when a terminal state is reached**. In the object recognition task this is either **no match** (the model does not know the current object and we construct a new graph for it), **match** (we recognized an object to correspond to a graph in memory), or **time out** (we took a maximum number of steps without reaching one of the other terminal states). This means, each episode contains a variable amount of steps and after every step, we need to check if a terminal condition was met. This check is summarized in the figure below (except for time out which is checked separately in the code).
 
-This check can be divided into **global Monty checks and local LM checks** (purple box). An individual LM can reach its terminal state much earlier than the overall Monty system. For example, if one LM does not have a model of the shown object it will reach no match quite fast while the other LMs will continue until they recognize the object. Or one LM might receive some unique evidence about an object and recognize it before all other LMs do. The episode only ends once _min_lms_match_ LMs have reached the terminal 'match' state.
+This check can be divided into **global Monty checks and local LM checks** (purple box). An individual LM can reach its terminal state much earlier than the overall Monty system. For example, if one LM does not have a model of the shown object it will reach no match quite fast while the other LMs will continue until they recognize the object. Or one LM might receive some unique evidence about an object and recognize it before all other LMs do.
+
+The `match_criterion` experiment setting controls which learning modules must reach the terminal `match` state before the episode ends. To end the episode after a configured number of LMs match, use `AnyLMsMatch`:
+
+```yaml
+match_criterion:
+  _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+  count: 2
+```
+
+To require specific LMs to match, use `NamedLMsMatch`. Every listed LM must reach `match`; an unlisted matching LM cannot substitute for one of them:
+
+```yaml
+match_criterion:
+  _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+  ids:
+    - learning_module_0
+    - learning_module_1
+```
+
+The IDs are the learning-module keys from the Monty configuration.
 
 ![Terminal condition check performed after every step (time out is checked separately before each step).](../../figures/how-monty-works/terminal_state.png)

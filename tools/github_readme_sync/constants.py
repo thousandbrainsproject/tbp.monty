@@ -10,7 +10,7 @@
 
 import re
 
-IGNORE_DOCS = ["placeholder-example-doc", "some-existing-doc"]
+IGNORE_DOCS = ["placeholder-example-doc", "some-existing-doc", "document-slug"]
 IGNORE_IMAGES = ["docs-only-example.png"]
 IGNORE_TABLES = ["example-table-for-docs.csv"]
 IGNORE_YOUTUBE = ["example-video-id"]

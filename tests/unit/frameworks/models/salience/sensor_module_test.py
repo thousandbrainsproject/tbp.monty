@@ -44,8 +44,14 @@ class ArrayEqual:
 
 @pytest.fixture
 def mocked_object_observation():
+    empty_obs = OnObjectObservation(
+        center_location=None,
+        locations=np.empty((0, 3)),
+        salience=np.empty([]),
+    )
     with patch(
-        "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation"
+        "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation",
+        return_value=empty_obs,
     ):
         yield
 
@@ -64,9 +70,13 @@ class SalienceSMTest(unittest.TestCase):
     def setUp(self) -> None:
         self.sensor_module = SalienceSM(
             sensor_module_id="test",
-            salience_strategy=MagicMock(),
-            return_inhibitor=MagicMock(),
+            salience_strategy=MagicMock(return_value=np.array([])),
+            return_inhibitor=MagicMock(return_value=np.array([])),
             snapshot_telemetry=MagicMock(),
+        )
+        self.observation = SensorObservation(
+            rgba=np.zeros((64, 64, 4), dtype=np.uint8),
+            depth=np.zeros((64, 64)),
         )
         self.default_sensor_state = SensorState(
             position=(0, 0, 0),
@@ -97,7 +107,7 @@ class SalienceSMTest(unittest.TestCase):
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
 
     def test_step_returns_no_percept(self) -> None:
-        self.assertIsNone(self.sensor_module.step(self.ctx, MagicMock()))
+        self.assertIsNone(self.sensor_module.step(self.ctx, self.observation))
 
     @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
     def test_step_proposes_goals_properly(
@@ -137,7 +147,8 @@ class SalienceSMTest(unittest.TestCase):
             expected_goal = Goal(
                 location=locations[i],
                 confidence=salience[i],
-                use_state=True,
+                pass_message=False,
+                process_features_in_lm=False,
                 morphological_features=None,
                 non_morphological_features=None,
                 goal_tolerances=None,
@@ -147,7 +158,7 @@ class SalienceSMTest(unittest.TestCase):
             # TODO: implement __eq__ for GoalState
             np.testing.assert_array_equal(g.location, expected_goal.location)
             self.assertEqual(g.confidence, expected_goal.confidence)
-            self.assertEqual(g.use_state, expected_goal.use_state)
+            self.assertEqual(g.pass_message, expected_goal.pass_message)
             self.assertEqual(
                 g.morphological_features, expected_goal.morphological_features
             )
