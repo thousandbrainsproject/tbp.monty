@@ -18,8 +18,7 @@ from collections import deque
 from itertools import chain
 from pathlib import Path
 from sys import getsizeof
-from typing import TypedDict
-from typing import Any
+from typing import Any, TypedDict
 
 import numpy as np
 import numpy.typing as npt
