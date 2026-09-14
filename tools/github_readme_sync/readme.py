@@ -18,7 +18,7 @@ import re
 from collections import OrderedDict
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import parse_qs, quote
 
 import nh3
@@ -134,7 +134,7 @@ class ReadMe:
         # First create independent page dictionaries with empty children lists.
         # We use resource URIs as the API uses URIs as resource identifiers.
         for raw_page in pages:
-            page: ReadMeResource = dict(raw_page)
+            page = cast("ReadMeResource", dict(raw_page))
             page["children"] = []
 
             uri = page.get("uri")
@@ -242,9 +242,11 @@ class ReadMe:
         return doc
 
     def make_version_stable(self):
-        """Make a release version the project's stable/default version."""
-        # Versions containing a suffix are preview versions, such as
-        # 0.40-brothman-newtest3. Do not make those stable.
+        """Make a release version the project's stable/default version.
+
+        Versions containing a suffix are preview versions, such as
+        0.40-brothman-newtest3. Do not make those stable.
+        """
         if self.version_has_suffix():
             return
 

@@ -49,7 +49,9 @@ class TestReadme(unittest.TestCase):
             self.readme.get_stable_version()
 
     @patch("tools.github_readme_sync.readme.get")
-    def test_get_stable_version_requires_name(self, mock_get):
+    def test_get_stable_version_raises_value_error_when_response_is_missing_name(
+        self, mock_get
+    ):
         mock_get.return_value = {"privacy": {"view": "default"}}
 
         with self.assertRaisesRegex(
@@ -152,7 +154,7 @@ class TestReadme(unittest.TestCase):
         self.assertEqual(roots[1]["children"], [])
 
     @patch.object(ReadMe, "get_category_docs")
-    def test_get_category_page_tree_rejects_page_without_uri(
+    def test_get_category_page_tree_raises_value_error_when_page_has_no_uri(
         self,
         mock_get_category_docs,
     ):
@@ -160,11 +162,11 @@ class TestReadme(unittest.TestCase):
             {"title": "Missing URI", "slug": "missing-uri"}
         ]
 
-        with self.assertRaisesRegex(ValueError, "has no uri"):
+        with self.assertRaisesRegex(ValueError, "ReadMe page 'missing-uri' has no uri"):
             self.readme.get_category_page_tree({"title": "Category"})
 
     @patch.object(ReadMe, "get_category_docs")
-    def test_get_category_page_tree_rejects_duplicate_uri(
+    def test_get_category_page_tree_raises_value_error_when_pages_share_duplicate_uri(
         self,
         mock_get_category_docs,
     ):
@@ -174,11 +176,13 @@ class TestReadme(unittest.TestCase):
             {"title": "Two", "slug": "two", "uri": duplicate_uri},
         ]
 
-        with self.assertRaisesRegex(ValueError, "duplicate page URI"):
+        with self.assertRaisesRegex(
+            ValueError, f"ReadMe returned duplicate page URI '{duplicate_uri}'"
+        ):
             self.readme.get_category_page_tree({"title": "Category"})
 
     @patch.object(ReadMe, "get_category_docs")
-    def test_get_category_page_tree_rejects_missing_parent(
+    def test_get_category_page_tree_raises_value_error_when_page_parent_does_not_exist(
         self,
         mock_get_category_docs,
     ):
@@ -191,7 +195,11 @@ class TestReadme(unittest.TestCase):
             }
         ]
 
-        with self.assertRaisesRegex(ValueError, "refers to missing parent URI"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "ReadMe page 'orphan' refers to missing parent URI "
+            "'/branches/1.0.0/guides/missing'",
+        ):
             self.readme.get_category_page_tree({"title": "Category"})
 
     @patch("tools.github_readme_sync.readme.get")
@@ -1094,7 +1102,3 @@ class TestReadme(unittest.TestCase):
         self.assertIn("<h1>Test Content</h1>", sanitized_html)
         self.assertIn("<p>This is a test paragraph</p>", sanitized_html)
         self.assertIn("<p>More content after the script</p>", sanitized_html)
-
-
-if __name__ == "__main__":
-    unittest.main()

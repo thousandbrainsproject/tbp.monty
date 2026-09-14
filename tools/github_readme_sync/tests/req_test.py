@@ -288,7 +288,3 @@ class TestReq(unittest.TestCase):
             r"Expected ReadMe response data to be a list of objects",
         ):
             get_collection("https://api.readme.com/v2/items")
-
-
-if __name__ == "__main__":
-    unittest.main()

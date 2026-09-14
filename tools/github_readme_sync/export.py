@@ -74,14 +74,7 @@ def export(output_dir: str, rdme: ReadMe):
     return hierarchy
 
 
-def process_doc(
-    *,
-    server_doc,
-    hierarchy_doc,
-    folder_path,
-    indent_level,
-    rdme,
-):
+def process_doc(*, server_doc, hierarchy_doc, folder_path, indent_level, rdme):
     indent = INDENTATION_UNIT * indent_level
     logger.info(f"{indent}{CYAN}{hierarchy_doc['slug']}{RESET}")
 

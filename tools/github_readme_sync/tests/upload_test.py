@@ -195,7 +195,3 @@ class TestUpload(unittest.TestCase):
                 call({"title": "Category 2"}),
             ],
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

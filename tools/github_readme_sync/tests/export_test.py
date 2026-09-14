@@ -16,11 +16,14 @@ from unittest.mock import MagicMock, call
 from tools.github_readme_sync.export import export
 from tools.github_readme_sync.readme import ReadMe
 
+ROOT_DOC_CONTENT = "---\ntitle: Getting Started with Monty\n---\nRoot"
+CHILD_DOC_CONTENT = "---\ntitle: Windows Setup via WSL\n---\nChild"
+
 
 class TestExport(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
-        self.output_dir = Path(self.test_dir.name) / "exported-docs"
+        self.output_dir = Path(self.test_dir.name)
 
     def tearDown(self):
         self.test_dir.cleanup()
@@ -56,10 +59,8 @@ class TestExport(unittest.TestCase):
         ]
 
         rdme.get_doc_by_slug.side_effect = lambda slug: {
-            "getting-started": "---\ntitle: Getting Started with Monty\n---\nRoot",
-            "getting-started-on-windows-via-wsl": (
-                "---\ntitle: Windows Setup via WSL\n---\nChild"
-            ),
+            "getting-started": ROOT_DOC_CONTENT,
+            "getting-started-on-windows-via-wsl": CHILD_DOC_CONTENT,
         }[slug]
 
         hierarchy = export(self.output_dir, rdme)
@@ -99,11 +100,11 @@ class TestExport(unittest.TestCase):
         self.assertTrue(child_file.is_file())
         self.assertEqual(
             root_file.read_text(encoding="utf-8"),
-            "---\ntitle: Getting Started with Monty\n---\nRoot",
+            ROOT_DOC_CONTENT,
         )
         self.assertEqual(
             child_file.read_text(encoding="utf-8"),
-            "---\ntitle: Windows Setup via WSL\n---\nChild",
+            CHILD_DOC_CONTENT,
         )
 
         rdme.get_category_page_tree.assert_called_once_with(category)
@@ -119,16 +120,11 @@ class TestExport(unittest.TestCase):
         rdme = MagicMock(spec=ReadMe)
         rdme.get_categories.return_value = []
 
-        self.output_dir.mkdir(parents=True)
         stale_file = self.output_dir / "stale.md"
-        stale_file.write_text("old export", encoding="utf-8")
+        stale_file.touch(exist_ok=True)
 
         hierarchy = export(self.output_dir, rdme)
 
         self.assertEqual(hierarchy, [])
         self.assertTrue(self.output_dir.is_dir())
         self.assertFalse(stale_file.exists())
-
-
-if __name__ == "__main__":
-    unittest.main()
