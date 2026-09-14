@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -21,6 +21,7 @@ from pydantic import (
     RootModel,
     ValidationInfo,
     field_validator,
+    model_validator,
 )
 from typing_extensions import Annotated
 
@@ -339,6 +340,22 @@ class FutureWorkRecord(BaseModel):
             raise ValueError(f"Invalid rfc value '{value}'. Must be {valid_options}")
 
         return value
+
+    @model_validator(mode="after")
+    def validate_status_required_with_contributor(self) -> FutureWorkRecord:
+        """Require a status whenever a contributor is specified.
+
+        Returns:
+            The validated record.
+
+        Raises:
+            ValueError: If a contributor is set without a status.
+        """
+        if self.contributor and not self.status:
+            raise ValueError(
+                "When a contributor is specified, status must also be specified"
+            )
+        return self
 
 
 def load_allowed_values(docs_snippets_dir: Path) -> dict[str, list[str]]:
