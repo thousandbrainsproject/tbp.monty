@@ -312,6 +312,13 @@ experiment:
         allow_translation: false
         max_orientation_attempts: 3
     train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
+      fixed_amount: 5
+      max_total_steps: 6000
     logging:
       python_log_level: WARNING
       python_log_to_file: true
@@ -321,19 +328,9 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
       run_name: dist_agent_5lm_2obj_train
-    max_train_steps: 1000
-    max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
     model_name_or_path: ''
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
-    recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
-      fixed_amount: 5
-      max_total_steps: 6000
     seed: 42
     show_sensor_output: false
     supervised_lm_ids: all
@@ -402,6 +399,26 @@ constants:
     - 0
   - - 325
     - 225
+    - 0
+  rotations_cube_faces_count: 6
+  rotations_cube_faces:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+  - - 0
+    - 270
+    - 0
+  - - 90
+    - 0
+    - 0
+  - - 90
+    - 180
     - 0
   rotations_3_count: 3
   rotations_3:

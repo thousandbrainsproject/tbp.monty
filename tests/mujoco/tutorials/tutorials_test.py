@@ -52,8 +52,7 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_train_mujoco",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.max_train_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -71,8 +70,8 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_eval_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -87,8 +86,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_unsupervised_mujoco",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.max_train_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_train_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -105,8 +104,7 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.max_train_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=503",
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -122,8 +120,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/dist_agent_5lm_2obj_eval_mujoco",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_eval_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -149,8 +147,8 @@ class TutorialsTest(TestCase):
                     f"experiment.config.model_name_or_path={inference_output_dir}/pretrained/",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_eval_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -168,8 +166,8 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.max_eval_steps=3",
-                    "experiment.config.max_total_steps=3",
+                    "experiment.config.recognition_policy.max_eval_steps=3",
+                    "experiment.config.recognition_policy.max_total_steps=3",
                     "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )

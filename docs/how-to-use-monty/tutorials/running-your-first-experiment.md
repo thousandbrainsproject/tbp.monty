@@ -71,6 +71,12 @@ defaults:
   # environment observations before sending them to Monty.
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
 
+  # /termination specifies when an episode ends. The match criterion decides
+  # which learning modules must recognize the object, and the recognition
+  # policy adds step limits. We stop once any one learning module has matched
+  # or after 6000 steps.
+  - /termination: any1_maxtotalsteps_6000
+
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we
   # output the data logs and python logs where training models are saved.
@@ -83,21 +89,12 @@ experiment:
   config:
     # `show_sensor_output: true` will display a live plot of the sensor output.
     show_sensor_output: false
-    # The maximum number of steps to train for.
-    max_train_steps: 1
-    # The maximum number of steps to evaluate for.
-    max_eval_steps: 500
-    # The maximum number of steps to run for.
-    max_total_steps: 6000
     # The number of epochs to train for.
     n_train_epochs: 1
     # The number of epochs to evaluate for.
     n_eval_epochs: 3
     # The path to the model to load, if any.
     model_name_or_path: ""
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     # The random seed for the experiment.
     seed: 42
     # The list of learning module IDs to supervise, or "all" to supervise all
