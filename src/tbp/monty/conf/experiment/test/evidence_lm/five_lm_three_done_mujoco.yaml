@@ -11,6 +11,7 @@ defaults:
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
+  - /termination: test_any3_objectrecognition_t30_e30_tot60
   - /logging: detailed_debug_monty_runs
 
 experiment:
@@ -20,14 +21,6 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: 3
     model_name_or_path: ""
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 3
-    recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
-      max_train_steps: 30
-      max_eval_steps: 30
-      max_total_steps: 60
     seed: 42
     supervised_lm_ids: []
     logging:

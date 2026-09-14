@@ -9,6 +9,7 @@ defaults:
   - /environment: test_mujoco
   - /env_interface: test_train_3obj_default_eval_3obj_default
   - /env_interface/transform: none
+  - /termination: test_any1_montyisdone
   - /logging: base_debug_monty_runs
 
 experiment:
@@ -18,9 +19,6 @@ experiment:
     n_train_epochs: 1
     n_eval_epochs: 1
     model_name_or_path: ""
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     supervised_lm_ids: []
     logging:

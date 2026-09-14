@@ -444,6 +444,13 @@ experiment:
         allow_translation: false
         max_orientation_attempts: 3
     train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 3
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
+      fixed_amount: 5
+      max_total_steps: 500
     logging:
       python_log_level: INFO
       python_log_to_file: true
@@ -457,13 +464,6 @@ experiment:
     n_train_epochs: ${constants.rotations_cube_faces_count}
     n_eval_epochs: 3
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_expanded_2d_children/pretrained/}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 3
-    recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
-      fixed_amount: 5
-      max_total_steps: 500
     seed: 42
     supervised_lm_ids:
     - learning_module_2

@@ -173,6 +173,14 @@ experiment:
         allow_translation: false
         max_orientation_attempts: 3
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_train_steps: 1000
+      max_eval_steps: 500
+      max_total_steps: 6000
     logging:
       python_log_level: WARNING
       python_log_to_file: true
@@ -195,14 +203,6 @@ experiment:
     n_train_epochs: 3
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
     n_eval_epochs: 10
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
-    recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
-      max_train_steps: 1000
-      max_eval_steps: 500
-      max_total_steps: 6000
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG

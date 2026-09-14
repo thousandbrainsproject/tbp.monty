@@ -9,6 +9,7 @@ defaults:
   - /environment: habitat_dist_agent
   - /env_interface: test_train_1obj_predefined_r1
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
+  - /termination: test_any1_objectrecognition_t50_e50_tot200
   - /logging: detailed_debug_monty_runs
 
 experiment:
@@ -18,14 +19,6 @@ experiment:
     n_train_epochs: 2
     n_eval_epochs: 3
     model_name_or_path: ""
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
-    recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
-      max_train_steps: 50
-      max_eval_steps: 50
-      max_total_steps: 200
     seed: 42
     supervised_lm_ids: []
     logging:

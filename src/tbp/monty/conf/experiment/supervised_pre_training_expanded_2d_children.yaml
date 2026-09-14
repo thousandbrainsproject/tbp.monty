@@ -10,6 +10,7 @@ defaults:
   - /env_interface: train_expanded_2d_children_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
+  - /termination: any1_naivescan_fixed1_tot500
   - /logging: silent_info_train
 
 experiment:
@@ -20,13 +21,6 @@ experiment:
     n_train_epochs: 7
     n_eval_epochs: 7
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_expanded_3d_children/pretrained/}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
-    recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
-      fixed_amount: 1
-      max_total_steps: 500
     seed: 42
     supervised_lm_ids:
       - learning_module_1

@@ -33,6 +33,7 @@ defaults:
   - /environment: habitat_ycb_surf_agent
   - /env_interface: tutorial_train_2obj_random
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
+  - /termination: any1_objectrecognition_t2000_e500_tot5000
   - /logging: basic_info_monty_runs
 
 experiment:
@@ -42,9 +43,6 @@ experiment:
     n_train_epochs: 3
     n_eval_epochs: 3
     model_name_or_path: ''
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     supervised_lm_ids: []
     do_eval: false

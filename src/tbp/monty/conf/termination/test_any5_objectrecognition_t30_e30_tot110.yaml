@@ -1,0 +1,10 @@
+# @package experiment.config
+
+match_criterion:
+  _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+  count: 5
+recognition_policy:
+  _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+  max_train_steps: 30
+  max_eval_steps: 30
+  max_total_steps: 110

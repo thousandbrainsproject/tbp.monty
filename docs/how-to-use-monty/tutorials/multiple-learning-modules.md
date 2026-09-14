@@ -32,6 +32,7 @@ defaults:
   - /environment: habitat_dist_agent_sensors5
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor6
+  - /termination: any1_naivescan_fixed5_tot6000
   - /logging: silent_warning_train
 
 experiment:
@@ -40,9 +41,6 @@ experiment:
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3 # unused but required
     model_name_or_path: ''
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     show_sensor_output: false
     supervised_lm_ids: all
@@ -114,6 +112,7 @@ defaults:
   - /environment: habitat_dist_agent_sensors5
   - /env_interface: tutorial_eval_2obj_predefined_r1
   - /env_interface/transform: missing_depthto3d_sensor6
+  - /termination: any3_objectrecognition_t1000_e500_tot6000
   - /logging: basic_info_monty_runs
 
 experiment:
@@ -122,9 +121,6 @@ experiment:
     n_train_epochs: 1 # unused but required
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 3
     python_log_level: DEBUG
     seed: 42
     show_sensor_output: false
