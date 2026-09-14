@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, Sequence
 
 from typing_extensions import Self
 
@@ -19,6 +19,7 @@ from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.monty_base import MontyBase
 
 __all__ = [
+    "AnyPolicy",
     "MaxTotalSteps",
     "MaximumSteps",
     "MinimumLMs",
@@ -86,7 +87,7 @@ class MontyIsDone(RecognitionPolicy):
 
 
 class MaximumSteps(RecognitionPolicy):
-    """`count.steps >= max_steps` or `model.is_done`.
+    """`step >= {max_train_steps | max_eval_steps}`.
 
     Terminal conditions include:
     - `step >= {max_train_steps | max_eval_steps}`
@@ -334,3 +335,37 @@ class ObjectRecognition(RecognitionPolicy):
             return RecognitionResult(is_done=True)
 
         return RecognitionResult(is_done=model.is_done)
+
+
+class AnyPolicy(RecognitionPolicy):
+    """Combine terminal conditions for object recognition experiments.
+
+    Terminal condition is reached if _any_ `RecognitionPolicy` says so.
+    """
+
+    _policies: Sequence[RecognitionPolicy]
+    """The policies to check (in order)."""
+
+    def __init__(self: Self, policies: Sequence[RecognitionPolicy]) -> None:
+        """Initialize the policy.
+
+        Args:
+            policies: The policies to check (in order).
+
+        Raises:
+            ValueError: If `len(policies) < 1`.
+        """
+        if len(policies) < 1:
+            raise ValueError("no policies to check")
+
+        self._policies = policies
+
+    def __call__(
+        self: Self, model: MontyBase, count: RecognitionCounter
+    ) -> RecognitionResult:
+        rr = RecognitionResult(is_done=False)
+        for policy in self._policies:
+            rr = policy(model, count)
+            if rr.is_done:
+                break
+        return rr
