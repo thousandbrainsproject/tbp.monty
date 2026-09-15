@@ -21,6 +21,11 @@ from hypothesis.extra.numpy import arrays
 from tbp.monty.cmp import AttentionRegion, Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.geometry import Rotation
+from tests.strategies.arrays import (
+    float_array_n_by_3,
+    float_array_not_1d,
+    float_array_not_n_by_3,
+)
 
 
 def _message(
@@ -108,89 +113,11 @@ class EncodeGoalTest(unittest.TestCase):
 
 
 @st.composite
-def shape_not_n_by_3(draw: st.DrawFn) -> tuple[int, ...]:
-    """Returns a shape that is not N by 3."""
-    return draw(
-        st.one_of(
-            # 1D
-            st.tuples(st.integers(min_value=0, max_value=10)),
-            # 2D, not N by 3
-            st.tuples(
-                st.integers(min_value=0, max_value=10),
-                st.one_of(
-                    st.integers(min_value=0, max_value=2),
-                    st.integers(min_value=4, max_value=10),
-                ),
-            ),
-            # 3D+
-            st.tuples(
-                *(
-                    st.integers(min_value=0, max_value=10)
-                    for _ in range(draw(st.integers(min_value=3, max_value=10)))
-                )
-            ),
-        )
-    )
-
-
-@st.composite
-def shape_not_1d(draw: st.DrawFn) -> tuple[int, ...]:
-    """Returns a shape that is not 1D."""
-    return draw(
-        st.tuples(
-            *(
-                st.integers(min_value=0, max_value=10)
-                for _ in range(draw(st.integers(min_value=2, max_value=10)))
-            )
-        ),
-    )
-
-
-@st.composite
-def locations_not_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
-    """Returns an array of locations that is not N by 3."""
-    return draw(
-        arrays(
-            dtype=np.float64,
-            shape=shape_not_n_by_3(),
-            elements=st.just(0.0),
-            fill=st.just(0.0),
-        )
-    )
-
-
-@st.composite
-def weights_not_1d(draw: st.DrawFn) -> npt.NDArray[np.float64]:
-    """Returns an array of weights that is not 1D."""
-    return draw(
-        arrays(
-            dtype=np.float64,
-            shape=shape_not_1d(),
-            elements=st.just(0.0),
-            fill=st.just(0.0),
-        )
-    )
-
-
-@st.composite
-def locations_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
-    """Returns an array of locations that is N by 3."""
-    return draw(
-        arrays(
-            dtype=np.float64,
-            shape=st.tuples(st.integers(min_value=0, max_value=10), st.just(3)),
-            elements=st.floats(allow_nan=False, allow_infinity=False),
-            fill=st.just(0.0),
-        )
-    )
-
-
-@st.composite
 def mismatched_locations_and_weights(
     draw: st.DrawFn,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Returns a tuple of locations and weights with mismatched first dimensions."""
-    locations = draw(locations_n_by_3())
+    locations = draw(float_array_n_by_3())
     loc_length = len(locations)
     if loc_length == 0:
         weight_length = st.integers(min_value=1, max_value=10)
@@ -216,7 +143,7 @@ def locations_and_a_weight(
     draw: st.DrawFn,
 ) -> tuple[npt.NDArray[np.float64], float]:
     """Returns a tuple of locations and weights with matching first dimensions."""
-    locations = draw(locations_n_by_3())
+    locations = draw(float_array_n_by_3())
     weight = draw(st.floats(allow_nan=False, allow_infinity=False))
     return locations, weight
 
@@ -224,7 +151,7 @@ def locations_and_a_weight(
 @st.composite
 def attention_region(draw: st.DrawFn) -> AttentionRegion:
     """Returns an AttentionRegion with valid locations and weights."""
-    locations = draw(locations_n_by_3())
+    locations = draw(float_array_n_by_3())
     weights = draw(
         arrays(
             dtype=np.float64,
@@ -243,7 +170,7 @@ def attention_regions(draw: st.DrawFn) -> list[AttentionRegion]:
 
 
 class AttentionRegionTest(unittest.TestCase):
-    @given(locations=locations_not_n_by_3())
+    @given(locations=float_array_not_n_by_3())
     def test_initialized_with_locations_not_n_by_3_raises_value_error(
         self,
         locations: npt.NDArray[np.float64],
@@ -251,7 +178,7 @@ class AttentionRegionTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             AttentionRegion(locations=locations, weights=np.ones(locations.shape[0]))
 
-    @given(weights=weights_not_1d())
+    @given(weights=float_array_not_1d())
     def test_initialized_with_weights_not_1d_raises_value_error(
         self,
         weights: npt.NDArray[np.float64],
