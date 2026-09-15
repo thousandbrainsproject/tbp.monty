@@ -224,29 +224,20 @@ class MaxTotalStepsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             MaxTotalSteps(max_total_steps)
 
-    @given(max_total_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
-    def test_times_out_at_or_after_max_total_steps(
-        self, max_total_steps: int, extra: int
-    ) -> None:
-        model = _model_is_done(is_done=False)
-        policy = MaxTotalSteps(max_total_steps=max_total_steps)
-        count = RecognitionCounter(step=max_total_steps + extra)
-        result = policy(model, count)
-        self.assertTrue(result.is_done)
-
     @given(
-        is_done=st.booleans(),
-        asc=ascending_ints(min_value=0),
+        step=st.integers(min_value=0),
+        max_total_steps=st.integers(min_value=1),
     )
-    def test_defers_to_model_before_max_total_steps(
-        self, is_done: bool, asc: tuple[int, int]
+    def test_times_out_at_or_after_max_total_steps(
+        self, step: int, max_total_steps: int
     ) -> None:
-        (step, max_total_steps) = asc
-        model = _model_is_done(is_done)
-        policy = MaxTotalSteps(max_total_steps=max_total_steps)
+        model = MagicMock()
+        policy = MaxTotalSteps(max_total_steps)
         count = RecognitionCounter(step)
         result = policy(model, count)
+        is_done = step >= max_total_steps
         self.assertEqual(result.is_done, is_done)
+        model.assert_not_called()
 
 
 class NaiveScanTest(unittest.TestCase):
@@ -418,7 +409,7 @@ class AnyPolicyTest(unittest.TestCase):
 
     def test_first_policy_is_done(self) -> None:
         policies = _mock_3_policies(first=True, middle=True, last=True)
-        model = _model_is_done(is_done=True)
+        model = MagicMock()
         policy = AnyPolicy(policies)
         count = RecognitionCounter()
         result = policy(model, count)
@@ -430,7 +421,7 @@ class AnyPolicyTest(unittest.TestCase):
 
     def test_second_policy_is_done(self) -> None:
         policies = _mock_3_policies(first=False, middle=True, last=True)
-        model = _model_is_done(is_done=True)
+        model = MagicMock()
         policy = AnyPolicy(policies)
         count = RecognitionCounter()
         result = policy(model, count)
@@ -442,7 +433,7 @@ class AnyPolicyTest(unittest.TestCase):
 
     def test_third_policy_is_done(self) -> None:
         policies = _mock_3_policies(first=False, middle=False, last=True)
-        model = _model_is_done(is_done=True)
+        model = MagicMock()
         policy = AnyPolicy(policies)
         count = RecognitionCounter()
         result = policy(model, count)

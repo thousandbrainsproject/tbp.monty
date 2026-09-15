@@ -201,7 +201,7 @@ class MinimumLMs(RecognitionPolicy):
 
 
 class MaxTotalSteps(RecognitionPolicy):
-    """`count.steps >= count.max_total_steps` or `model.is_done`."""
+    """`count.steps >= count.max_total_steps`."""
 
     _max_total_steps: int
     """The maximum number of steps before terminating the episode."""
@@ -220,14 +220,14 @@ class MaxTotalSteps(RecognitionPolicy):
         self._max_total_steps = max_total_steps
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self,
+        model: MontyBase,  # noqa: ARG002
+        count: RecognitionCounter,
     ) -> RecognitionResult:
         # Even if many exploratory steps have not sent information to learning
         # modules (so is_done remains False), eventually terminate exploration
-        if count.step >= self._max_total_steps:
-            return RecognitionResult(is_done=True)
-
-        return RecognitionResult(is_done=model.is_done)
+        is_done = count.step >= self._max_total_steps
+        return RecognitionResult(is_done=is_done)
 
 
 class NaiveScan(RecognitionPolicy):
