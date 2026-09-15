@@ -227,6 +227,43 @@ Note: To obtain these results, pretraining was run without parallelization acros
 > ```
 
 
+## Expanded Compositional Objects
+
+The expanded inference experiments (`*infer_expanded_objects_with_stickers*`) use a separate set of downloads. Keep the `compositional_objects_1.2` dataset, `pretrained_compositional_objects_v6` models, and the `habitat/objects/compositional_objects` symlink above for reproducing the existing Logos on Objects benchmarks.
+
+### Dataset 1.4
+
+Download the archive for your simulator and sticker-location condition:
+
+| Dataset | Simulator | tgz | zip |
+| --- | --- | --- | --- |
+| compositional_objects_1.4 | Habitat | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip) |
+| compositional_objects_1.4_random_locs | Habitat | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip) |
+| compositional_objects_1.4_mujoco | MuJoCo | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.zip) |
+| compositional_objects_1.4_random_locs_mujoco | MuJoCo | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.zip) |
+
+Extract Habitat archives into `~/tbp/data/habitat/versioned_data/` and MuJoCo archives into `~/tbp/data/`. Each archive contains its own versioned directory, so these downloads can coexist with the earlier dataset. For example, to install the standard MuJoCo dataset:
+
+```sh
+mkdir -p ~/tbp/data/
+curl -fL https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.tgz | tar -xzf - -C ~/tbp/data/
+```
+
+The expanded MuJoCo configs use `${MONTY_DATA}/compositional_objects_1.4_mujoco` or `${MONTY_DATA}/compositional_objects_1.4_random_locs_mujoco`, with `MONTY_DATA` defaulting to `~/tbp/data`. They currently load Habitat-trained checkpoints.
+
+The standard expanded Habitat configs still default to dataset 1.3. To evaluate on the new Habitat dataset without changing the existing benchmark setup, pass `experiment.config.environment.env_init_args.data_path=~/tbp/data/habitat/versioned_data/compositional_objects_1.4` when launching an experiment. For random-location inference, use `compositional_objects_1.4_random_locs` in that path.
+
+### Expanded Pretrained Models (v7)
+
+These Habitat-trained models are for the expanded inference experiments, including the MuJoCo transfer experiments. Keep the v6 models installed for the existing Logos on Objects benchmarks.
+
+| Models | Archive Format | Download Link |
+| --- | --- | --- |
+| pretrained_compositional_objects_v7 | tgz | [pretrained_compositional_objects_v7.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz) |
+| pretrained_compositional_objects_v7 | zip | [pretrained_compositional_objects_v7.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip) |
+
+Extract the archive into `${MONTY_MODELS}` (default: `~/tbp/results/monty/pretrained_models/`). Both archives contain the directory `pretrained_compositional_objects_v7`, which the expanded configs load directly. No alias is needed. The configs load `supervised_pre_training_expanded_comp_models/pretrained/` or `supervised_pre_training_expanded_monolithic_models/pretrained/` beneath that directory.
+
 # Monty-Meets-World
 
 The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models. 
