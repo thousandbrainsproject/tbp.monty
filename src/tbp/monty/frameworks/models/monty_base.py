@@ -13,6 +13,10 @@ import copy
 import logging
 from typing import Any, Sequence
 
+from tbp.monty.attention.attention_system import (
+    AttentionSystemProtocol,
+    NoopAttentionSystem,
+)
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -48,7 +52,7 @@ class MontyBase(Monty):
         min_eval_steps,
         min_train_steps,
         num_exploratory_steps,
-        max_total_steps,
+        attention_system: AttentionSystemProtocol | None = None,
     ) -> None:
         """Initialize the base class.
 
@@ -77,7 +81,8 @@ class MontyBase(Monty):
             min_eval_steps: Minimum number of steps required for evaluations.
             min_train_steps: Minimum number of steps required for training.
             num_exploratory_steps: Number of steps required by the exploratory phase.
-            max_total_steps: Maximum number of steps to run the experiment.
+            attention_system: The attention system to be used.
+                If `None`, a NoopAttentionSystem will be used.
 
         Raises:
             ValueError: If `sm_to_lm_matrix` is not defined
@@ -97,7 +102,6 @@ class MontyBase(Monty):
         self.min_eval_steps = min_eval_steps
         self.min_train_steps = min_train_steps
         self.num_exploratory_steps = num_exploratory_steps
-        self.max_total_steps = max_total_steps
 
         # Counters, logging, default step_type
         self.step_type = "matching_step"
@@ -141,6 +145,9 @@ class MontyBase(Monty):
         self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
+        self._attention_system = (
+            NoopAttentionSystem() if attention_system is None else attention_system
+        )
 
     def step(
         self,
@@ -148,6 +155,11 @@ class MontyBase(Monty):
         observations: Observations,
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
+        # If we're performing a "motor only" step, the normal step logic is skipped.
+        if self.is_motor_only_step:
+            logger.debug("Performing a motor-only step")
+            return self.motor_only_step(ctx, observations, proprioceptive_state)
+
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
@@ -156,6 +168,7 @@ class MontyBase(Monty):
             self._exploratory_step(ctx, observations, proprioceptive_state)
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
+
         # TODO: Once this works, refactor to be more functional and less side-effect
         #       driven. For now, we're minimizing changes to the existing side-effect
         #       driven pattern and return `self._actions` that got updated at some
@@ -211,22 +224,6 @@ class MontyBase(Monty):
             )
         self._step_motor_system(ctx, observations, proprioceptive_state)
         return self._actions
-
-    def check_reached_max_matching_steps(self, max_steps):
-        """Check if max_steps was reached and deal with time_out.
-
-        Returns:
-            True if max_steps was reached, False otherwise.
-        """
-        if (
-            (not self.is_exploring) and (self.matching_steps >= max_steps)
-            # Since we increment matching steps from 0 (i.e. the first matching
-            # step is the "0th" step, this is set to >=, not >)
-        ):
-            self.deal_with_time_out()
-            return True
-
-        return False
 
     def deal_with_time_out(self):
         """Call any functions and logging in case of a time out."""
@@ -329,6 +326,10 @@ class MontyBase(Monty):
             goals = sm.propose_goals()
             self._goals.extend(goals)
 
+        regions = [sm.propose_region() for sm in self.sensor_modules]
+
+        self._goals = self._attention_system.step(self._goals, regions)
+
     def _step_motor_system(
         self,
         ctx: RuntimeContext,
@@ -389,6 +390,7 @@ class MontyBase(Monty):
 
         self.motor_system.reset()
         self._goals = []
+        self._attention_system.reset()
 
     def snapshot(self) -> Memento:
         memo = {}
@@ -441,6 +443,7 @@ class MontyBase(Monty):
             i: module.state_dict() for i, module in enumerate(self.sensor_modules)
         }
         motor_system_dict = self.motor_system.state_dict()
+        attention_system_dict = self._attention_system.state_dict()
 
         return dict(
             lm_dict=lm_dict,
@@ -449,6 +452,7 @@ class MontyBase(Monty):
             lm_to_lm_matrix=self.lm_to_lm_matrix,
             lm_to_lm_vote_matrix=self.lm_to_lm_vote_matrix,
             sm_to_lm_matrix=self.sm_to_lm_matrix,
+            attention_system_dict=attention_system_dict,
         )
 
     ###

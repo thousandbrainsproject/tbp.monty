@@ -24,7 +24,7 @@ defaults:
   # collect more information about it. It also requires at least 100 train steps (`t100`) before
   # recognizing an object to avoid early misclassifications when we have few objects in
   # memory.
-  - /monty: graph_exp1000_e3_t100_tot2500
+  - /monty: graph_exp1000_e3_t100
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
   # We will use the default surface sensor modules (one habitat surface patch, one logging view finder)
@@ -33,21 +33,16 @@ defaults:
   - /environment: habitat_ycb_surf_agent
   - /env_interface: tutorial_train_2obj_random
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
+  - /termination: any1_objectrecognition_t2000_e500_tot5000
   - /logging: basic_info_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: false
-    max_train_steps: 2000
-    max_eval_steps: 500
-    max_total_steps: 5000
     n_train_epochs: 3
     n_eval_epochs: 3
     model_name_or_path: ''
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     supervised_lm_ids: []
     do_eval: false

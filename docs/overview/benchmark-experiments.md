@@ -131,6 +131,7 @@ The monolithic baseline uses the same two child SM/LM pairs and third high-level
 
 The accuracy, Used MLH, average rotation error, and average prediction error in the results below are reported for `LM_2`, rather than using episode-level aggregate metrics. In the compositional configuration, `LM_2` is the higher-level parent LM that receives outputs from `LM_0` and `LM_1`. The monolithic control also reports `LM_2` so the two configurations measure the same high-level LM, although `LM_2` is not a parent in the monolithic configuration because there are no LM-to-LM connections. Matching steps and runtime remain experiment-level metrics.
 
+For each model type, we report a baseline inference configuration and a `randrot_noise` inference configuration.
 
 ### Results
 

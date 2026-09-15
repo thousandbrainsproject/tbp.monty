@@ -129,7 +129,7 @@ An experiment config for training on the Omniglot dataset can then look like thi
 # @package _global_
 
 defaults:
-  - /monty: graph_exp1000_emin_t3_tot2500
+  - /monty: graph_exp1000_emin_t3
   - /monty/motor_system_config: informed_random_walk_1
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_dist_omniglot_tutorial
@@ -137,21 +137,16 @@ defaults:
   - /environment: two_d_data_omniglot
   - /env_interface: train_omniglot
   - /env_interface/transform: depthto3d_sensor1
+  - /termination: any1_maxtotalsteps_6000
   - /logging: silent_warning_train
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   config:
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: 1
     n_eval_epochs: 3
     model_name_or_path: ""
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     supervised_lm_ids: all
     logging:
@@ -198,7 +193,7 @@ And a config for inference on those trained models could look like this:
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_e3_t3_tot2500
+  - /monty: evidencegraph_exp1000_e3_t3
   - /monty/motor_system_config: informed_random_walk_5
   - /monty/learning_module: evidence_omniglot_tutorial
   - /monty/sensor_module: camera_dist_omniglot_tutorial
@@ -206,21 +201,16 @@ defaults:
   - /environment: two_d_data_omniglot
   - /env_interface: eval_omniglot
   - /env_interface/transform: depthto3d_sensor1
+  - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: tutorial_detailed_info_monty_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     supervised_lm_ids: []
     logging:
@@ -277,7 +267,7 @@ An experiment config can then look like this:
 # @package _global_
 
 defaults:
-  - /monty: graph_exp1000_emin_t3_tot2500
+  - /monty: graph_exp1000_emin_t3
   - /monty/motor_system_config: informed_random_walk_20 # move 20 pixels at a time
   - /monty/learning_module: evidence_1lm_nn10_dod003_dts02_gsg0
   - /monty/sensor_module: camera_dist
@@ -285,21 +275,16 @@ defaults:
   - /environment: two_d_data_standard
   - /env_interface: eval_worldimages
   - /env_interface/transform: none
+  - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: basic_warning_wandb_evidence_eval_runs
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
   config:
     show_sensor_output: true
-    max_train_steps: 1000
-    max_eval_steps: 500
-    max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: 1
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG

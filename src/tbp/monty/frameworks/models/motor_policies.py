@@ -1040,19 +1040,7 @@ class NaiveScanPolicy(InformedPolicy):
 
         Returns:
             A MotorPolicyResult that contains the actions to take.
-
-        Raises:
-            StopIteration: If the spiral has completed.
         """
-        if self.steps_per_action * self.fixed_amount >= 90:
-            # Raise "StopIteration" to notify the environment interface we need to stop
-            # the experiment.
-            # TODO: We used to use iterators, which would automatically handle
-            #       StopIteration. This is no longer the case, so we need to find a
-            #       better way to handle policy declaring episode termination.
-            #       It feels like an experimental concern inside a runtime policy.
-            raise StopIteration
-
         self.check_cycle_action()
         self.step_on_action += 1
         return MotorPolicyResult([self._naive_scan_actions[self.current_action_id]])
