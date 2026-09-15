@@ -15,6 +15,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.experiment.recognition_policy import (
+    AnyPolicy,
     MaximumSteps,
     MaxTotalSteps,
     MinimumLMs,
@@ -22,6 +23,8 @@ from tbp.monty.experiment.recognition_policy import (
     NaiveScan,
     ObjectRecognition,
     RecognitionCounter,
+    RecognitionPolicy,
+    RecognitionResult,
 )
 from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
@@ -221,29 +224,20 @@ class MaxTotalStepsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             MaxTotalSteps(max_total_steps)
 
-    @given(max_total_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
-    def test_times_out_at_or_after_max_total_steps(
-        self, max_total_steps: int, extra: int
-    ) -> None:
-        model = _model_is_done(is_done=False)
-        policy = MaxTotalSteps(max_total_steps=max_total_steps)
-        count = RecognitionCounter(step=max_total_steps + extra)
-        result = policy(model, count)
-        self.assertTrue(result.is_done)
-
     @given(
-        is_done=st.booleans(),
-        asc=ascending_ints(min_value=0),
+        step=st.integers(min_value=0),
+        max_total_steps=st.integers(min_value=1),
     )
-    def test_defers_to_model_before_max_total_steps(
-        self, is_done: bool, asc: tuple[int, int]
+    def test_times_out_at_or_after_max_total_steps(
+        self, step: int, max_total_steps: int
     ) -> None:
-        (step, max_total_steps) = asc
-        model = _model_is_done(is_done)
-        policy = MaxTotalSteps(max_total_steps=max_total_steps)
+        model = MagicMock()
+        policy = MaxTotalSteps(max_total_steps)
         count = RecognitionCounter(step)
         result = policy(model, count)
+        is_done = step >= max_total_steps
         self.assertEqual(result.is_done, is_done)
+        model.assert_not_called()
 
 
 class NaiveScanTest(unittest.TestCase):
@@ -398,3 +392,65 @@ class ObjectRecognitionTest(unittest.TestCase):
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
         model.deal_with_time_out.assert_not_called()
+
+
+def _mock_3_policies(first: bool, middle: bool, last: bool):
+    return [
+        MagicMock(RecognitionPolicy, return_value=RecognitionResult(is_done=first)),
+        MagicMock(RecognitionPolicy, return_value=RecognitionResult(is_done=middle)),
+        MagicMock(RecognitionPolicy, return_value=RecognitionResult(is_done=last)),
+    ]
+
+
+class AnyPolicyTest(unittest.TestCase):
+    def test_raises_value_error_if_policies_are_empty(self) -> None:
+        with self.assertRaises(ValueError):
+            AnyPolicy([])
+
+    def test_first_policy_is_done(self) -> None:
+        policies = _mock_3_policies(first=True, middle=True, last=True)
+        model = MagicMock()
+        policy = AnyPolicy(policies)
+        count = RecognitionCounter()
+        result = policy(model, count)
+        self.assertEqual(result.is_done, True)
+        policies[0].assert_called_once()
+        policies[1].assert_not_called()
+        policies[2].assert_not_called()
+        model.assert_not_called()
+
+    def test_second_policy_is_done(self) -> None:
+        policies = _mock_3_policies(first=False, middle=True, last=True)
+        model = MagicMock()
+        policy = AnyPolicy(policies)
+        count = RecognitionCounter()
+        result = policy(model, count)
+        self.assertEqual(result.is_done, True)
+        policies[0].assert_called_once()
+        policies[1].assert_called_once()
+        policies[2].assert_not_called()
+        model.assert_not_called()
+
+    def test_third_policy_is_done(self) -> None:
+        policies = _mock_3_policies(first=False, middle=False, last=True)
+        model = MagicMock()
+        policy = AnyPolicy(policies)
+        count = RecognitionCounter()
+        result = policy(model, count)
+        self.assertEqual(result.is_done, True)
+        policies[0].assert_called_once()
+        policies[1].assert_called_once()
+        policies[2].assert_called_once()
+        model.assert_not_called()
+
+    def test_no_policy_is_done(self) -> None:
+        policies = _mock_3_policies(first=False, middle=False, last=False)
+        model = MagicMock()
+        policy = AnyPolicy(policies)
+        count = RecognitionCounter()
+        result = policy(model, count)
+        self.assertEqual(result.is_done, False)
+        policies[0].assert_called_once()
+        policies[1].assert_called_once()
+        policies[2].assert_called_once()
+        model.assert_not_called()
