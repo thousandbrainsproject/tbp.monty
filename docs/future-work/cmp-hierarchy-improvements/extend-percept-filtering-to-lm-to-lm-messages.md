@@ -11,7 +11,7 @@ status: open
 ---
 
 Today, percept filtering is applied only on the output of the sensor modules (SMs), where it gates the sending of SM messages to learning modules (LMs) based on feature change in the SM.
-As a consequence, a higher-level LM (HL-LM) can only process a message received from a lower-level LM (LL-LM) on a step where it also receives features from its own SM.
+Currently, LMs are only stepped when they receive a sensory input. As a consequence, a higher-level LM (HL-LM) can only process a message received from a lower-level LM (LL-LM) on a step where it also receives features from its own SM.
 This rule keeps the compositional graphs that the HL-LM learns for its LM input channels at a similar resolution to the input-channel graph it learns through the SM.
 
 Instead of enforcing that rule on the receiving LM, we want to apply separate percept filters to the LL-LM to HL-LM messages, gating them on feature change in the LL-LM itself.
