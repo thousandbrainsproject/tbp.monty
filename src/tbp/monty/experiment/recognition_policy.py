@@ -338,7 +338,7 @@ class ObjectRecognition(RecognitionPolicy):
 
 
 class AnyPolicy(RecognitionPolicy):
-    """Combine mutiple terminal conditions for Experiments.
+    """Combine multiple terminal conditions for Experiments.
 
     Terminal condition is reached if _any_ `RecognitionPolicy` says so.
     """
