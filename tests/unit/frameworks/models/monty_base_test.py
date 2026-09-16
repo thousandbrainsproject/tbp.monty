@@ -24,6 +24,7 @@ class MontyBasePrivateTest(unittest.TestCase):
         self.lm1 = MagicMock()
         self.lm2 = MagicMock()
         self.lm3 = MagicMock()
+        self.attention_system = MagicMock()
         self.monty_base = MontyBase(
             sensor_modules=[self.sm1, self.sm2],
             learning_modules=[self.lm1, self.lm2, self.lm3],
@@ -38,12 +39,12 @@ class MontyBasePrivateTest(unittest.TestCase):
             min_eval_steps=10,
             min_train_steps=10,
             num_exploratory_steps=10,
+            attention_system=self.attention_system,
         )
 
-    def test_pass_goals_collects_all_goals_from_learning_and_sensor_modules(
+    def test_pass_goals_collects_all_goals_from_learning_and_sensor_modules_and_filters_them_through_the_attention_system(  # noqa: E501
         self,
     ) -> None:
-        self.monty_base.step_type = "matching_step"
         self.lm1.propose_goals.return_value = []
         self.lm2.propose_goals.return_value = [sentinel.lm2_goal]
         self.lm3.propose_goals.return_value = [
@@ -55,15 +56,20 @@ class MontyBasePrivateTest(unittest.TestCase):
             sentinel.sm2_goal_1,
             sentinel.sm2_goal_2,
         ]
+        self.sm1.propose_region.return_value = sentinel.sm1_region
+        self.sm2.propose_region.return_value = sentinel.sm2_region
+        self.attention_system.step.return_value = sentinel.attention_system_goals
+
         self.monty_base._pass_goals()
 
-        expected = set(
-            {
-                sentinel.lm2_goal,
-                sentinel.lm3_goal_1,
-                sentinel.lm3_goal_2,
-                sentinel.sm2_goal_1,
-                sentinel.sm2_goal_2,
-            }
+        goals = [
+            sentinel.lm2_goal,
+            sentinel.lm3_goal_1,
+            sentinel.lm3_goal_2,
+            sentinel.sm2_goal_1,
+            sentinel.sm2_goal_2,
+        ]
+        self.attention_system.step.assert_called_once_with(
+            goals, [sentinel.sm1_region, sentinel.sm2_region]
         )
-        self.assertEqual(set(self.monty_base._goals), expected)
+        self.assertIs(self.monty_base._goals, sentinel.attention_system_goals)
