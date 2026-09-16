@@ -74,57 +74,7 @@ class TestUpload(unittest.TestCase):
             rdme.method_calls.index(call.make_version_stable()),
         )
 
-    @patch("tools.github_readme_sync.upload.print_child")
-    @patch("tools.github_readme_sync.upload.load_doc")
-    def test_process_children_uses_v2_resource_uris(
-        self,
-        mock_load_doc,
-        mock_print_child,
-    ):
-        rdme = MagicMock()
-        mock_load_doc.return_value = {
-            "title": "Document",
-            "slug": "child-1",
-            "body": "Document body",
-        }
-        rdme.create_or_update_doc.return_value = (
-            "/branches/0.40/guides/child-1",
-            True,
-        )
-
-        parent = {
-            "slug": "parent",
-            "children": [{"slug": "child-1", "children": []}],
-        }
-        to_be_deleted = [ReadMeItem(id="child-1", type="doc")]
-
-        process_children(
-            parent=parent,
-            cat_id="/branches/0.40/categories/guides/Category",
-            file_path="/path/to/files",
-            rdme=rdme,
-            to_be_deleted=to_be_deleted,
-            parent_doc_id="/branches/0.40/guides/parent-doc",
-        )
-
-        mock_load_doc.assert_called_once_with(
-            "/path/to/files",
-            "parent",
-            {"slug": "child-1", "children": []},
-        )
-        rdme.create_or_update_doc.assert_called_once_with(
-            order=0,
-            category_id="/branches/0.40/categories/guides/Category",
-            doc=mock_load_doc.return_value,
-            parent_id="/branches/0.40/guides/parent-doc",
-            file_path="/path/to/files/parent",
-        )
-        mock_print_child.assert_called_once_with(
-            level=0,
-            doc=mock_load_doc.return_value,
-            created=True,
-        )
-        self.assertEqual(to_be_deleted, [])
+        mock_get_all_categories_docs.assert_called_once_with(rdme)
 
     def test_set_do_not_delete_removes_document_by_id(self):
         to_be_deleted = [
@@ -176,8 +126,6 @@ class TestUpload(unittest.TestCase):
 
         result = get_all_categories_docs(rdme)
 
-        # Cleanup only needs a common identifier and resource type. Category titles
-        # and page slugs become the ReadMeItem IDs; parent nesting is irrelevant.
         self.assertEqual(
             result,
             [

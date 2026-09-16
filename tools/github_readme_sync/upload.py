@@ -116,7 +116,23 @@ def set_do_not_delete(to_be_deleted: list[ReadMeItem], identifier: str):
             return
 
 
-def get_all_categories_docs(rdme: ReadMe):
+def get_all_categories_docs(rdme: ReadMe)  -> list[ReadMeItem]:
+    """Return the ReadMe resources that may need to be removed during cleanup.
+
+    Retrieves every category from the configured ReadMe version and every
+    document within those categories. Cleanup only needs each resource's
+    identifier and type, so categories are identified by title and documents
+    by slug. During an upload, items that still exist in the new hierarchy are removed
+    from this list before the remaining items are deleted.
+
+    Args:
+        rdme: ReadMe client used to retrieve categories and documents.
+
+    Returns:
+        A list of ReadMeItem objects representing all existing categories and
+        documents.
+    """
+
     all_categories_and_docs: list[ReadMeItem] = []
 
     for category in rdme.get_categories():

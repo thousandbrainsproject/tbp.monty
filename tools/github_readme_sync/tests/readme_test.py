@@ -60,6 +60,8 @@ class TestReadme(unittest.TestCase):
         ):
             self.readme.get_stable_version()
 
+        mock_get.assert_called_once_with(f"{API_PREFIX}/branches/stable")
+
     @patch("tools.github_readme_sync.readme.get_collection")
     def test_get_categories_uses_branch_scoped_v2_endpoint(
         self,
@@ -85,6 +87,10 @@ class TestReadme(unittest.TestCase):
         mock_get_collection.return_value = []
 
         self.assertEqual(self.readme.get_categories(), [])
+
+        mock_get_collection.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/categories/guides"
+        )
 
     @patch("tools.github_readme_sync.readme.get_collection")
     def test_get_category_docs_uses_quoted_category_title(
@@ -153,6 +159,8 @@ class TestReadme(unittest.TestCase):
         )
         self.assertEqual(roots[1]["children"], [])
 
+        mock_get_category_docs.assert_called_once_with({"title": "Category"})
+
     @patch.object(ReadMe, "get_category_docs")
     def test_get_category_page_tree_raises_value_error_when_page_has_no_uri(
         self,
@@ -164,6 +172,8 @@ class TestReadme(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "ReadMe page 'missing-uri' has no uri"):
             self.readme.get_category_page_tree({"title": "Category"})
+
+        mock_get_category_docs.assert_called_once_with({"title": "Category"})
 
     @patch.object(ReadMe, "get_category_docs")
     def test_get_category_page_tree_raises_value_error_when_pages_share_duplicate_uri(
@@ -180,6 +190,8 @@ class TestReadme(unittest.TestCase):
             ValueError, f"ReadMe returned duplicate page URI '{duplicate_uri}'"
         ):
             self.readme.get_category_page_tree({"title": "Category"})
+
+        mock_get_category_docs.assert_called_once_with({"title": "Category"})
 
     @patch.object(ReadMe, "get_category_docs")
     def test_get_category_page_tree_raises_value_error_when_page_parent_does_not_exist(
@@ -202,6 +214,8 @@ class TestReadme(unittest.TestCase):
         ):
             self.readme.get_category_page_tree({"title": "Category"})
 
+        mock_get_category_docs.assert_called_once_with({"title": "Category"})
+
     @patch("tools.github_readme_sync.readme.get")
     def test_get_doc_by_slug_exports_v2_content_and_frontmatter(self, mock_get):
         mock_get.return_value = {
@@ -217,9 +231,15 @@ class TestReadme(unittest.TestCase):
 
         doc = self.readme.get_doc_by_slug("test-doc")
 
-        self.assertIn("title: Test Document", doc)
-        self.assertIn("description: A description", doc)
-        self.assertIn("This is a test document.", doc)
+        self.assertEqual(
+            doc,
+            """---
+title: Test Document
+description: A description
+---
+This is a test document.""",
+        )
+
         mock_get.assert_called_once_with(
             f"{API_PREFIX}/branches/{self.version}/guides/test-doc"
         )
@@ -238,7 +258,15 @@ class TestReadme(unittest.TestCase):
 
         self.assertEqual(
             doc,
-            "---\ntitle: '[Test] Document'\nhidden: true\n---\n",
+            """---
+title: '[Test] Document'
+hidden: true
+---
+""",
+        )
+
+        mock_get.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/guides/test-doc"
         )
 
     @patch("tools.github_readme_sync.readme.get")
@@ -247,6 +275,10 @@ class TestReadme(unittest.TestCase):
 
         with self.assertRaisesRegex(DocumentNotFound, "Document missing not found"):
             self.readme.get_doc_by_slug("missing")
+
+        mock_get.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/guides/missing"
+        )
 
     @patch("tools.github_readme_sync.readme.get")
     def test_get_doc_rejects_alias_or_changed_slug(self, mock_get):
@@ -258,16 +290,27 @@ class TestReadme(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "resolved requested slug 'requested-slug' to 'canonical-slug'",
+            (
+                "ReadMe resolved requested slug 'requested-slug' to 'canonical-slug' "
+                r"\('/branches/1.0.0/guides/canonical-slug'\)"
+            ),
         ):
             self.readme.get_doc("requested-slug")
+
+        mock_get.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/guides/requested-slug"
+        )
 
     @patch("tools.github_readme_sync.readme.get")
     def test_get_doc_requires_resource_uri(self, mock_get):
         mock_get.return_value = {"title": "Document", "slug": "test-doc"}
 
-        with self.assertRaisesRegex(ValueError, "has no uri"):
+        with self.assertRaisesRegex(ValueError, "ReadMe guide 'test-doc' has no uri"):
             self.readme.get_doc("test-doc")
+
+        mock_get.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/guides/test-doc"
+        )
 
     @patch("tools.github_readme_sync.readme.patch")
     def test_make_version_stable_uses_live_v2_privacy_behavior(self, mock_patch):
@@ -327,6 +370,10 @@ class TestReadme(unittest.TestCase):
         created = self.readme.create_version_if_not_exists()
 
         self.assertFalse(created)
+
+        mock_get.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}"
+        )
         mock_post.assert_not_called()
 
     @patch.object(ReadMe, "get_categories")
@@ -356,6 +403,8 @@ class TestReadme(unittest.TestCase):
                 ),
             ],
         )
+
+        mock_get_categories.assert_called_once_with()
 
     @patch("tools.github_readme_sync.readme.delete")
     def test_delete_category_quotes_title(self, mock_delete):
@@ -431,6 +480,10 @@ class TestReadme(unittest.TestCase):
             category_uri,
             "/branches/1.0.0/categories/guides/Existing%20Category",
         )
+
+        mock_get.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/categories/guides/Existing%20Category"
+        )
         mock_post.assert_not_called()
 
     @patch("tools.github_readme_sync.readme.post")
@@ -471,6 +524,9 @@ class TestReadme(unittest.TestCase):
             "docs/category",
             "new-doc",
         )
+
+        mock_get_doc.assert_called_once_with("new-doc")
+
         mock_post.assert_called_once_with(
             f"{API_PREFIX}/branches/{self.version}/guides",
             {
@@ -496,10 +552,11 @@ class TestReadme(unittest.TestCase):
     @patch.object(
         ReadMe,
         "process_markdown",
-        new=MagicMock(return_value="Updated body"),
+        return_value="Updated body",
     )
     def test_create_or_update_doc_updates_without_sending_slug(
         self,
+        mock_process_markdown,
         mock_get_doc,
         mock_patch,
         mock_post,
@@ -525,6 +582,15 @@ class TestReadme(unittest.TestCase):
 
         self.assertFalse(created)
         self.assertEqual(doc_uri, "/branches/1.0.0/guides/existing-doc")
+
+        mock_process_markdown.assert_called_once_with(
+            "Updated source",
+            "docs/category",
+            "existing-doc",
+        )
+
+        mock_get_doc.assert_called_once_with("existing-doc")
+
         expected_payload = {
             "title": "Existing Doc",
             "type": "basic",
@@ -544,15 +610,17 @@ class TestReadme(unittest.TestCase):
     @patch.object(
         ReadMe,
         "get_doc",
-        new=MagicMock(return_value=None),
+        return_value=None,
     )
     @patch.object(
         ReadMe,
         "process_markdown",
-        new=MagicMock(return_value="Body"),
+        return_value="Body",
     )
     def test_create_or_update_doc_rejects_changed_created_slug(
         self,
+        mock_process_markdown,
+        mock_get_doc,
         mock_post,
     ):
         mock_post.return_value = {
@@ -560,7 +628,7 @@ class TestReadme(unittest.TestCase):
             "uri": "/branches/1.0.0/guides/new-doc-1",
         }
 
-        with self.assertRaisesRegex(ValueError, "expected 'new-doc'"):
+        with self.assertRaisesRegex(ValueError, "ReadMe created 'New Doc' with slug 'new-doc-1'; expected 'new-doc'"):
             self.readme.create_or_update_doc(
                 order=0,
                 category_id="/branches/1.0.0/categories/guides/Category",
@@ -568,25 +636,51 @@ class TestReadme(unittest.TestCase):
                 parent_id=None,
                 file_path="docs/category",
             )
+
+        mock_process_markdown.assert_called_once_with(
+            "Body",
+            "docs/category",
+            "new-doc",
+        )
+
+        mock_get_doc.assert_called_once_with("new-doc")
+
+        mock_post.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/guides",
+            {
+                "title": "New Doc",
+                "type": "basic",
+                "content": {"body": "Body"},
+                "category": {
+                    "uri": "/branches/1.0.0/categories/guides/Category"
+                },
+                "privacy": {"view": "public"},
+                "position": 0,
+                "slug": "new-doc",
+            },
+            headers={"prefer": "handling=strict"},
+        )
 
     @patch("tools.github_readme_sync.readme.post")
     @patch.object(
         ReadMe,
         "get_doc",
-        new=MagicMock(return_value=None),
+        return_value=None,
     )
     @patch.object(
         ReadMe,
         "process_markdown",
-        new=MagicMock(return_value="Body"),
+        return_value="Body",
     )
     def test_create_or_update_doc_requires_created_uri(
         self,
+        mock_process_markdown,
+        mock_get_doc,
         mock_post,
     ):
         mock_post.return_value = {"slug": "new-doc"}
 
-        with self.assertRaisesRegex(ValueError, "has no uri"):
+        with self.assertRaisesRegex(ValueError, "Created doc 'New Doc' has no uri"):
             self.readme.create_or_update_doc(
                 order=0,
                 category_id="/branches/1.0.0/categories/guides/Category",
@@ -594,6 +688,30 @@ class TestReadme(unittest.TestCase):
                 parent_id=None,
                 file_path="docs/category",
             )
+
+        mock_process_markdown.assert_called_once_with(
+            "Body",
+            "docs/category",
+            "new-doc",
+        )
+
+        mock_get_doc.assert_called_once_with("new-doc")
+
+        mock_post.assert_called_once_with(
+            f"{API_PREFIX}/branches/{self.version}/guides",
+            {
+                "title": "New Doc",
+                "type": "basic",
+                "content": {"body": "Body"},
+                "category": {
+                    "uri": "/branches/1.0.0/categories/guides/Category"
+                },
+                "privacy": {"view": "public"},
+                "position": 0,
+                "slug": "new-doc",
+            },
+            headers={"prefer": "handling=strict"},
+        )
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})
     def test_correct_image_locations_markdown(self):

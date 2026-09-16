@@ -82,6 +82,12 @@ class TestReq(unittest.TestCase):
 
         self.assertIsNone(result)
 
+        mock_get.assert_called_once_with(
+            "https://api.example.com/missing",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+
     @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_non_404_failure_raises(self, mock_get):
         response = MagicMock()
@@ -91,9 +97,15 @@ class TestReq(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ReadMeRequestError,
-            r"GET https://api\.example\.com/data failed with 500",
+            r"GET https://api\.example\.com/data failed with 500: Internal Server Error",
         ):
             get("https://api.example.com/data")
+
+        mock_get.assert_called_once_with(
+            "https://api.example.com/data",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
 
     @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_collection_follows_v2_pagination(self, mock_get):
@@ -135,7 +147,7 @@ class TestReq(unittest.TestCase):
         )
 
     @patch("tools.github_readme_sync.req._SESSION.get")
-    def test_get_collection_rejects_non_list_data(self, mock_get):
+    def test_get_collection_raises_type_error_when_non_list_data_is_returned(self, mock_get):
         response = MagicMock()
         response.status_code = 200
         response.url = "https://api.readme.com/v2/items"
@@ -147,6 +159,12 @@ class TestReq(unittest.TestCase):
             r"Expected ReadMe response data to be a list, received dict",
         ):
             get_collection("https://api.readme.com/v2/items")
+        
+        mock_get.assert_called_once_with(
+            "https://api.readme.com/v2/items",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
 
     @patch("tools.github_readme_sync.req._SESSION.get")
     def test_get_collection_failure_raises_instead_of_returning_partial_data(
@@ -159,6 +177,12 @@ class TestReq(unittest.TestCase):
 
         with self.assertRaisesRegex(ReadMeRequestError, "failed with 429"):
             get_collection("https://api.readme.com/v2/items")
+
+        mock_get.assert_called_once_with(
+            "https://api.readme.com/v2/items",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
 
     @patch("tools.github_readme_sync.req._SESSION.post")
     def test_post_success_unwraps_v2_data(self, mock_post):
@@ -194,8 +218,15 @@ class TestReq(unittest.TestCase):
 
         self.assertEqual(post("https://api.example.com/data", {}), {})
 
+        mock_post.assert_called_once_with(
+            "https://api.example.com/data",
+            json={},
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+
     @patch("tools.github_readme_sync.req._SESSION.post")
-    def test_post_failure_raises_with_api_response(self, mock_post):
+    def test_post_failure_raises_readmerequest_error_when_response_is_409(self, mock_post):
         response = MagicMock()
         response.status_code = 409
         response.text = "Slug already exists"
@@ -203,6 +234,13 @@ class TestReq(unittest.TestCase):
 
         with self.assertRaisesRegex(ReadMeRequestError, "failed with 409"):
             post("https://api.example.com/data", {"slug": "doc"})
+
+        mock_post.assert_called_once_with(
+            "https://api.example.com/data",
+            json={"slug": "doc"},
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
 
     @patch("tools.github_readme_sync.req._SESSION.patch")
     def test_patch_success(self, mock_patch):
@@ -224,7 +262,7 @@ class TestReq(unittest.TestCase):
         )
 
     @patch("tools.github_readme_sync.req._SESSION.patch")
-    def test_patch_failure_raises(self, mock_patch):
+    def test_patch_raises_readmerequesterror_when_response_is_400(self, mock_patch):
         response = MagicMock()
         response.status_code = 400
         response.text = "Bad Request"
@@ -232,6 +270,13 @@ class TestReq(unittest.TestCase):
 
         with self.assertRaisesRegex(ReadMeRequestError, "failed with 400"):
             patch_request("https://api.example.com/data", {})
+
+        mock_patch.assert_called_once_with(
+            "https://api.example.com/data",
+            json={},
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
 
     @patch("tools.github_readme_sync.req._SESSION.delete")
     def test_delete_success_returns_none(self, mock_delete):
@@ -241,7 +286,6 @@ class TestReq(unittest.TestCase):
 
         result = delete("https://api.example.com/data")
 
-        # Successful DELETE calls now complete normally instead of returning True.
         self.assertIsNone(result)
         mock_delete.assert_called_once_with(
             "https://api.example.com/data",
@@ -250,7 +294,7 @@ class TestReq(unittest.TestCase):
         )
 
     @patch("tools.github_readme_sync.req._SESSION.delete")
-    def test_delete_failure_raises(self, mock_delete):
+    def test_delete_failure_raises_readmerequesterror(self, mock_delete):
         response = MagicMock()
         response.status_code = 400
         response.text = "Bad Request"
@@ -259,8 +303,14 @@ class TestReq(unittest.TestCase):
         with self.assertRaisesRegex(ReadMeRequestError, "failed with 400"):
             delete("https://api.example.com/data")
 
+        mock_delete.assert_called_once_with(
+            "https://api.example.com/data",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+
     @patch("tools.github_readme_sync.req._SESSION.get")
-    def test_get_rejects_non_object_data(self, mock_get):
+    def test_get_raises_type_error_when_response_data_is_not_an_object(self, mock_get):
         response = MagicMock()
         response.status_code = 200
         response.json.return_value = {"data": ["not-an-object"]}
@@ -272,8 +322,14 @@ class TestReq(unittest.TestCase):
         ):
             get("https://api.example.com/data")
 
+        mock_get.assert_called_once_with(
+            "https://api.example.com/data",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+
     @patch("tools.github_readme_sync.req._SESSION.get")
-    def test_get_collection_rejects_non_object_items(self, mock_get):
+    def test_get_collection_raises_type_error_when_response_data_list_contains_a_non_object(self, mock_get):
         response = MagicMock()
         response.status_code = 200
         response.url = "https://api.readme.com/v2/items"
@@ -288,3 +344,9 @@ class TestReq(unittest.TestCase):
             r"Expected ReadMe response data to be a list of objects",
         ):
             get_collection("https://api.readme.com/v2/items")
+
+        mock_get.assert_called_once_with(
+            "https://api.readme.com/v2/items",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
