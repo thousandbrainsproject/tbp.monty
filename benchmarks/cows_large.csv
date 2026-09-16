@@ -1,0 +1,7 @@
+Experiment,Correct (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Avg Prediction Error|align right,Run Time (mins)|align right,Num Episodes|hidden
+base_infer_cows_large_monolithic,,,,,,,
+base_infer_cows_large_compositional,,,,,,,
+randrot_noise_infer_cows_large_monolithic,,,,,,,
+randrot_noise_infer_cows_large_compositional,,,,,,,
+base_infer_cows_large_monolithic_random_locs,,,,,,,
+base_infer_cows_large_compositional_random_locs,,,,,,,
