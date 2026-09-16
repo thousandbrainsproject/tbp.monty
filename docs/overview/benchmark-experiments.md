@@ -119,150 +119,71 @@ These experiments are currently run without multiprocessing (using `run.py`).
 
 # Compositional Datasets
 
-## Logos on Objects
+## Compositional Objects With Stickers (COWS)
 
-The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically.
+The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with stickers on their surface.
 
 ![](../figures/overview/comp_logo_dataset_examples.png)
 
-We want to determine the ability of a Monty system with a heterarchy of LMs to build compositional models of these kinds of objects. Two low-level SM/LM pairs operate independently: one learns the 3D objects and the other learns the 2D logos. Both low-level LMs send detected object IDs to a high-level LM, which also receives direct input from a third 3D SM through a skip connection. To enable learning such models, we provide some amount of supervision to the LMs. The low-level LMs first learn the 3D objects and logos in isolation as standalone objects. We then present Monty with the compositional objects while the low-level LMs perform unsupervised inference. The high-level LM continues learning and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
+We want to determine the ability of a Monty system with a heterarchy of LMs to build compositional models of these kinds of objects. Two low-level SM/LM pairs operate independently: one learns the 3D objects and the other learns the 2D stickers. Both low-level LMs send detected object IDs to a high-level LM, which also receives direct input from a third 3D SM through a skip connection. To enable learning such models, we provide some amount of supervision to the LMs. The low-level LMs first learn the 3D objects and stickers in isolation as standalone objects. We then present Monty with the compositional objects while the low-level LMs perform unsupervised inference. The high-level LM continues learning and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
 
-The monolithic baseline uses the same two child SM/LM pairs and third high-level SM/LM pair, and follows the same staged training process: the low-level LMs first learn the 3D objects and logos, and then the high-level LM is trained on the compositional objects. However, there are no connections between LMs. Each LM receives input only from its paired SM, so the high-level LM learns each object as a monolithic model rather than as a composition of detected child objects.
+The monolithic baseline uses the same two child SM/LM pairs and third high-level SM/LM pair, and follows the same staged training process: the low-level LMs first learn the 3D objects and stickers, and then the high-level LM is trained on the compositional objects. However, there are no connections between LMs. Each LM receives input only from its paired SM, so the high-level LM learns each object as a monolithic model rather than as a composition of detected child objects.
 
 The accuracy, Used MLH, average rotation error, and average prediction error in the results below are reported for `LM_2`, rather than using episode-level aggregate metrics. In the compositional configuration, `LM_2` is the higher-level parent LM that receives outputs from `LM_0` and `LM_1`. The monolithic control also reports `LM_2` so the two configurations measure the same high-level LM, although `LM_2` is not a parent in the monolithic configuration because there are no LM-to-LM connections. Matching steps and runtime remain experiment-level metrics.
 
-For each model type, we report a baseline inference configuration and a `randrot_noise` inference configuration.
-
-### Results
-
-!table[../../benchmarks/logos_on_objects.csv]
-
-Note: These experiments use 100 inference steps rather than the typical 500. Monolithic models often time out, making the benchmarks prohibitively slow at the larger step limit.
+Inference uses a 100-step evaluation limit. Pretraining runs sequentially across episodes; benchmark inference can run with parallelization.
 
 > [!WARNING]
->
-> These benchmarks are not currently expected to have good performance and are used to track our research progress for compositional datasets.
+> These benchmarks track ongoing compositional research and are not currently expected to have good performance.
 
-Note: To obtain these results, pretraining was run without parallelization across episodes, inference was run with parallelization.
+### COWS Small
 
-> [!NOTE]
-> You can download the data here:
->
-> | Dataset | Archive Format | Download Link |
-> | --- | --- | --- |
-> | compositional_objects_1.2 | tgz | [compositional_objects_1.2.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.tgz) |
-> | compositional_objects_1.2 | zip | [compositional_objects_1.2.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.zip) |
-> 
-> Unpack the archive in the `~/tbp/data/habitat/versioned_data/` folder. For example:
->
-> ```plaintext tgz
-> mkdir -p ~/tbp/data/habitat/versioned_data/
->
-> cd ~/tbp/data/habitat/versioned_data/
->
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.tgz | tar -xzf -
-> ```
->
-> or
->
-> ```plaintext zip
-> mkdir -p ~/tbp/data/habitat/versioned_data/
-> 
-> cd ~/tbp/data/habitat/versioned_data/
-> 
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.2.zip
-> 
-> unzip compositional_objects_1.2.zip
-> ```
->
-> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder. If this is the first time you are doing this, you can use:
->
-> ```plaintext
-> mkdir -p ~/tbp/data/habitat/objects/
->
-> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
-> ```
->
-> If you have a pre-existing symlink for an old version of the dataset, then you will need to remove this first, i.e.:
->
-> ```plaintext
-> rm ~/tbp/data/habitat/objects/compositional_objects
->
-> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.2 ~/tbp/data/habitat/objects/compositional_objects
-> ```
->
-> To generate the pretrained models, run the following experiments in order:
-> ```
-> python run.py experiment=supervised_pre_training_objects_with_stickers_3d_children
-> python run.py experiment=supervised_pre_training_objects_with_stickers_2d_children
-> python run.py experiment=supervised_pre_training_objects_with_stickers_comp_models
-> python run.py experiment=supervised_pre_training_objects_with_stickers_monolithic_models
-> ```
+`cows_small` contains the original 19 objects, including the five plain objects and objects with TBP or Numenta logo stickers. Its 2D child LM learns the two logos. 
 
-> [!NOTE]
-> Alternatively, you can download the pretrained models directly instead of running the pretraining experiments above:
->
-> | Models | Archive Format | Download Link |
-> | --- | --- | --- |
-> | pretrained_compositional_objects_v6 | tgz | [pretrained_compositional_objects_v6.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.tgz) |
-> | pretrained_compositional_objects_v6 | zip | [pretrained_compositional_objects_v6.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.zip) |
->
-> Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
->
-> ```plaintext tgz
-> mkdir -p ~/tbp/results/monty/pretrained_models/
->
-> cd ~/tbp/results/monty/pretrained_models/
->
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.tgz | tar -xzf -
-> ```
-> ```plaintext zip
-> mkdir -p ~/tbp/results/monty/pretrained_models/
->
-> cd ~/tbp/results/monty/pretrained_models/
->
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v6.zip
->
-> unzip pretrained_compositional_objects_v6.zip
-> ```
+!table[../../benchmarks/cows_small.csv]
 
+### COWS Large
 
-## Expanded Compositional Objects
+`cows_large` contains 119 objects: the original 19 plus 100 additional compositional objects. Its 2D child LM learns seven stickers: the two logos plus square, circle, triangle, star, and heart.
 
-The expanded inference experiments (`*infer_expanded_objects_with_stickers*`) use a separate set of downloads. Keep the `compositional_objects_1.2` dataset, `pretrained_compositional_objects_v6` models, and the `habitat/objects/compositional_objects` symlink above for reproducing the existing Logos on Objects benchmarks.
+The `random_locs` experiments evaluate only the 100 additional objects with changed sticker locations, using three predefined orientations (300 episodes) and the standard-location pretrained models.
 
-### Dataset 1.4
+!table[../../benchmarks/cows_large.csv]
 
-Download the archive for your simulator and sticker-location condition:
+### Dataset
 
-| Dataset | Simulator | tgz | zip |
-| --- | --- | --- | --- |
-| compositional_objects_1.4 | Habitat | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip) |
-| compositional_objects_1.4_random_locs | Habitat | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip) |
-| compositional_objects_1.4_mujoco | MuJoCo | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.zip) |
-| compositional_objects_1.4_random_locs_mujoco | MuJoCo | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.zip) |
+Extract the standard dataset into `${MONTY_DATA}` (default: `~/tbp/data`). Large random-location inference also requires the random-location dataset. 
 
-Extract Habitat archives into `~/tbp/data/habitat/versioned_data/` and MuJoCo archives into `~/tbp/data/`. Each archive contains its own versioned directory, so these downloads can coexist with the earlier dataset. For example, to install the standard MuJoCo dataset:
+| Dataset | tgz | zip |
+| --- | --- | --- |
+| compositional_objects_1.4 | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip) |
+| compositional_objects_1.4_random_locs | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip) |
 
 ```sh
-mkdir -p ~/tbp/data/
-curl -fL https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.tgz | tar -xzf - -C ~/tbp/data/
+mkdir -p "${MONTY_DATA:-$HOME/tbp/data}"
+curl -fL https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz | tar -xzf - -C "${MONTY_DATA:-$HOME/tbp/data}"
+curl -fL https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz | tar -xzf - -C "${MONTY_DATA:-$HOME/tbp/data}"
 ```
 
-The expanded MuJoCo configs use `${MONTY_DATA}/compositional_objects_1.4_mujoco` or `${MONTY_DATA}/compositional_objects_1.4_random_locs_mujoco`, with `MONTY_DATA` defaulting to `~/tbp/data`. They currently load Habitat-trained checkpoints.
+### Pretraining
 
-The standard expanded Habitat configs still default to dataset 1.3. To evaluate on the new Habitat dataset without changing the existing benchmark setup, pass `experiment.config.environment.env_init_args.data_path=~/tbp/data/habitat/versioned_data/compositional_objects_1.4` when launching an experiment. For random-location inference, use `compositional_objects_1.4_random_locs` in that path.
+Train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
 
-### Expanded Pretrained Models (v7)
+```sh
+python run.py experiment=supervised_pre_training_cows_3d_children
+python run.py experiment=supervised_pre_training_cows_small_2d_children
+python run.py experiment=supervised_pre_training_cows_small_compositional
+python run.py experiment=supervised_pre_training_cows_small_monolithic
+python run.py experiment=supervised_pre_training_cows_large_2d_children
+python run.py experiment=supervised_pre_training_cows_large_compositional
+python run.py experiment=supervised_pre_training_cows_large_monolithic
+```
 
-These Habitat-trained models are for the expanded inference experiments, including the MuJoCo transfer experiments. Keep the v6 models installed for the existing Logos on Objects benchmarks.
+### Pretrained Models (v7)
 
-| Models | Archive Format | Download Link |
+| Models | tgz | zip |
 | --- | --- | --- |
-| pretrained_compositional_objects_v7 | tgz | [pretrained_compositional_objects_v7.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz) |
-| pretrained_compositional_objects_v7 | zip | [pretrained_compositional_objects_v7.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip) |
-
-Extract the archive into `${MONTY_MODELS}` (default: `~/tbp/results/monty/pretrained_models/`). Both archives contain the directory `pretrained_compositional_objects_v7`, which the expanded configs load directly. No alias is needed. The configs load `supervised_pre_training_expanded_comp_models/pretrained/` or `supervised_pre_training_expanded_monolithic_models/pretrained/` beneath that directory.
+| pretrained_compositional_objects_v7 | [tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz) | [zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip) |
 
 # Monty-Meets-World
 
