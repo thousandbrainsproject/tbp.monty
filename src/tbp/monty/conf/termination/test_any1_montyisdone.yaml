@@ -1,0 +1,7 @@
+# @package experiment.config
+
+match_criterion:
+  _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+  count: 1
+recognition_policy:
+  _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
