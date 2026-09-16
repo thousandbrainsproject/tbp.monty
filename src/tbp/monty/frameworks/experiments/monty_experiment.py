@@ -254,7 +254,17 @@ class MontyExperiment:
             eval_episodes=self.eval_episodes,
             eval_epochs=self.eval_epochs,
             episode_seed=current_rng_seed,
+            n_train_epochs=self.n_train_epochs,
+            update_unsupervised_overall_stats=not self.supervised_lm_ids,
         )
+
+        if self.experiment_mode is ExperimentMode.TRAIN and isinstance(
+            self.env_interface, OneObjectPerEpisodeInterface
+        ):
+            args["n_total_train_episodes"] = (
+                len(self.env_interface.object_names) * self.n_train_epochs
+            )
+
         # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
         if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
