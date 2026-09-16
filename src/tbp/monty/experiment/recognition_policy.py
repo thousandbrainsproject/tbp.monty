@@ -87,11 +87,10 @@ class MontyIsDone(RecognitionPolicy):
 
 
 class MaximumSteps(RecognitionPolicy):
-    """`step >= {max_train_steps | max_eval_steps}` or `model.is_done`.
+    """`step >= {max_train_steps | max_eval_steps}`.
 
     Terminal conditions include:
     - `step >= {max_train_steps | max_eval_steps}`
-    - `model.is_done`
     """
 
     _max_train_steps: int
@@ -120,17 +119,17 @@ class MaximumSteps(RecognitionPolicy):
         self._max_eval_steps = max_eval_steps
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self,
+        model: MontyBase,  # noqa: ARG002
+        count: RecognitionCounter,
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
             if count.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        if count.step >= max_steps:
-            return RecognitionResult(is_done=True)
-
-        return RecognitionResult(is_done=model.is_done)
+        is_done = count.step >= max_steps
+        return RecognitionResult(is_done=is_done)
 
 
 class MinimumLMs(RecognitionPolicy):

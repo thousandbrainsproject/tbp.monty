@@ -4,6 +4,9 @@ match_criterion:
   _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
   count: 1
 recognition_policy:
-  _target_: tbp.monty.experiment.recognition_policy.MaximumSteps
-  max_train_steps: 10
-  max_eval_steps: 5
+  _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
+  policies:
+  - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
+  - _target_: tbp.monty.experiment.recognition_policy.MaximumSteps
+    max_train_steps: 10
+    max_eval_steps: 5

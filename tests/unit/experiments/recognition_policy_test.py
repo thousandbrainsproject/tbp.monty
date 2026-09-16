@@ -102,43 +102,36 @@ class MaximumStepsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             MaximumSteps(1, max_eval_steps)
 
-    @given(max_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
-    def test_times_out_at_or_after_max_steps(self, max_steps: int, extra: int) -> None:
-        model = _model_is_done(is_done=False)
+    @given(
+        step=st.integers(min_value=0),
+        max_steps=st.integers(min_value=1),
+    )
+    def test_times_out_at_or_after_max_steps(self, step: int, max_steps: int) -> None:
+        model = MagicMock()
         policy = MaximumSteps(max_steps, max_steps)
-        count = RecognitionCounter(step=max_steps + extra)
+        count = RecognitionCounter(step)
         result = policy(model, count)
-        self.assertTrue(result.is_done)
+        is_done = step >= max_steps
+        self.assertEqual(result.is_done, is_done)
+        model.assert_not_called()
 
     @given(
+        step=st.integers(min_value=0),
         mode=st.sampled_from(ExperimentMode),
         max_train_steps=st.integers(min_value=1),
         max_eval_steps=st.integers(min_value=1),
     )
     def test_selects_max_steps_by_mode(
-        self, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
+        self, step: int, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
     ) -> None:
         max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
-        model = _model_is_done(is_done=False)
+        model = MagicMock()
         policy = MaximumSteps(max_train_steps, max_eval_steps)
-        at_limit = policy(model, RecognitionCounter(max_steps, mode))
-        self.assertTrue(at_limit.is_done)
-        before_limit = policy(model, RecognitionCounter(max_steps - 1, mode))
-        self.assertFalse(before_limit.is_done)
-
-    @given(
-        is_done=st.booleans(),
-        asc=ascending_ints(min_value=0),
-    )
-    def test_defers_to_model_before_max_steps(
-        self, is_done: bool, asc: tuple[int, int]
-    ) -> None:
-        (step, max_steps) = asc
-        model = _model_is_done(is_done)
-        policy = MaximumSteps(max_steps, max_steps)
-        count = RecognitionCounter(step=step)
+        count = RecognitionCounter(step, mode)
         result = policy(model, count)
+        is_done = step >= max_steps
         self.assertEqual(result.is_done, is_done)
+        model.assert_not_called()
 
 
 class MinimumCountTest(unittest.TestCase):
@@ -268,12 +261,16 @@ class NaiveScanTest(unittest.TestCase):
         is_done = step >= 307
         self.assertEqual(result.is_done, is_done)
 
-    @given(is_done=st.booleans(), step=st.integers(min_value=0, max_value=306))
-    def test_defers_to_model_before_step_limit(self, is_done: bool, step: int) -> None:
-        model = _model_is_done(is_done)
-        policy = NaiveScan(max_total_steps=500, fixed_amount=5)
+    @given(
+        step=st.integers(min_value=0),
+        max_total_steps=st.integers(min_value=1, max_value=306),
+    )
+    def test_limited_by_max_total_steps(self, step: int, max_total_steps: int) -> None:
+        model = _model_is_done(is_done=False)
+        policy = NaiveScan(max_total_steps, fixed_amount=5)
         count = RecognitionCounter(step)
         result = policy(model, count)
+        is_done = step >= max_total_steps
         self.assertEqual(result.is_done, is_done)
 
 
@@ -304,28 +301,27 @@ class ObjectRecognitionTest(unittest.TestCase):
             ObjectRecognition(1, max_eval_steps, 1)
 
     @given(
-        is_done=st.booleans(),
-        max_steps=st.integers(min_value=1, max_value=500),
-        extra=st.integers(min_value=0, max_value=500),
-        step=st.integers(min_value=0, max_value=2000),
+        matching_steps=st.integers(min_value=0),
+        max_steps=st.integers(min_value=1),
+        step_asc=ascending_ints(min_value=0),
     )
     def test_times_out_at_or_after_max_matching_steps(
         self,
-        is_done: bool,
+        matching_steps: int,
         max_steps: int,
-        extra: int,
-        step: int,
+        step_asc: tuple[int, int],
     ) -> None:
-        max_total_steps = 5000
-        matching_steps = max_steps + extra
+        (step, max_total_steps) = step_asc
         model = _model_with_recognition(
-            is_done=is_done, is_exploring=False, matching_steps=matching_steps
+            is_done=False, is_exploring=False, matching_steps=matching_steps
         )
         policy = ObjectRecognition(max_steps, max_steps, max_total_steps)
         count = RecognitionCounter(step)
         result = policy(model, count)
-        self.assertTrue(result.is_done)
-        model.deal_with_time_out.assert_called_once()
+        is_done = matching_steps >= max_steps
+        self.assertEqual(result.is_done, is_done)
+        if is_done:
+            model.deal_with_time_out.assert_called_once()
 
     @given(
         mode=st.sampled_from(ExperimentMode),
