@@ -136,66 +136,38 @@ class MinimumLMs(RecognitionPolicy):
     """`min_lms` have reached a conclusion.
 
     Terminal conditions include:
-    - `num_matched >= self._min_lms`
-    - `count.step >= {max_train_steps | max_eval_steps}`
+    - `num_matched >= min_lms`
     """
 
     _min_lms: int
     """The minimum number of LMs that must reach a conclusion."""
 
-    _max_train_steps: int
-    """The maximum steps to take in training mode."""
-
-    _max_eval_steps: int
-    """The maximum steps to take in evaluation mode."""
-
-    def __init__(
-        self: Self, min_lms: int, max_train_steps: int, max_eval_steps: int
-    ) -> None:
+    def __init__(self: Self, min_lms: int) -> None:
         """Initialize the policy.
 
         Args:
             min_lms: The number of Learning Modules that must reach a conclusion for
                 the policy to be satisfied.
-            max_train_steps: The maximum steps to take in training mode.
-            max_eval_steps: The maximum steps to take in evaluation mode.
 
         Raises:
-            ValueError: If `min_lms`, `max_train_steps`, or `max_eval_steps`
-                are not positive.
+            ValueError: If `min_lms`is not positive.
         """
         if min_lms <= 0:
             raise ValueError("min_lms must be positive")
 
-        if max_train_steps <= 0:
-            raise ValueError("max_train_steps must be positive")
-
-        if max_eval_steps <= 0:
-            raise ValueError("max_eval_steps must be positive")
-
         self._min_lms = min_lms
-        self._max_train_steps = max_train_steps
-        self._max_eval_steps = max_eval_steps
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,  # noqa: ARG002
     ) -> RecognitionResult:
-        max_steps = (
-            self._max_train_steps
-            if count.mode is ExperimentMode.TRAIN
-            else self._max_eval_steps
-        )
-
-        if count.step >= max_steps:
-            return RecognitionResult(is_done=True)
-
         num_matched = sum(
             1
             for lm in model.learning_modules
             if lm.recognition_status.conclusion is not None
         )
         is_done = num_matched >= self._min_lms
-
         return RecognitionResult(is_done=is_done)
 
 

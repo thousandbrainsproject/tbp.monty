@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import random
 import unittest
 from unittest.mock import MagicMock
 
@@ -134,29 +135,11 @@ class MaximumStepsTest(unittest.TestCase):
         model.assert_not_called()
 
 
-class MinimumCountTest(unittest.TestCase):
+class MinimumLMsTest(unittest.TestCase):
     @given(min_lms=st.integers(max_value=0))
     def test_raises_value_error_if_min_lms_is_not_positive(self, min_lms: int) -> None:
         with self.assertRaises(ValueError):
-            MinimumLMs(min_lms, 1, 1)
-
-    @given(
-        max_train_steps=st.integers(max_value=0),
-    )
-    def test_raises_value_error_if_max_train_steps_is_not_positive(
-        self, max_train_steps: int
-    ) -> None:
-        with self.assertRaises(ValueError):
-            MinimumLMs(1, max_train_steps, 1)
-
-    @given(
-        max_eval_steps=st.integers(max_value=0),
-    )
-    def test_raises_value_error_if_max_eval_steps_is_not_positive(
-        self, max_eval_steps: int
-    ) -> None:
-        with self.assertRaises(ValueError):
-            MinimumLMs(1, 1, max_eval_steps)
+            MinimumLMs(min_lms)
 
     @given(
         num_concluded=st.integers(min_value=0, max_value=10),
@@ -166,47 +149,19 @@ class MinimumCountTest(unittest.TestCase):
     def test_done_iff_conclusion_count_reaches_count(
         self, num_concluded: int, num_pending: int, min_lms: int
     ) -> None:
-        conclusions = [RecognitionConclusion.MATCH] * num_concluded + [
-            None
-        ] * num_pending
+        match_options = list(RecognitionConclusion)
+        conclusions: list[RecognitionConclusion | None] = [
+            random.choice(match_options)  # noqa: S311
+            for _ in range(num_concluded)
+        ]
+        for _ in range(num_pending):
+            i = random.randint(0, len(conclusions))  # noqa: S311
+            conclusions.insert(i, None)
         model = _model_with_conclusions(conclusions)
-        policy = MinimumLMs(min_lms, 1, 1)
+        policy = MinimumLMs(min_lms)
         count = RecognitionCounter()
         result = policy(model, count)
         self.assertEqual(result.is_done, num_concluded >= min_lms)
-
-    def test_counts_any_conclusion_not_just_match(self) -> None:
-        model = _model_with_conclusions(
-            [RecognitionConclusion.NO_MATCH, RecognitionConclusion.TIME_OUT]
-        )
-        policy = MinimumLMs(2, 1, 1)
-        count = RecognitionCounter()
-        result = policy(model, count)
-        self.assertTrue(result.is_done)
-
-    @given(max_steps=st.integers(min_value=1), extra=st.integers(min_value=0))
-    def test_times_out_at_or_after_max_steps(self, max_steps: int, extra: int) -> None:
-        model = _model_with_conclusions([None, None])
-        policy = MinimumLMs(1, max_steps, max_steps)
-        count = RecognitionCounter(max_steps + extra)
-        result = policy(model, count)
-        self.assertTrue(result.is_done)
-
-    @given(
-        mode=st.sampled_from(ExperimentMode),
-        max_train_steps=st.integers(min_value=1),
-        max_eval_steps=st.integers(min_value=1),
-    )
-    def test_selects_max_steps_by_mode(
-        self, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
-    ) -> None:
-        max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
-        model = _model_with_conclusions([None, None])
-        policy = MinimumLMs(1, max_train_steps, max_eval_steps)
-        at_limit = policy(model, RecognitionCounter(max_steps, mode))
-        self.assertTrue(at_limit.is_done)
-        before_limit = policy(model, RecognitionCounter(max_steps - 1, mode))
-        self.assertFalse(before_limit.is_done)
 
 
 class MaxTotalStepsTest(unittest.TestCase):
