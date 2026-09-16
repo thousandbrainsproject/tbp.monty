@@ -52,7 +52,7 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_train_mujoco",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             config.experiment.config.logging.output_dir = str(
