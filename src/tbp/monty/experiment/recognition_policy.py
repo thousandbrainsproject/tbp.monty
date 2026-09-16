@@ -87,7 +87,7 @@ class MontyIsDone(RecognitionPolicy):
 
 
 class MaximumSteps(RecognitionPolicy):
-    """`step >= {max_train_steps | max_eval_steps}`.
+    """`step >= {max_train_steps | max_eval_steps}` or `model.is_done`.
 
     Terminal conditions include:
     - `step >= {max_train_steps | max_eval_steps}`
@@ -201,7 +201,7 @@ class MinimumLMs(RecognitionPolicy):
 
 
 class MaxTotalSteps(RecognitionPolicy):
-    """`count.steps >= count.max_total_steps`."""
+    """`step >= max_total_steps`."""
 
     _max_total_steps: int
     """The maximum number of steps before terminating the episode."""
@@ -338,7 +338,7 @@ class ObjectRecognition(RecognitionPolicy):
 
 
 class AnyPolicy(RecognitionPolicy):
-    """Combine terminal conditions for object recognition experiments.
+    """Combine mutiple terminal conditions for Experiments.
 
     Terminal condition is reached if _any_ `RecognitionPolicy` says so.
     """
@@ -363,9 +363,9 @@ class AnyPolicy(RecognitionPolicy):
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        rr = RecognitionResult(is_done=False)
+        result = RecognitionResult(is_done=False)
         for policy in self._policies:
-            rr = policy(model, count)
-            if rr.is_done:
+            result = policy(model, count)
+            if result.is_done:
                 break
-        return rr
+        return result

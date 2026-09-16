@@ -429,3 +429,4 @@ class AnyPolicyTest(unittest.TestCase):
             called.assert_called_once()
         for not_called in policies[num_called:]:
             not_called.assert_not_called()
+        model.assert_not_called()
