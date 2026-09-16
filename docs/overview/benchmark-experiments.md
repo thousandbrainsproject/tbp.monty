@@ -131,18 +131,18 @@ The monolithic baseline uses the same two child SM/LM pairs and third high-level
 
 The accuracy, Used MLH, average rotation error, and average prediction error in the results below are reported for `LM_2`, rather than using episode-level aggregate metrics. In the compositional configuration, `LM_2` is the higher-level parent LM that receives outputs from `LM_0` and `LM_1`. The monolithic control also reports `LM_2` so the two configurations measure the same high-level LM, although `LM_2` is not a parent in the monolithic configuration because there are no LM-to-LM connections. Matching steps and runtime remain experiment-level metrics.
 
-Inference uses a 100-step evaluation limit. Pretraining runs sequentially across episodes; benchmark inference can run with parallelization.
+### Results
 
 > [!WARNING]
 > These benchmarks track ongoing compositional research and are not currently expected to have good performance.
 
-### COWS Small
+#### COWS Small
 
 `cows_small` contains the original 19 objects, including the five plain objects and objects with TBP or Numenta logo stickers. Its 2D child LM learns the two logos. 
 
 !table[../../benchmarks/cows_small.csv]
 
-### COWS Large
+#### COWS Large
 
 `cows_large` contains 119 objects: the original 19 plus 100 additional compositional objects. Its 2D child LM learns seven stickers: the two logos plus square, circle, triangle, star, and heart.
 
@@ -179,11 +179,38 @@ python run.py experiment=supervised_pre_training_cows_large_compositional
 python run.py experiment=supervised_pre_training_cows_large_monolithic
 ```
 
-### Pretrained Models (v7)
+> [!NOTE]
+> Alternatively, you can download the pretrained models directly instead of running the pretraining experiments above:
+>
+> | Models | Archive Format | Download Link |
+> | --- | --- | --- |
+> | pretrained_compositional_objects_v7 | tgz | [pretrained_compositional_objects_v7.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz) |
+> | pretrained_compositional_objects_v7 | zip | [pretrained_compositional_objects_v7.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip) |
+>
+> Both COWS Small and COWS Large use this archive, including the shared 3D-child models.
+>
+> Unpack the archive in `${MONTY_MODELS}` (default: `~/tbp/results/monty/pretrained_models/`). For example, using the default location:
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/results/monty/pretrained_models/
+>
+> cd ~/tbp/results/monty/pretrained_models/
+>
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz | tar -xzf -
+> ```
+>
+> or
+>
+> ```plaintext zip
+> mkdir -p ~/tbp/results/monty/pretrained_models/
+>
+> cd ~/tbp/results/monty/pretrained_models/
+>
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip
+>
+> unzip pretrained_compositional_objects_v7.zip
+> ```
 
-| Models | tgz | zip |
-| --- | --- | --- |
-| pretrained_compositional_objects_v7 | [tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz) | [zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip) |
 
 # Monty-Meets-World
 
