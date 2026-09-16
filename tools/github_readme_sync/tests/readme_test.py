@@ -14,7 +14,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 from tools.github_readme_sync.readme import (
     API_PREFIX,
@@ -371,9 +371,7 @@ hidden: true
 
         self.assertFalse(created)
 
-        mock_get.assert_called_once_with(
-            f"{API_PREFIX}/branches/{self.version}"
-        )
+        mock_get.assert_called_once_with(f"{API_PREFIX}/branches/{self.version}")
         mock_post.assert_not_called()
 
     @patch.object(ReadMe, "get_categories")
@@ -628,7 +626,10 @@ hidden: true
             "uri": "/branches/1.0.0/guides/new-doc-1",
         }
 
-        with self.assertRaisesRegex(ValueError, "ReadMe created 'New Doc' with slug 'new-doc-1'; expected 'new-doc'"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "ReadMe created 'New Doc' with slug 'new-doc-1'; expected 'new-doc'",
+        ):
             self.readme.create_or_update_doc(
                 order=0,
                 category_id="/branches/1.0.0/categories/guides/Category",
@@ -651,9 +652,7 @@ hidden: true
                 "title": "New Doc",
                 "type": "basic",
                 "content": {"body": "Body"},
-                "category": {
-                    "uri": "/branches/1.0.0/categories/guides/Category"
-                },
+                "category": {"uri": "/branches/1.0.0/categories/guides/Category"},
                 "privacy": {"view": "public"},
                 "position": 0,
                 "slug": "new-doc",
@@ -703,9 +702,7 @@ hidden: true
                 "title": "New Doc",
                 "type": "basic",
                 "content": {"body": "Body"},
-                "category": {
-                    "uri": "/branches/1.0.0/categories/guides/Category"
-                },
+                "category": {"uri": "/branches/1.0.0/categories/guides/Category"},
                 "privacy": {"view": "public"},
                 "position": 0,
                 "slug": "new-doc",

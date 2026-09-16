@@ -14,7 +14,6 @@ from unittest.mock import MagicMock, call, patch
 from tools.github_readme_sync.upload import (
     ReadMeItem,
     get_all_categories_docs,
-    process_children,
     set_do_not_delete,
     upload,
 )

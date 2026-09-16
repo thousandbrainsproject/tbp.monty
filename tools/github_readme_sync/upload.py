@@ -116,7 +116,7 @@ def set_do_not_delete(to_be_deleted: list[ReadMeItem], identifier: str):
             return
 
 
-def get_all_categories_docs(rdme: ReadMe)  -> list[ReadMeItem]:
+def get_all_categories_docs(rdme: ReadMe) -> list[ReadMeItem]:
     """Return the ReadMe resources that may need to be removed during cleanup.
 
     Retrieves every category from the configured ReadMe version and every
@@ -132,7 +132,6 @@ def get_all_categories_docs(rdme: ReadMe)  -> list[ReadMeItem]:
         A list of ReadMeItem objects representing all existing categories and
         documents.
     """
-
     all_categories_and_docs: list[ReadMeItem] = []
 
     for category in rdme.get_categories():

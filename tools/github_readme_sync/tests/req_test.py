@@ -97,7 +97,8 @@ class TestReq(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ReadMeRequestError,
-            r"GET https://api\.example\.com/data failed with 500: Internal Server Error",
+            r"GET https://api\.example\.com/data failed with 500: "
+            r"Internal Server Error",
         ):
             get("https://api.example.com/data")
 
@@ -147,7 +148,9 @@ class TestReq(unittest.TestCase):
         )
 
     @patch("tools.github_readme_sync.req._SESSION.get")
-    def test_get_collection_raises_type_error_when_non_list_data_is_returned(self, mock_get):
+    def test_get_collection_raises_type_error_when_non_list_data_is_returned(
+        self, mock_get
+    ):
         response = MagicMock()
         response.status_code = 200
         response.url = "https://api.readme.com/v2/items"
@@ -159,7 +162,7 @@ class TestReq(unittest.TestCase):
             r"Expected ReadMe response data to be a list, received dict",
         ):
             get_collection("https://api.readme.com/v2/items")
-        
+
         mock_get.assert_called_once_with(
             "https://api.readme.com/v2/items",
             headers={"Authorization": "Bearer test_api_key"},
@@ -226,7 +229,9 @@ class TestReq(unittest.TestCase):
         )
 
     @patch("tools.github_readme_sync.req._SESSION.post")
-    def test_post_failure_raises_readmerequest_error_when_response_is_409(self, mock_post):
+    def test_post_failure_raises_readmerequest_error_when_response_is_409(
+        self, mock_post
+    ):
         response = MagicMock()
         response.status_code = 409
         response.text = "Slug already exists"
@@ -329,7 +334,9 @@ class TestReq(unittest.TestCase):
         )
 
     @patch("tools.github_readme_sync.req._SESSION.get")
-    def test_get_collection_raises_type_error_when_response_data_list_contains_a_non_object(self, mock_get):
+    def test_get_collection_raises_type_error_when_response_data_contains_a_non_object(
+        self, mock_get
+    ):
         response = MagicMock()
         response.status_code = 200
         response.url = "https://api.readme.com/v2/items"
