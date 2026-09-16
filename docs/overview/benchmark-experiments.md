@@ -150,34 +150,54 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 
 !table[../../benchmarks/cows_large.csv]
 
-### Dataset
-
-Extract the standard dataset into `${MONTY_DATA}` (default: `~/tbp/data`). Large random-location inference also requires the random-location dataset. 
-
-| Dataset | tgz | zip |
-| --- | --- | --- |
-| compositional_objects_1.4 | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip) |
-| compositional_objects_1.4_random_locs | [tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz) | [zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip) |
-
-```sh
-mkdir -p "${MONTY_DATA:-$HOME/tbp/data}"
-curl -fL https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz | tar -xzf - -C "${MONTY_DATA:-$HOME/tbp/data}"
-curl -fL https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz | tar -xzf - -C "${MONTY_DATA:-$HOME/tbp/data}"
-```
-
-### Pretraining
-
-Train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
-
-```sh
-python run.py experiment=supervised_pre_training_cows_3d_children
-python run.py experiment=supervised_pre_training_cows_small_2d_children
-python run.py experiment=supervised_pre_training_cows_small_compositional
-python run.py experiment=supervised_pre_training_cows_small_monolithic
-python run.py experiment=supervised_pre_training_cows_large_2d_children
-python run.py experiment=supervised_pre_training_cows_large_compositional
-python run.py experiment=supervised_pre_training_cows_large_monolithic
-```
+> [!NOTE]
+> You can download the data here:
+>
+> | Dataset | Archive Format | Download Link |
+> | --- | --- | --- |
+> | compositional_objects_1.4 | tgz | [compositional_objects_1.4.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz) |
+> | compositional_objects_1.4 | zip | [compositional_objects_1.4.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip) |
+> | compositional_objects_1.4_random_locs | tgz | [compositional_objects_1.4_random_locs.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz) |
+> | compositional_objects_1.4_random_locs | zip | [compositional_objects_1.4_random_locs.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip) |
+>
+> Both COWS Small and COWS Large use the standard dataset. The random-location dataset is only required for the large `random_locs` experiments.
+>
+> Unpack the archives in `${MONTY_DATA}` (default: `~/tbp/data/`). For example, using the default location:
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/data/
+>
+> cd ~/tbp/data/
+>
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz | tar -xzf -
+> ```
+>
+> or
+>
+> ```plaintext zip
+> mkdir -p ~/tbp/data/
+>
+> cd ~/tbp/data/
+>
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip
+> unzip compositional_objects_1.4.zip
+>
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip
+> unzip compositional_objects_1.4_random_locs.zip
+> ```
+>
+> To generate the pretrained models, run the following experiments in order. train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
+>
+> ```sh
+> python run.py experiment=supervised_pre_training_cows_3d_children
+> python run.py experiment=supervised_pre_training_cows_small_2d_children
+> python run.py experiment=supervised_pre_training_cows_small_compositional
+> python run.py experiment=supervised_pre_training_cows_small_monolithic
+> python run.py experiment=supervised_pre_training_cows_large_2d_children
+> python run.py experiment=supervised_pre_training_cows_large_compositional
+> python run.py experiment=supervised_pre_training_cows_large_monolithic
+> ```
 
 > [!NOTE]
 > Alternatively, you can download the pretrained models directly instead of running the pretraining experiments above:
