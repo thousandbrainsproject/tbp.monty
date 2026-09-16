@@ -394,12 +394,19 @@ class ObjectRecognitionTest(unittest.TestCase):
         model.deal_with_time_out.assert_not_called()
 
 
-def _mock_3_policies(first: bool, middle: bool, last: bool):
-    return [
-        MagicMock(RecognitionPolicy, return_value=RecognitionResult(is_done=first)),
-        MagicMock(RecognitionPolicy, return_value=RecognitionResult(is_done=middle)),
-        MagicMock(RecognitionPolicy, return_value=RecognitionResult(is_done=last)),
+@st.composite
+def policies_with_done_index(draw: st.DrawFn) -> tuple[list[MagicMock], int | None]:
+    num_policies = draw(st.integers(min_value=1, max_value=10))
+    done_index = draw(
+        st.one_of(st.none(), st.integers(min_value=0, max_value=num_policies - 1))
+    )
+    policies = [
+        MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(is_done=i == done_index)
+        )
+        for i in range(num_policies)
     ]
+    return (policies, done_index)
 
 
 class AnyPolicyTest(unittest.TestCase):
@@ -407,50 +414,18 @@ class AnyPolicyTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             AnyPolicy([])
 
-    def test_first_policy_is_done(self) -> None:
-        policies = _mock_3_policies(first=True, middle=True, last=True)
+    @given(policies_and_done_index=policies_with_done_index())
+    def test_stops_at_first_policy_that_is_done(
+        self, policies_and_done_index: tuple[list[MagicMock], int | None]
+    ) -> None:
+        (policies, done_index) = policies_and_done_index
         model = MagicMock()
         policy = AnyPolicy(policies)
         count = RecognitionCounter()
         result = policy(model, count)
-        self.assertEqual(result.is_done, True)
-        policies[0].assert_called_once()
-        policies[1].assert_not_called()
-        policies[2].assert_not_called()
-        model.assert_not_called()
-
-    def test_second_policy_is_done(self) -> None:
-        policies = _mock_3_policies(first=False, middle=True, last=True)
-        model = MagicMock()
-        policy = AnyPolicy(policies)
-        count = RecognitionCounter()
-        result = policy(model, count)
-        self.assertEqual(result.is_done, True)
-        policies[0].assert_called_once()
-        policies[1].assert_called_once()
-        policies[2].assert_not_called()
-        model.assert_not_called()
-
-    def test_third_policy_is_done(self) -> None:
-        policies = _mock_3_policies(first=False, middle=False, last=True)
-        model = MagicMock()
-        policy = AnyPolicy(policies)
-        count = RecognitionCounter()
-        result = policy(model, count)
-        self.assertEqual(result.is_done, True)
-        policies[0].assert_called_once()
-        policies[1].assert_called_once()
-        policies[2].assert_called_once()
-        model.assert_not_called()
-
-    def test_no_policy_is_done(self) -> None:
-        policies = _mock_3_policies(first=False, middle=False, last=False)
-        model = MagicMock()
-        policy = AnyPolicy(policies)
-        count = RecognitionCounter()
-        result = policy(model, count)
-        self.assertEqual(result.is_done, False)
-        policies[0].assert_called_once()
-        policies[1].assert_called_once()
-        policies[2].assert_called_once()
-        model.assert_not_called()
+        self.assertEqual(result.is_done, done_index is not None)
+        num_called = len(policies) if done_index is None else done_index + 1
+        for called in policies[:num_called]:
+            called.assert_called_once()
+        for not_called in policies[num_called:]:
+            not_called.assert_not_called()
