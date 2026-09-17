@@ -325,6 +325,15 @@ experiment:
         allow_translation: false
         max_orientation_attempts: 3
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+      ids:
+      - learning_module_2
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_train_steps: 1000
+      max_eval_steps: 100
+      max_total_steps: 6000
     logging:
       python_log_level: WARNING
       python_log_to_file: true
@@ -344,16 +353,9 @@ experiment:
           wandb_group: benchmark_experiments
       run_name: randrot_noise_infer_objects_with_stickers_monolithic_models
     show_sensor_output: false
-    max_train_steps: 1000
-    max_eval_steps: 100
-    max_total_steps: 6000
     n_train_epochs: 3
     n_eval_epochs: 10
     model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_objects_with_stickers_monolithic_models/pretrained/
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
-      ids:
-      - learning_module_2
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
@@ -422,6 +424,26 @@ constants:
     - 0
   - - 325
     - 225
+    - 0
+  rotations_cube_faces_count: 6
+  rotations_cube_faces:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+  - - 0
+    - 270
+    - 0
+  - - 90
+    - 0
+    - 0
+  - - 90
+    - 180
     - 0
   rotations_3_count: 3
   rotations_3:
