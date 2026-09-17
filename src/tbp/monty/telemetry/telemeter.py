@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 
-from tbp.monty.telemetry.factories import _TelemetryLoggerFactory
 from tbp.monty.telemetry.publishers import TelemetryPublisher
 
 
@@ -19,7 +18,7 @@ def getTelemeter(name: str) -> TelemetryPublisher:  # noqa: N802
     """Returns a telemetry logger with the specified name.
 
     This method is essentially a wrapper for `logger.getLogger`. It prefixes the logger
-    name with ``telemetry.`` if not present, and routes logger creation through
+    name with ``telemetry.`` if not present, which routes logger creation through
     `_TelemetryLoggerFactory` to return a `TelemetryPublisher` instance.
 
     All calls to this function with a given name return the same logger instance.
@@ -38,7 +37,6 @@ def getTelemeter(name: str) -> TelemetryPublisher:  # noqa: N802
     if not name.startswith("telemetry."):
         name = f"telemetry.{name}"
 
-    _TelemetryLoggerFactory.setup()
     telemeter = logging.getLogger(name)
 
     if not isinstance(telemeter, TelemetryPublisher):
