@@ -84,6 +84,30 @@ class MontyIsDoneTest(unittest.TestCase):
         self.assertEqual(result.is_done, is_done)
 
 
+class MaxTotalStepsTest(unittest.TestCase):
+    @given(max_total_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_total_steps_is_not_positive(
+        self, max_total_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MaxTotalSteps(max_total_steps)
+
+    @given(
+        step=st.integers(min_value=0),
+        max_total_steps=st.integers(min_value=1),
+    )
+    def test_times_out_at_or_after_max_total_steps(
+        self, step: int, max_total_steps: int
+    ) -> None:
+        model = MagicMock()
+        policy = MaxTotalSteps(max_total_steps)
+        count = RecognitionCounter(step)
+        result = policy(model, count)
+        is_done = step >= max_total_steps
+        self.assertEqual(result.is_done, is_done)
+        model.assert_not_called()
+
+
 class MaximumStepsTest(unittest.TestCase):
     @given(
         max_train_steps=st.integers(max_value=0),
@@ -164,69 +188,30 @@ class MinimumLMsTest(unittest.TestCase):
         self.assertEqual(result.is_done, num_concluded >= min_lms)
 
 
-class MaxTotalStepsTest(unittest.TestCase):
-    @given(max_total_steps=st.integers(max_value=0))
-    def test_raises_value_error_if_max_total_steps_is_not_positive(
-        self, max_total_steps: int
-    ) -> None:
-        with self.assertRaises(ValueError):
-            MaxTotalSteps(max_total_steps)
-
-    @given(
-        step=st.integers(min_value=0),
-        max_total_steps=st.integers(min_value=1),
-    )
-    def test_times_out_at_or_after_max_total_steps(
-        self, step: int, max_total_steps: int
-    ) -> None:
-        model = MagicMock()
-        policy = MaxTotalSteps(max_total_steps)
-        count = RecognitionCounter(step)
-        result = policy(model, count)
-        is_done = step >= max_total_steps
-        self.assertEqual(result.is_done, is_done)
-        model.assert_not_called()
-
-
 class NaiveScanTest(unittest.TestCase):
-    @given(
-        max_total_steps=st.integers(max_value=0), fixed_amount=st.integers(min_value=1)
-    )
-    def test_raises_value_error_if_max_total_steps_is_not_positive(
-        self, max_total_steps: int, fixed_amount: int
-    ) -> None:
-        with self.assertRaises(ValueError):
-            NaiveScan(max_total_steps, fixed_amount=fixed_amount)
-
-    @given(
-        max_total_steps=st.integers(min_value=1), fixed_amount=st.integers(max_value=0)
-    )
+    @given(fixed_amount=st.integers(max_value=0))
     def test_raises_value_error_if_fixed_amount_is_not_positive(
-        self, max_total_steps: int, fixed_amount: int
+        self, fixed_amount: int
     ) -> None:
         with self.assertRaises(ValueError):
-            NaiveScan(max_total_steps, fixed_amount=fixed_amount)
+            NaiveScan(fixed_amount)
 
     @given(step=st.integers(min_value=0))
     def test_fixed_amount_5_yields_307_steps(self, step: int) -> None:
         model = _model_is_done(is_done=False)
-        policy = NaiveScan(max_total_steps=500, fixed_amount=5)
+        policy = NaiveScan(fixed_amount=5)
         count = RecognitionCounter(step)
         result = policy(model, count)
         is_done = step >= 307
         self.assertEqual(result.is_done, is_done)
 
-    @given(
-        step=st.integers(min_value=0),
-        max_total_steps=st.integers(min_value=1, max_value=306),
-    )
-    def test_limited_by_max_total_steps(self, step: int, max_total_steps: int) -> None:
+    @given(fixed_amount=st.integers(min_value=1, max_value=100))
+    def test_step_limit_less_than_10000(self, fixed_amount: int) -> None:
         model = _model_is_done(is_done=False)
-        policy = NaiveScan(max_total_steps, fixed_amount=5)
-        count = RecognitionCounter(step)
+        policy = NaiveScan(fixed_amount)
+        count = RecognitionCounter(step=10000)
         result = policy(model, count)
-        is_done = step >= max_total_steps
-        self.assertEqual(result.is_done, is_done)
+        self.assertTrue(result.is_done)
 
 
 class ObjectRecognitionTest(unittest.TestCase):
