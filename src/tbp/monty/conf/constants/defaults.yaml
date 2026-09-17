@@ -55,6 +55,16 @@ rotations_all:
   - [35, 225, 0]
   - [325, 225, 0]
 
+# Six axis-aligned rotations exposing each cube face.
+rotations_cube_faces_count: 6
+rotations_cube_faces:
+  - [0, 0, 0]
+  - [0, 90, 0]
+  - [0, 180, 0]
+  - [0, 270, 0]
+  - [90, 0, 0]
+  - [90, 180, 0]
+
 rotations_3_count: 3 # Surprise!
 rotations_3:
   - [0, 0, 0]

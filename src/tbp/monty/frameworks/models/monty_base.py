@@ -14,6 +14,10 @@ import logging
 from typing import Any, Sequence
 
 from tbp.monty import telemetry
+from tbp.monty.attention.attention_system import (
+    AttentionSystemProtocol,
+    NoopAttentionSystem,
+)
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
@@ -51,6 +55,7 @@ class MontyBase(Monty):
         min_eval_steps,
         min_train_steps,
         num_exploratory_steps,
+        attention_system: AttentionSystemProtocol | None = None,
     ) -> None:
         """Initialize the base class.
 
@@ -79,6 +84,8 @@ class MontyBase(Monty):
             min_eval_steps: Minimum number of steps required for evaluations.
             min_train_steps: Minimum number of steps required for training.
             num_exploratory_steps: Number of steps required by the exploratory phase.
+            attention_system: The attention system to be used.
+                If `None`, a NoopAttentionSystem will be used.
 
         Raises:
             ValueError: If `sm_to_lm_matrix` is not defined
@@ -141,6 +148,9 @@ class MontyBase(Monty):
         self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
+        self._attention_system = (
+            NoopAttentionSystem() if attention_system is None else attention_system
+        )
 
     def step(
         self,
@@ -217,22 +227,6 @@ class MontyBase(Monty):
             )
         self._step_motor_system(ctx, observations, proprioceptive_state)
         return self._actions
-
-    def check_reached_max_matching_steps(self, max_steps):
-        """Check if max_steps was reached and deal with time_out.
-
-        Returns:
-            True if max_steps was reached, False otherwise.
-        """
-        if (
-            (not self.is_exploring) and (self.matching_steps >= max_steps)
-            # Since we increment matching steps from 0 (i.e. the first matching
-            # step is the "0th" step, this is set to >=, not >)
-        ):
-            self.deal_with_time_out()
-            return True
-
-        return False
 
     def deal_with_time_out(self):
         """Call any functions and logging in case of a time out."""
@@ -335,6 +329,10 @@ class MontyBase(Monty):
             goals = sm.propose_goals()
             self._goals.extend(goals)
 
+        regions = [sm.propose_region() for sm in self.sensor_modules]
+
+        self._goals = self._attention_system.step(self._goals, regions)
+
     def _step_motor_system(
         self,
         ctx: RuntimeContext,
@@ -395,6 +393,7 @@ class MontyBase(Monty):
 
         self.motor_system.reset()
         self._goals = []
+        self._attention_system.reset()
 
     def snapshot(self) -> Memento:
         memo = {}
@@ -447,6 +446,7 @@ class MontyBase(Monty):
             i: module.state_dict() for i, module in enumerate(self.sensor_modules)
         }
         motor_system_dict = self.motor_system.state_dict()
+        attention_system_dict = self._attention_system.state_dict()
 
         return dict(
             lm_dict=lm_dict,
@@ -455,6 +455,7 @@ class MontyBase(Monty):
             lm_to_lm_matrix=self.lm_to_lm_matrix,
             lm_to_lm_vote_matrix=self.lm_to_lm_vote_matrix,
             sm_to_lm_matrix=self.sm_to_lm_matrix,
+            attention_system_dict=attention_system_dict,
         )
 
     ###
