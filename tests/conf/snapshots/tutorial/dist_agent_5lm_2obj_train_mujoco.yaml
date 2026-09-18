@@ -290,9 +290,13 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.NaiveScan
-      fixed_amount: 5
-      max_total_steps: 6000
+      _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
+      policies:
+      - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
+      - _target_: tbp.monty.experiment.recognition_policy.NaiveScan
+        fixed_amount: 5
+      - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
+        max_total_steps: 6000
     logging:
       python_log_level: WARNING
       python_log_to_file: true

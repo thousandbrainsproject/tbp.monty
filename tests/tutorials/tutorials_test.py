@@ -94,7 +94,6 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/dist_agent_5lm_2obj_train",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_total_steps=503",
                 ],
             )
             config.experiment.config.logging.output_dir = str(
