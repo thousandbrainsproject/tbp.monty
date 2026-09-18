@@ -1,0 +1,41 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  object_names:
+  - 021_logo_tbp
+  - 022_logo_numenta
+  - 028_square
+  - 029_circle
+  - 030_triangle
+  - 031_star
+  - 032_heart
+  object_init_sampler:
+    positions:
+    - - 0.0
+      - 1.5
+      - 0.0
+    - - -0.015
+      - 1.5
+      - 0.0
+    - - -0.03
+      - 1.5
+      - 0.0
+    - - -0.045
+      - 1.5
+      - 0.0
+    - - 0.015
+      - 1.5
+      - 0.0
+    - - 0.03
+      - 1.5
+      - 0.0
+    - - 0.045
+      - 1.5
+      - 0.0
+    rotations:
+    - - 0.0
+      - 0.0
+      - 0.0
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

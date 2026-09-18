@@ -12,6 +12,7 @@ from __future__ import annotations
 import copy
 
 import numpy as np
+from omegaconf import OmegaConf
 
 from tbp.monty.cmp import Message
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -19,10 +20,54 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
+from tests import HYDRA_ROOT
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
 class EvidenceLMTest(BaseGraphTest):
+    def test_object_id_features_are_unique_and_float32_safe(self):
+        """Keep YCB and expanded compositional IDs distinct, including together."""
+        config_dir = HYDRA_ROOT / "env_interface"
+        ycb_ids = list(
+            OmegaConf.load(
+                config_dir / "eval_77obj_predefined.yaml"
+            ).eval_env_interface_args.object_names
+        )
+        compositional_ids = []
+        for config_name in (
+            "train_expanded_objects_with_stickers_predefined",
+            "train_expanded_2d_children_predefined",
+        ):
+            compositional_ids.extend(
+                OmegaConf.load(
+                    config_dir / f"{config_name}.yaml"
+                ).train_env_interface_args.object_names
+            )
+        self.assertEqual(len(ycb_ids), 77)
+        self.assertEqual(len(compositional_ids), 126)
+        graph_lm = EvidenceGraphLM(
+            max_match_distance=0.005, tolerances={}, feature_weights={}
+        )
+        for dataset, object_ids in (
+            ("ycb", ycb_ids),
+            ("expanded_compositional", compositional_ids),
+            ("combined", ycb_ids + compositional_ids),
+        ):
+            with self.subTest(dataset=dataset):
+                seen = {}
+                for object_id in object_ids:
+                    feature = graph_lm._object_id_to_features(object_id)
+                    self.assertNotIn(
+                        feature,
+                        seen,
+                        f"Object ID collision: {object_id} and {seen.get(feature)}",
+                    )
+                    seen[feature] = object_id
+                    self.assertEqual(int(np.float32(feature)), feature, object_id)
+                    self.assertEqual(
+                        graph_lm._object_id_to_features(object_id), feature, object_id
+                    )
+
     def setUp(self):
         super().setUp()
 

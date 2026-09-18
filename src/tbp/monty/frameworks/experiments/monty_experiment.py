@@ -36,6 +36,9 @@ from tbp.monty.experiment.recognition_policy import (
     RecognitionPolicy,
 )
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.environments.positioning_procedures import (
+    ObjectNotVisibleError,
+)
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
@@ -90,11 +93,11 @@ class MontyExperiment:
         self.do_train = config["do_train"]
         self.do_eval = config["do_eval"]
         self.experiment_mode = ExperimentMode.TRAIN
-        self.max_eval_steps = config["max_eval_steps"]
-        self.max_train_steps = config["max_train_steps"]
-        self.max_total_steps = config["max_total_steps"]
         self.n_eval_epochs = config["n_eval_epochs"]
         self.n_train_epochs = config["n_train_epochs"]
+        self.skip_on_object_not_visible = config.get(
+            "skip_on_object_not_visible", False
+        )
         if config["model_name_or_path"]:
             self.model_path = Path(config["model_name_or_path"])
         else:
@@ -408,20 +411,11 @@ class MontyExperiment:
             sm_to_lm_matrix=sm_to_lm_matrix,
             lm_to_lm_matrix=lm_to_lm_matrix,
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
+            # Pass any leftover configuration parameters downstream to monty_class
             **config,
             **monty_args,
         )
         model._match_criterion = self._match_criterion
-
-        if monty_args["num_exploratory_steps"] > self.max_total_steps:
-            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            logger.warning(
-                "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
-            )
-            self.max_total_steps = new_max_steps
-
         self.model = model
 
     def _snapshot_monty(self) -> None:
@@ -459,20 +453,39 @@ class MontyExperiment:
 
         self.env_interface.pre_episode(self.rng)
 
-        self.max_steps = self.max_train_steps
-        if self.experiment_mode is not ExperimentMode.TRAIN:
-            self.max_steps = self.max_eval_steps
-
         self.logger_handler.pre_episode(self.logger_args)
 
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
     def run_episode(self):
-        """Runs an episode with `pre_episode` and `post_episode` hooks."""
-        self.pre_episode()
-        step = self.run_episode_steps()
-        self.post_episode(step)
+        """Run an episode, optionally skipping invisible training targets at setup.
+
+        Raises:
+            ObjectNotVisibleError: If positioning sees no target and skipping is
+                disabled, or the episode is an evaluation episode.
+        """
+        try:
+            self.pre_episode()
+        except ObjectNotVisibleError as error:
+            if (
+                not self.skip_on_object_not_visible
+                or self.experiment_mode is not ExperimentMode.TRAIN
+            ):
+                raise
+            target = self.env_interface.primary_target
+            logger.warning(
+                "Skipping training pose: object=%s position=%s rotation=%s reason=%s",
+                target["object"],
+                target["position"],
+                target["euler_rotation"],
+                error,
+            )
+            self.train_episodes += 1
+            self.env_interface.post_episode()
+            return
+        last_step = self.run_episode_steps()
+        self.post_episode(last_step)
 
     def run_episode_steps(self) -> int:
         """Runs the steps of an episode.
@@ -488,12 +501,14 @@ class MontyExperiment:
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
         while not self._recognition_complete(step):
-            try:
-                actions = self.run_step(ctx, step, actions)
-            except StopIteration:
-                break
+            actions = self.run_step(ctx, step, actions)
             step += 1
         return step
+
+    def _recognition_complete(self, step: int) -> bool:
+        rc = RecognitionCounter(step, self.experiment_mode)
+        rr = self._recognition_policy(self.model, rc)
+        return rr.is_done
 
     def run_step(
         self, ctx: RuntimeContext, step: int, actions: list[Action]
@@ -521,11 +536,6 @@ class MontyExperiment:
             observations,
             actions,
         )
-
-    def _recognition_complete(self, step: int) -> bool:
-        rc = RecognitionCounter(step=step, max_steps=self.max_steps)
-        rr = self._recognition_policy(self.model, rc)
-        return rr.is_done
 
     def _fixme_generate_live_plot_frame(
         self, observations: Observations, step: int
