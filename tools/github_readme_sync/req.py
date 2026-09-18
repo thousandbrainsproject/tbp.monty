@@ -360,6 +360,9 @@ def delete(
 
     logger.debug("delete %s %s", url, response.status_code)
 
+    if response.status_code == 404:
+        return
+
     if response.status_code >= 400:
         raise ReadMeRequestError(
             f"DELETE {url} failed with {response.status_code}: {response.text}"
