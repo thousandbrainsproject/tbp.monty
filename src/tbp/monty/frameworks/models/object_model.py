@@ -32,6 +32,7 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     get_values_from_dense_last_dim,
     increment_sparse_tensor_by_count,
     pose_vector_mean,
+    pose_vector_merge,
     remove_close_points,
     torch_graph_to_numpy,
 )
@@ -812,7 +813,7 @@ class GridObjectModel(GraphObjectModel):
             pdefined_ids = obs_fm["pose_fully_defined"]
             pose_vecs = new_features_in_voxel[:, pv_ids[0] : pv_ids[1]]
             pdefined = new_features_in_voxel[:, pdefined_ids[0] : pdefined_ids[1]]
-            pv_mean, use_cds_to_update = pose_vector_mean(pose_vecs, pdefined)
+            pv_mean, _ = pose_vector_mean(pose_vecs, pdefined)
         for feature in obs_fm:
             ids = obs_fm[feature]
             feats = new_features_in_voxel[:, ids[0] : ids[1]]
@@ -843,16 +844,23 @@ class GridObjectModel(GraphObjectModel):
                 if feature == "pose_vectors":
                     if avg_feat is None:
                         avg_feat = previous_average
-                    elif use_cds_to_update is False:
-                        avg_feat[3:] = previous_average[3:]
-                elif feature == "object_id" and avg_feat != previous_average:
-                    # TODO: Figure out a more nuanced way to take into account past obs
+                    else:
+                        avg_feat = pose_vector_merge(
+                            avg_feat,
+                            previous_average,
+                            num_new_obs,
+                            num_old_obs,
+                        )
+                elif feature == "object_id":
+                    # TODO: Figure out a more nuanced way to take into account
+                    # past obs
                     if num_old_obs > num_new_obs:
                         avg_feat = previous_average
                     else:
                         previous_average = avg_feat
-                # NOTE: could weight these
-                avg_feat = (avg_feat + previous_average) / 2
+                else:
+                    # NOTE: could weight these
+                    avg_feat = (avg_feat + previous_average) / 2
             target_ids = target_fm[feature]
             new_feature_avg[target_ids[0] : target_ids[1]] = avg_feat
         return new_feature_avg
