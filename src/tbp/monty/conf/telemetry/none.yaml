@@ -1,0 +1,5 @@
+# @package experiment.config.telemetry
+
+loggers:
+  telemetry.tbp.monty:
+    level: CRITICAL
