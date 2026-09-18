@@ -12,6 +12,8 @@ import copy
 import unittest
 
 import numpy as np
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.object_model import (
     GraphObjectModel,
@@ -294,6 +296,44 @@ class ObjectModelTest(unittest.TestCase):
                 np.linalg.norm(pv), 1.0, 3, "Average PVs are not unit vectors anymore"
             )
         self.assertTrue(check_orthonormal(avg_pvs), "Average PVs are not orthonormal")
+
+    @settings(deadline=1000)
+    @given(pose_fully_defined=st.booleans())
+    def test_update_model_keeps_pose_vectors_as_rotation_matrix(
+        self, pose_fully_defined
+    ):
+        opposite_pv = np.vstack(
+            [-self.dummy_pv[0], self.dummy_pv[1], -self.dummy_pv[2]]
+        )
+        model = GridObjectModel(
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+        )
+        model.build_model(self.dummy_locs, self.dummy_features)
+
+        for _ in range(3):
+            features = copy.deepcopy(self.dummy_features)
+            features["pose_vectors"] = np.vstack([opposite_pv.flatten()] * 4)
+            features["pose_fully_defined"] = np.array([pose_fully_defined] * 4)
+            model.update_model(
+                locations=self.dummy_locs,
+                features=features,
+                location_rel_model=np.zeros(3),
+                object_location_rel_body=np.zeros(3),
+                object_rotation=Rotation.identity(),
+            )
+
+        for pose_vectors in model.get_values_for_feature("pose_vectors"):
+            matrix = np.array(pose_vectors).reshape((3, 3))
+            self.assertAlmostEqual(
+                np.linalg.det(matrix),
+                1.0,
+                3,
+                "Stored pose vectors are no longer a rotation matrix",
+            )
+            self.assertTrue(
+                check_orthonormal(matrix),
+                "Stored pose vectors are not orthonormal",
+            )
 
     def test_max_nodes_applied_correctly(self):
         model = GridObjectModel(

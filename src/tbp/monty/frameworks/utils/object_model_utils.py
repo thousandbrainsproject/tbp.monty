@@ -11,13 +11,18 @@
 import logging
 
 import numpy as np
+import numpy.typing as npt
 import torch
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    TangentFrame,
     get_angle,
     get_right_hand_angle,
     normalize,
+    project_onto_tangent_plane,
 )
+from tbp.monty.geometry import Rotation
+from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
 
@@ -312,6 +317,65 @@ def get_cubic_patches(arr_shape, centers, size):
     return new_centers, mask
 
 
+def orthonormal_pose_vectors(
+    surface_normal: npt.NDArray[np.float64],
+    curvature_direction: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Build a right-handed orthonormal pose from two rough directions.
+
+    The surface normal is used as a given, up to normalization. The curvature direction
+    is orthogonalized against it, so the returned pose vectors are always a valid
+    rotation matrix.
+
+    Args:
+        surface_normal: Surface normal direction. Does not need to be unit length.
+        curvature_direction: First curvature direction. Does not need to be unit length
+            or orthogonal to the surface normal.
+
+    Returns:
+        Flat array of nine elements holding the surface normal and the two curvature
+        directions.
+    """
+    normal = normalize(surface_normal)
+    tangent = project_onto_tangent_plane(curvature_direction, normal)
+    if np.linalg.norm(tangent) < DEFAULT_TOLERANCE:
+        # The curvature direction holds no information perpendicular to the surface
+        # normal, so fall back to an arbitrary direction in the tangent plane. The
+        # curvature directions are not used for matching in this case anyway.
+        tangent = TangentFrame(normal).basis_u
+    cd1 = normalize(tangent)
+    return np.hstack([normal, cd1, np.cross(normal, cd1)])
+
+
+def pose_vector_merge(
+    new_pose_vecs: npt.NDArray[np.float64],
+    previous_pose_vecs: npt.NDArray[np.float64],
+    num_new_obs: int,
+    num_previous_obs: int,
+) -> npt.NDArray[np.float64]:
+    """Merge newly observed pose vectors into previous ones using a weighted mean.
+
+    Args:
+        new_pose_vecs: Flat array of nine elements holding the pose vectors averaged
+            over the new observations.
+        previous_pose_vecs: Flat array of nine elements holding the averaged previous
+            pose vectors.
+        num_new_obs: Number of new observations.
+        num_previous_obs: Number of previous observations.
+
+    Returns:
+        Flat array of nine elements holding the merged pose vectors.
+    """
+    return (
+        Rotation.from_matrix(
+            np.stack([new_pose_vecs.reshape(3, 3), previous_pose_vecs.reshape(3, 3)])
+        )
+        .mean(weights=[num_new_obs, num_previous_obs])
+        .as_matrix()
+        .flatten()
+    )
+
+
 def pose_vector_mean(pose_vecs, pose_fully_defined):
     """Calculate mean of pose vectors.
 
@@ -355,7 +419,7 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         # )
         # Just take 1st one. Shouldn't matter since cd should not be used anyways if
         # not pose_fully_defined. Only has a small effect on sampled possible poses.
-        pv_means = np.hstack([norm_mean, cds1[0], cds2[0]])
+        pv_means = orthonormal_pose_vectors(norm_mean, cds1[0])
         use_cds_to_update = False
     else:
         # Find cds pointing in opposing directions and invert them. This is needed
@@ -363,13 +427,8 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         # equivalent. If we average over opposing directions, we will get noise.
         cd1_dirs = get_right_hand_angle(cds1, cds2[0], norm_mean) < 0
         cds1[cd1_dirs] = -cds1[cd1_dirs]
-        cd1_mean = normalize(np.mean(cds1, axis=0))
-        # Get the second cd by calculating a vector orthogonal to cd1 and surface normal
-        cd2_mean = normalize(np.cross(norm_mean, cd1_mean))
-        if get_right_hand_angle(cd1_mean, cd2_mean, norm_mean) < 0:
-            cd2_mean = -cd2_mean
+        pv_means = orthonormal_pose_vectors(norm_mean, np.mean(cds1, axis=0))
         use_cds_to_update = True
-        pv_means = np.hstack([norm_mean, cd1_mean, cd2_mean])
 
     assert not np.any(np.isnan(pv_means)), "NaN in pose vector mean"
     return pv_means, use_cds_to_update
