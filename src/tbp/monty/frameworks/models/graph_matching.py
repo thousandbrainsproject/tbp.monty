@@ -1113,7 +1113,6 @@ class GraphMemory(LMMemory):
         """
         self.graph_delta_thresholds = graph_delta_thresholds
         self.k = k
-        self.mode: ExperimentMode | None = None
         self.models_in_memory = {}
 
         # Array representation of features for each graph -> faster matching
