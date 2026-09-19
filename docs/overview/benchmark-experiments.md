@@ -162,12 +162,12 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > Both COWS Small and COWS Large use the standard dataset. The random-location dataset is only required for the large `random_locs` experiments.
 >
-> Unpack the archives in `${MONTY_DATA}` (default: `~/tbp/data/`). For example, using the default location:
+> Unpack the archive in the `~/tbp/data/habitat/versioned_data/` folder. For example:
 >
 > ```plaintext tgz
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/habitat/versioned_data/
 >
-> cd ~/tbp/data/
+> cd ~/tbp/data/habitat/versioned_data/
 >
 > curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz | tar -xzf -
 > curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz | tar -xzf -
@@ -176,15 +176,29 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 > or
 >
 > ```plaintext zip
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/habitat/versioned_data/
 >
-> cd ~/tbp/data/
+> cd ~/tbp/data/habitat/versioned_data/
 >
 > curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip
-> unzip compositional_objects_1.4.zip
 >
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip
-> unzip compositional_objects_1.4_random_locs.zip
+> unzip compositional_objects_1.4.zip
+> ```
+>
+> Then create a symlink so that the experiment configs (which look for `~/tbp/data/habitat/objects/compositional_objects`) can find the versioned dataset folder. If this is the first time you are doing this, you can use:
+>
+> ```plaintext
+> mkdir -p ~/tbp/data/habitat/objects/
+>
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.4 ~/tbp/data/habitat/objects/compositional_objects
+> ```
+>
+> If you have a pre-existing symlink for an old version of the dataset, then you will need to remove this first, i.e.:
+>
+> ```plaintext
+> rm ~/tbp/data/habitat/objects/compositional_objects
+>
+> ln -s ~/tbp/data/habitat/versioned_data/compositional_objects_1.4 ~/tbp/data/habitat/objects/compositional_objects
 > ```
 >
 > To generate the pretrained models, run the following experiments in order. train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
