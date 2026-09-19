@@ -35,8 +35,8 @@ class EvidenceLMTest(BaseGraphTest):
         )
         compositional_ids = []
         for config_name in (
-            "train_expanded_objects_with_stickers_predefined",
-            "train_expanded_2d_children_predefined",
+            "train_cows_large_predefined",
+            "train_cows_large_2d_children_predefined",
         ):
             compositional_ids.extend(
                 OmegaConf.load(
