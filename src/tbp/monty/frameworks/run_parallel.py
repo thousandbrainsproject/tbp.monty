@@ -657,25 +657,14 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         shutil.rmtree(pdir)
 
 
-def _threads_per_process() -> int:
-    """Number of intra-op threads each parallel worker may use.
+def _export_thread_limits_env(num_threads: int) -> None:
+    """Export thread limits so spawned workers inherit them.
 
-    Defaults to 1: with ``num_parallel`` workers, letting every worker also spin up
-    a full BLAS/torch thread pool oversubscribes the machine (N workers x N cores)
-    and slows every episode down. Override with ``MONTY_THREADS_PER_PROCESS``.
-
-    Returns:
-        Thread count per worker process (at least 1).
-    """
-    return max(1, int(os.environ.get("MONTY_THREADS_PER_PROCESS", "1")))
-
-
-def _export_thread_limits(num_threads: int) -> None:
-    """Export BLAS thread limits so spawned workers inherit them.
-
-    Workers are started with the "spawn" method and import numpy afresh, so the
-    BLAS libraries read these variables at import time. Values already set by the
-    user are left untouched.
+    With ``num_parallel`` workers, letting every worker also spin up a full
+    BLAS/torch thread pool oversubscribes the machine (N workers x N cores) and
+    slows every episode down. Workers are started with the "spawn" method and
+    import numpy and torch afresh, so they pick these variables up at import time.
+    Values already set by the user are left untouched.
     """
     for var in (
         "OMP_NUM_THREADS",
@@ -687,14 +676,10 @@ def _export_thread_limits(num_threads: int) -> None:
         os.environ.setdefault(var, str(num_threads))
 
 
-def _limit_worker_threads(num_threads: int) -> None:
-    """Pool initializer: cap torch's intra-op thread pool inside a worker."""
-    torch.set_num_threads(num_threads)
-
-
 def run_episodes_parallel(
     experiments: list[Mapping],
     num_parallel: int,
+    threads_per_process: int,
     experiment_name: str,
     train: bool = True,
 ) -> None:
@@ -705,6 +690,7 @@ def run_episodes_parallel(
         num_parallel: Maximum number of parallel processes to run. If there
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
+        threads_per_process: Maximum number of intra-op threads each process may use.
         experiment_name: Name of the experiment.
         train: Whether the episodes are training or evaluation episodes.
     """
@@ -734,16 +720,8 @@ def run_episodes_parallel(
     # The "fork" method causes issues with the MuJoCo simulator's GL context, causing
     # the system to hang when trying to render an image.
     ctx = mp.get_context("spawn")
-    # Each worker is one process; keep it to a single intra-op thread so that
-    # `num_parallel` workers do not oversubscribe the machine.
-    num_threads = _threads_per_process()
-    _export_thread_limits(num_threads)
-    with ctx.Pool(
-        num_parallel,
-        maxtasksperchild=1,
-        initializer=_limit_worker_threads,
-        initargs=(num_threads,),
-    ) as p:
+    _export_thread_limits_env(threads_per_process)
+    with ctx.Pool(num_parallel, maxtasksperchild=1) as p:
         if train:
             # NOTE: since we don't use wandb logging for training right now
             # it is also not covered here. Might want to add that in the future.
@@ -842,6 +820,7 @@ def main(cfg: DictConfig):
             run_episodes_parallel(
                 train_configs,
                 cfg.num_parallel,
+                cfg.threads_per_process,
                 cfg.experiment.config.logging.run_name,
                 train=True,
             )
@@ -864,6 +843,7 @@ def main(cfg: DictConfig):
             run_episodes_parallel(
                 eval_configs,
                 cfg.num_parallel,
+                cfg.threads_per_process,
                 cfg.experiment.config.logging.run_name,
                 train=False,
             )

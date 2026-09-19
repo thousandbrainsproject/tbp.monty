@@ -13,12 +13,9 @@ import unittest
 from unittest import mock
 
 import pandas as pd
-import torch
 
 from tbp.monty.frameworks.run_parallel import (
-    _export_thread_limits,
-    _limit_worker_threads,
-    _threads_per_process,
+    _export_thread_limits_env,
     parse_episode_spec,
     per_lm_stats,
 )
@@ -32,32 +29,20 @@ THREAD_VARS = (
 )
 
 
-class WorkerThreadLimitsTest(unittest.TestCase):
-    def test_defaults_to_one_thread_per_process(self):
+class ExportThreadLimitsEnvTest(unittest.TestCase):
+    def test_exports_every_thread_variable(self):
         with mock.patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(_threads_per_process(), 1)
+            _export_thread_limits_env(2)
+            for var in THREAD_VARS:
+                self.assertEqual(os.environ[var], "2")
 
-    def test_env_override_and_floor(self):
-        with mock.patch.dict(os.environ, {"MONTY_THREADS_PER_PROCESS": "3"}):
-            self.assertEqual(_threads_per_process(), 3)
-        with mock.patch.dict(os.environ, {"MONTY_THREADS_PER_PROCESS": "0"}):
-            self.assertEqual(_threads_per_process(), 1)
-
-    def test_export_sets_blas_variables_without_overriding_user_values(self):
+    def test_does_not_override_user_values(self):
         with mock.patch.dict(os.environ, {"MKL_NUM_THREADS": "4"}, clear=True):
-            _export_thread_limits(1)
+            _export_thread_limits_env(1)
             self.assertEqual(os.environ["MKL_NUM_THREADS"], "4")
             for var in THREAD_VARS:
                 if var != "MKL_NUM_THREADS":
                     self.assertEqual(os.environ[var], "1")
-
-    def test_worker_initializer_caps_torch_threads(self):
-        before = torch.get_num_threads()
-        try:
-            _limit_worker_threads(1)
-            self.assertEqual(torch.get_num_threads(), 1)
-        finally:
-            torch.set_num_threads(before)
 
 
 class PerLMStatsTest(unittest.TestCase):
