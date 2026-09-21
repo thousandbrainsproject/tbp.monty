@@ -15,9 +15,17 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.attention.goal_filter import HardGoalFilter, NoopGoalFilter
+from tbp.monty.attention.voxel_grid import VoxelGrid
 from tbp.monty.cmp import Goal
 from tests.strategies.cmp import goals
-from tests.unit.attention.strategies import default_voxel_grid
+from tests.unit.attention.strategies import (
+    default_attention_system_weights,
+    default_voxel_grid,
+    all_negative_default_attention_system_weights,
+    with_negative_default_attention_system_weights,
+    with_positive_default_attention_system_weights,
+    unique_voxels,
+)
 
 
 class NoopGoalFilterTest(unittest.TestCase):
@@ -33,16 +41,46 @@ class HardGoalFilterTest(unittest.TestCase):
     ):
         self.assertEqual(HardGoalFilter()(voxel_grid, goals), goals)
 
-    def test_out_of_grid_goals_pass_when_all_voxel_weights_are_negative(self):
+    @given(
+        voxel_grid=default_voxel_grid(
+            voxels_strategy=unique_voxels(min_voxels=1),
+            weights_strategy=all_negative_default_attention_system_weights,
+        ),
+        goals=goals(),
+    )
+    def test_out_of_grid_goals_pass_when_all_voxel_weights_are_negative(
+        self, voxel_grid: VoxelGrid, goals: list[Goal]
+    ):
         pass
 
+    @given(
+        voxel_grid=default_voxel_grid(
+            voxels_strategy=unique_voxels(min_voxels=1),
+            weights_strategy=with_positive_default_attention_system_weights,
+        ),
+        goals=goals(),
+    )
     def test_out_of_grid_goals_filtered_out_when_there_are_voxels_with_positive_weights(
         self,
-    ):  # noqa: E501
+    ):
         pass
 
+    @given(
+        voxel_grid=default_voxel_grid(
+            voxels_strategy=unique_voxels(min_voxels=1),
+            weights_strategy=with_negative_default_attention_system_weights,
+        ),
+        goals=goals(),
+    )
     def test_goals_in_voxels_with_negative_weights_filtered(self):
         pass
 
+    @given(
+        voxel_grid=default_voxel_grid(
+            voxels_strategy=unique_voxels(min_voxels=1),
+            weights_strategy=with_positive_default_attention_system_weights,
+        ),
+        goals=goals(),
+    )
     def test_goals_in_voxels_with_positive_weights_pass(self):
         pass

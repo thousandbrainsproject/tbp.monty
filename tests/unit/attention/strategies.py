@@ -8,6 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Callable, Literal
+
 import numpy as np
 import numpy.typing as npt
 from hypothesis import strategies as st
@@ -55,7 +57,106 @@ voxel_sizes = st.floats(min_value=MIN_VOXEL_SIZE, max_value=MAX_VOXEL_SIZE)
 #         fill=st.just(1.0),
 #     )
 
+@st.composite
+def default_attention_system_weights(
+    draw: st.DrawFn,
+    length: int,
+) -> npt.NDArray[np.floating]:
+    return draw(
+        arrays(
+            dtype=np.float64,
+            shape=(length,),
+            elements=st.floats(
+                min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
+                max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+            ),
+            fill=st.just(0.0),
+        )
+    )
 
+
+@st.composite
+def all_negative_default_attention_system_weights(
+    draw: st.DrawFn, length: int
+) -> npt.NDArray[np.floating]:
+    return draw(
+        arrays(
+            dtype=np.float64,
+            shape=(length,),
+            elements=st.floats(
+                min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
+                max_value=0.0,
+                exclude_max=True,
+            ),
+            fill=st.just(0.0),
+        )
+    )
+
+
+@st.composite
+def all_positive_default_attention_system_weights(
+    draw: st.DrawFn, length: int
+) -> npt.NDArray[np.floating]:
+    return draw(
+        arrays(
+            dtype=np.float64,
+            shape=(length,),
+            elements=st.floats(
+                min_value=0.0,
+                max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+                exclude_min=True,
+            ),
+            fill=st.just(0.0),
+        )
+    )
+
+
+@st.composite
+def with_positive_default_attention_system_weights(
+    draw: st.DrawFn, length: int
+) -> npt.NDArray[np.floating]:
+    if length <= 1:
+        return draw(
+            arrays(
+                dtype=np.float64,
+                shape=(length,),
+                elements=st.floats(
+                    min_value=0.0,
+                    max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+                    exclude_min=True,
+                ),
+                fill=st.just(0.0),
+            )
+        )
+    default = length // 2
+    positive = length - default
+    default_weights = draw(default_attention_system_weights(default))
+    positive_weights = draw(all_positive_default_attention_system_weights(positive))
+    return np.concatenate([default_weights, positive_weights])
+
+
+@st.composite
+def with_negative_default_attention_system_weights(
+    draw: st.DrawFn, length: int
+) -> npt.NDArray[np.floating]:
+    if length <= 1:
+        return draw(
+            arrays(
+                dtype=np.float64,
+                shape=(length,),
+                elements=st.floats(
+                    min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
+                    max_value=0.0,
+                    exclude_max=True,
+                ),
+                fill=st.just(0.0),
+            )
+        )
+    default = length // 2
+    negative = length - default
+    default_weights = draw(default_attention_system_weights(default))
+    negative_weights = draw(all_negative_default_attention_system_weights(negative))
+    return np.concatenate([default_weights, negative_weights])
 
 
 @st.composite
@@ -93,6 +194,15 @@ def unique_voxels(draw: st.DrawFn, min_voxels: int = 0) -> list[Voxel]:
         )
     )
 
+@st.composite
+def potato(draw: st.DrawFn) -> tuple[VoxelGrid, npt.NDArray[np.floating]]:
+    voxel_grid = draw(
+        default_voxel_grid(
+            voxels_strategy=unique_voxels(min_voxels=1),
+            weights_strategy=all_negative_default_attention_system_weights,
+        )
+    )
+    return voxel_grid, voxel_grid.weights
 
 # TODO: delete if unused once attention tests are completed
 # @st.composite
@@ -138,7 +248,9 @@ def default_voxel_grid(
     draw: st.DrawFn,
     voxel_size_strategy: st.SearchStrategy[float] = voxel_sizes,
     voxels_strategy: st.SearchStrategy[list[Voxel]] | None = None,
-    weights_strategy: st.SearchStrategy[npt.NDArray[np.floating]] | None = None,
+    weights_strategy: Callable[
+        [int], st.SearchStrategy[npt.NDArray[np.floating]]
+    ] = default_attention_system_weights,
 ) -> VoxelGrid:
     """Constructs a voxel grid with a set of weights.
 
@@ -149,17 +261,7 @@ def default_voxel_grid(
 
     voxel_size = draw(voxel_size_strategy)
     voxels = draw(voxels_strategy)
-    if weights_strategy is None:
-        weights_strategy = arrays(
-            dtype=np.float64,
-            shape=(len(voxels),),
-            elements=st.floats(
-                min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
-                max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
-            ),
-            fill=st.just(0.0),
-        )
-    weights = draw(weights_strategy)
+    weights = draw(weights_strategy(len(voxels)))
     return VoxelGrid(
         voxel_size=voxel_size,
         voxels=voxels,
