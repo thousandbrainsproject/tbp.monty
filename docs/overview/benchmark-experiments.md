@@ -160,7 +160,7 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 > | compositional_objects_1.4_random_locs | tgz | [compositional_objects_1.4_random_locs.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz) |
 > | compositional_objects_1.4_random_locs | zip | [compositional_objects_1.4_random_locs.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip) |
 >
-> Both COWS Small and COWS Large use the standard dataset. The random-location dataset is only required for the large `random_locs` experiments.
+> Both COWS Small and COWS Large use `compositional_objects_1.4`. The COWS Large `random_locs` experiments additionally require `compositional_objects_1.4_random_locs` for evaluation.
 >
 > Unpack the archive in the `~/tbp/data/habitat/versioned_data/` folder. For example:
 >
