@@ -185,9 +185,20 @@ experiment:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       wandb_group: gm_eval_runs
     telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
       loggers:
         telemetry.tbp.monty:
           level: INFO
+          handlers:
+          - telemetry_console
     show_sensor_output: true
     n_train_epochs: 3
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train_mujoco/pretrained"}

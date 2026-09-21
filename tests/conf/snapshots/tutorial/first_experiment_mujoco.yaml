@@ -137,9 +137,20 @@ experiment:
         handlers: []
       run_name: first_experiment_mujoco
     telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
       loggers:
         telemetry.tbp.monty:
           level: INFO
+          handlers:
+          - telemetry_console
     show_sensor_output: false
     n_train_epochs: 1
     n_eval_epochs: 3
