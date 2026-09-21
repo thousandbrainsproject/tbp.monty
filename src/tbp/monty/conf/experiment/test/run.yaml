@@ -9,7 +9,7 @@ defaults:
   - /environment: test_habitat_ycb_agent
   - /env_interface: test_train_eval
   - /env_interface/transform: none
-  - /termination: test_any1_maximumsteps_t10_e5
+  - /termination: test_any1_maxtotalsteps_10
   - /logging: test_info_monty_runs
 
 experiment:

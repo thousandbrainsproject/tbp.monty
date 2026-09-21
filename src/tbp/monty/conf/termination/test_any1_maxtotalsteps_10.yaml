@@ -7,6 +7,5 @@ recognition_policy:
   _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
   policies:
   - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
-  - _target_: tbp.monty.experiment.recognition_policy.MaximumSteps
-    max_train_steps: 10
-    max_eval_steps: 5
+  - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
+    max_total_steps: 10
