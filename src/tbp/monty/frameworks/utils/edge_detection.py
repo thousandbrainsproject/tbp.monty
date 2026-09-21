@@ -127,7 +127,7 @@ class StructureTensor:
         lambda_diff = lambda_max - lambda_min
         if lambda_diff < DEFAULT_TOLERANCE:
             return 0.0
-        return lambda_diff / (lambda_max + lambda_min)
+        return np.clip(lambda_diff / (lambda_max + lambda_min), 0.0, 1.0)
 
     @property
     def edge_angle(self) -> float:
