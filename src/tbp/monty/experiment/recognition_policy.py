@@ -115,7 +115,7 @@ class MaxTotalSteps(RecognitionPolicy):
 
 
 class MaximumSteps(RecognitionPolicy):
-    """`step >= {max_train_steps | max_eval_steps}`."""
+    """`model.matching_steps >= {max_train_steps | max_eval_steps}`."""
 
     _max_train_steps: int
     """The maximum steps to take in training mode."""
@@ -144,7 +144,7 @@ class MaximumSteps(RecognitionPolicy):
 
     def __call__(
         self: Self,
-        model: MontyBase,  # noqa: ARG002
+        model: MontyBase,
         count: RecognitionCounter,
     ) -> RecognitionResult:
         max_steps = (
@@ -152,8 +152,12 @@ class MaximumSteps(RecognitionPolicy):
             if count.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        is_done = count.step >= max_steps
+        is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
+        if is_done:
+            logger.info(f"Terminated due to maximum matching steps : {max_steps}")
+            model.deal_with_time_out()
         return RecognitionResult(is_done=is_done)
+
 
 
 class MinimumLMs(RecognitionPolicy):

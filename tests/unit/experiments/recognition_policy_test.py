@@ -127,35 +127,63 @@ class MaximumStepsTest(unittest.TestCase):
             MaximumSteps(1, max_eval_steps)
 
     @given(
-        step=st.integers(min_value=0),
+        is_done=st.booleans(),
+        matching_steps=st.integers(min_value=0),
         max_steps=st.integers(min_value=1),
     )
-    def test_times_out_at_or_after_max_steps(self, step: int, max_steps: int) -> None:
-        model = MagicMock()
+    def test_times_out_at_or_after_max_steps(
+        self, is_done: bool, matching_steps: int, max_steps: int
+    ) -> None:
+        model = _model_with_recognition(
+            is_done, is_exploring=False, matching_steps=matching_steps
+        )
         policy = MaximumSteps(max_steps, max_steps)
-        count = RecognitionCounter(step)
+        count = RecognitionCounter()
         result = policy(model, count)
-        is_done = step >= max_steps
+        is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
-        model.assert_not_called()
 
     @given(
-        step=st.integers(min_value=0),
+        is_done=st.booleans(),
+        matching_steps=st.integers(min_value=0),
+        max_steps=st.integers(min_value=1),
+    )
+    def test_no_timeout_if_is_exploring(
+        self,
+        is_done: bool,
+        matching_steps: int,
+        max_steps: int,
+    ) -> None:
+        model = _model_with_recognition(
+            is_done=is_done, is_exploring=True, matching_steps=matching_steps
+        )
+        policy = MaximumSteps(max_steps, max_steps)
+        count = RecognitionCounter()
+        result = policy(model, count)
+        self.assertFalse(result.is_done)
+
+    @given(
+        matching_steps=st.integers(min_value=0),
         mode=st.sampled_from(ExperimentMode),
         max_train_steps=st.integers(min_value=1),
         max_eval_steps=st.integers(min_value=1),
     )
     def test_selects_max_steps_by_mode(
-        self, step: int, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
+        self,
+        matching_steps: int,
+        mode: ExperimentMode,
+        max_train_steps: int,
+        max_eval_steps: int,
     ) -> None:
         max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
-        model = MagicMock()
+        model = _model_with_recognition(
+            is_done=False, is_exploring=False, matching_steps=matching_steps
+        )
         policy = MaximumSteps(max_train_steps, max_eval_steps)
-        count = RecognitionCounter(step, mode)
+        count = RecognitionCounter(0, mode)
         result = policy(model, count)
-        is_done = step >= max_steps
+        is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
-        model.assert_not_called()
 
 
 class MinimumLMsTest(unittest.TestCase):
@@ -166,7 +194,7 @@ class MinimumLMsTest(unittest.TestCase):
 
     @given(
         conclusions=st.lists(
-            st.one_of(st.just(None), st.sampled_from(RecognitionConclusion)),
+            st.one_of(st.none(), st.sampled_from(RecognitionConclusion)),
             min_size=1,
             max_size=20,
         ),
