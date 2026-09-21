@@ -16,7 +16,7 @@ jobs:
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           lfs: true
@@ -34,7 +34,7 @@ jobs:
           echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.8"
 
@@ -88,4 +88,4 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
-          python -m tools.github_readme_sync.cli delete "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}" 
+          python -m tools.github_readme_sync.cli delete "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
