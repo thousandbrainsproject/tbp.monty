@@ -357,3 +357,19 @@ class TestReq(unittest.TestCase):
             headers={"Authorization": "Bearer test_api_key"},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
+
+    @patch("tools.github_readme_sync.req._SESSION.delete")
+    def test_delete_404_returns_none(self, mock_delete):
+        response = MagicMock()
+        response.status_code = 404
+        response.text = "Not Found"
+        mock_delete.return_value = response
+
+        result = delete("https://api.example.com/data")
+
+        self.assertIsNone(result)
+        mock_delete.assert_called_once_with(
+            "https://api.example.com/data",
+            headers={"Authorization": "Bearer test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )

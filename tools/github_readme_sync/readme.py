@@ -676,7 +676,10 @@ class ReadMe:
 
     def delete_version(self):
         delete(f"{API_PREFIX}/branches/{self.version}")
-        logger.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
+        logger.info(
+            f"{GREEN}Successfully deleted version {self.version} "
+            f"or confirmed it was already absent{RESET}"
+        )
 
     def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:
         return identifier in ignore_list
