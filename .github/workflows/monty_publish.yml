@@ -19,12 +19,12 @@ jobs:
       labels: tbp-linux-x64-ubuntu2204-4core
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           path: tbp.monty
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Version updated
@@ -78,12 +78,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           path: tbp.monty
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Version updated
@@ -141,7 +141,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           path: tbp.monty
