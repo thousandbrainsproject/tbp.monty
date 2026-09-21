@@ -10,12 +10,13 @@
 """Structured telemetry framework built upon the `logging` module.
 
 Provides a structured telemetry module that emits inline telemetry events routed through
-standard Python `logging` mechanics. Telemetry schemas and events are passed via the
-``extra`` parameter of `logging.Logger.log` and stored within the internal ``__dict__``
-of `logging.LogRecord` objects.
+standard Python `logging` mechanics. Telemetry schemas are passed as the log message
+(``msg``) to `logging.Logger.log`, so handlers receive them as ``record.msg``.
+``record.getMessage()`` returns ``schema.kind``.
 
 The telemetry level must be configured via the experiment config YAML. Easiest is adding
-"  - /telemetry: info" under "defaults:". Available configs are "info", "debug", "none".
+"  - /telemetry: info" under "defaults:". Available configs are "debug", "info",
+"warning", "error", "critical".
 
 The global level is defined via the ``telemetry.tbp.monty`` logger. It can be overridden
 on a per-module basis.
@@ -41,6 +42,13 @@ Usage example::
     telemeter = telemetry.getTelemeter(__name__)
     telemeter.info(TelemetryEvent(kind="CustomEvent", your_key="your_value", ...))
     telemeter.debug(TelemetryEvent(kind="DebugEvent", ...))
+
+Handler example::
+
+    class MyHandler(logging.Handler):
+        def emit(self, record):
+            event = record.msg  # the TelemetryEvent instance
+            ...
 """
 
 import logging
@@ -89,7 +97,7 @@ class _TelemetryLoggerFactory(logging.Logger):
     _manager_logger_class: ClassVar = logging.Logger.manager.loggerClass
 
     def __new__(cls, name, *args, **kwargs) -> logging.Logger:  # type: ignore[misc]
-        # TODO telemetry: add "snapshots." here in the future
+        # TODO: add "snapshots." here in the future
         if name.startswith("telemetry."):
             return _TelemetryPublisher(name, *args, **kwargs)
 

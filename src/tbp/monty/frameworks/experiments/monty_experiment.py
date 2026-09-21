@@ -22,7 +22,6 @@ import torch
 from omegaconf import DictConfig
 from typing_extensions import Self
 
-from tbp.monty import telemetry
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
     Interface,
@@ -53,7 +52,6 @@ from tbp.monty.memento import Memento
 __all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
-telemeter = telemetry.getTelemeter("tbp.monty")
 
 
 class MontyExperiment:

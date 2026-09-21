@@ -35,6 +35,9 @@ class TelemetrySchema(BaseModel):
     def validate_kind(cls, value):
         return value or cls.__name__  # schema class name fallback
 
+    def __str__(self) -> str:
+        return self.kind
+
 
 class TelemetryEvent(TelemetrySchema):
     """Base model class for telemetry events; carries instantaneous data changes."""

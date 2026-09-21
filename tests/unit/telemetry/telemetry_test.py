@@ -95,14 +95,15 @@ class TelemetryPublisherTest(unittest.TestCase):
         ]
 
         for log_func, _, event in events:
-            log_func(event)
+            log_func(event, stack_info=True)
 
         self.assertEqual(len(self.handler.records), len(events))
 
         for record, (_, level, event) in zip(self.handler.records, events):
+            print(record.stack_info)
             self.assertEqual(record.levelno, level)
-            self.assertEqual(record.msg, event.kind)
-            self.assertIs(record.__dict__.get("telemetry_schema"), event)
+            self.assertEqual(str(record.msg), event.kind)
+            self.assertIs(record.msg, event)
 
     @staticmethod
     def _instantiate_experiment(telemetry_profile: str) -> MontyExperiment:
@@ -131,8 +132,20 @@ class TelemetryPublisherTest(unittest.TestCase):
             self.assertEqual(self.telemeter.getEffectiveLevel(), logging.INFO)
             self.assertEqual(len(self.handler.records), 1)
 
-    def test_none_config(self):
-        """Verify behavior of Hydra config ``telemetry=none``."""
-        with self._instantiate_experiment("none"):
-            self.telemeter.info(TelemetryEvent(kind="TestEvent"))
-            self.assertEqual(len(self.handler.records), 0)
+    def test_warning_config(self):
+        """Verify behavior of Hydra config ``telemetry=warning``."""
+        with self._instantiate_experiment("warning"):
+            self.telemeter.warning(TelemetryEvent(kind="TestEvent"))
+            self.assertEqual(len(self.handler.records), 1)
+
+    def test_error_config(self):
+        """Verify behavior of Hydra config ``telemetry=error``."""
+        with self._instantiate_experiment("error"):
+            self.telemeter.error(TelemetryEvent(kind="TestEvent"))
+            self.assertEqual(len(self.handler.records), 1)
+
+    def test_critical_config(self):
+        """Verify behavior of Hydra config ``telemetry=critical``."""
+        with self._instantiate_experiment("critical"):
+            self.telemeter.critical(TelemetryEvent(kind="TestEvent"))
+            self.assertEqual(len(self.handler.records), 1)
