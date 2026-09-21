@@ -1,5 +1,16 @@
 # @package experiment.config.telemetry
 
+formatters:
+  telemetry_formatter:
+    class: tbp.monty.telemetry.formatters.JsonFormatter
+handlers:
+  telemetry_console:
+    class: logging.StreamHandler
+    formatter: telemetry_formatter
+    level: INFO
+    stream: ext://sys.stdout
 loggers:
   telemetry.tbp.monty:
     level: INFO
+    handlers:
+      - telemetry_console

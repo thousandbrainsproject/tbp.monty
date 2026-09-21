@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+import io
+import json
 import logging
 import unittest
 
@@ -19,6 +21,7 @@ from tbp.monty import telemetry
 from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.models import monty_base
 from tbp.monty.hydra import instantiate_experiment
+from tbp.monty.telemetry.formatters import JsonFormatter
 from tbp.monty.telemetry.publishers import TelemetryPublisher
 from tbp.monty.telemetry.schemas import TelemetryEvent
 from tests import HYDRA_ROOT
@@ -40,7 +43,13 @@ class TelemetryLogHandler(logging.Handler):
         self.records.append(record)
 
 
-class TelemetryEventTest(unittest.TestCase):
+class LoggerTestCase(unittest.TestCase):
+    def setUp(self):
+        # Clean up all loggers
+        logging.Logger.manager.loggerDict.clear()
+
+
+class TelemetryEventTest(LoggerTestCase):
     """Unit tests for `TelemetryEvent`."""
 
     def test_telemetry_event_defaults(self):
@@ -57,15 +66,72 @@ class TelemetryEventTest(unittest.TestCase):
         self.assertEqual(event.graph_id, graph_id)
 
 
-class TelemetryPublisherTest(unittest.TestCase):
+class JsonFormatterTest(LoggerTestCase):
+    """Unit tests for `JsonFormatter`."""
+
+    def setUp(self):
+        super().setUp()
+        telemetry.getTelemeter("tbp.monty").setLevel(logging.NOTSET)
+        self.telemeter = telemetry.getTelemeter(monty_base.__name__)
+        self.telemeter.setLevel(logging.NOTSET)
+
+    def test_format(self):
+        """Verify `JsonFormatter` formats a LogRecord into expected JSON."""
+        event = TelemetryEvent(kind="CustomEvent", graph_id="obj_1")
+        record = logging.LogRecord(
+            name="telemetry.test",
+            level=logging.INFO,
+            pathname=__file__,
+            lineno=42,
+            msg=event,
+            args=(),
+            exc_info=None,
+            func="test_format",
+        )
+
+        formatter = JsonFormatter()
+        output = formatter.format(record)
+        data = json.loads(output)
+
+        expected = {
+            "level": "INFO",
+            "name": "telemetry.test",
+            "funcName": "test_format",
+            "lineno": 42,
+            **event.model_dump(mode="json"),
+        }
+        self.assertEqual(data, expected)
+
+    def test_json_formatter(self):
+        """Verify `JsonFormatter` formats output when used by a logging handler."""
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(JsonFormatter())
+
+        self.telemeter.setLevel(logging.INFO)
+        self.telemeter.addHandler(handler)
+        try:
+            event = TelemetryEvent(kind="StreamEvent", graph_id="obj_1")
+            self.telemeter.info(event)
+            output = stream.getvalue()
+            data = json.loads(output)
+
+            self.assertEqual(data["level"], "INFO")
+            self.assertEqual(data["kind"], "StreamEvent")
+            self.assertEqual(data["graph_id"], "obj_1")
+        finally:
+            self.telemeter.removeHandler(handler)
+
+
+class TelemetryPublisherTest(LoggerTestCase):
     """Unit tests for `TelemetryPublisher`."""
 
     def setUp(self):
+        super().setUp()
         telemetry.getTelemeter("tbp.monty").setLevel(logging.NOTSET)
         self.handler = TelemetryLogHandler()
         self.telemeter = telemetry.getTelemeter(monty_base.__name__)
         self.telemeter.setLevel(logging.NOTSET)
-        self.telemeter.addHandler(self.handler)
 
     def tearDown(self):
         self.telemeter.removeHandler(self.handler)
@@ -75,11 +141,11 @@ class TelemetryPublisherTest(unittest.TestCase):
         self.assertIsInstance(self.telemeter, TelemetryPublisher)
         self.assertEqual(self.telemeter.name, f"telemetry.{monty_base.__name__}")
         self.assertFalse(self.telemeter.propagate)
-        self.assertTrue(self.telemeter.hasHandlers())
 
     def test_events(self):
         """Verify emitting events produces log records with telemetry schemas."""
         self.telemeter.setLevel(logging.DEBUG)
+        self.telemeter.addHandler(self.handler)
 
         events = [
             (
@@ -120,6 +186,7 @@ class TelemetryPublisherTest(unittest.TestCase):
     def test_debug_config(self):
         """Verify behavior of Hydra config ``telemetry=debug``."""
         with self._instantiate_experiment("debug"):
+            self.telemeter.addHandler(self.handler)
             self.telemeter.debug(TelemetryEvent(kind="TestEvent"))
             self.assertEqual(self.telemeter.getEffectiveLevel(), logging.DEBUG)
             self.assertEqual(len(self.handler.records), 1)
@@ -127,6 +194,7 @@ class TelemetryPublisherTest(unittest.TestCase):
     def test_info_config(self):
         """Verify behavior of Hydra config ``telemetry=info``."""
         with self._instantiate_experiment("info"):
+            self.telemeter.addHandler(self.handler)
             self.telemeter.debug(TelemetryEvent(kind="TestEvent"))
             self.telemeter.info(TelemetryEvent(kind="TestEvent"))
             self.assertEqual(self.telemeter.getEffectiveLevel(), logging.INFO)
@@ -135,17 +203,20 @@ class TelemetryPublisherTest(unittest.TestCase):
     def test_warning_config(self):
         """Verify behavior of Hydra config ``telemetry=warning``."""
         with self._instantiate_experiment("warning"):
+            self.telemeter.addHandler(self.handler)
             self.telemeter.warning(TelemetryEvent(kind="TestEvent"))
             self.assertEqual(len(self.handler.records), 1)
 
     def test_error_config(self):
         """Verify behavior of Hydra config ``telemetry=error``."""
         with self._instantiate_experiment("error"):
+            self.telemeter.addHandler(self.handler)
             self.telemeter.error(TelemetryEvent(kind="TestEvent"))
             self.assertEqual(len(self.handler.records), 1)
 
     def test_critical_config(self):
         """Verify behavior of Hydra config ``telemetry=critical``."""
         with self._instantiate_experiment("critical"):
+            self.telemeter.addHandler(self.handler)
             self.telemeter.critical(TelemetryEvent(kind="TestEvent"))
             self.assertEqual(len(self.handler.records), 1)
