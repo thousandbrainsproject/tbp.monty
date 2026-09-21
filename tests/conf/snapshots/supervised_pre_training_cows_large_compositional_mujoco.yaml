@@ -426,11 +426,11 @@ experiment:
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
-      run_name: supervised_pre_training_cows_large_compositional_mujoco
+      run_name: supervised_pre_training_cows_large_compositional
     show_sensor_output: false
     n_train_epochs: ${constants.rotations_cube_faces_count}
     n_eval_epochs: 3
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_cows_large_2d_children_mujoco/pretrained/}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_cows_large_2d_children/pretrained/}
     seed: 42
     supervised_lm_ids:
     - learning_module_2

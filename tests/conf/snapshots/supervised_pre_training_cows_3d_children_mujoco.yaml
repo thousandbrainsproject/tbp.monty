@@ -312,7 +312,7 @@ experiment:
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
-      run_name: supervised_pre_training_cows_3d_children_mujoco
+      run_name: supervised_pre_training_cows_3d_children
     show_sensor_output: false
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3

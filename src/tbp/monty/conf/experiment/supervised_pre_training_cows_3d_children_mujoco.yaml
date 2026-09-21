@@ -27,4 +27,4 @@ experiment:
       env_init_args:
         data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
     logging:
-      run_name: supervised_pre_training_cows_3d_children_mujoco
+      run_name: supervised_pre_training_cows_3d_children
