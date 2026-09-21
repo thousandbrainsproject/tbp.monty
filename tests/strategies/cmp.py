@@ -109,3 +109,20 @@ def goals(
             )
         )
     )
+
+
+@st.composite
+def goals_at(
+    draw: st.DrawFn,
+    locations: list[npt.NDArray[np.floating]],
+) -> list[Goal]:
+    out = []
+    for location in locations:
+        out.append(
+            draw(
+                goal(
+                    location_strategy=st.just(location),
+                )
+            )
+        )
+    return out

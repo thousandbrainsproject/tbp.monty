@@ -8,15 +8,19 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Callable, Literal
 
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
 from tbp.monty.attention.attention_system import DefaultAttentionSystem
 from tbp.monty.attention.voxel_grid import Voxel, VoxelGrid
+from tbp.monty.cmp import Goal
+from tests.strategies.cmp import goals_at
 
 MIN_POINT_COORDINATE = -10
 MAX_POINT_COORDINATE = 10
@@ -160,14 +164,17 @@ def with_negative_default_attention_system_weights(
 
 
 @st.composite
-def unique_voxels(draw: st.DrawFn, min_voxels: int = 0) -> list[Voxel]:
+def unique_voxels(
+    draw: st.DrawFn,
+    min_voxels: int = 0,
+    min_voxel_coord: int = MIN_VOXEL_COORDINATE,
+    max_voxel_coord: int = MAX_VOXEL_COORDINATE,
+) -> list[Voxel]:
     """Draw a list of unique voxels.
 
     Returns:
         List of unique voxel coordinates.
     """
-    min_voxel_coord = MIN_VOXEL_COORDINATE
-    max_voxel_coord = MAX_VOXEL_COORDINATE
     voxel_axis_length = max_voxel_coord - min_voxel_coord + 1
 
     min_total_voxels = min_voxels
@@ -194,15 +201,137 @@ def unique_voxels(draw: st.DrawFn, min_voxels: int = 0) -> list[Voxel]:
         )
     )
 
+
+@dataclass
+class VoxelGridAndPoints:
+    voxel_grid: VoxelGrid
+    points_out_of_grid: npt.NDArray[np.floating]
+    points_in_negative_weight_grid: npt.NDArray[np.floating]
+    points_in_zero_weight_grid: npt.NDArray[np.floating]
+    points_in_positive_weight_grid: npt.NDArray[np.floating]
+
+
+@dataclass
+class VoxelGridAndGoals:
+    voxel_grid: VoxelGrid
+    goals_out_of_grid: list[Goal]
+    goals_in_negative_weight_grid: list[Goal]
+    goals_in_zero_weight_grid: list[Goal]
+    goals_in_positive_weight_grid: list[Goal]
+
+
 @st.composite
-def potato(draw: st.DrawFn) -> tuple[VoxelGrid, npt.NDArray[np.floating]]:
-    voxel_grid = draw(
+def points_in_voxels(
+    draw: st.DrawFn,
+    voxel_size: float,
+    voxels: pd.MultiIndex,
+) -> list[npt.NDArray[np.floating]]:
+    points = []
+    for voxel in list(voxels):
+        n_points_in_voxel = draw(
+            st.integers(min_value=1, max_value=MAX_POINTS_PER_VOXEL)
+        )
+        for _ in range(n_points_in_voxel):
+            voxel_offsets = draw(
+                arrays(
+                    dtype=np.float64,
+                    shape=(3,),
+                    elements=st.floats(
+                        min_value=VOXEL_EDGE_TOLERANCE,
+                        max_value=1 - VOXEL_EDGE_TOLERANCE,
+                        exclude_max=True,
+                    ),
+                )
+            )
+            point = (np.array(voxel, dtype=float) + voxel_offsets) * voxel_size
+            points.append(point)
+    return points
+
+
+@st.composite
+def voxel_grid_and_points(
+    draw: st.DrawFn,
+    weights_strategy: Callable[
+        [int], st.SearchStrategy[npt.NDArray[np.floating]]
+    ] = default_attention_system_weights,
+) -> VoxelGridAndPoints:
+    occuppied_voxel_limits = [MIN_VOXEL_COORDINATE, MAX_VOXEL_COORDINATE]
+    unoccuppied_voxel_limits = [MAX_VOXEL_COORDINATE + 1, MAX_VOXEL_COORDINATE + 10]
+
+    occuppied_voxel_grid = draw(
         default_voxel_grid(
-            voxels_strategy=unique_voxels(min_voxels=1),
-            weights_strategy=all_negative_default_attention_system_weights,
+            voxels_strategy=unique_voxels(
+                min_voxels=1,
+                min_voxel_coord=occuppied_voxel_limits[0],
+                max_voxel_coord=occuppied_voxel_limits[1],
+            ),
+            weights_strategy=weights_strategy,
         )
     )
-    return voxel_grid, voxel_grid.weights
+    unoccuppied_voxel_grid = draw(
+        default_voxel_grid(
+            voxels_strategy=unique_voxels(
+                min_voxels=1,
+                min_voxel_coord=unoccuppied_voxel_limits[0],
+                max_voxel_coord=unoccuppied_voxel_limits[1],
+            ),
+        )
+    )
+    voxel_size = occuppied_voxel_grid.voxel_size
+
+    unoccuppied_df = unoccuppied_voxel_grid.to_pandas()
+    points_out_of_grid = draw(
+        points_in_voxels(voxel_size=voxel_size, voxels=unoccuppied_df.index)
+    )
+
+    occuppied_df = occuppied_voxel_grid.to_pandas()
+    negative_voxels = (occuppied_df["weight"] < 0.0).index
+    points_in_negative_weight_grid = draw(
+        points_in_voxels(voxel_size=voxel_size, voxels=negative_voxels)
+    )
+
+    zero_voxels = (occuppied_df["weight"] == 0.0).index
+    points_in_zero_weight_grid = draw(
+        points_in_voxels(voxel_size=voxel_size, voxels=zero_voxels)
+    )
+
+    positive_voxels = (occuppied_df["weight"] > 0).index
+    points_in_positive_weight_grid = draw(
+        points_in_voxels(voxel_size=voxel_size, voxels=positive_voxels)
+    )
+
+    return VoxelGridAndPoints(
+        voxel_grid=occuppied_voxel_grid,
+        points_out_of_grid=points_out_of_grid,
+        points_in_negative_weight_grid=points_in_negative_weight_grid,
+        points_in_zero_weight_grid=points_in_zero_weight_grid,
+        points_in_positive_weight_grid=points_in_positive_weight_grid,
+    )
+
+
+@st.composite
+def out_of_grid_goals_pass_when_all_voxel_weights_are_negative(
+    draw: st.DrawFn,
+) -> VoxelGridAndGoals:
+    grid_and_points = draw(
+        voxel_grid_and_points(
+            weights_strategy=all_negative_default_attention_system_weights
+        )
+    )
+    return VoxelGridAndGoals(
+        voxel_grid=grid_and_points.voxel_grid,
+        goals_out_of_grid=draw(goals_at(grid_and_points.points_out_of_grid)),
+        goals_in_negative_weight_grid=draw(
+            goals_at(grid_and_points.points_in_negative_weight_grid)
+        ),
+        goals_in_zero_weight_grid=draw(
+            goals_at(grid_and_points.points_in_zero_weight_grid)
+        ),
+        goals_in_positive_weight_grid=draw(
+            goals_at(grid_and_points.points_in_positive_weight_grid)
+        ),
+    )
+
 
 # TODO: delete if unused once attention tests are completed
 # @st.composite
