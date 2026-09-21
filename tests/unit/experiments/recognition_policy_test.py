@@ -8,7 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import random
 import unittest
 from unittest.mock import MagicMock
 
@@ -166,21 +165,18 @@ class MinimumLMsTest(unittest.TestCase):
             MinimumLMs(min_lms)
 
     @given(
-        num_concluded=st.integers(min_value=0, max_value=10),
-        num_pending=st.integers(min_value=0, max_value=10),
-        min_lms=st.integers(min_value=1, max_value=10),
+        conclusions=st.lists(
+            st.one_of(st.just(None), st.sampled_from(RecognitionConclusion)),
+            min_size=1,
+            max_size=20,
+        ),
+        min_lms=st.integers(min_value=1, max_value=20),
     )
     def test_done_iff_conclusion_count_reaches_count(
-        self, num_concluded: int, num_pending: int, min_lms: int
+        self, conclusions: list[RecognitionConclusion | None], min_lms: int
     ) -> None:
-        match_options = list(RecognitionConclusion)
-        conclusions: list[RecognitionConclusion | None] = [
-            random.choice(match_options)  # noqa: S311
-            for _ in range(num_concluded)
-        ]
-        for _ in range(num_pending):
-            i = random.randint(0, len(conclusions))  # noqa: S311
-            conclusions.insert(i, None)
+        num_pending = conclusions.count(None)
+        num_concluded = len(conclusions) - num_pending
         model = _model_with_conclusions(conclusions)
         policy = MinimumLMs(min_lms)
         count = RecognitionCounter()
