@@ -31,7 +31,7 @@ All of the above can be run at the same time, in parallel.
 
 #### COWS Experiments
 
-Compositional Objects With Stickers (COWS) has small (19 objects) and large (119 objects) variants. Both use dataset 1.4 and share the five plain 3D children.
+Compositional Objects With Stickers (COWS) has small (19 objects) and large (119 objects) variants. Both use `compositional_objects_1.4` and share the five plain 3D children.
 
 Run shared 3D pretraining first, then each size's 2D children before its parent models.
 
