@@ -92,7 +92,6 @@ def all_negative_default_attention_system_weights(
                 max_value=0.0,
                 exclude_max=True,
             ),
-            fill=st.just(0.0),
         )
     )
 
@@ -110,7 +109,6 @@ def all_positive_default_attention_system_weights(
                 max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
                 exclude_min=True,
             ),
-            fill=st.just(0.0),
         )
     )
 
@@ -129,7 +127,6 @@ def with_positive_default_attention_system_weights(
                     max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
                     exclude_min=True,
                 ),
-                fill=st.just(0.0),
             )
         )
     default = length // 2
@@ -153,7 +150,6 @@ def with_negative_default_attention_system_weights(
                     max_value=0.0,
                     exclude_max=True,
                 ),
-                fill=st.just(0.0),
             )
         )
     default = length // 2
