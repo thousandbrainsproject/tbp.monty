@@ -86,6 +86,6 @@ class HardGoalFilter(GoalFilter):
         kept = [
             goal
             for goal, voxel_weight in zip(located, voxel_weights)
-            if voxel_weight > 0 or (all_inhibited and np.isnan(voxel_weight))
+            if voxel_weight >= 0 or (all_inhibited and np.isnan(voxel_weight))
         ]
         return kept + unlocated
