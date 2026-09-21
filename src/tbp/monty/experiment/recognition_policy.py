@@ -159,7 +159,6 @@ class MaximumSteps(RecognitionPolicy):
         return RecognitionResult(is_done=is_done)
 
 
-
 class MinimumLMs(RecognitionPolicy):
     """`min_lms` have reached a conclusion."""
 
