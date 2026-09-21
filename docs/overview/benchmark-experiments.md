@@ -185,7 +185,7 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 > unzip compositional_objects_1.4.zip
 > ```
 >
-> To generate the pretrained models, run the following experiments in order. train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
+> To generate the pretrained models, run the following experiments in order. Train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
 >
 > ```sh
 > python run.py experiment=supervised_pre_training_cows_3d_children
