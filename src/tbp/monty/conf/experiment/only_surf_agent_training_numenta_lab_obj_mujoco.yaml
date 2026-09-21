@@ -22,4 +22,4 @@ experiment:
     seed: 42
     supervised_lm_ids: all
     logging:
-      run_name: surf_agent_1lm_numenta_lab_obj_mujoco
+      run_name: surf_agent_1lm_numenta_lab_obj

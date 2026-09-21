@@ -116,7 +116,8 @@ github_readme_sync_tool = [
     'colorama',
     'markdown2',
     'python-slugify',
-    'nh3'
+    'nh3',
+    'urllib3'
 ]
 future_work_widget_tool = [
     'nh3',
