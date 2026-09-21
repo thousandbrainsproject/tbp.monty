@@ -16,7 +16,7 @@ Whether the receiving learning module (LM) uses the message at all, and whether 
 The location information and the feature information therefore share the same message type, and the LM has to flag the location-only step at the start of its matching and exploratory steps.
 
 Ideally, we want two kinds of messages that can be sent independently:
-- a location message that communicates the sensor location (or displacements) to the LMs.
+- a location message that communicates the sensor location (or displacements, see [Can We Change the CMP to Use Displacements Instead of Locations?](../voting-improvements/can-we-change-the-cmp-to-use-displacements-instead-of-locations.md)) to the LMs.
 - a feature message that communicates all the morphological and non-morphological features.
 
 An LM would update its hypotheses on every location message and only process features when a feature message arrives, which is what the flags currently allows us to do.

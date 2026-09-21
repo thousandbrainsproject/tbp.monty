@@ -3,7 +3,7 @@ title: Merge Input Channels in Learned Graphs
 description: Store a single graph per object in the learning module's memory, where each node can carry features from any input channel, instead of one graph per input channel.
 rfc: required
 estimated-scope: large
-improved-metric: compositional
+improved-metric: compositional, speed
 output-type: RFC, PR, monty-feature
 skills: python, refactoring, monty-advanced
 contributor: 
