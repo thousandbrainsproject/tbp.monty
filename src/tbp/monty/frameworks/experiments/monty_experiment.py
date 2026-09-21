@@ -270,7 +270,7 @@ class MontyExperiment:
             logging_config: Logging configuration.
             telemetry_config: Telemetry configuration.
         """
-        if telemetry_config:
+        if OmegaConf.is_config(telemetry_config):
             telemetry_config["version"] = 1
             telemetry_config["disable_existing_loggers"] = False
             logging.config.dictConfig(
