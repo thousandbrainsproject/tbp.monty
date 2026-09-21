@@ -150,8 +150,16 @@ def default_voxel_grid(
     voxel_size = draw(voxel_size_strategy)
     voxels = draw(voxels_strategy)
     if weights_strategy is None:
-        weights_strategy = valid_default_attention_system_weights
-    weights = draw(weights_strategy(len(voxels)))
+        weights_strategy = arrays(
+            dtype=np.float64,
+            shape=(len(voxels),),
+            elements=st.floats(
+                min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
+                max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+            ),
+            fill=st.just(0.0),
+        )
+    weights = draw(weights_strategy)
     return VoxelGrid(
         voxel_size=voxel_size,
         voxels=voxels,
