@@ -110,8 +110,6 @@ class MaxTotalSteps(RecognitionPolicy):
         model: MontyBase,  # noqa: ARG002
         count: RecognitionCounter,
     ) -> RecognitionResult:
-        # Even if many exploratory steps have not sent information to learning
-        # modules (so is_done remains False), eventually terminate exploration
         is_done = count.step >= self._max_total_steps
         return RecognitionResult(is_done=is_done)
 
@@ -172,7 +170,7 @@ class MinimumLMs(RecognitionPolicy):
                 the policy to be satisfied.
 
         Raises:
-            ValueError: If `min_lms`is not positive.
+            ValueError: If `min_lms` is not positive.
         """
         if min_lms <= 0:
             raise ValueError("min_lms must be positive")
@@ -215,8 +213,8 @@ class NaiveScan(RecognitionPolicy):
         if fixed_amount <= 0:
             raise ValueError("fixed_amount must be positive")
 
-        k = math.ceil(90 / fixed_amount)  # arm length when angular extent >= 90
-        self._step_limit = k * (k - 1) + 1  # 0 when k <= 1 (i.e.: fixed_amount >= 90)
+        k = math.ceil(90 / fixed_amount)  # (>=90)->1, 10->9, 5->18, 1->90
+        self._step_limit = k * (k - 1) + 1  # 1->1, 9->73, 18->307, 90->8011
 
     def __call__(
         self: Self,
