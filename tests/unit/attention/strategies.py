@@ -56,17 +56,6 @@ voxel_sizes = st.floats(min_value=MIN_VOXEL_SIZE, max_value=MAX_VOXEL_SIZE)
 #     )
 
 
-def valid_default_attention_system_weights(
-    length: int,
-) -> st.SearchStrategy[npt.NDArray[np.floating]]:
-    return arrays(
-        dtype=np.float64,
-        shape=(length,),
-        elements=st.floats(
-            min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
-            max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
-        ),
-    )
 
 
 @st.composite
@@ -149,6 +138,7 @@ def default_voxel_grid(
     draw: st.DrawFn,
     voxel_size_strategy: st.SearchStrategy[float] = voxel_sizes,
     voxels_strategy: st.SearchStrategy[list[Voxel]] | None = None,
+    weights_strategy: st.SearchStrategy[npt.NDArray[np.floating]] | None = None,
 ) -> VoxelGrid:
     """Constructs a voxel grid with a set of weights.
 
@@ -159,7 +149,9 @@ def default_voxel_grid(
 
     voxel_size = draw(voxel_size_strategy)
     voxels = draw(voxels_strategy)
-    weights = draw(valid_default_attention_system_weights(len(voxels)))
+    if weights_strategy is None:
+        weights_strategy = valid_default_attention_system_weights
+    weights = draw(weights_strategy(len(voxels)))
     return VoxelGrid(
         voxel_size=voxel_size,
         voxels=voxels,

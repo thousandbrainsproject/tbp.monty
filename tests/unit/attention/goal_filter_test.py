@@ -12,10 +12,12 @@ import unittest
 from unittest.mock import MagicMock
 
 from hypothesis import given
+from hypothesis import strategies as st
 
-from tbp.monty.attention.goal_filter import NoopGoalFilter
+from tbp.monty.attention.goal_filter import HardGoalFilter, NoopGoalFilter
 from tbp.monty.cmp import Goal
 from tests.strategies.cmp import goals
+from tests.unit.attention.strategies import default_voxel_grid
 
 
 class NoopGoalFilterTest(unittest.TestCase):
@@ -25,8 +27,11 @@ class NoopGoalFilterTest(unittest.TestCase):
 
 
 class HardGoalFilterTest(unittest.TestCase):
-    def test_out_of_grid_goals_pass_when_grid_is_empty(self):
-        pass
+    @given(voxel_grid=default_voxel_grid(voxels_strategy=st.just([])), goals=goals())
+    def test_out_of_grid_goals_pass_when_grid_is_empty(
+        self, voxel_grid, goals: list[Goal]
+    ):
+        self.assertEqual(HardGoalFilter()(voxel_grid, goals), goals)
 
     def test_out_of_grid_goals_pass_when_all_voxel_weights_are_negative(self):
         pass

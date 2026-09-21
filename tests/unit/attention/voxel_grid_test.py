@@ -24,6 +24,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
+from tbp.monty.attention.attention_system import DefaultAttentionSystem
 from tbp.monty.attention.voxel_grid import (
     VOXEL_LEVELS,
     Voxel,
@@ -62,7 +63,7 @@ def voxelized_and_binned_points(
     draw: st.DrawFn,
     voxel_size_strategy: st.SearchStrategy[float] = strategies.voxel_sizes,
     weights_strategy: Callable[
-        [int], st.SearchStrategy
+        [int], st.SearchStrategy[npt.NDArray[np.floating]]
     ] = strategies.valid_default_attention_system_weights,
 ) -> VoxelizedAndBinnedPoints:
     """Construct a set of points that are known to lie inside specific voxels.
@@ -232,7 +233,15 @@ def voxel_grid_and_points(
     occupied_voxels = occupied_and_unoccupied_voxels[:num_occupied_voxels]
     unoccupied_voxels = occupied_and_unoccupied_voxels[num_occupied_voxels:]
     occupied_voxel_weights = draw(
-        strategies.valid_default_attention_system_weights(len(occupied_voxels))
+        arrays(
+            dtype=np.float64,
+            shape=(len(occupied_voxels),),
+            elements=st.floats(
+                min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
+                max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+            ),
+            fill=st.just(0.0),
+        )
     )
     voxel_grid = VoxelGrid(
         voxel_size=voxel_size,
