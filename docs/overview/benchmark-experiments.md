@@ -144,7 +144,7 @@ The accuracy, Used MLH, average rotation error, and average prediction error in 
 
 #### COWS Large
 
-`cows_large` contains 119 objects: the original 19 plus 100 additional compositional objects. Its 2D child LM learns seven stickers: the two logos plus square, circle, triangle, star, and heart.
+`cows_large` contains 119 objects: the 19 objects in `cows_small` plus 100 additional compositional objects. Its 2D child LM learns seven stickers: the two logos plus square, circle, triangle, star, and heart.
 
 The `random_locs` experiments evaluate only the 100 additional objects with changed sticker locations, using three predefined orientations (300 episodes) and the standard-location pretrained models.
 
