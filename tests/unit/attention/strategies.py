@@ -200,15 +200,6 @@ def unique_voxels(
 
 
 @dataclass
-class VoxelGridAndPoints:
-    voxel_grid: VoxelGrid
-    points_out_of_grid: list[npt.NDArray[np.floating]]
-    points_in_negative_weight_grid: list[npt.NDArray[np.floating]]
-    points_in_zero_weight_grid: list[npt.NDArray[np.floating]]
-    points_in_positive_weight_grid: list[npt.NDArray[np.floating]]
-
-
-@dataclass
 class VoxelGridAndGoals:
     voxel_grid: VoxelGrid
     goals_out_of_grid: list[Goal]
@@ -246,12 +237,12 @@ def points_in_voxels(
 
 
 @st.composite
-def voxel_grid_and_points(
+def voxel_grid_and_goals(
     draw: st.DrawFn,
     weights_strategy: Callable[
         [int], st.SearchStrategy[npt.NDArray[np.floating]]
     ] = default_attention_system_weights,
-) -> VoxelGridAndPoints:
+) -> VoxelGridAndGoals:
     occuppied_voxel_limits = [MIN_VOXEL_COORDINATE, MAX_VOXEL_COORDINATE]
     unoccuppied_voxel_limits = [MAX_VOXEL_COORDINATE + 1, MAX_VOXEL_COORDINATE + 10]
 
@@ -296,36 +287,12 @@ def voxel_grid_and_points(
     points_in_positive_weight_grid = draw(
         points_in_voxels(voxel_size=voxel_size, voxels=positive_voxels)
     )
-
-    return VoxelGridAndPoints(
-        voxel_grid=occuppied_voxel_grid,
-        points_out_of_grid=points_out_of_grid,
-        points_in_negative_weight_grid=points_in_negative_weight_grid,
-        points_in_zero_weight_grid=points_in_zero_weight_grid,
-        points_in_positive_weight_grid=points_in_positive_weight_grid,
-    )
-
-
-@st.composite
-def voxel_grid_and_goals(
-    draw: st.DrawFn,
-    weights_strategy: Callable[
-        [int], st.SearchStrategy[npt.NDArray[np.floating]]
-    ] = default_attention_system_weights,
-) -> VoxelGridAndGoals:
-    grid_and_points = draw(voxel_grid_and_points(weights_strategy=weights_strategy))
     return VoxelGridAndGoals(
-        voxel_grid=grid_and_points.voxel_grid,
-        goals_out_of_grid=draw(goals_at(grid_and_points.points_out_of_grid)),
-        goals_in_negative_weight_grid=draw(
-            goals_at(grid_and_points.points_in_negative_weight_grid)
-        ),
-        goals_in_zero_weight_grid=draw(
-            goals_at(grid_and_points.points_in_zero_weight_grid)
-        ),
-        goals_in_positive_weight_grid=draw(
-            goals_at(grid_and_points.points_in_positive_weight_grid)
-        ),
+        voxel_grid=occuppied_voxel_grid,
+        goals_out_of_grid=draw(goals_at(points_out_of_grid)),
+        goals_in_negative_weight_grid=draw(goals_at(points_in_negative_weight_grid)),
+        goals_in_zero_weight_grid=draw(goals_at(points_in_zero_weight_grid)),
+        goals_in_positive_weight_grid=draw(goals_at(points_in_positive_weight_grid)),
     )
 
 
