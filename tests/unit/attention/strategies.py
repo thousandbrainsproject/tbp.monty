@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Literal
+from typing import Callable
 
 import numpy as np
 import numpy.typing as npt
@@ -202,10 +202,10 @@ def unique_voxels(
 @dataclass
 class VoxelGridAndPoints:
     voxel_grid: VoxelGrid
-    points_out_of_grid: npt.NDArray[np.floating]
-    points_in_negative_weight_grid: npt.NDArray[np.floating]
-    points_in_zero_weight_grid: npt.NDArray[np.floating]
-    points_in_positive_weight_grid: npt.NDArray[np.floating]
+    points_out_of_grid: list[npt.NDArray[np.floating]]
+    points_in_negative_weight_grid: list[npt.NDArray[np.floating]]
+    points_in_zero_weight_grid: list[npt.NDArray[np.floating]]
+    points_in_positive_weight_grid: list[npt.NDArray[np.floating]]
 
 
 @dataclass
@@ -309,7 +309,9 @@ def voxel_grid_and_points(
 @st.composite
 def voxel_grid_and_goals(
     draw: st.DrawFn,
-    weights_strategy: st.SearchStrategy[float] = default_attention_system_weights,
+    weights_strategy: Callable[
+        [int], st.SearchStrategy[npt.NDArray[np.floating]]
+    ] = default_attention_system_weights,
 ) -> VoxelGridAndGoals:
     grid_and_points = draw(voxel_grid_and_points(weights_strategy=weights_strategy))
     return VoxelGridAndGoals(
@@ -380,7 +382,8 @@ def default_voxel_grid(
     Returns:
        Voxel grid.
     """
-    voxels_strategy = voxels_strategy or unique_voxels()
+    if voxels_strategy is None:
+        voxels_strategy = unique_voxels()
 
     voxel_size = draw(voxel_size_strategy)
     voxels = draw(voxels_strategy)
