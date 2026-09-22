@@ -53,7 +53,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
 
     @classmethod
     def expire(cls, grid: VoxelGrid) -> VoxelGrid:
-        """Returns the grid with voxels close enough to zero removed."""
+        """Returns the grid removing voxels with weights close enough to zero."""
         data = grid.to_pandas()
         if len(data) == 0:
             return grid
