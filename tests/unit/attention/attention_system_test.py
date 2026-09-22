@@ -10,12 +10,17 @@ from __future__ import annotations
 
 import unittest
 
+import hypothesis
 import numpy as np
 import pandas as pd
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tbp.monty.attention.attention_system import AttentionRegion, NoopAttentionSystem
+from tbp.monty.attention.attention_system import (
+    AttentionRegion,
+    DefaultAttentionSystem,
+    NoopAttentionSystem,
+)
 from tbp.monty.attention.decay import LinearWeightDecay, NoopDecay
 from tbp.monty.attention.voxel_grid import (
     VoxelGrid,
@@ -50,3 +55,18 @@ class NoopAttentionSystemTest(unittest.TestCase):
         system = NoopAttentionSystem()
         memento = system.state_dict()
         self.assertDictEqual(memento, {})
+
+
+class DefaultAttentionSystemTest(unittest.TestCase):
+    @given(grid=strategies.default_voxel_grid())
+    def test_expire_removes_voxels_with_weights_below_weight_expiration_tolerance(
+        self, grid: VoxelGrid
+    ):
+        hypothesis.note(grid.to_pandas()["weight"])
+        result = DefaultAttentionSystem.expire(grid)
+        self.assertFalse(
+            (
+                result.to_pandas()["weight"].abs()
+                < DefaultAttentionSystem.WEIGHT_EXPIRATION_TOLERANCE
+            ).any()
+        )
