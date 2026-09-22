@@ -11,6 +11,9 @@ from __future__ import annotations
 
 from typing import ClassVar, Protocol, Sequence
 
+import numpy as np
+
+from tbp.monty.attention.voxel_grid import VoxelGrid
 from tbp.monty.cmp import AttentionRegion, Goal
 from tbp.monty.memento import Memento
 
@@ -45,6 +48,19 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
     """Full inhibition."""
     MAX_ATTENTION_WEIGHT: ClassVar[float] = 1.0
     """Full excitation."""
+    WEIGHT_EXPIRATION_TOLERANCE: ClassVar[float] = 1e-6
+    """Voxels whose weight magnitude falls below this are expired from the grid."""
+
+    @classmethod
+    def expire(cls, grid: VoxelGrid) -> VoxelGrid:
+        """Returns the grid with voxels close enough to zero removed."""
+        data = grid.to_pandas()
+        if len(data) == 0:
+            return grid
+        expiring = data["weight"].abs() < cls.WEIGHT_EXPIRATION_TOLERANCE
+        if np.any(expiring):
+            return VoxelGrid.from_pandas(grid.voxel_size, data[~expiring])
+        return grid
 
     def step(
         self,
