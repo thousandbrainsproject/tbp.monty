@@ -138,7 +138,7 @@ The accuracy, Used MLH, average rotation error, and average prediction error in 
 
 #### COWS Small
 
-`cows_small` evaluates recognition 19 objects:five plain 3D objects (disk, cube, cylinder, sphere, and mug) and 14 compositional objects with either TBP or Numenta logos. The two logos are learned separately by the 2D child LM.
+`cows_small` evaluates recognition on 19 objects:five plain 3D objects (disk, cube, cylinder, sphere, and mug) and 14 compositional objects with either TBP or Numenta logos. The two logos are learned separately by the 2D child LM.
 
 !table[../../benchmarks/cows_small.csv]
 
