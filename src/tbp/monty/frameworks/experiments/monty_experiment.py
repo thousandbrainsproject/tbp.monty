@@ -506,9 +506,9 @@ class MontyExperiment:
         return step
 
     def _recognition_complete(self, step: int) -> bool:
-        rc = RecognitionCounter(step, self.experiment_mode)
-        rr = self._recognition_policy(self.model, rc)
-        return rr.is_done
+        count = RecognitionCounter(step, self.experiment_mode)
+        result = self._recognition_policy(self.model, count)
+        return result.is_done
 
     def run_step(
         self, ctx: RuntimeContext, step: int, actions: list[Action]
