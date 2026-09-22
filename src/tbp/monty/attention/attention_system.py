@@ -69,6 +69,20 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
     ) -> list[Goal]:
         return list(goals)
 
+        # proposed_grid = self.voxelize_attention_regions(regions)
+        # self._telemetry.proposed_grid(proposed_grid)
+        # # Decay what is already held before folding in what was just proposed,
+        # # so that a re-proposed voxel's fresh row lands on top of the tick
+        # # rather than after it.
+
+        # self._decay(self._grid)
+        # self._grid = AttentionSystem.expire(self._grid)
+        # self._grid = self._merge(self._grid, proposed_grid)
+
+        # self._telemetry.grid(self._grid)
+
+        # return self._goal_filter(self._grid, goals)
+
     def reset(self) -> None:
         """Nothing to reset."""
 
