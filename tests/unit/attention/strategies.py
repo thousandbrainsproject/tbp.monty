@@ -61,6 +61,7 @@ voxel_sizes = st.floats(min_value=MIN_VOXEL_SIZE, max_value=MAX_VOXEL_SIZE)
 #         fill=st.just(1.0),
 #     )
 
+
 @st.composite
 def default_attention_system_weights(
     draw: st.DrawFn,
@@ -281,17 +282,17 @@ def voxel_grid_and_points(
     )
 
     occuppied_df = occuppied_voxel_grid.to_pandas()
-    negative_voxels = (occuppied_df["weight"] < 0.0).index
+    negative_voxels = occuppied_df[occuppied_df["weight"] < 0.0].index
     points_in_negative_weight_grid = draw(
         points_in_voxels(voxel_size=voxel_size, voxels=negative_voxels)
     )
 
-    zero_voxels = (occuppied_df["weight"] == 0.0).index
+    zero_voxels = occuppied_df[occuppied_df["weight"] == 0.0].index
     points_in_zero_weight_grid = draw(
         points_in_voxels(voxel_size=voxel_size, voxels=zero_voxels)
     )
 
-    positive_voxels = (occuppied_df["weight"] > 0).index
+    positive_voxels = occuppied_df[occuppied_df["weight"] > 0.0].index
     points_in_positive_weight_grid = draw(
         points_in_voxels(voxel_size=voxel_size, voxels=positive_voxels)
     )
@@ -306,14 +307,11 @@ def voxel_grid_and_points(
 
 
 @st.composite
-def out_of_grid_goals_pass_when_all_voxel_weights_are_negative(
+def voxel_grid_and_goals(
     draw: st.DrawFn,
+    weights_strategy: st.SearchStrategy[float] = default_attention_system_weights,
 ) -> VoxelGridAndGoals:
-    grid_and_points = draw(
-        voxel_grid_and_points(
-            weights_strategy=all_negative_default_attention_system_weights
-        )
-    )
+    grid_and_points = draw(voxel_grid_and_points(weights_strategy=weights_strategy))
     return VoxelGridAndGoals(
         voxel_grid=grid_and_points.voxel_grid,
         goals_out_of_grid=draw(goals_at(grid_and_points.points_out_of_grid)),

@@ -15,16 +15,13 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.attention.goal_filter import HardGoalFilter, NoopGoalFilter
-from tbp.monty.attention.voxel_grid import VoxelGrid
 from tbp.monty.cmp import Goal
 from tests.strategies.cmp import goals
 from tests.unit.attention.strategies import (
     VoxelGridAndGoals,
     all_negative_default_attention_system_weights,
-    default_attention_system_weights,
     default_voxel_grid,
-    out_of_grid_goals_pass_when_all_voxel_weights_are_negative,
-    unique_voxels,
+    voxel_grid_and_goals,
     with_negative_default_attention_system_weights,
     with_positive_default_attention_system_weights,
 )
@@ -44,43 +41,51 @@ class HardGoalFilterTest(unittest.TestCase):
         self.assertEqual(HardGoalFilter()(voxel_grid, goals), goals)
 
     @given(
-        voxel_grid_and_goals=out_of_grid_goals_pass_when_all_voxel_weights_are_negative()
+        grid_and_goals=voxel_grid_and_goals(
+            weights_strategy=all_negative_default_attention_system_weights
+        )
     )
     def test_out_of_grid_goals_pass_when_all_voxel_weights_are_negative(
-        self, voxel_grid_and_goals: VoxelGridAndGoals
+        self, grid_and_goals: VoxelGridAndGoals
     ):
-        voxel_grid = voxel_grid_and_goals.voxel_grid
-        goals = voxel_grid_and_goals.goals_out_of_grid
+        voxel_grid = grid_and_goals.voxel_grid
+        goals = grid_and_goals.goals_out_of_grid
         self.assertEqual(HardGoalFilter()(voxel_grid, goals), goals)
 
-    # @given(
-    #     voxel_grid=default_voxel_grid(
-    #         voxels_strategy=unique_voxels(min_voxels=1),
-    #         weights_strategy=with_positive_default_attention_system_weights,
-    #     ),
-    #     goals=goals(),
-    # )
-    # def test_out_of_grid_goals_filtered_out_when_there_are_voxels_with_positive_weights(
-    #     self,
-    # ):
-    #     pass
+    @given(
+        grid_and_goals=voxel_grid_and_goals(
+            weights_strategy=with_positive_default_attention_system_weights
+        )
+    )
+    def test_out_of_grid_goals_filtered_out_when_there_are_voxels_with_positive_weights(
+        self, grid_and_goals: VoxelGridAndGoals
+    ):
+        voxel_grid = grid_and_goals.voxel_grid
+        goals = grid_and_goals.goals_out_of_grid
+        self.assertEqual(HardGoalFilter()(voxel_grid, goals), [])
 
-    # @given(
-    #     voxel_grid=default_voxel_grid(
-    #         voxels_strategy=unique_voxels(min_voxels=1),
-    #         weights_strategy=with_negative_default_attention_system_weights,
-    #     ),
-    #     goals=goals(),
-    # )
-    # def test_goals_in_voxels_with_negative_weights_filtered(self):
-    #     pass
+    @given(
+        grid_and_goals=voxel_grid_and_goals(
+            weights_strategy=with_negative_default_attention_system_weights
+        )
+    )
+    def test_goals_in_voxels_with_negative_weights_filtered(
+        self, grid_and_goals: VoxelGridAndGoals
+    ):
+        voxel_grid = grid_and_goals.voxel_grid
+        goals = grid_and_goals.goals_in_negative_weight_grid
+        kept = HardGoalFilter()(voxel_grid, goals)
+        self.assertEqual(kept, [])
 
-    # @given(
-    #     voxel_grid=default_voxel_grid(
-    #         voxels_strategy=unique_voxels(min_voxels=1),
-    #         weights_strategy=with_positive_default_attention_system_weights,
-    #     ),
-    #     goals=goals(),
-    # )
-    # def test_goals_in_voxels_with_positive_weights_pass(self):
-    #     pass
+    @given(
+        grid_and_goals=voxel_grid_and_goals(
+            weights_strategy=with_positive_default_attention_system_weights
+        )
+    )
+    def test_goals_in_voxels_with_positive_weights_pass(
+        self, grid_and_goals: VoxelGridAndGoals
+    ):
+        voxel_grid = grid_and_goals.voxel_grid
+        goals = grid_and_goals.goals_in_positive_weight_grid
+        kept = HardGoalFilter()(voxel_grid, goals)
+        self.assertEqual(kept, goals)
