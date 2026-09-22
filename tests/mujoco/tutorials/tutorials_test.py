@@ -104,7 +104,6 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_total_steps=503",
                 ],
             )
             config.experiment.config.logging.output_dir = str(

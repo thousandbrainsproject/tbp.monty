@@ -86,13 +86,36 @@ class MontyIsDone(RecognitionPolicy):
         return RecognitionResult(is_done=model.is_done)
 
 
-class MaximumSteps(RecognitionPolicy):
-    """`step >= {max_train_steps | max_eval_steps}` or `model.is_done`.
+class MaxTotalSteps(RecognitionPolicy):
+    """`step >= max_total_steps`."""
 
-    Terminal conditions include:
-    - `step >= {max_train_steps | max_eval_steps}`
-    - `model.is_done`
-    """
+    _max_total_steps: int
+    """The maximum number of steps before terminating the episode."""
+
+    def __init__(self: Self, max_total_steps: int) -> None:
+        """Initialize the policy.
+
+        Args:
+            max_total_steps: The maximum number of steps before terminating the episode.
+
+        Raises:
+            ValueError: If `max_total_steps` is not positive.
+        """
+        if max_total_steps <= 0:
+            raise ValueError("max_total_steps must be positive")
+        self._max_total_steps = max_total_steps
+
+    def __call__(
+        self: Self,
+        model: MontyBase,  # noqa: ARG002
+        count: RecognitionCounter,
+    ) -> RecognitionResult:
+        is_done = count.step >= self._max_total_steps
+        return RecognitionResult(is_done=is_done)
+
+
+class MaximumSteps(RecognitionPolicy):
+    """`model.matching_steps >= {max_train_steps | max_eval_steps}`."""
 
     _max_train_steps: int
     """The maximum steps to take in training mode."""
@@ -120,153 +143,89 @@ class MaximumSteps(RecognitionPolicy):
         self._max_eval_steps = max_eval_steps
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
             if count.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        if count.step >= max_steps:
-            return RecognitionResult(is_done=True)
-
-        return RecognitionResult(is_done=model.is_done)
+        is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
+        if is_done:
+            logger.info(f"Terminated due to maximum matching steps : {max_steps}")
+            model.deal_with_time_out()
+        return RecognitionResult(is_done=is_done)
 
 
 class MinimumLMs(RecognitionPolicy):
-    """`min_lms` have reached a conclusion.
-
-    Terminal conditions include:
-    - `num_matched >= self._min_lms`
-    - `count.step >= {max_train_steps | max_eval_steps}`
-    """
+    """`min_lms` have reached a conclusion."""
 
     _min_lms: int
     """The minimum number of LMs that must reach a conclusion."""
 
-    _max_train_steps: int
-    """The maximum steps to take in training mode."""
-
-    _max_eval_steps: int
-    """The maximum steps to take in evaluation mode."""
-
-    def __init__(
-        self: Self, min_lms: int, max_train_steps: int, max_eval_steps: int
-    ) -> None:
+    def __init__(self: Self, min_lms: int) -> None:
         """Initialize the policy.
 
         Args:
             min_lms: The number of Learning Modules that must reach a conclusion for
                 the policy to be satisfied.
-            max_train_steps: The maximum steps to take in training mode.
-            max_eval_steps: The maximum steps to take in evaluation mode.
 
         Raises:
-            ValueError: If `min_lms`, `max_train_steps`, or `max_eval_steps`
-                are not positive.
+            ValueError: If `min_lms` is not positive.
         """
         if min_lms <= 0:
             raise ValueError("min_lms must be positive")
 
-        if max_train_steps <= 0:
-            raise ValueError("max_train_steps must be positive")
-
-        if max_eval_steps <= 0:
-            raise ValueError("max_eval_steps must be positive")
-
         self._min_lms = min_lms
-        self._max_train_steps = max_train_steps
-        self._max_eval_steps = max_eval_steps
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,  # noqa: ARG002
     ) -> RecognitionResult:
-        max_steps = (
-            self._max_train_steps
-            if count.mode is ExperimentMode.TRAIN
-            else self._max_eval_steps
-        )
-
-        if count.step >= max_steps:
-            return RecognitionResult(is_done=True)
-
         num_matched = sum(
             1
             for lm in model.learning_modules
             if lm.recognition_status.conclusion is not None
         )
         is_done = num_matched >= self._min_lms
-
         return RecognitionResult(is_done=is_done)
 
 
-class MaxTotalSteps(RecognitionPolicy):
-    """`step >= max_total_steps`."""
+class NaiveScan(RecognitionPolicy):
+    """`steps >= step_limit`, with `step_limit` derived from `fixed_amount`.
 
-    _max_total_steps: int
+    The `step_limit` is the number of steps the Naive Scan motor policy takes
+    before its spiral completes.
+    """
+
+    _step_limit: int
     """The maximum number of steps before terminating the episode."""
 
-    def __init__(self: Self, max_total_steps: int) -> None:
+    def __init__(self: Self, fixed_amount: int) -> None:
         """Initialize the policy.
 
         Args:
-            max_total_steps: The maximum number of steps before terminating the episode.
+            fixed_amount: The Naive Scan step size.
 
         Raises:
-            ValueError: If `max_total_steps` is not positive.
+            ValueError: If `fixed_amount` is not positive.
         """
-        if max_total_steps <= 0:
-            raise ValueError("max_total_steps must be positive")
-        self._max_total_steps = max_total_steps
+        if fixed_amount <= 0:
+            raise ValueError("fixed_amount must be positive")
+
+        k = math.ceil(90 / fixed_amount)  # (>=90)->1, 10->9, 5->18, 1->90
+        self._step_limit = k * (k - 1) + 1  # 1->1, 9->73, 18->307, 90->8011
 
     def __call__(
         self: Self,
         model: MontyBase,  # noqa: ARG002
         count: RecognitionCounter,
     ) -> RecognitionResult:
-        # Even if many exploratory steps have not sent information to learning
-        # modules (so is_done remains False), eventually terminate exploration
-        is_done = count.step >= self._max_total_steps
+        is_done = count.step >= self._step_limit
         return RecognitionResult(is_done=is_done)
-
-
-class NaiveScan(RecognitionPolicy):
-    """`count.steps >= count.max_total_steps` or `model.is_done`.
-
-    The step limit also accounts for the number of steps the Naive Scan motor policy
-    takes before its spiral completes.
-    """
-
-    _step_limit: int
-    """The maximum number of steps before terminating the episode."""
-
-    def __init__(self: Self, max_total_steps: int, fixed_amount: int) -> None:
-        """Initialize the policy.
-
-        Args:
-            max_total_steps: The maximum number of steps before terminating the episode.
-            fixed_amount: The Naive Scan step size.
-
-        Raises:
-            ValueError: If `max_total_steps` or `fixed_amount` are not positive.
-        """
-        if max_total_steps <= 0:
-            raise ValueError("max_total_steps must be positive")
-
-        if fixed_amount <= 0:
-            raise ValueError("fixed_amount must be positive")
-        k = math.ceil(90 / fixed_amount)  # arm length when angular extent >= 90
-        max_scan_steps = k * (k - 1) + 1  # 0 when k <= 1 (i.e.: fixed_amount >= 90)
-
-        self._step_limit = min(max_total_steps, max_scan_steps)
-
-    def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
-    ) -> RecognitionResult:
-        if count.step >= self._step_limit:
-            return RecognitionResult(is_done=True)
-
-        return RecognitionResult(is_done=model.is_done)
 
 
 class ObjectRecognition(RecognitionPolicy):
