@@ -26,6 +26,7 @@ from tests.strategies.arrays import (
     float_array_not_1d,
     float_array_not_n_by_3,
 )
+from tests.strategies.cmp import attention_regions
 
 
 def _message(
@@ -146,27 +147,6 @@ def locations_and_a_weight(
     locations = draw(float_array_n_by_3())
     weight = draw(st.floats(allow_nan=False, allow_infinity=False))
     return locations, weight
-
-
-@st.composite
-def attention_region(draw: st.DrawFn) -> AttentionRegion:
-    """Returns an AttentionRegion with valid locations and weights."""
-    locations = draw(float_array_n_by_3())
-    weights = draw(
-        arrays(
-            dtype=np.float64,
-            shape=st.tuples(st.just(locations.shape[0])),
-            elements=st.floats(allow_nan=False, allow_infinity=False),
-            fill=st.just(0.0),
-        )
-    )
-    return AttentionRegion(locations=locations, weights=weights)
-
-
-@st.composite
-def attention_regions(draw: st.DrawFn) -> list[AttentionRegion]:
-    """Returns a list of AttentionRegions with valid locations and weights."""
-    return draw(st.lists(attention_region(), min_size=0, max_size=10))
 
 
 class AttentionRegionTest(unittest.TestCase):

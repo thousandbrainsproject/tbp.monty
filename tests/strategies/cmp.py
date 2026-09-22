@@ -13,8 +13,10 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import AttentionRegion, Goal
+from tests.strategies.arrays import float_array_n_by_3
 
 
 @st.composite
@@ -126,3 +128,24 @@ def goals_at(
             )
         )
     return out
+
+
+@st.composite
+def attention_region(draw: st.DrawFn) -> AttentionRegion:
+    """Returns an AttentionRegion with valid locations and weights."""
+    locations = draw(float_array_n_by_3())
+    weights = draw(
+        arrays(
+            dtype=np.float64,
+            shape=st.tuples(st.just(locations.shape[0])),
+            elements=st.floats(allow_nan=False, allow_infinity=False),
+            fill=st.just(0.0),
+        )
+    )
+    return AttentionRegion(locations=locations, weights=weights)
+
+
+@st.composite
+def attention_regions(draw: st.DrawFn) -> list[AttentionRegion]:
+    """Returns a list of AttentionRegions with valid locations and weights."""
+    return draw(st.lists(attention_region(), min_size=0, max_size=10))
