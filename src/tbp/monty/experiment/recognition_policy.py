@@ -155,7 +155,6 @@ class MaximumSteps(RecognitionPolicy):
         is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
         if is_done:
             logger.info(f"Terminated due to maximum matching steps : {max_steps}")
-            model.deal_with_time_out()
         return RecognitionResult(is_done=is_done)
 
 
@@ -283,7 +282,6 @@ class StepCounter(RecognitionPolicy):
             is_done = self._matching_steps >= self._max_eval_steps
 
         if is_done:
-            model.deal_with_time_out()
             logger.warning(
                 "Episode is done, with"
                 f" matching_steps={self._matching_steps}"
@@ -423,14 +421,12 @@ class ObjectRecognition(RecognitionPolicy):
         )
         if (not model.is_exploring) and (model.matching_steps >= max_steps):
             logger.info(f"Terminated due to maximum matching steps : {max_steps}")
-            model.deal_with_time_out()
             return RecognitionResult(is_done=True)
 
         if count.step >= self._max_total_steps:
             logger.info(
                 f"Terminated due to maximum episode steps : {self._max_total_steps}"
             )
-            model.deal_with_time_out()
             return RecognitionResult(is_done=True)
 
         return RecognitionResult(is_done=model.is_done)

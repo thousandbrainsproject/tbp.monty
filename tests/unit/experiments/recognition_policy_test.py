@@ -284,8 +284,6 @@ class ObjectRecognitionTest(unittest.TestCase):
         result = policy(model, count)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
-        if is_done:
-            model.deal_with_time_out.assert_called_once()
 
     @given(
         mode=st.sampled_from(ExperimentMode),
@@ -327,7 +325,6 @@ class ObjectRecognitionTest(unittest.TestCase):
         count = RecognitionCounter(max_total_steps + extra)
         result = policy(model, count)
         self.assertTrue(result.is_done)
-        model.deal_with_time_out.assert_called_once()
 
     @given(
         is_done=st.booleans(),
@@ -351,7 +348,6 @@ class ObjectRecognitionTest(unittest.TestCase):
         count = RecognitionCounter(step)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
-        model.deal_with_time_out.assert_not_called()
 
 
 @st.composite
