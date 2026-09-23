@@ -18,7 +18,6 @@ from tbp.monty.attention.decay import LinearWeightDecay, VoxelGridWeightDecay
 from tbp.monty.attention.goal_filter import GoalFilter, HardGoalFilter
 from tbp.monty.attention.merge import Union, VoxelGridMerge
 from tbp.monty.attention.voxel_grid import (
-    VOXEL_LEVELS,
     VoxelGrid,
     voxelize_and_bin_points,
 )
@@ -142,14 +141,10 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
             region.locations,
             region.weights,
         )
-        voxel_weights = self._pool_weights(points)
 
-        df = pd.DataFrame(
-            {"weight": voxel_weights.to_numpy()},
-            index=pd.MultiIndex.from_tuples(voxel_weights.index, names=VOXEL_LEVELS),
-        )
-        # think above can just be pd.DataFrame({"weight": voxel_weights}) + (reindex)
+        df = self._pool_weights(points)
+
         return VoxelGrid.from_pandas(self._voxel_size, df)
 
-    def _pool_weights(self, points: pd.DataFrame) -> pd.Series[float]:
-        return points.groupby("voxel")["weight"].agg(self._weight_pooler)
+    def _pool_weights(self, points: pd.DataFrame) -> pd.DataFrame:
+        return points.groupby("voxel")["weight"].agg(self._weight_pooler).to_frame()

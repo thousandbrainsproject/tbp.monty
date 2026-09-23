@@ -12,20 +12,15 @@ import unittest
 from unittest.mock import MagicMock, patch, sentinel
 
 import hypothesis
-import numpy as np
 import pandas as pd
 from hypothesis import given
-from hypothesis import strategies as st
 
 from tbp.monty.attention.attention_system import (
     AttentionRegion,
     DefaultAttentionSystem,
     NoopAttentionSystem,
 )
-from tbp.monty.attention.decay import LinearWeightDecay, NoopDecay
-from tbp.monty.attention.voxel_grid import (
-    VoxelGrid,
-)
+from tbp.monty.attention.voxel_grid import VoxelGrid
 from tbp.monty.cmp import Goal
 from tests.strategies.cmp import attention_regions, goals
 from tests.unit.attention import strategies
@@ -81,7 +76,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         mock_concat.assert_called_once_with(sentinel.regions)
 
     @patch("tbp.monty.cmp.AttentionRegion.concat")
-    def test_voxelize_attention_regions_concatenates_regions_returns_empty_voxel_grid_when_concatenated_region_is_empty(
+    def test_voxelize_attention_regions_concatenates_regions_returns_empty_voxel_grid_when_concatenated_region_is_empty(  # noqa: E501
         self, mock_concat: MagicMock
     ):
         mock_region = MagicMock()
@@ -94,17 +89,22 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         mock_concat.assert_called_once_with(sentinel.regions)
         self.assertEqual(len(grid), 0)
 
+    @given(voxel_grid=strategies.default_voxel_grid())
+    @patch("tbp.monty.attention.attention_system.DefaultAttentionSystem._pool_weights")
     @patch("tbp.monty.attention.attention_system.voxelize_and_bin_points")
     @patch("tbp.monty.cmp.AttentionRegion.concat")
-    def test_voxelize_attention_regions_voxelizes_and_bins_points_when_concatenated_region_is_not_empty(
+    def test_voxelize_attention_regions_voxelizes_and_bins_points_when_concatenated_region_is_not_empty(  # noqa: E501
         self,
         mock_concat: MagicMock,
         mock_voxelize_and_bin_points: MagicMock,
+        mock_pool_weights: MagicMock,
+        voxel_grid: VoxelGrid,
     ):
         mock_region = MagicMock()
         mock_region.__len__.return_value = 1
         mock_concat.return_value = mock_region
-        system = DefaultAttentionSystem()
+        mock_pool_weights.return_value = voxel_grid.to_pandas()
+        system = DefaultAttentionSystem(voxel_size=voxel_grid.voxel_size)
 
         system._voxelize_attention_regions(sentinel.regions)
 
@@ -114,8 +114,46 @@ class DefaultAttentionSystemTest(unittest.TestCase):
             mock_region.weights,
         )
 
-    def test_voxelize_attention_regions_pools_weights(self):
-        pass
+    @given(voxel_grid=strategies.default_voxel_grid())
+    @patch("tbp.monty.attention.attention_system.DefaultAttentionSystem._pool_weights")
+    @patch("tbp.monty.attention.attention_system.voxelize_and_bin_points")
+    @patch("tbp.monty.cmp.AttentionRegion.concat")
+    def test_voxelize_attention_regions_pools_weights(
+        self,
+        mock_concat: MagicMock,
+        mock_voxelize_and_bin_points: MagicMock,
+        mock_pool_weights: MagicMock,
+        voxel_grid: VoxelGrid,
+    ):
+        mock_region = MagicMock()
+        mock_region.__len__.return_value = 1
+        mock_concat.return_value = mock_region
+        mock_voxelize_and_bin_points.return_value = sentinel.points
+        mock_pool_weights.return_value = voxel_grid.to_pandas()
+        system = DefaultAttentionSystem(voxel_size=voxel_grid.voxel_size)
 
-    def test_voxelize_attention_regions_creates_voxel_grid(self):
-        pass
+        system._voxelize_attention_regions(sentinel.regions)
+
+        mock_pool_weights.assert_called_once_with(sentinel.points)
+
+    @given(voxel_grid=strategies.default_voxel_grid())
+    @patch("tbp.monty.attention.attention_system.DefaultAttentionSystem._pool_weights")
+    @patch("tbp.monty.attention.attention_system.voxelize_and_bin_points")
+    @patch("tbp.monty.cmp.AttentionRegion.concat")
+    def test_voxelize_attention_regions_creates_voxel_grid(
+        self,
+        mock_concat: MagicMock,
+        mock_voxelize_and_bin_points: MagicMock,  # noqa: ARG002
+        mock_pool_weights: MagicMock,
+        voxel_grid: VoxelGrid,
+    ):
+        mock_region = MagicMock()
+        mock_region.__len__.return_value = 1
+        mock_concat.return_value = mock_region
+        mock_pool_weights.return_value = voxel_grid.to_pandas()
+        system = DefaultAttentionSystem(voxel_size=voxel_grid.voxel_size)
+
+        grid = system._voxelize_attention_regions(sentinel.regions)
+
+        pd.testing.assert_frame_equal(grid.to_pandas(), voxel_grid.to_pandas())
+        self.assertEqual(grid.voxel_size, voxel_grid.voxel_size)
