@@ -96,19 +96,13 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
     def step(
         self,
         goals: Sequence[Goal],
-        regions: Sequence[AttentionRegion],  # noqa: ARG002
+        regions: Sequence[AttentionRegion],
     ) -> list[Goal]:
-        # return list(goals)
-
         proposed_grid = self._voxelize_attention_regions(regions)
-
         self._decay(self._grid)
-        # self._grid = AttentionSystem.expire(self._grid)
-        # self._grid = self._merge(self._grid, proposed_grid)
-
-        # self._telemetry.grid(self._grid)
-
-        # return self._goal_filter(self._grid, goals)
+        self._grid = DefaultAttentionSystem.expire(self._grid)
+        self._grid = self._merge(self._grid, proposed_grid)
+        return self._goal_filter(self._grid, goals)
 
     def reset(self) -> None:
         """Nothing to reset."""
