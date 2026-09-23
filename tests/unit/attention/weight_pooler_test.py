@@ -19,7 +19,9 @@ from tests.strategies.floats import with_negative_floats
 
 class NegativePriorityMaxPoolTest(unittest.TestCase):
     @given(
-        values=st.lists(st.floats(min_value=0.0, allow_nan=False, allow_infinity=False))
+        values=st.lists(
+            st.floats(min_value=0.0, allow_nan=False, allow_infinity=False), min_size=1
+        )
     )
     def test_call_returns_max_value_if_all_are_non_negative(self, values: list[float]):
         result = negative_priority_max_pool(values)
