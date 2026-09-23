@@ -232,3 +232,10 @@ class DefaultAttentionSystemTest(unittest.TestCase):
 
         mock_goal_filter.assert_called_once_with(sentinel.grid, goals)
         self.assertEqual(result, mock_goal_filter.return_value)
+
+    @given(grid=strategies.default_voxel_grid())
+    def test_reset_sets_grid_to_empty(self, grid: VoxelGrid):
+        system = DefaultAttentionSystem(voxel_size=grid.voxel_size)
+        system._grid = grid
+        system.reset()
+        self.assertEqual(len(system._grid), 0)

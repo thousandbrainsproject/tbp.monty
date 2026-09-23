@@ -80,7 +80,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         self._decay = LinearWeightDecay() if decay is None else decay
         self._merge = Union() if merge is None else merge
         self._goal_filter = HardGoalFilter() if goal_filter is None else goal_filter
-        self._grid = VoxelGrid.empty(voxel_size)
+        self._grid = VoxelGrid.empty(self._voxel_size)
 
     @classmethod
     def expire(cls, grid: VoxelGrid) -> VoxelGrid:
@@ -105,7 +105,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         return self._goal_filter(self._grid, goals)
 
     def reset(self) -> None:
-        """Nothing to reset."""
+        self._grid = VoxelGrid.empty(self._voxel_size)
 
     def state_dict(self) -> Memento:
         return {}
