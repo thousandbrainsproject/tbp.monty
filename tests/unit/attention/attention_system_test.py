@@ -9,11 +9,12 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import MagicMock, patch, sentinel
+from unittest.mock import ANY, MagicMock, patch, sentinel
 
 import hypothesis
 import pandas as pd
 from hypothesis import given
+from hypothesis import strategies as st
 
 from tbp.monty.attention.attention_system import (
     AttentionRegion,
@@ -167,9 +168,25 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         mock_voxelize_attention_regions: MagicMock,
         regions: list[AttentionRegion],
     ):
-        system = DefaultAttentionSystem()
+        system = DefaultAttentionSystem(merge=MagicMock())
         system.step(MagicMock(), regions)
         mock_voxelize_attention_regions.assert_called_once_with(regions)
+
+    @given(regions=attention_regions())
+    @patch(
+        "tbp.monty.attention.attention_system.DefaultAttentionSystem._voxelize_attention_regions"
+    )
+    def test_step_updates_telemetry_with_proposed_grid(
+        self,
+        mock_voxelize_attention_regions: MagicMock,
+        regions: list[AttentionRegion],
+    ):
+        mock_telemetry = MagicMock()
+        system = DefaultAttentionSystem(merge=MagicMock(), telemetry=mock_telemetry)
+        system.step(MagicMock(), regions)
+        mock_telemetry.proposed_grid.assert_called_once_with(
+            mock_voxelize_attention_regions.return_value
+        )
 
     @given(regions=attention_regions())
     def test_step_decays_current_grid(
@@ -178,23 +195,25 @@ class DefaultAttentionSystemTest(unittest.TestCase):
     ):
         mock_decay = MagicMock()
         system = DefaultAttentionSystem(decay=mock_decay)
+        current_grid = system._grid
 
         system.step(MagicMock(), regions)
 
-        mock_decay.assert_called_once_with(system._grid)
+        mock_decay.assert_called_once_with(current_grid)
 
     @given(regions=attention_regions())
     @patch("tbp.monty.attention.attention_system.DefaultAttentionSystem.expire")
     def test_step_expires_current_grid(
         self, mock_expire: MagicMock, regions: list[AttentionRegion]
     ):
-        system = DefaultAttentionSystem()
+        mock_merge = MagicMock()
+        system = DefaultAttentionSystem(merge=mock_merge)
         current_grid = system._grid
 
         system.step(MagicMock(), regions)
 
         mock_expire.assert_called_once_with(current_grid)
-        self.assertEqual(system._grid, mock_expire.return_value)
+        mock_merge.assert_called_once_with(mock_expire.return_value, ANY)
 
     @given(regions=attention_regions())
     @patch("tbp.monty.attention.attention_system.DefaultAttentionSystem.expire")
@@ -219,6 +238,9 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         )
         self.assertEqual(system._grid, mock_merge.return_value)
 
+    def test_step_updates_telemetry_with_merged_grid(self):
+        self.assertTrue(False)
+
     @given(goals=goals(), regions=attention_regions())
     def test_step_returns_filtered_goals(
         self, goals: list[Goal], regions: list[AttentionRegion]
@@ -239,3 +261,19 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         system._grid = grid
         system.reset()
         self.assertEqual(len(system._grid), 0)
+
+    def test_reset_resets_telemetry(self):
+        mock_telemetry = MagicMock()
+        system = DefaultAttentionSystem(telemetry=mock_telemetry)
+        system.reset()
+        mock_telemetry.reset.assert_called_once()
+
+    def test_state_dict_returns_current_grid(self):
+        system = DefaultAttentionSystem()
+        system._grid = MagicMock()
+        state = system.state_dict()
+        self.assertIn("grid", state)
+        self.assertEqual(state["grid"], system._grid)
+
+    def test_state_dict_returns_telemetry_state_dict(self):
+        self.assertTrue(False)

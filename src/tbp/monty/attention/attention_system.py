@@ -17,6 +17,10 @@ import pandas as pd
 from tbp.monty.attention.decay import LinearWeightDecay, VoxelGridWeightDecay
 from tbp.monty.attention.goal_filter import GoalFilter, HardGoalFilter
 from tbp.monty.attention.merge import Union, VoxelGridMerge
+from tbp.monty.attention.telemetry import (
+    AttentionSystemTelemetryProtocol,
+    NoopAttentionSystemTelemetry,
+)
 from tbp.monty.attention.voxel_grid import (
     VOXEL_LEVELS,
     VoxelGrid,
@@ -74,6 +78,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         decay: VoxelGridWeightDecay | None = None,
         merge: VoxelGridMerge | None = None,
         goal_filter: GoalFilter | None = None,
+        telemetry: AttentionSystemTelemetryProtocol | None = None,
     ) -> None:
         self._voxel_size = voxel_size
         self._weight_pooler = weight_pooler
@@ -81,6 +86,9 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         self._merge = Union() if merge is None else merge
         self._goal_filter = HardGoalFilter() if goal_filter is None else goal_filter
         self._grid = VoxelGrid.empty(self._voxel_size)
+        self._telemetry = (
+            NoopAttentionSystemTelemetry() if telemetry is None else telemetry
+        )
 
     @classmethod
     def expire(cls, grid: VoxelGrid) -> VoxelGrid:
@@ -99,6 +107,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         regions: Sequence[AttentionRegion],
     ) -> list[Goal]:
         proposed_grid = self._voxelize_attention_regions(regions)
+        self._telemetry.proposed_grid(proposed_grid)
         self._decay(self._grid)
         self._grid = DefaultAttentionSystem.expire(self._grid)
         self._grid = self._merge(self._grid, proposed_grid)
@@ -106,9 +115,10 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
 
     def reset(self) -> None:
         self._grid = VoxelGrid.empty(self._voxel_size)
+        self._telemetry.reset()
 
     def state_dict(self) -> Memento:
-        return {}
+        return {"grid": self._grid}
 
     def _voxelize_attention_regions(
         self, regions: Sequence[AttentionRegion]
