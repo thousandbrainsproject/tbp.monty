@@ -168,89 +168,67 @@ class StepCounter(RecognitionPolicy):
     _min_train_steps: int
     """The minimum steps to take in training mode."""
 
-    _max_train_steps: int
-    """The maximum steps to take in training mode."""
-
     _num_exploratory_steps: int
     """The number of steps to take in exploratory mode."""
 
-    _min_eval_steps: int
-    """The minimum steps to take in evaluation mode."""
+    _max_train_steps: int
+    """The maximum steps to take in training mode."""
 
     _max_eval_steps: int
     """The maximum steps to take in evaluation mode."""
 
-    _total_steps: int
-    """Count of steps taken across episodes."""
-
-    _episode_steps: int
-    """Count of steps taken in this episode."""
-
     _matching_steps: int
-    """Count of matching steps taken (this episode)."""
+    """Count of matching steps taken."""
 
     _exploratory_steps: int
-    """Count of exploratory steps taken (this episode)."""
+    """Count of exploratory steps taken."""
 
     def __init__(
         self: Self,
         min_train_steps: int = 0,
-        max_train_steps: int = 1,
         num_exploratory_steps: int = 0,
-        min_eval_steps: int = 0,
+        max_train_steps: int = 1,
         max_eval_steps: int = 1,
     ) -> None:
         """Initialize the policy.
 
         Args:
             min_train_steps: The minimum steps to take in training mode.
-            max_train_steps: The maximum steps to take in training mode.
             num_exploratory_steps: The number of steps to take in exploratory mode.
-            min_eval_steps: The minimum steps to take in evaluation mode.
+            max_train_steps: The maximum steps to take in training mode.
             max_eval_steps: The maximum steps to take in evaluation mode.
 
         Raises:
             ValueError:
                 - If `min_train_steps` is negative.
+                - If `num_exploratory_steps` is negative.
                 - If `max_train_steps` is not positive.
                 - If `min_train_steps > max_train_steps`.
-                - If `num_exploratory_steps` is negative.
-                - If `min_eval_steps` is negative.
                 - If `max_eval_steps` is not positive.
-                - If `min_eval_steps > max_eval_steps`.
         """
         if min_train_steps < 0:
             raise ValueError("min_train_steps must be non-negative")
+        if num_exploratory_steps < 0:
+            raise ValueError("num_exploratory_steps must be non-negative")
         if max_train_steps <= 0:
             raise ValueError("max_train_steps must be positive")
         if min_train_steps > max_train_steps:
             raise ValueError("min_train_steps less than or equal to max_train_steps")
-        if num_exploratory_steps < 0:
-            raise ValueError("num_exploratory_steps must be non-negative")
-        if min_eval_steps < 0:
-            raise ValueError("min_eval_steps must be non-negative")
         if max_eval_steps <= 0:
             raise ValueError("max_eval_steps must be positive")
-        if min_eval_steps > max_eval_steps:
-            raise ValueError("min_eval_steps less than or equal to max_eval_steps")
 
         self._min_train_steps = min_train_steps
-        self._max_train_steps = max_train_steps
         self._num_exploratory_steps = num_exploratory_steps
-        self._min_eval_steps = min_eval_steps
+        self._max_train_steps = max_train_steps
         self._max_eval_steps = max_eval_steps
 
-        self._total_steps = 0
         self._reset_counters()
 
     def _reset_counters(self: Self) -> None:
-        self._episode_steps = 0
         self._matching_steps = 0
         self._exploratory_steps = 0
 
     def _update_counters(self: Self, model: MontyBase) -> None:
-        self._total_steps += 1
-        self._episode_steps += 1
         if self._check_if_any_lms_updated(model):
             if model.step_type == "matching_step":
                 self._matching_steps += 1
@@ -286,15 +264,11 @@ class StepCounter(RecognitionPolicy):
                 "Episode is done, with"
                 f" matching_steps={self._matching_steps}"
                 f" exploratory_steps={self._exploratory_steps}"
-                f" episode_steps={self._episode_steps}"
-                f" total_steps={self._total_steps}"
             )
         else:
             self._update_counters(model)
 
-        # TODO: remove advisory-mode override of `is_done`
-        return RecognitionResult(is_done=False)
-        # return RecognitionResult(is_done=is_done)
+        return RecognitionResult(is_done=is_done)
 
 
 class MinimumLMs(RecognitionPolicy):
