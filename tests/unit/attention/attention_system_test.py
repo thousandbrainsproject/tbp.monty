@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import MagicMock, patch, sentinel
 
 import hypothesis
 import numpy as np
@@ -70,3 +71,51 @@ class DefaultAttentionSystemTest(unittest.TestCase):
                 < DefaultAttentionSystem.WEIGHT_EXPIRATION_TOLERANCE
             ).any()
         )
+
+    @patch("tbp.monty.cmp.AttentionRegion.concat")
+    def test_voxelize_attention_regions_concatenates_regions(
+        self, mock_concat: MagicMock
+    ):
+        system = DefaultAttentionSystem()
+        system._voxelize_attention_regions(sentinel.regions)
+        mock_concat.assert_called_once_with(sentinel.regions)
+
+    @patch("tbp.monty.cmp.AttentionRegion.concat")
+    def test_voxelize_attention_regions_concatenates_regions_returns_empty_voxel_grid_when_concatenated_region_is_empty(
+        self, mock_concat: MagicMock
+    ):
+        mock_region = MagicMock()
+        mock_region.__len__.return_value = 0
+        mock_concat.return_value = mock_region
+        system = DefaultAttentionSystem()
+
+        grid = system._voxelize_attention_regions(sentinel.regions)
+
+        mock_concat.assert_called_once_with(sentinel.regions)
+        self.assertEqual(len(grid), 0)
+
+    @patch("tbp.monty.attention.attention_system.voxelize_and_bin_points")
+    @patch("tbp.monty.cmp.AttentionRegion.concat")
+    def test_voxelize_attention_regions_voxelizes_and_bins_points_when_concatenated_region_is_not_empty(
+        self,
+        mock_concat: MagicMock,
+        mock_voxelize_and_bin_points: MagicMock,
+    ):
+        mock_region = MagicMock()
+        mock_region.__len__.return_value = 1
+        mock_concat.return_value = mock_region
+        system = DefaultAttentionSystem()
+
+        system._voxelize_attention_regions(sentinel.regions)
+
+        mock_voxelize_and_bin_points.assert_called_once_with(
+            system._voxel_size,
+            mock_region.locations,
+            mock_region.weights,
+        )
+
+    def test_voxelize_attention_regions_pools_weights(self):
+        pass
+
+    def test_voxelize_attention_regions_creates_voxel_grid(self):
+        pass

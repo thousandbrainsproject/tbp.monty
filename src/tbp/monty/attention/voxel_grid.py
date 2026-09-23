@@ -96,6 +96,10 @@ class VoxelGrid:
     _data: pd.DataFrame
 
     @classmethod
+    def empty(cls, voxel_size: float) -> VoxelGrid:
+        return VoxelGrid(voxel_size, [], np.array([], dtype=np.float64))
+
+    @classmethod
     def from_pandas(cls, voxel_size: float, data: pd.DataFrame) -> VoxelGrid:
         """Create a voxel grid from a pandas DataFrame.
 

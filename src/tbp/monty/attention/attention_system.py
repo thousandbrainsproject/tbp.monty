@@ -12,8 +12,17 @@ from __future__ import annotations
 from typing import ClassVar, Protocol, Sequence
 
 import numpy as np
+import pandas as pd
 
-from tbp.monty.attention.voxel_grid import VoxelGrid
+from tbp.monty.attention.decay import LinearWeightDecay, VoxelGridWeightDecay
+from tbp.monty.attention.goal_filter import GoalFilter, HardGoalFilter
+from tbp.monty.attention.merge import Union, VoxelGridMerge
+from tbp.monty.attention.voxel_grid import (
+    VOXEL_LEVELS,
+    VoxelGrid,
+    voxelize_and_bin_points,
+)
+from tbp.monty.attention.weight_pooler import WeightPooler, negative_priority_max_pool
 from tbp.monty.cmp import AttentionRegion, Goal
 from tbp.monty.memento import Memento
 
@@ -50,6 +59,28 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
     """Full excitation."""
     WEIGHT_EXPIRATION_TOLERANCE: ClassVar[float] = 1e-6
     """Voxels whose weight magnitude falls below this are expired from the grid."""
+
+    _voxel_size: float
+    _weight_pooler: WeightPooler
+    _decay: VoxelGridWeightDecay
+    _merge: VoxelGridMerge
+    _goal_filter: GoalFilter
+    _grid: VoxelGrid
+
+    def __init__(
+        self,
+        voxel_size: float = 0.05,
+        weight_pooler: WeightPooler = negative_priority_max_pool,
+        decay: VoxelGridWeightDecay | None = None,
+        merge: VoxelGridMerge | None = None,
+        goal_filter: GoalFilter | None = None,
+    ) -> None:
+        self._voxel_size = voxel_size
+        self._weight_pooler = weight_pooler
+        self._decay = LinearWeightDecay() if decay is None else decay
+        self._merge = Union() if merge is None else merge
+        self._goal_filter = HardGoalFilter() if goal_filter is None else goal_filter
+        self._grid = VoxelGrid.empty(voxel_size)
 
     @classmethod
     def expire(cls, grid: VoxelGrid) -> VoxelGrid:
@@ -88,3 +119,37 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
 
     def state_dict(self) -> Memento:
         return {}
+
+    def _voxelize_attention_regions(
+        self, regions: Sequence[AttentionRegion]
+    ) -> VoxelGrid:
+        """Voxelize this step's regions into a fresh grid.
+
+        Args:
+            regions: The regions proposed this step, one per module.
+
+        Returns:
+            The grid built from this step's regions alone, carrying the
+            inhibit-all signal if any region does.
+
+        """
+        region = AttentionRegion.concat(regions)
+        if len(region) == 0:
+            return VoxelGrid.empty(self._voxel_size)
+
+        points = voxelize_and_bin_points(
+            self._voxel_size,
+            region.locations,
+            region.weights,
+        )
+        voxel_weights = self._pool_weights(points)
+
+        df = pd.DataFrame(
+            {"weight": voxel_weights.to_numpy()},
+            index=pd.MultiIndex.from_tuples(voxel_weights.index, names=VOXEL_LEVELS),
+        )
+        # think above can just be pd.DataFrame({"weight": voxel_weights}) + (reindex)
+        return VoxelGrid.from_pandas(self._voxel_size, df)
+
+    def _pool_weights(self, points: pd.DataFrame) -> pd.Series[float]:
+        return points.groupby("voxel")["weight"].agg(self._weight_pooler)
