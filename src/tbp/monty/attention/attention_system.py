@@ -18,6 +18,7 @@ from tbp.monty.attention.decay import LinearWeightDecay, VoxelGridWeightDecay
 from tbp.monty.attention.goal_filter import GoalFilter, HardGoalFilter
 from tbp.monty.attention.merge import Union, VoxelGridMerge
 from tbp.monty.attention.voxel_grid import (
+    VOXEL_LEVELS,
     VoxelGrid,
     voxelize_and_bin_points,
 )
@@ -97,15 +98,11 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         goals: Sequence[Goal],
         regions: Sequence[AttentionRegion],  # noqa: ARG002
     ) -> list[Goal]:
-        return list(goals)
+        # return list(goals)
 
-        # proposed_grid = self.voxelize_attention_regions(regions)
-        # self._telemetry.proposed_grid(proposed_grid)
-        # # Decay what is already held before folding in what was just proposed,
-        # # so that a re-proposed voxel's fresh row lands on top of the tick
-        # # rather than after it.
+        proposed_grid = self._voxelize_attention_regions(regions)
 
-        # self._decay(self._grid)
+        self._decay(self._grid)
         # self._grid = AttentionSystem.expire(self._grid)
         # self._grid = self._merge(self._grid, proposed_grid)
 
@@ -147,4 +144,8 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         return VoxelGrid.from_pandas(self._voxel_size, df)
 
     def _pool_weights(self, points: pd.DataFrame) -> pd.DataFrame:
-        return points.groupby("voxel")["weight"].agg(self._weight_pooler).to_frame()
+        weights = points.groupby("voxel")["weight"].agg(self._weight_pooler)
+        return pd.DataFrame(
+            {"weight": weights.to_numpy()},
+            index=pd.MultiIndex.from_tuples(weights.index, names=VOXEL_LEVELS),
+        )

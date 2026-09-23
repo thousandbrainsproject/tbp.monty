@@ -12,8 +12,9 @@ import unittest
 from unittest.mock import MagicMock, patch, sentinel
 
 import hypothesis
+import numpy as np
 import pandas as pd
-from hypothesis import given
+from hypothesis import example, given
 
 from tbp.monty.attention.attention_system import (
     AttentionRegion,
@@ -157,3 +158,30 @@ class DefaultAttentionSystemTest(unittest.TestCase):
 
         pd.testing.assert_frame_equal(grid.to_pandas(), voxel_grid.to_pandas())
         self.assertEqual(grid.voxel_size, voxel_grid.voxel_size)
+
+    @given(goals=goals(), regions=attention_regions())
+    @patch(
+        "tbp.monty.attention.attention_system.DefaultAttentionSystem._voxelize_attention_regions"
+    )
+    def test_step_voxelizes_attention_regions(
+        self,
+        mock_voxelize_attention_regions: MagicMock,
+        goals: list[Goal],
+        regions: list[AttentionRegion],
+    ):
+        system = DefaultAttentionSystem()
+        system.step(goals, regions)
+        mock_voxelize_attention_regions.assert_called_once_with(regions)
+
+    @given(goals=goals(), regions=attention_regions())
+    def test_step_decays_current_grid(
+        self,
+        goals: list[Goal],
+        regions: list[AttentionRegion],
+    ):
+        decay_mock = MagicMock()
+        system = DefaultAttentionSystem(decay=decay_mock)
+
+        system.step(goals, regions)
+
+        decay_mock.assert_called_once_with(system._grid)
