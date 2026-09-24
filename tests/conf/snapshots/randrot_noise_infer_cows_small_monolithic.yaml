@@ -184,6 +184,8 @@ experiment:
       - - 2
       lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
+      attention_system:
+        _target_: tbp.monty.attention.attention_system.DefaultAttentionSystem
     environment:
       env_init_args:
         objects:
