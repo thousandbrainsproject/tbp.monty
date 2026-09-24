@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from typing import cast
+
 import pytest
 
 from tbp.monty.context import RuntimeContext
@@ -51,6 +53,8 @@ from tbp.monty.frameworks.actions.actions import (
     MoveTangentially,
     OrientHorizontal,
     OrientVertical,
+    SetAgentPose,
+    SetSensorRotation,
     TurnLeft,
     TurnRight,
 )
@@ -1238,9 +1242,9 @@ class JumpToGoalTest(ParametrizedTestCase):
         )
         self.assertEqual(undo_result.status, PolicyStatus.READY)
         self.assertEqual(len(undo_result.actions), 2)
-        set_agent_pose = undo_result.actions[0]
+        set_agent_pose = cast("SetAgentPose", undo_result.actions[0])
         self.assertEqual(set_agent_pose.name, "set_agent_pose")
-        set_sensor_rotation = undo_result.actions[1]
+        set_sensor_rotation = cast("SetSensorRotation", undo_result.actions[1])
         self.assertEqual(set_sensor_rotation.name, "set_sensor_rotation")
 
         agent_state = pre_jump_state[JUMP_AGENT_ID]

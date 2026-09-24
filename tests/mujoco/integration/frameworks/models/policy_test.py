@@ -14,7 +14,7 @@ import shutil
 import tempfile
 import unittest
 from functools import partial
-from typing import Any, MutableMapping
+from typing import Any, MutableMapping, cast
 from unittest.mock import Mock
 
 import hydra
@@ -35,6 +35,7 @@ from tbp.monty.frameworks.actions.actions import (
     OrientHorizontal,
     OrientVertical,
     SetAgentPose,
+    SetSensorRotation,
     TurnLeft,
     TurnRight,
 )
@@ -43,6 +44,7 @@ from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
 )
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
@@ -1138,7 +1140,7 @@ JUMP_ZOOM = 10.0
 # The agent starts at (0, 1.5, 0.2) looking down the negative z axis, so an object
 # at this position is centered in the initial view.
 JUMP_OBJECT_POSITION = (0.0, 1.5, -0.35)
-JUMP_SEMANTIC_ID = 1
+JUMP_SEMANTIC_ID = SemanticID(1)
 
 
 class JumpToGoalTest(ParametrizedTestCase):
@@ -1256,9 +1258,9 @@ class JumpToGoalTest(ParametrizedTestCase):
         )
         self.assertEqual(undo_result.status, PolicyStatus.READY)
         self.assertEqual(len(undo_result.actions), 2)
-        set_agent_pose = undo_result.actions[0]
+        set_agent_pose = cast("SetAgentPose", undo_result.actions[0])
         self.assertEqual(set_agent_pose.name, "set_agent_pose")
-        set_sensor_rotation = undo_result.actions[1]
+        set_sensor_rotation = cast("SetSensorRotation", undo_result.actions[1])
         self.assertEqual(set_sensor_rotation.name, "set_sensor_rotation")
 
         agent_state = pre_jump_state[JUMP_AGENT_ID]
