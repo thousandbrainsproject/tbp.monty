@@ -25,6 +25,7 @@ from tbp.monty.experiment.recognition_policy import (
     RecognitionCounter,
     RecognitionPolicy,
     RecognitionResult,
+    StepCounter,
 )
 from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
@@ -41,7 +42,9 @@ def ascending_ints(draw: st.DrawFn, min_value: int):
     return (a, b)
 
 
-def _model_is_done(is_done: bool) -> MagicMock:
+def _model_is_done(
+    is_done: bool,
+) -> MagicMock:
     model = MagicMock()
     model.is_done = is_done
     return model
@@ -61,12 +64,24 @@ def _model_with_conclusions(
 
 
 def _model_with_recognition(
-    is_done: bool, is_exploring: bool, matching_steps: int
+    is_done: bool,
+    is_exploring: bool,
+    matching_steps: int,
 ) -> MagicMock:
     model = MagicMock()
     model.is_done = is_done
     model.is_exploring = is_exploring
     model.matching_steps = matching_steps
+    return model
+
+
+def _model_with_step_type(
+    step_type: str = "matching_step",
+) -> MagicMock:
+    model = MagicMock()
+    model.step_type = step_type
+    model.is_exploring = step_type == "exploratory_step"
+    model.check_if_any_lms_updated = MagicMock(return_value=True)
     return model
 
 
@@ -183,6 +198,154 @@ class MaximumStepsTest(unittest.TestCase):
         count = RecognitionCounter(0, mode)
         result = policy(model, count)
         is_done = matching_steps >= max_steps
+        self.assertEqual(result.is_done, is_done)
+
+
+class StepCounterTest(unittest.TestCase):
+    @given(min_train_steps=st.integers(max_value=-1))
+    def test_raises_value_error_if_min_train_steps_is_negative(
+        self, min_train_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepCounter(min_train_steps=min_train_steps)
+
+    @given(num_exploratory_steps=st.integers(max_value=-1))
+    def test_raises_value_error_if_num_exploratory_steps_is_negative(
+        self, num_exploratory_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepCounter(num_exploratory_steps=num_exploratory_steps)
+
+    @given(max_train_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_train_steps_is_not_positive(
+        self, max_train_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepCounter(max_train_steps=max_train_steps)
+
+    @given(max_asc=ascending_ints(min_value=0))
+    def test_raises_value_error_if_min_train_steps_greater_than_max_train_steps(
+        self, max_asc: tuple[int, int]
+    ) -> None:
+        (max_train_steps, min_train_steps) = max_asc
+        with self.assertRaises(ValueError):
+            StepCounter(
+                min_train_steps=min_train_steps,
+                max_train_steps=max_train_steps,
+            )
+
+    @given(max_eval_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_eval_steps_is_not_positive(
+        self, max_eval_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepCounter(max_eval_steps=max_eval_steps)
+
+    @given(
+        mode=st.sampled_from(ExperimentMode),
+        matching_steps=st.integers(min_value=0, max_value=60),
+        max_steps=st.integers(min_value=1, max_value=100),
+    )
+    def test_matching_times_out_at_or_after_max_steps(
+        self,
+        mode: ExperimentMode,
+        matching_steps: int,
+        max_steps: int,
+    ) -> None:
+        model = _model_with_step_type("matching_step")
+        policy = StepCounter(
+            max_train_steps=max_steps,
+            max_eval_steps=max_steps,
+        )
+        result = RecognitionResult(is_done=False)
+        for step in range(matching_steps + 1):
+            count = RecognitionCounter(step, mode)
+            result = policy(model, count)
+
+        is_done = matching_steps >= max_steps
+        self.assertEqual(result.is_done, is_done)
+
+    @given(
+        exploratory_steps=st.integers(min_value=0, max_value=60),
+        max_steps=st.integers(min_value=1, max_value=100),
+    )
+    def test_exploring_times_out_at_or_after_num_exploratory_steps(
+        self,
+        exploratory_steps: int,
+        max_steps: int,
+    ) -> None:
+        model = _model_with_step_type("exploratory_step")
+        policy = StepCounter(
+            num_exploratory_steps=max_steps,
+        )
+        result = RecognitionResult(is_done=False)
+        for step in range(exploratory_steps + 1):
+            count = RecognitionCounter(step, mode=ExperimentMode.TRAIN)
+            result = policy(model, count)
+
+        is_done = exploratory_steps >= max_steps
+        self.assertEqual(result.is_done, is_done)
+
+    @given(
+        mode=st.sampled_from(ExperimentMode),
+        matching_steps=st.integers(min_value=0, max_value=60),
+        max_train_steps=st.integers(min_value=1, max_value=100),
+        max_eval_steps=st.integers(min_value=1, max_value=100),
+    )
+    def test_selects_max_steps_by_mode(
+        self,
+        mode: ExperimentMode,
+        matching_steps: int,
+        max_train_steps: int,
+        max_eval_steps: int,
+    ) -> None:
+        max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
+        model = _model_with_step_type()
+        policy = StepCounter(
+            max_train_steps=max_train_steps,
+            max_eval_steps=max_eval_steps,
+        )
+        result = RecognitionResult(is_done=False)
+        for step in range(matching_steps + 1):
+            count = RecognitionCounter(step, mode)
+            result = policy(model, count)
+
+        is_done = matching_steps >= max_steps
+        self.assertEqual(result.is_done, is_done)
+
+    @given(
+        min_train_steps=st.integers(min_value=1, max_value=20),
+        num_exploratory_steps=st.integers(min_value=1, max_value=40),
+        exploratory_steps=st.integers(min_value=1, max_value=60),
+    )
+    def test_switch_to_explore_after_min_train_steps(
+        self,
+        min_train_steps: int,
+        num_exploratory_steps: int,
+        exploratory_steps: int,
+    ) -> None:
+        model = _model_with_step_type()
+        policy = StepCounter(
+            min_train_steps=min_train_steps,
+            num_exploratory_steps=num_exploratory_steps,
+            max_train_steps=100,
+        )
+        result = policy(model, RecognitionCounter(0, mode=ExperimentMode.TRAIN))
+        self.assertFalse(result.is_done)
+        model.switch_to_matching_step.assert_called_once()
+
+        for step in range(1, min_train_steps + 1):
+            count = RecognitionCounter(step, ExperimentMode.TRAIN)
+            result = policy(model, count)
+        self.assertFalse(result.is_done)
+        model.switch_to_exploratory_step.assert_called_once()
+
+        model = _model_with_step_type("exploratory_step")
+        for step in range(exploratory_steps + 1):
+            count = RecognitionCounter(min_train_steps + step, ExperimentMode.TRAIN)
+            result = policy(model, count)
+
+        is_done = exploratory_steps >= num_exploratory_steps
         self.assertEqual(result.is_done, is_done)
 
 
