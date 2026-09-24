@@ -222,7 +222,9 @@ class StepCounter(RecognitionPolicy):
         if max_train_steps <= 0:
             raise ValueError("max_train_steps must be positive")
         if min_train_steps > max_train_steps:
-            raise ValueError("min_train_steps less than or equal to max_train_steps")
+            raise ValueError(
+                "min_train_steps must be less than or equal to max_train_steps"
+            )
         if max_eval_steps <= 0:
             raise ValueError("max_eval_steps must be positive")
 
