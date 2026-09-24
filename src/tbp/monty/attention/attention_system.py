@@ -111,6 +111,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         self._decay(self._grid)
         self._grid = DefaultAttentionSystem.expire(self._grid)
         self._grid = self._merge(self._grid, proposed_grid)
+        self._telemetry.grid(self._grid)
         return self._goal_filter(self._grid, goals)
 
     def reset(self) -> None:
@@ -118,7 +119,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         self._telemetry.reset()
 
     def state_dict(self) -> Memento:
-        return {"grid": self._grid}
+        return {"grid": self._grid, "telemetry": self._telemetry.state_dict()}
 
     def _voxelize_attention_regions(
         self, regions: Sequence[AttentionRegion]

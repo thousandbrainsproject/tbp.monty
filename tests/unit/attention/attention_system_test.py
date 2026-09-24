@@ -239,7 +239,13 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         self.assertEqual(system._grid, mock_merge.return_value)
 
     def test_step_updates_telemetry_with_merged_grid(self):
-        self.assertTrue(False)
+        mock_merge = MagicMock()
+        mock_telemetry = MagicMock()
+        system = DefaultAttentionSystem(merge=mock_merge, telemetry=mock_telemetry)
+
+        system.step(MagicMock(), MagicMock())
+
+        mock_telemetry.grid.assert_called_once_with(mock_merge.return_value)
 
     @given(goals=goals(), regions=attention_regions())
     def test_step_returns_filtered_goals(
@@ -276,4 +282,8 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         self.assertEqual(state["grid"], system._grid)
 
     def test_state_dict_returns_telemetry_state_dict(self):
-        self.assertTrue(False)
+        mock_telemetry = MagicMock()
+        system = DefaultAttentionSystem(telemetry=mock_telemetry)
+        state = system.state_dict()
+        self.assertIn("telemetry", state)
+        self.assertEqual(state["telemetry"], mock_telemetry.state_dict.return_value)
