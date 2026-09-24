@@ -44,7 +44,7 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_train",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -94,7 +94,6 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/dist_agent_5lm_2obj_train",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_total_steps=503",
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -126,7 +125,7 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/omniglot_training",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))

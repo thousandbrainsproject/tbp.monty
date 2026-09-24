@@ -193,8 +193,11 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
-      max_total_steps: 100
+      _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
+      policies:
+      - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
+      - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
+        max_total_steps: 100
     logging:
       python_log_level: INFO
       python_log_to_file: true
@@ -231,7 +234,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v6}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v7}
   rotations_all_count: 14
   rotations_all:
   - - 0
