@@ -29,17 +29,21 @@ To generate models for the YCB experiments, run the following pretraining:
 
 All of the above can be run at the same time, in parallel.
 
-#### Objects with Logos Experiments
+#### COWS Experiments
 
-The compositional benchmark uses objects with logo stickers as a single baseline condition. It includes flat objects, curved objects, and rotated logo stickers.
+Compositional Objects With Stickers (COWS) has small (19 objects) and large (119 objects) variants. Both use `compositional_objects_1.4` and share the five plain 3D children.
 
-To generate models for the objects with logos experiments, run the following pretraining in order. Some pretraining depends on the previous models.
+Run shared 3D pretraining first, then each size's 2D children before its parent models.
 
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_3d_children`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_2d_children`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_comp_models`
-- `python run_parallel.py experiment=supervised_pre_training_objects_with_stickers_monolithic_models`
-
+```sh
+python run_parallel.py experiment=supervised_pre_training_cows_3d_children
+python run_parallel.py experiment=supervised_pre_training_cows_small_2d_children 
+python run_parallel.py experiment=supervised_pre_training_cows_small_compositional
+python run_parallel.py experiment=supervised_pre_training_cows_small_monolithic
+python run_parallel.py experiment=supervised_pre_training_cows_large_2d_children
+python run_parallel.py experiment=supervised_pre_training_cows_large_compositional
+python run_parallel.py experiment=supervised_pre_training_cows_large_monolithic
+```
 
 For more details, see [Running Benchmarks](https://docs.thousandbrains.org/docs/running-benchmarks) and [Benchmark Experiments](https://docs.thousandbrains.org/docs/benchmark-experiments) in the documentation.
 
