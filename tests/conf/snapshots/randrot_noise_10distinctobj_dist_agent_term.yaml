@@ -204,6 +204,9 @@ experiment:
             _target_: wandb.util.generate_id
           wandb_group: benchmark_experiments
       run_name: randrot_noise_10distinctobj_dist_agent
+      loggers:
+        tbp.monty.experiment.recognition_policy:
+          level: INFO
     show_sensor_output: false
     n_train_epochs: 3
     model_name_or_path: ${constants.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/

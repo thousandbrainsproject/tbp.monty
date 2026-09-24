@@ -47,3 +47,6 @@ experiment:
     python_log_level: DEBUG
     logging:
       run_name: randrot_noise_10distinctobj_dist_agent
+      loggers:
+        tbp.monty.experiment.recognition_policy:
+          level: INFO

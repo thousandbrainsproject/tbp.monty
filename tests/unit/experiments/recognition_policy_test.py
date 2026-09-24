@@ -209,12 +209,12 @@ class StepCounterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             StepCounter(min_train_steps=min_train_steps)
 
-    @given(num_exploratory_steps=st.integers(max_value=-1))
-    def test_raises_value_error_if_num_exploratory_steps_is_negative(
-        self, num_exploratory_steps: int
+    @given(num_exploring_steps=st.integers(max_value=-1))
+    def test_raises_value_error_if_num_exploring_steps_is_negative(
+        self, num_exploring_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            StepCounter(num_exploratory_steps=num_exploratory_steps)
+            StepCounter(num_exploring_steps=num_exploring_steps)
 
     @given(max_train_steps=st.integers(max_value=0))
     def test_raises_value_error_if_max_train_steps_is_not_positive(
@@ -266,24 +266,24 @@ class StepCounterTest(unittest.TestCase):
         self.assertEqual(result.is_done, is_done)
 
     @given(
-        exploratory_steps=st.integers(min_value=0, max_value=60),
+        exploring_steps=st.integers(min_value=0, max_value=60),
         max_steps=st.integers(min_value=1, max_value=100),
     )
-    def test_exploring_times_out_at_or_after_num_exploratory_steps(
+    def test_exploring_times_out_at_or_after_num_exploring_steps(
         self,
-        exploratory_steps: int,
+        exploring_steps: int,
         max_steps: int,
     ) -> None:
         model = _model_with_step_type("exploratory_step")
         policy = StepCounter(
-            num_exploratory_steps=max_steps,
+            num_exploring_steps=max_steps,
         )
         result = RecognitionResult(is_done=False)
-        for step in range(exploratory_steps + 1):
+        for step in range(exploring_steps + 1):
             count = RecognitionCounter(step, mode=ExperimentMode.TRAIN)
             result = policy(model, count)
 
-        is_done = exploratory_steps >= max_steps
+        is_done = exploring_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
 
     @given(
@@ -315,19 +315,19 @@ class StepCounterTest(unittest.TestCase):
 
     @given(
         min_train_steps=st.integers(min_value=1, max_value=20),
-        num_exploratory_steps=st.integers(min_value=1, max_value=40),
-        exploratory_steps=st.integers(min_value=1, max_value=60),
+        num_exploring_steps=st.integers(min_value=1, max_value=40),
+        exploring_steps=st.integers(min_value=1, max_value=60),
     )
     def test_switch_to_explore_after_min_train_steps(
         self,
         min_train_steps: int,
-        num_exploratory_steps: int,
-        exploratory_steps: int,
+        num_exploring_steps: int,
+        exploring_steps: int,
     ) -> None:
         model = _model_with_step_type()
         policy = StepCounter(
             min_train_steps=min_train_steps,
-            num_exploratory_steps=num_exploratory_steps,
+            num_exploring_steps=num_exploring_steps,
             max_train_steps=100,
         )
         result = policy(model, RecognitionCounter(0, mode=ExperimentMode.TRAIN))
@@ -341,11 +341,11 @@ class StepCounterTest(unittest.TestCase):
         model.switch_to_exploratory_step.assert_called_once()
 
         model = _model_with_step_type("exploratory_step")
-        for step in range(exploratory_steps + 1):
+        for step in range(exploring_steps + 1):
             count = RecognitionCounter(min_train_steps + step, ExperimentMode.TRAIN)
             result = policy(model, count)
 
-        is_done = exploratory_steps >= num_exploratory_steps
+        is_done = exploring_steps >= num_exploring_steps
         self.assertEqual(result.is_done, is_done)
 
 
