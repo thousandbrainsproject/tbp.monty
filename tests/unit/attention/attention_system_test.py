@@ -14,7 +14,6 @@ from unittest.mock import ANY, MagicMock, patch, sentinel
 import hypothesis
 import pandas as pd
 from hypothesis import given
-from hypothesis import strategies as st
 
 from tbp.monty.attention.attention_system import (
     AttentionRegion,
