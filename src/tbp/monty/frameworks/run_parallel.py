@@ -657,9 +657,29 @@ def post_parallel_train(experiments: list[Mapping], base_dir: Path) -> None:
         shutil.rmtree(pdir)
 
 
+def _export_thread_limits_env(num_threads: int) -> None:
+    """Export thread limits so spawned workers inherit them.
+
+    With ``num_parallel`` workers, letting every worker also spin up a full
+    BLAS/torch thread pool oversubscribes the machine (N workers x N cores) and
+    slows every episode down. Workers are started with the "spawn" method and
+    import numpy and torch afresh, so they pick these variables up at import time.
+    Values already set by the user are left untouched.
+    """
+    for var in (
+        "OMP_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+    ):
+        os.environ.setdefault(var, str(num_threads))
+
+
 def run_episodes_parallel(
     experiments: list[Mapping],
     num_parallel: int,
+    threads_per_process: int,
     experiment_name: str,
     train: bool = True,
 ) -> None:
@@ -670,6 +690,7 @@ def run_episodes_parallel(
         num_parallel: Maximum number of parallel processes to run. If there
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
+        threads_per_process: Maximum number of intra-op threads each process may use.
         experiment_name: Name of the experiment.
         train: Whether the episodes are training or evaluation episodes.
     """
@@ -699,6 +720,7 @@ def run_episodes_parallel(
     # The "fork" method causes issues with the MuJoCo simulator's GL context, causing
     # the system to hang when trying to render an image.
     ctx = mp.get_context("spawn")
+    _export_thread_limits_env(threads_per_process)
     with ctx.Pool(num_parallel, maxtasksperchild=1) as p:
         if train:
             # NOTE: since we don't use wandb logging for training right now
@@ -798,6 +820,7 @@ def main(cfg: DictConfig):
             run_episodes_parallel(
                 train_configs,
                 cfg.num_parallel,
+                cfg.threads_per_process,
                 cfg.experiment.config.logging.run_name,
                 train=True,
             )
@@ -820,6 +843,7 @@ def main(cfg: DictConfig):
             run_episodes_parallel(
                 eval_configs,
                 cfg.num_parallel,
+                cfg.threads_per_process,
                 cfg.experiment.config.logging.run_name,
                 train=False,
             )
