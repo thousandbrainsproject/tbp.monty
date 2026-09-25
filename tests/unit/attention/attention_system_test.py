@@ -30,7 +30,7 @@ class NoopAttentionSystemTest(unittest.TestCase):
     @given(goals=goals(), regions=attention_regions())
     def test_step_does_not_filter_out_any_goals(
         self, goals: list[Goal], regions: list[AttentionRegion]
-    ):
+    ) -> None:
         system = NoopAttentionSystem()
         filtered_goals = system.step(goals, regions)
         self.assertListEqual(filtered_goals, goals)
@@ -38,7 +38,7 @@ class NoopAttentionSystemTest(unittest.TestCase):
     @given(goals=goals(), regions=attention_regions())
     def test_reset_does_nothing(
         self, goals: list[Goal], regions: list[AttentionRegion]
-    ):
+    ) -> None:
         system = NoopAttentionSystem()
         filtered_goals_1 = system.step(goals, regions)
         self.assertListEqual(filtered_goals_1, goals)
@@ -47,7 +47,7 @@ class NoopAttentionSystemTest(unittest.TestCase):
         filtered_goals_2 = system.step(goals, regions)
         self.assertListEqual(filtered_goals_1, filtered_goals_2)
 
-    def test_state_dict_returns_empty_memento(self):
+    def test_state_dict_returns_empty_memento(self) -> None:
         system = NoopAttentionSystem()
         memento = system.state_dict()
         self.assertDictEqual(memento, {})
@@ -57,7 +57,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
     @given(grid=strategies.default_voxel_grid())
     def test_expire_removes_voxels_with_weights_below_weight_expiration_tolerance(
         self, grid: VoxelGrid
-    ):
+    ) -> None:
         hypothesis.note(grid.to_pandas()["weight"])
         result = DefaultAttentionSystem.expire(grid)
         self.assertFalse(
@@ -70,7 +70,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
     @patch("tbp.monty.cmp.AttentionRegion.concat")
     def test_voxelize_attention_regions_concatenates_regions(
         self, mock_concat: MagicMock
-    ):
+    ) -> None:
         system = DefaultAttentionSystem()
         system._voxelize_attention_regions(sentinel.regions)
         mock_concat.assert_called_once_with(sentinel.regions)
@@ -78,7 +78,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
     @patch("tbp.monty.cmp.AttentionRegion.concat")
     def test_voxelize_attention_regions_concatenates_regions_returns_empty_voxel_grid_when_concatenated_region_is_empty(  # noqa: E501
         self, mock_concat: MagicMock
-    ):
+    ) -> None:
         mock_region = MagicMock()
         mock_region.__len__.return_value = 0
         mock_concat.return_value = mock_region
@@ -99,7 +99,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         mock_voxelize_and_bin_points: MagicMock,
         mock_pool_weights: MagicMock,
         voxel_grid: VoxelGrid,
-    ):
+    ) -> None:
         mock_region = MagicMock()
         mock_region.__len__.return_value = 1
         mock_concat.return_value = mock_region
@@ -124,7 +124,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         mock_voxelize_and_bin_points: MagicMock,
         mock_pool_weights: MagicMock,
         voxel_grid: VoxelGrid,
-    ):
+    ) -> None:
         mock_region = MagicMock()
         mock_region.__len__.return_value = 1
         mock_concat.return_value = mock_region
@@ -146,7 +146,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         mock_voxelize_and_bin_points: MagicMock,  # noqa: ARG002
         mock_pool_weights: MagicMock,
         voxel_grid: VoxelGrid,
-    ):
+    ) -> None:
         mock_region = MagicMock()
         mock_region.__len__.return_value = 1
         mock_concat.return_value = mock_region
@@ -166,7 +166,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         self,
         mock_voxelize_attention_regions: MagicMock,
         regions: list[AttentionRegion],
-    ):
+    ) -> None:
         system = DefaultAttentionSystem(merge=MagicMock())
         system.step(MagicMock(), regions)
         mock_voxelize_attention_regions.assert_called_once_with(regions)
@@ -179,7 +179,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         self,
         mock_voxelize_attention_regions: MagicMock,
         regions: list[AttentionRegion],
-    ):
+    ) -> None:
         mock_telemetry = MagicMock()
         system = DefaultAttentionSystem(merge=MagicMock(), telemetry=mock_telemetry)
         system.step(MagicMock(), regions)
@@ -191,7 +191,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
     def test_step_decays_current_grid(
         self,
         regions: list[AttentionRegion],
-    ):
+    ) -> None:
         mock_decay = MagicMock()
         system = DefaultAttentionSystem(decay=mock_decay)
         current_grid = system._grid
@@ -204,7 +204,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
     @patch("tbp.monty.attention.attention_system.DefaultAttentionSystem.expire")
     def test_step_expires_current_grid(
         self, mock_expire: MagicMock, regions: list[AttentionRegion]
-    ):
+    ) -> None:
         mock_merge = MagicMock()
         system = DefaultAttentionSystem(merge=mock_merge)
         current_grid = system._grid
@@ -224,7 +224,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         mock_voxelize_attention_regions: MagicMock,
         mock_expire: MagicMock,
         regions: list[AttentionRegion],
-    ):
+    ) -> None:
         mock_merge = MagicMock()
         system = DefaultAttentionSystem(merge=mock_merge)
         mock_voxelize_attention_regions.return_value = sentinel.proposed_grid
@@ -237,7 +237,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         )
         self.assertEqual(system._grid, mock_merge.return_value)
 
-    def test_step_updates_telemetry_with_merged_grid(self):
+    def test_step_updates_telemetry_with_merged_grid(self) -> None:
         mock_merge = MagicMock()
         mock_telemetry = MagicMock()
         system = DefaultAttentionSystem(merge=mock_merge, telemetry=mock_telemetry)
@@ -249,7 +249,7 @@ class DefaultAttentionSystemTest(unittest.TestCase):
     @given(goals=goals(), regions=attention_regions())
     def test_step_returns_filtered_goals(
         self, goals: list[Goal], regions: list[AttentionRegion]
-    ):
+    ) -> None:
         mock_merge = MagicMock()
         mock_merge.return_value = sentinel.grid
         mock_goal_filter = MagicMock()
@@ -261,26 +261,26 @@ class DefaultAttentionSystemTest(unittest.TestCase):
         self.assertEqual(result, mock_goal_filter.return_value)
 
     @given(grid=strategies.default_voxel_grid())
-    def test_reset_sets_grid_to_empty(self, grid: VoxelGrid):
+    def test_reset_sets_grid_to_empty(self, grid: VoxelGrid) -> None:
         system = DefaultAttentionSystem(voxel_size=grid.voxel_size)
         system._grid = grid
         system.reset()
         self.assertEqual(len(system._grid), 0)
 
-    def test_reset_resets_telemetry(self):
+    def test_reset_resets_telemetry(self) -> None:
         mock_telemetry = MagicMock()
         system = DefaultAttentionSystem(telemetry=mock_telemetry)
         system.reset()
         mock_telemetry.reset.assert_called_once()
 
-    def test_state_dict_returns_current_grid(self):
+    def test_state_dict_returns_current_grid(self) -> None:
         system = DefaultAttentionSystem()
         system._grid = MagicMock()
         state = system.state_dict()
         self.assertIn("grid", state)
         self.assertEqual(state["grid"], system._grid)
 
-    def test_state_dict_returns_telemetry_state_dict(self):
+    def test_state_dict_returns_telemetry_state_dict(self) -> None:
         mock_telemetry = MagicMock()
         system = DefaultAttentionSystem(telemetry=mock_telemetry)
         state = system.state_dict()
