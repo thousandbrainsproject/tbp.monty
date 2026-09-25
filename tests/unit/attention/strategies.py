@@ -147,11 +147,7 @@ def unique_voxels(
     min_voxel_coord: int = MIN_VOXEL_COORDINATE,
     max_voxel_coord: int = MAX_VOXEL_COORDINATE,
 ) -> list[Voxel]:
-    """Draw a list of unique voxels.
-
-    Returns:
-        List of unique voxel coordinates.
-    """
+    """Return a list of unique voxels."""
     voxel_axis_length = max_voxel_coord - min_voxel_coord + 1
 
     min_total_voxels = min_voxels
@@ -285,11 +281,7 @@ def default_voxel_grid(
         [int], st.SearchStrategy[npt.NDArray[np.floating]]
     ] = default_attention_system_weights,
 ) -> VoxelGrid:
-    """Constructs a voxel grid with a set of weights.
-
-    Returns:
-       Voxel grid.
-    """
+    """Return a voxel grid with a set of weights."""
     if voxels_strategy is None:
         voxels_strategy = unique_voxels()
 
