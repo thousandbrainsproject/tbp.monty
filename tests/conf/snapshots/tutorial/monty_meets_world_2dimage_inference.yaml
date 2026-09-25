@@ -216,9 +216,9 @@ experiment:
           stream: ext://sys.stdout
       loggers:
         telemetry.tbp.monty:
-          level: INFO
           handlers:
           - telemetry_console
+          level: INFO
     show_sensor_output: true
     n_train_epochs: 3
     n_eval_epochs: 1

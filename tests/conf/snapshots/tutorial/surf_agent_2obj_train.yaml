@@ -178,9 +178,9 @@ experiment:
           stream: ext://sys.stdout
       loggers:
         telemetry.tbp.monty:
-          level: INFO
           handlers:
           - telemetry_console
+          level: INFO
     show_sensor_output: false
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
