@@ -35,8 +35,7 @@ class Union(VoxelGridMerge):
     """Merge grid_b into grid_a, taking the union of their voxels.
 
     Every voxel occupied in either grid is occupied in the result. Where the
-    grids overlap, grid_b's weight wins; making that overlap policy
-    configurable is left for later.
+    grids overlap, grid_b's weight wins.
     """
 
     def __call__(
