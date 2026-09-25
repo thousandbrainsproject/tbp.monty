@@ -29,7 +29,7 @@ from tests.unit.attention.strategies import (
 
 class NoopGoalFilterTest(unittest.TestCase):
     @given(goals=goals())
-    def test_noop_goal_filter_returns_all_goals(self, goals: list[Goal]):
+    def test_noop_goal_filter_returns_all_goals(self, goals: list[Goal]) -> None:
         self.assertEqual(NoopGoalFilter()(MagicMock(), goals), goals)
 
 
@@ -37,7 +37,7 @@ class HardGoalFilterTest(unittest.TestCase):
     @given(voxel_grid=default_voxel_grid(voxels_strategy=st.just([])), goals=goals())
     def test_out_of_grid_goals_pass_when_grid_is_empty(
         self, voxel_grid, goals: list[Goal]
-    ):
+    ) -> None:
         self.assertEqual(HardGoalFilter()(voxel_grid, goals), goals)
 
     @given(
@@ -47,7 +47,7 @@ class HardGoalFilterTest(unittest.TestCase):
     )
     def test_out_of_grid_goals_pass_when_all_voxel_weights_are_negative(
         self, grid_and_goals: VoxelGridAndGoals
-    ):
+    ) -> None:
         voxel_grid = grid_and_goals.voxel_grid
         goals = grid_and_goals.goals_out_of_grid
         self.assertEqual(HardGoalFilter()(voxel_grid, goals), goals)
@@ -59,7 +59,7 @@ class HardGoalFilterTest(unittest.TestCase):
     )
     def test_out_of_grid_goals_filtered_out_when_there_are_voxels_with_positive_weights(
         self, grid_and_goals: VoxelGridAndGoals
-    ):
+    ) -> None:
         voxel_grid = grid_and_goals.voxel_grid
         goals = grid_and_goals.goals_out_of_grid
         self.assertEqual(HardGoalFilter()(voxel_grid, goals), [])
@@ -71,7 +71,7 @@ class HardGoalFilterTest(unittest.TestCase):
     )
     def test_goals_in_voxels_with_negative_weights_filtered(
         self, grid_and_goals: VoxelGridAndGoals
-    ):
+    ) -> None:
         voxel_grid = grid_and_goals.voxel_grid
         goals = grid_and_goals.goals_in_negative_weight_grid
         kept = HardGoalFilter()(voxel_grid, goals)
@@ -84,7 +84,7 @@ class HardGoalFilterTest(unittest.TestCase):
     )
     def test_goals_in_voxels_with_positive_weights_pass(
         self, grid_and_goals: VoxelGridAndGoals
-    ):
+    ) -> None:
         voxel_grid = grid_and_goals.voxel_grid
         goals = grid_and_goals.goals_in_positive_weight_grid
         kept = HardGoalFilter()(voxel_grid, goals)
