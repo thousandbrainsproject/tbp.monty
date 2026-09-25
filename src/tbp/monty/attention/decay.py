@@ -65,6 +65,7 @@ class LinearWeightDecay(VoxelGridWeightDecay):
             return
         data = grid.to_pandas()
         weights = data["weight"].to_numpy()
+        weights.flags.writeable = True
         to_step = np.abs(weights) > self._rate
 
         stepped = weights[to_step] - self._rate * np.sign(weights[to_step])
