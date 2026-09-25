@@ -34,13 +34,10 @@ class NoopDecay(VoxelGridWeightDecay):
 
 
 class LinearWeightDecay(VoxelGridWeightDecay):
-    """Move each voxel weight toward zero by a fixed rate per step.
+    """Move each voxel weight toward zero by a fixed amount.
 
-    Decay is applied in place to the grid's backing frame. A weight that
-    would land within the rate of zero is clamped to zero instead: stepping
-    past zero would flip the sign and oscillate forever, and a remainder
-    smaller than the rate is as good as gone. A non-positive rate disables
-    decay.
+    Decay is applied in place to the grid's weights. Weights that fall
+    within [-rate, +rate] get clamped to zero.
     """
 
     _rate: float

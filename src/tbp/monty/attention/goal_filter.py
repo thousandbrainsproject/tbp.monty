@@ -41,35 +41,26 @@ class NoopGoalFilter(GoalFilter):
 
 
 class HardGoalFilter(GoalFilter):
-    """Keep only the goals inside a non-negatively weighted voxel.
+    """Keep only the goals that fall within a positively weighted voxel.
 
-    Goals in an inhibited (negative-weight) voxel are dropped, and so are
-    goals outside the grid, unless every voxel is inhibited: a grid holding
-    nothing attended only says where not to go, so out-of-grid goals then
-    pass. Goals without a location pass through, as does everything when
-    the grid is empty.
+    Rules:
+        - If the attention grid is empty, let all goals through. Otherwise...
+        - If all voxels are inhibited (negative-weighted), allow all goals to pass
+            that do not land in negative voxels.
+        - If a goal does not fall within a voxel, filter it out. Otherwise...
+        - If the goals' voxel weight is <= 0, filter the goal out. Otherwise,
+            let it through.
     """
 
     def __call__(self, voxel_grid: VoxelGrid, goals: Sequence[Goal]) -> list[Goal]:
         """Filter the goals against the grid.
-
-        Rules:
-            - If the attention grid is empty, let all goals through. Otherwise...
-            - If all voxels are inhibited (negative-weighted), allow all goals to pass
-              that do not land in negative voxels.
-            - If a goal does not fall within a voxel, filter it out. Otherwise...
-            - If the goals' voxel weight is <= 0, filter the goal out. Otherwise,
-              let it through.
-
 
         Args:
             voxel_grid: The current voxel grid.
             goals: The goals to filter.
 
         Returns:
-            The goals inside a non-negatively weighted voxel, plus any
-            without a location, plus those outside the grid when every voxel
-            is inhibited. All goals, if the grid is empty.
+            The goals filtered according to the rules.
         """
         if len(voxel_grid) == 0 or len(goals) == 0:
             return list(goals)

@@ -120,15 +120,13 @@ class DefaultAttentionSystem(AttentionSystem):
     def _voxelize_attention_regions(
         self, regions: Sequence[AttentionRegion]
     ) -> VoxelGrid:
-        """Voxelize this step's regions into a fresh grid.
+        """Voxelize regions into a grid.
 
         Args:
-            regions: The regions proposed this step, one per module.
+            regions: The regions to voxelize.
 
         Returns:
-            The grid built from this step's regions alone, carrying the
-            inhibit-all signal if any region does.
-
+            The grid built from the provided regions.
         """
         region = AttentionRegion.concat(regions)
         if len(region) == 0:
