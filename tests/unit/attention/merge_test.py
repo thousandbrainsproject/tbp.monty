@@ -20,11 +20,13 @@ from tests.unit.attention import strategies
 
 
 class UnionTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.union = Union()
 
     @given(grid_a=strategies.default_voxel_grid())
-    def test_raises_value_error_if_voxel_sizes_do_not_match(self, grid_a: VoxelGrid):
+    def test_raises_value_error_if_voxel_sizes_do_not_match(
+        self, grid_a: VoxelGrid
+    ) -> None:
         grid_b = VoxelGrid.from_pandas(grid_a.voxel_size + 1, grid_a.to_pandas())
         with self.assertRaisesRegex(ValueError, "Voxel sizes must match for merging."):
             self.union(grid_a, grid_b)
@@ -39,7 +41,7 @@ class UnionTest(unittest.TestCase):
         grid_a: VoxelGrid,
         grid_b: VoxelGrid,
         grid_result: VoxelGrid,
-    ):
+    ) -> None:
         with patch(
             "pandas.DataFrame.combine_first",
             autospec=True,
