@@ -15,12 +15,12 @@ from tbp.monty.memento import Memento
 
 __all__ = [
     "AttentionSystemTelemetry",
-    "AttentionSystemTelemetryProtocol",
+    "DefaultAttentionSystemTelemetry",
     "NoopAttentionSystemTelemetry",
 ]
 
 
-class AttentionSystemTelemetryProtocol(Protocol):
+class AttentionSystemTelemetry(Protocol):
     def reset(self) -> None: ...
 
     def proposed_grid(self, grid: VoxelGrid) -> None: ...
@@ -30,7 +30,7 @@ class AttentionSystemTelemetryProtocol(Protocol):
     def state_dict(self) -> Memento: ...
 
 
-class NoopAttentionSystemTelemetry(AttentionSystemTelemetryProtocol):
+class NoopAttentionSystemTelemetry(AttentionSystemTelemetry):
     def reset(self) -> None:
         pass
 
@@ -44,7 +44,7 @@ class NoopAttentionSystemTelemetry(AttentionSystemTelemetryProtocol):
         return dict(grids=[], proposed_grids=[])
 
 
-class AttentionSystemTelemetry(AttentionSystemTelemetryProtocol):
+class DefaultAttentionSystemTelemetry(AttentionSystemTelemetry):
     """Keeps each step's grids for the episode: the proposals and the result."""
 
     def __init__(self) -> None:

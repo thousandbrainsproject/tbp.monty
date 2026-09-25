@@ -18,7 +18,7 @@ from tbp.monty.attention.decay import LinearWeightDecay, VoxelGridWeightDecay
 from tbp.monty.attention.goal_filter import GoalFilter, HardGoalFilter
 from tbp.monty.attention.merge import Union, VoxelGridMerge
 from tbp.monty.attention.telemetry import (
-    AttentionSystemTelemetryProtocol,
+    AttentionSystemTelemetry,
     NoopAttentionSystemTelemetry,
 )
 from tbp.monty.attention.voxel_grid import (
@@ -31,7 +31,7 @@ from tbp.monty.cmp import AttentionRegion, Goal
 from tbp.monty.memento import Memento
 
 
-class AttentionSystemProtocol(Protocol):
+class AttentionSystem(Protocol):
     def step(
         self, goals: Sequence[Goal], regions: Sequence[AttentionRegion]
     ) -> list[Goal]: ...
@@ -41,7 +41,7 @@ class AttentionSystemProtocol(Protocol):
     def state_dict(self) -> Memento: ...
 
 
-class NoopAttentionSystem(AttentionSystemProtocol):
+class NoopAttentionSystem(AttentionSystem):
     def step(
         self,
         goals: Sequence[Goal],
@@ -56,7 +56,7 @@ class NoopAttentionSystem(AttentionSystemProtocol):
         return {}
 
 
-class DefaultAttentionSystem(AttentionSystemProtocol):
+class DefaultAttentionSystem(AttentionSystem):
     WEIGHT_EXPIRATION_TOLERANCE: ClassVar[float] = 1e-6
     """Voxels whose weight magnitude falls below this are expired from the grid."""
 
@@ -74,7 +74,7 @@ class DefaultAttentionSystem(AttentionSystemProtocol):
         decay: VoxelGridWeightDecay | None = None,
         merge: VoxelGridMerge | None = None,
         goal_filter: GoalFilter | None = None,
-        telemetry: AttentionSystemTelemetryProtocol | None = None,
+        telemetry: AttentionSystemTelemetry | None = None,
     ) -> None:
         self._voxel_size = voxel_size
         self._weight_pooler = weight_pooler
