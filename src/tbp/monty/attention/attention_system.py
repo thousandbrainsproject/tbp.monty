@@ -57,7 +57,6 @@ class NoopAttentionSystem(AttentionSystemProtocol):
 
 
 class DefaultAttentionSystem(AttentionSystemProtocol):
-
     WEIGHT_EXPIRATION_TOLERANCE: ClassVar[float] = 1e-6
     """Voxels whose weight magnitude falls below this are expired from the grid."""
 
