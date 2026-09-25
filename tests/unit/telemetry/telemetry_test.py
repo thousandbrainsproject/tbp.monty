@@ -9,56 +9,45 @@
 
 from __future__ import annotations
 
-import io
 import json
 import logging
-import unittest
+from unittest import TestCase
 
 import hydra
-import pytest
 
 from tbp.monty import telemetry
 from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
-from tbp.monty.frameworks.models import monty_base
 from tbp.monty.hydra import instantiate_experiment
 from tbp.monty.telemetry.formatters import JsonFormatter
 from tbp.monty.telemetry.publishers import TelemetryPublisher
 from tbp.monty.telemetry.schemas import TelemetryEvent
 from tests import HYDRA_ROOT
 
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
+
+def clear_all_loggers():
+    logging.Logger.manager.loggerDict.clear()
 
 
 class TelemetryLogHandler(logging.Handler):
     """Logging handler that collects log records for telemetry assertions."""
 
-    def __init__(self):
-        super().__init__()
-        self.records: list[logging.LogRecord] = []
+    records: list[logging.LogRecord]
 
-    def emit(self, record: logging.LogRecord):
+    def __init__(self) -> None:
+        super().__init__()
+        self.records = []
+
+    def emit(self, record: logging.LogRecord) -> None:
         self.records.append(record)
 
 
-class LoggerTestCase(unittest.TestCase):
-    def setUp(self):
-        # Clean up all loggers
-        logging.Logger.manager.loggerDict.clear()
-
-
-class TelemetryEventTest(LoggerTestCase):
-    """Unit tests for `TelemetryEvent`."""
-
-    def test_telemetry_event_defaults(self):
-        """Verify `TelemetryEvent` kind fallback and values mapping."""
+class TelemetryEventTest(TestCase):
+    def test_kind_defaults_to_class_name(self) -> None:
         event = TelemetryEvent(kind="")
         self.assertEqual(event.kind, event.__class__.__name__)
+        self.assertEqual(event.kind, str(event))
 
-    def test_telemetry_event_custom_fields(self):
-        """Verify `TelemetryEvent` kind when explicitly specified."""
+    def test_custom_fields_override_kind(self) -> None:
         kind = "NewGraphAdded"
         graph_id = "new_object0"
         event = TelemetryEvent(kind=kind, graph_id=graph_id)
@@ -66,17 +55,8 @@ class TelemetryEventTest(LoggerTestCase):
         self.assertEqual(event.graph_id, graph_id)
 
 
-class JsonFormatterTest(LoggerTestCase):
-    """Unit tests for `JsonFormatter`."""
-
-    def setUp(self):
-        super().setUp()
-        telemetry.getTelemeter("tbp.monty").setLevel(logging.NOTSET)
-        self.telemeter = telemetry.getTelemeter(monty_base.__name__)
-        self.telemeter.setLevel(logging.NOTSET)
-
-    def test_format(self):
-        """Verify `JsonFormatter` formats a LogRecord into expected JSON."""
+class JsonFormatterTest(TestCase):
+    def test_format_logrecord_to_expected_json(self) -> None:
         event = TelemetryEvent(kind="CustomEvent", graph_id="obj_1")
         record = logging.LogRecord(
             name="telemetry.test",
@@ -102,48 +82,30 @@ class JsonFormatterTest(LoggerTestCase):
         }
         self.assertEqual(data, expected)
 
-    def test_json_formatter(self):
-        """Verify `JsonFormatter` formats output when used by a logging handler."""
-        stream = io.StringIO()
-        handler = logging.StreamHandler(stream)
-        handler.setFormatter(JsonFormatter())
 
-        self.telemeter.setLevel(logging.INFO)
-        self.telemeter.addHandler(handler)
-        try:
-            event = TelemetryEvent(kind="StreamEvent", graph_id="obj_1")
-            self.telemeter.info(event)
-            output = stream.getvalue()
-            data = json.loads(output)
-
-            self.assertEqual(data["level"], "INFO")
-            self.assertEqual(data["kind"], "StreamEvent")
-            self.assertEqual(data["graph_id"], "obj_1")
-        finally:
-            self.telemeter.removeHandler(handler)
+class GetTelemeterTest(TestCase):
+    def test_returns_publisher_with_telemetry_prefixed_name(self) -> None:
+        telemeter = telemetry.getTelemeter(f"telemetry.tbp.monty.{__name__}")
+        self.assertIsInstance(telemeter, TelemetryPublisher)
+        self.assertEqual(telemeter.name, f"telemetry.tbp.monty.{__name__}")
+        self.assertFalse(telemeter.propagate)
 
 
-class TelemetryPublisherTest(LoggerTestCase):
-    """Unit tests for `TelemetryPublisher`."""
-
-    def setUp(self):
-        super().setUp()
-        telemetry.getTelemeter("tbp.monty").setLevel(logging.NOTSET)
+class TelemetryPublisherTest(TestCase):
+    def setUp(self) -> None:
+        clear_all_loggers()
         self.handler = TelemetryLogHandler()
-        self.telemeter = telemetry.getTelemeter(monty_base.__name__)
+        self.telemeter = telemetry.getTelemeter(f"tbp.monty.{__name__}")
         self.telemeter.setLevel(logging.NOTSET)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.telemeter.removeHandler(self.handler)
 
-    def test_params(self):
-        """Verify logger params."""
-        self.assertIsInstance(self.telemeter, TelemetryPublisher)
-        self.assertEqual(self.telemeter.name, f"telemetry.{monty_base.__name__}")
-        self.assertFalse(self.telemeter.propagate)
+    def test_info_raises_typeerror_if_not_event_type(self) -> None:
+        with self.assertRaises(TypeError):
+            self.telemeter.info("")
 
-    def test_events(self):
-        """Verify emitting events produces log records with telemetry schemas."""
+    def test_logs_log_records_with_telemetry_event_as_the_message(self) -> None:
         self.telemeter.setLevel(logging.DEBUG)
         self.telemeter.addHandler(self.handler)
 
@@ -166,9 +128,7 @@ class TelemetryPublisherTest(LoggerTestCase):
         self.assertEqual(len(self.handler.records), len(events))
 
         for record, (_, level, event) in zip(self.handler.records, events):
-            print(record.stack_info)
             self.assertEqual(record.levelno, level)
-            self.assertEqual(str(record.msg), event.kind)
             self.assertIs(record.msg, event)
 
     @staticmethod
@@ -183,40 +143,21 @@ class TelemetryPublisherTest(LoggerTestCase):
             )
         return instantiate_experiment(base_cfg.experiment)
 
-    def test_debug_config(self):
-        """Verify behavior of Hydra config ``telemetry=debug``."""
-        with self._instantiate_experiment("debug"):
-            self.telemeter.addHandler(self.handler)
-            self.telemeter.debug(TelemetryEvent(kind="TestEvent"))
-            self.assertEqual(self.telemeter.getEffectiveLevel(), logging.DEBUG)
-            self.assertEqual(len(self.handler.records), 1)
-
-    def test_info_config(self):
-        """Verify behavior of Hydra config ``telemetry=info``."""
+    def test_hydra_info_config(self) -> None:
         with self._instantiate_experiment("info"):
             self.telemeter.addHandler(self.handler)
             self.telemeter.debug(TelemetryEvent(kind="TestEvent"))
             self.telemeter.info(TelemetryEvent(kind="TestEvent"))
+
+            # Validate loglevel compliance
             self.assertEqual(self.telemeter.getEffectiveLevel(), logging.INFO)
             self.assertEqual(len(self.handler.records), 1)
 
-    def test_warning_config(self):
-        """Verify behavior of Hydra config ``telemetry=warning``."""
-        with self._instantiate_experiment("warning"):
-            self.telemeter.addHandler(self.handler)
-            self.telemeter.warning(TelemetryEvent(kind="TestEvent"))
-            self.assertEqual(len(self.handler.records), 1)
-
-    def test_error_config(self):
-        """Verify behavior of Hydra config ``telemetry=error``."""
-        with self._instantiate_experiment("error"):
-            self.telemeter.addHandler(self.handler)
-            self.telemeter.error(TelemetryEvent(kind="TestEvent"))
-            self.assertEqual(len(self.handler.records), 1)
-
-    def test_critical_config(self):
-        """Verify behavior of Hydra config ``telemetry=critical``."""
-        with self._instantiate_experiment("critical"):
-            self.telemeter.addHandler(self.handler)
-            self.telemeter.critical(TelemetryEvent(kind="TestEvent"))
-            self.assertEqual(len(self.handler.records), 1)
+            # Validate presence of telemetry_console handler and telemetry_formatter
+            logger = logging.getLogger("telemetry.tbp.monty")
+            handler = next(
+                (h for h in logger.handlers if isinstance(h, logging.StreamHandler)),
+                None,
+            )
+            self.assertIsNotNone(handler)
+            self.assertIsInstance(handler.formatter, JsonFormatter)

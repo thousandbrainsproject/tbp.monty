@@ -15,8 +15,6 @@ from typing_extensions import deprecated, override
 
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
-# ruff: noqa: DOC502
-
 
 class TelemetryPublisher(logging.Logger):
     """Structured telemetry publisher.
@@ -45,14 +43,7 @@ class TelemetryPublisher(logging.Logger):
             self.addHandler(logging.NullHandler())
 
     def _log_event(self, level: int, msg: object, *args, **kwargs):
-        """Catch-all internal method for emitting telemetry events.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
-        """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
-
+        """Catch-all internal method for emitting telemetry events."""
         # skip 2 frames to get to the caller
         kwargs["stacklevel"] = kwargs.get("stacklevel", 1) + 2
 
@@ -71,11 +62,15 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(level, msg, *args, **kwargs)
 
     # Type-hinted equivalent of `log` for convenience
     def emit(self, level: int, event: TelemetryEvent, *args, **kwargs):
         """Emits a telemetry event at the specified log level.
+
+        Equivalent of `log` method, type-hinted for convenience.
 
         Args:
             level: The log level.
@@ -86,6 +81,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(event, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(level, event, *args, **kwargs)
 
     @override
@@ -100,6 +97,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.DEBUG, msg, *args, **kwargs)
 
     @override
@@ -114,6 +113,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.INFO, msg, *args, **kwargs)
 
     @override
@@ -128,6 +129,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.WARNING, msg, *args, **kwargs)
 
     @deprecated("Deprecated since Python 3.3. Use `warning()` instead.")
@@ -143,6 +146,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.WARNING, msg, *args, **kwargs)
 
     @override
@@ -157,6 +162,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.ERROR, msg, *args, **kwargs)
 
     @override
@@ -172,6 +179,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.ERROR, msg, *args, exc_info=exc_info, **kwargs)
 
     @override
@@ -186,6 +195,8 @@ class TelemetryPublisher(logging.Logger):
         Raises:
             TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
+        if not isinstance(msg, TelemetryEvent):
+            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.CRITICAL, msg, *args, **kwargs)
 
     # ``Logger.fatal`` is aliased to ``Logger.critical``, so it must be re-aliased here
