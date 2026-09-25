@@ -14,6 +14,7 @@ import logging
 from unittest import TestCase
 
 import hydra
+import pytest
 
 from tbp.monty import telemetry
 from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
@@ -22,6 +23,12 @@ from tbp.monty.telemetry.formatters import JsonFormatter
 from tbp.monty.telemetry.publishers import TelemetryPublisher
 from tbp.monty.telemetry.schemas import TelemetryEvent
 from tests import HYDRA_ROOT
+
+# Required to avoid ModuleNotFoundError from tbp.monty.hydra
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
 
 
 def clear_all_loggers():
