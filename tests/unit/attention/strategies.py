@@ -276,45 +276,6 @@ def voxel_grid_and_goals(
     )
 
 
-# TODO: delete if unused once attention tests are completed
-# @st.composite
-# def unique_coordinate_bound_voxels(
-#     draw: st.DrawFn, voxel_size: float, min_voxels: int = 0
-# ) -> list[Voxel]:
-#     """Draw a list of unique voxels that lie within coordinate bounds.
-
-#     Returns:
-#         List of unique voxel coordinates.
-#     """
-#     min_voxel_coord = int(-MAX_POINT_COORDINATE / voxel_size)
-#     max_voxel_coord = int(MAX_POINT_COORDINATE / voxel_size)
-#     voxel_axis_length = max_voxel_coord - min_voxel_coord + 1
-
-#     min_total_voxels = min_voxels
-#     max_total_voxels = min(voxel_axis_length**3, MAX_VOXELS)
-#     return draw(
-#         st.lists(
-#             st.tuples(
-#                 st.integers(
-#                     min_value=min_voxel_coord,
-#                     max_value=max_voxel_coord,
-#                 ),
-#                 st.integers(
-#                     min_value=min_voxel_coord,
-#                     max_value=max_voxel_coord,
-#                 ),
-#                 st.integers(
-#                     min_value=min_voxel_coord,
-#                     max_value=max_voxel_coord,
-#                 ),
-#             ),
-#             min_size=min_total_voxels,
-#             max_size=max_total_voxels,
-#             unique=True,
-#         )
-#     )
-
-
 @st.composite
 def default_voxel_grid(
     draw: st.DrawFn,
