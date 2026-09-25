@@ -45,7 +45,6 @@ class NoopAttentionSystemTelemetry(AttentionSystemTelemetry):
 
 
 class DefaultAttentionSystemTelemetry(AttentionSystemTelemetry):
-    """Keeps each step's grids for the episode: the proposals and the result."""
 
     def __init__(self) -> None:
         self._grids: list[VoxelGrid] = []
