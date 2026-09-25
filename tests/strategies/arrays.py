@@ -55,7 +55,7 @@ def shape_not_1d(draw: st.DrawFn) -> tuple[int, ...]:
 
 @st.composite
 def float_array_not_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
-    """Returns an array of locations that is not N by 3."""
+    """Returns an array of floats that is not N by 3."""
     return draw(
         arrays(
             dtype=np.float64,
@@ -68,7 +68,7 @@ def float_array_not_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
 
 @st.composite
 def float_array_not_1d(draw: st.DrawFn) -> npt.NDArray[np.float64]:
-    """Returns an array of weights that is not 1D."""
+    """Returns an array of floats that is not 1D."""
     return draw(
         arrays(
             dtype=np.float64,
@@ -81,7 +81,7 @@ def float_array_not_1d(draw: st.DrawFn) -> npt.NDArray[np.float64]:
 
 @st.composite
 def float_array_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
-    """Returns an array of locations that is N by 3."""
+    """Returns an N by 3 array of floats."""
     return draw(
         arrays(
             dtype=np.float64,
