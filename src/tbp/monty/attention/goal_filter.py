@@ -61,6 +61,7 @@ class HardGoalFilter(GoalFilter):
             - If the goals' voxel weight is <= 0, filter the goal out. Otherwise,
               let it through.
 
+
         Args:
             voxel_grid: The current voxel grid.
             goals: The goals to filter.
@@ -86,6 +87,6 @@ class HardGoalFilter(GoalFilter):
         kept = [
             goal
             for goal, voxel_weight in zip(located, voxel_weights)
-            if voxel_weight >= 0 or (all_inhibited and np.isnan(voxel_weight))
+            if voxel_weight > 0 or (all_inhibited and np.isnan(voxel_weight))
         ]
         return kept + unlocated

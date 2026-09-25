@@ -17,7 +17,6 @@ import pandas as pd
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
-from tbp.monty.attention.attention_system import DefaultAttentionSystem
 from tbp.monty.attention.voxel_grid import Voxel, VoxelGrid
 from tbp.monty.cmp import Goal
 from tests.strategies.cmp import goals_at
@@ -35,31 +34,12 @@ VOXEL_EDGE_TOLERANCE = 1e-6
 """Generated points stay this far (as a fraction of a voxel) from voxel faces,
 so float error cannot move them into a neighbouring voxel.
 """
+MIN_ATTENTION_WEIGHT: float = -1.0
+"""Full inhibition."""
+MAX_ATTENTION_WEIGHT: float = 1.0
+"""Full excitation."""
 
 voxel_sizes = st.floats(min_value=MIN_VOXEL_SIZE, max_value=MAX_VOXEL_SIZE)
-
-# point_coordinates = st.floats(
-#     min_value=MIN_POINT_COORDINATE,
-#     max_value=MAX_POINT_COORDINATE,
-#     allow_nan=False,
-#     width=64,
-# )
-
-# points_1d = arrays(dtype=np.float64, shape=(3,), elements=point_coordinates)
-# points_2d = arrays(
-#     dtype=np.float64,
-#     shape=st.tuples(st.integers(min_value=1, max_value=MAX_POINTS), st.just(3)),
-#     elements=point_coordinates,
-# )
-
-
-# def float_features_values(length: int) -> st.SearchStrategy[np.ndarray]:
-#     return arrays(
-#         dtype=np.float64,
-#         shape=(length,),
-#         elements=st.floats(min_value=-1e-6, max_value=1e6, exclude_min=True),
-#         fill=st.just(1.0),
-#     )
 
 
 @st.composite
@@ -72,8 +52,8 @@ def default_attention_system_weights(
             dtype=np.float64,
             shape=(length,),
             elements=st.floats(
-                min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
-                max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+                min_value=MIN_ATTENTION_WEIGHT,
+                max_value=MAX_ATTENTION_WEIGHT,
             ),
             fill=st.just(0.0),
         )
@@ -89,7 +69,7 @@ def all_negative_default_attention_system_weights(
             dtype=np.float64,
             shape=(length,),
             elements=st.floats(
-                min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
+                min_value=MIN_ATTENTION_WEIGHT,
                 max_value=0.0,
                 exclude_max=True,
             ),
@@ -107,7 +87,7 @@ def all_positive_default_attention_system_weights(
             shape=(length,),
             elements=st.floats(
                 min_value=0.0,
-                max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+                max_value=MAX_ATTENTION_WEIGHT,
                 exclude_min=True,
             ),
         )
@@ -125,7 +105,7 @@ def with_positive_default_attention_system_weights(
                 shape=(length,),
                 elements=st.floats(
                     min_value=0.0,
-                    max_value=DefaultAttentionSystem.MAX_ATTENTION_WEIGHT,
+                    max_value=MAX_ATTENTION_WEIGHT,
                     exclude_min=True,
                 ),
             )
@@ -147,7 +127,7 @@ def with_negative_default_attention_system_weights(
                 dtype=np.float64,
                 shape=(length,),
                 elements=st.floats(
-                    min_value=DefaultAttentionSystem.MIN_ATTENTION_WEIGHT,
+                    min_value=MIN_ATTENTION_WEIGHT,
                     max_value=0.0,
                     exclude_max=True,
                 ),

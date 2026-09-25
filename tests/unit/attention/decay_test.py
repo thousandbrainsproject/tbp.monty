@@ -16,48 +16,8 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.attention.decay import LinearWeightDecay, NoopDecay
-from tbp.monty.attention.voxel_grid import (
-    # DEFAULT_VOXEL_SIZE,
-    # VOXEL_LEVELS,
-    # Voxel,
-    VoxelGrid,
-)
+from tbp.monty.attention.voxel_grid import VoxelGrid
 from tests.unit.attention import strategies
-
-# from tbp.monty.cmp import MAX_ATTENTION_WEIGHT, MIN_ATTENTION_WEIGHT
-# from .strategies import MAX_POINTS, valid_weights
-
-
-# def grid_with_weights(*weights: float) -> VoxelGrid:
-#     """Build a grid with one voxel per given weight.
-
-#     Returns:
-#         A grid holding voxels (0,0,0), (1,0,0), ... carrying the weights.
-
-#     """
-#     frame = pd.DataFrame(
-#         {"weight": list(weights)},
-#         index=pd.MultiIndex.from_tuples(
-#             [(i, 0, 0) for i in range(len(weights))], names=VOXEL_LEVELS
-#         ),
-#     )
-#     return VoxelGrid(DEFAULT_VOXEL_SIZE, frame)
-
-
-# def voxel_grid_with_weights(weights: np.ndarray) -> VoxelGrid:
-#     """Build a grid with one voxel per given weight.
-
-#     Returns:
-#         A grid holding voxels (0,0,0), (1,0,0), ... carrying the weights.
-
-#     """
-#     frame = pd.DataFrame(
-#         {"weight": weights},
-#         index=pd.MultiIndex.from_tuples(
-#             [(i, 0, 0) for i in range(len(weights))], names=VOXEL_LEVELS
-#         ),
-#     )
-#     return VoxelGrid(DEFAULT_VOXEL_SIZE, frame)
 
 
 class NoopDecayTest(unittest.TestCase):
