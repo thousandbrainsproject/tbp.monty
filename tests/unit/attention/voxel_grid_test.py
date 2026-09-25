@@ -44,12 +44,6 @@ from tests.unit.attention import strategies
 
 @dataclass
 class VoxelizedAndBinnedPoints:
-    """Points built inside known voxels, and which voxel each went into.
-
-    Voxel k is the k-th distinct voxel met walking along ``points``, so the
-    voxels are already in the order ``voxelize_and_bin_points`` reports them.
-    """
-
     voxel_size: float
     points: npt.NDArray[np.floating]
     point_ind_to_voxel: list[Voxel]
@@ -138,7 +132,7 @@ class VoxelizePointsTest(unittest.TestCase):
     @given(points=float_array_not_n_by_3())
     def test_points_not_n_by_3_raises_value_error(
         self, points: npt.NDArray[np.float64]
-    ):
+    ) -> None:
         with self.assertRaises(ValueError):
             voxelize_points(voxel_size=1.0, points=points)
 
@@ -156,7 +150,7 @@ class VoxelizeAndBinPointsTest(unittest.TestCase):
     @given(points=float_array_n_by_3(), weights=float_array_not_1d())
     def test_weights_not_1d_raises_value_error(
         self, points: npt.NDArray[np.float64], weights: npt.NDArray[np.float64]
-    ):
+    ) -> None:
         with self.assertRaises(ValueError):
             voxelize_and_bin_points(
                 voxel_size=1.0,
@@ -168,7 +162,7 @@ class VoxelizeAndBinPointsTest(unittest.TestCase):
     def test_returned_dataframe_rows_contain_each_points_voxel_from_voxelize_points_and_weight(  # noqa: E501
         self,
         binned: VoxelizedAndBinnedPoints,
-    ):
+    ) -> None:
         with patch(
             "tbp.monty.attention.voxel_grid.voxelize_points"
         ) as voxelize_points_mock:
@@ -190,12 +184,6 @@ class VoxelizeAndBinPointsTest(unittest.TestCase):
 
 @dataclass
 class VoxelGridAndPoints:
-    """Points built inside known voxels, and which voxel each went into.
-
-    Voxel k is the k-th distinct voxel met walking along ``points``, so the
-    voxels are already in the order ``voxelize_and_bin_points`` reports them.
-    """
-
     voxel_grid: VoxelGrid
     points: npt.NDArray[np.floating]
     weights: npt.NDArray[np.floating]
@@ -309,7 +297,7 @@ def non_unique_voxels(draw: st.DrawFn) -> list[Voxel]:
 
 
 class VoxelGridTest(unittest.TestCase):
-    def test_from_pandas_validates_input_using_validate_dataframe(self):
+    def test_from_pandas_validates_input_using_validate_dataframe(self) -> None:
         with patch(
             "tbp.monty.attention.voxel_grid.validate_dataframe"
         ) as validate_dataframe_mock:
@@ -317,7 +305,9 @@ class VoxelGridTest(unittest.TestCase):
             validate_dataframe_mock.assert_called_once_with(sentinel.data)
 
     @given(voxel_grid=strategies.default_voxel_grid())
-    def test_init_validates_input_using_validate_dataframe(self, voxel_grid: VoxelGrid):
+    def test_init_validates_input_using_validate_dataframe(
+        self, voxel_grid: VoxelGrid
+    ) -> None:
         with patch(
             "tbp.monty.attention.voxel_grid.validate_dataframe"
         ) as validate_dataframe_mock:
@@ -335,7 +325,7 @@ class VoxelGridTest(unittest.TestCase):
     def test_weights_at_points_returns_weights_for_occupied_voxels_and_fill_value_for_unoccupied_voxels(  # noqa: E501
         self,
         voxel_grid_and_points: VoxelGridAndPoints,
-    ):
+    ) -> None:
         voxel_grid = voxel_grid_and_points.voxel_grid
         points = voxel_grid_and_points.points
         weights = voxel_grid_and_points.weights
@@ -356,7 +346,7 @@ class ValidateDataFrameTest(unittest.TestCase):
     @given(voxel_grid=strategies.default_voxel_grid())
     def test_raises_value_error_if_dataframe_does_not_have_a_multiindex_with_level_names_xyz(  # noqa: E501
         self, voxel_grid: VoxelGrid
-    ):
+    ) -> None:
         df = voxel_grid.to_pandas().reset_index(drop=True)
         with self.assertRaisesRegex(
             ValueError,
@@ -369,7 +359,7 @@ class ValidateDataFrameTest(unittest.TestCase):
     @given(voxels=non_unique_voxels())
     def test_raises_value_error_if_dataframe_index_is_not_unique(
         self, voxels: list[Voxel]
-    ):
+    ) -> None:
         df = pd.DataFrame(index=pd.MultiIndex.from_tuples(voxels, names=VOXEL_LEVELS))
         with self.assertRaisesRegex(ValueError, "DataFrame index must be unique."):
             validate_dataframe(df)
@@ -377,7 +367,7 @@ class ValidateDataFrameTest(unittest.TestCase):
     @given(voxel_grid=strategies.default_voxel_grid())
     def test_raises_value_error_if_dataframe_does_not_have_a_weight_column(
         self, voxel_grid: VoxelGrid
-    ):
+    ) -> None:
         df = voxel_grid.to_pandas().drop(columns=["weight"])
         with self.assertRaisesRegex(
             ValueError, "DataFrame must have a 'weight' column."
@@ -389,7 +379,9 @@ class ValidateDataFrameTest(unittest.TestCase):
             voxels_strategy=strategies.unique_voxels(min_voxels=1)
         )
     )
-    def test_raises_value_error_if_weight_column_not_1d(self, voxel_grid: VoxelGrid):
+    def test_raises_value_error_if_weight_column_not_1d(
+        self, voxel_grid: VoxelGrid
+    ) -> None:
         """Validate dataframe weights column is 1D.
 
         Note:
@@ -420,7 +412,7 @@ class EncodeVoxelGridTest(unittest.TestCase):
     def test_buffer_encoder_encodes_voxel_grid(
         self,
         voxel_grid_and_points: VoxelGridAndPoints,
-    ):
+    ) -> None:
         voxel_grid = voxel_grid_and_points.voxel_grid
         loaded = json.loads(json.dumps(voxel_grid, cls=BufferEncoder))
         encoded = encode_voxel_grid(voxel_grid)
