@@ -20,7 +20,7 @@ Voxel = Tuple[int, int, int]
 
 
 VOXEL_LEVELS = ("x", "y", "z")
-"""Names of the row index levels: a voxel's integer grid coordinate."""
+"""Names of the row index levels. This is for a pandas DataFrame MultiIndex."""
 
 
 def voxelize_points(
@@ -43,10 +43,9 @@ def voxelize_points(
     Raises:
         ValueError: If ``points`` is not an (N, 3) array.
     """
-    pts = np.asarray(points)
-    if pts.ndim != 2 or pts.shape[1] != 3:
-        raise ValueError(f"points must be of shape (N, 3), got {pts.shape}.")
-    voxels = np.floor(pts / voxel_size).astype(int)
+    if points.ndim != 2 or points.shape[1] != 3:
+        raise ValueError(f"points must be of shape (N, 3), got {points.shape}.")
+    voxels = np.floor(points / voxel_size).astype(int)
     return list(map(tuple, voxels.tolist()))
 
 
@@ -55,7 +54,7 @@ def voxelize_and_bin_points(
     points: npt.NDArray[np.floating],
     weights: npt.NDArray[np.floating],
 ) -> pd.DataFrame:
-    """Tabulate each point's voxel alongside its features.
+    """Tabulate each point's voxel alongside its weight.
 
     The table is the input to per-voxel aggregation: grouping it by
     ``voxel`` bins the points, with each group's index giving the indices
@@ -70,18 +69,14 @@ def voxelize_and_bin_points(
         ValueError: If ``weights`` is not an (N,) array.
 
     Returns:
-        A frame with one row per point, indexed by ``point_ind`` (the
-        point's position in ``points``), holding the point's ``voxel`` and
+        A frame with one row per point, holding the point's ``voxel`` and
         ``weight``.
     """
-    weights = np.asarray(weights)
     if weights.ndim != 1:
         raise ValueError(f"weights must be of shape (N,), got {weights.shape}.")
 
     voxels = voxelize_points(voxel_size, points)
-    df = pd.DataFrame({"voxel": voxels, "weight": weights})
-    df.index.name = "point_ind"
-    return df
+    return pd.DataFrame({"voxel": voxels, "weight": weights})
 
 
 class VoxelGrid:
@@ -110,7 +105,6 @@ class VoxelGrid:
 
         Returns:
             A voxel grid.
-
         """
         validate_dataframe(data)
         grid = object.__new__(cls)
@@ -130,7 +124,6 @@ class VoxelGrid:
             voxel_size: Edge length of a voxel.
             voxels: The occupied voxels.
             weights: The weights of the occupied voxels.
-
         """
         self._voxel_size = voxel_size
         index = pd.MultiIndex.from_tuples(voxels, names=VOXEL_LEVELS)
@@ -143,11 +136,7 @@ class VoxelGrid:
         return self._voxel_size
 
     def to_pandas(self) -> pd.DataFrame:
-        """Return the backing frame, not a copy.
-
-        Returns:
-            The frame indexed by (x, y, z) voxel, one column per feature.
-        """
+        """Return the backing frame, not a copy."""
         return self._data
 
     def weights_at_points(

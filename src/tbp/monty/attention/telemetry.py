@@ -45,7 +45,6 @@ class NoopAttentionSystemTelemetry(AttentionSystemTelemetry):
 
 
 class DefaultAttentionSystemTelemetry(AttentionSystemTelemetry):
-
     def __init__(self) -> None:
         self._grids: list[VoxelGrid] = []
         self._proposed_grids: list[VoxelGrid] = []
