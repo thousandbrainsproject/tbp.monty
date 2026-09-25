@@ -23,13 +23,15 @@ class NegativePriorityMaxPoolTest(unittest.TestCase):
             st.floats(min_value=0.0, allow_nan=False, allow_infinity=False), min_size=1
         )
     )
-    def test_call_returns_max_value_if_all_are_non_negative(self, values: list[float]):
+    def test_call_returns_max_value_if_all_are_non_negative(
+        self, values: list[float]
+    ) -> None:
         result = negative_priority_max_pool(values)
         self.assertEqual(result, max(values))
 
     @given(values=with_negative_floats())
     def test_call_returns_most_negative_value_if_any_are_negative(
         self, values: list[float]
-    ):
+    ) -> None:
         result = negative_priority_max_pool(values)
         self.assertEqual(result, min(values))
