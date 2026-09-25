@@ -332,6 +332,21 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
       run_name: dist_agent_5lm_2obj_train
+    telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
+      loggers:
+        telemetry.tbp.monty:
+          handlers:
+          - telemetry_console
+          level: INFO
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
     model_name_or_path: ''

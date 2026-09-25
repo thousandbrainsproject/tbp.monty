@@ -122,6 +122,21 @@ experiment:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler
       run_name: omniglot_inference
+    telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
+      loggers:
+        telemetry.tbp.monty:
+          handlers:
+          - telemetry_console
+          level: INFO
     show_sensor_output: false
     n_train_epochs: 3
     n_eval_epochs: 1

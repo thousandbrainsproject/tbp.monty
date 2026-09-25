@@ -204,6 +204,21 @@ experiment:
             _target_: wandb.util.generate_id
           wandb_group: benchmark_experiments
       run_name: monty_meets_world_2dimage_inference
+    telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
+      loggers:
+        telemetry.tbp.monty:
+          handlers:
+          - telemetry_console
+          level: INFO
     show_sensor_output: true
     n_train_epochs: 3
     n_eval_epochs: 1

@@ -11,6 +11,7 @@ defaults:
   - /env_interface/transform: none
   - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: basic_warning_wandb_evidence_eval_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

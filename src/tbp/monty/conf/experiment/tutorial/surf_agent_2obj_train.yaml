@@ -23,6 +23,7 @@ defaults:
   - /termination: any1_maxtotalsteps_6000
   # The logging configuration.
   - /logging: silent_warning_train
+  - /telemetry: info
 
 experiment:
   # The MontySupervisedObjectPretrainingExperiment will provide the model with the
