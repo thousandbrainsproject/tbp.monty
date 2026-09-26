@@ -25,7 +25,7 @@ from tbp.monty.experiment.recognition_policy import (
     RecognitionCounter,
     RecognitionPolicy,
     RecognitionResult,
-    StepCounter,
+    StepLimit,
 )
 from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
@@ -201,35 +201,35 @@ class MaximumStepsTest(unittest.TestCase):
         self.assertEqual(result.is_done, is_done)
 
 
-class StepCounterTest(unittest.TestCase):
+class StepLimitTest(unittest.TestCase):
     @given(min_train_steps=st.integers(max_value=-1))
     def test_raises_value_error_if_min_train_steps_is_negative(
         self, min_train_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            StepCounter(min_train_steps=min_train_steps)
+            StepLimit(min_train_steps=min_train_steps)
 
     @given(num_exploring_steps=st.integers(max_value=-1))
     def test_raises_value_error_if_num_exploring_steps_is_negative(
         self, num_exploring_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            StepCounter(num_exploring_steps=num_exploring_steps)
+            StepLimit(num_exploring_steps=num_exploring_steps)
 
     @given(max_train_steps=st.integers(max_value=0))
     def test_raises_value_error_if_max_train_steps_is_not_positive(
         self, max_train_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            StepCounter(max_train_steps=max_train_steps)
+            StepLimit(max_train_steps=max_train_steps)
 
-    @given(max_asc=ascending_ints(min_value=0))
+    @given(max_asc=ascending_ints(min_value=1))
     def test_raises_value_error_if_min_train_steps_greater_than_max_train_steps(
         self, max_asc: tuple[int, int]
     ) -> None:
         (max_train_steps, min_train_steps) = max_asc
         with self.assertRaises(ValueError):
-            StepCounter(
+            StepLimit(
                 min_train_steps=min_train_steps,
                 max_train_steps=max_train_steps,
             )
@@ -239,7 +239,7 @@ class StepCounterTest(unittest.TestCase):
         self, max_eval_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            StepCounter(max_eval_steps=max_eval_steps)
+            StepLimit(max_eval_steps=max_eval_steps)
 
     @given(
         mode=st.sampled_from(ExperimentMode),
@@ -253,7 +253,7 @@ class StepCounterTest(unittest.TestCase):
         max_steps: int,
     ) -> None:
         model = _model_with_step_type("matching_step")
-        policy = StepCounter(
+        policy = StepLimit(
             max_train_steps=max_steps,
             max_eval_steps=max_steps,
         )
@@ -275,7 +275,7 @@ class StepCounterTest(unittest.TestCase):
         max_steps: int,
     ) -> None:
         model = _model_with_step_type("exploratory_step")
-        policy = StepCounter(
+        policy = StepLimit(
             num_exploring_steps=max_steps,
         )
         result = RecognitionResult(is_done=False)
@@ -301,7 +301,7 @@ class StepCounterTest(unittest.TestCase):
     ) -> None:
         max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
         model = _model_with_step_type()
-        policy = StepCounter(
+        policy = StepLimit(
             max_train_steps=max_train_steps,
             max_eval_steps=max_eval_steps,
         )
@@ -325,7 +325,7 @@ class StepCounterTest(unittest.TestCase):
         exploring_steps: int,
     ) -> None:
         model = _model_with_step_type()
-        policy = StepCounter(
+        policy = StepLimit(
             min_train_steps=min_train_steps,
             num_exploring_steps=num_exploring_steps,
             max_train_steps=100,

@@ -29,6 +29,7 @@ __all__ = [
     "RecognitionCounter",
     "RecognitionPolicy",
     "RecognitionResult",
+    "StepLimit",
 ]
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,7 @@ class MontyIsDone(RecognitionPolicy):
     ) -> RecognitionResult:
         is_done = model.is_done
         if is_done:
-            logger.info(f"MontyIsDone is done, with model.is_done={model.is_done}")
+            logger.info("MontyIsDone is done, with model.is_done")
         return RecognitionResult(is_done=is_done)
 
 
@@ -115,7 +116,7 @@ class MaxTotalSteps(RecognitionPolicy):
     ) -> RecognitionResult:
         is_done = count.step >= self._max_total_steps
         if is_done:
-            logger.info(f"MaxTotalSteps is done, with step={count.step}")
+            logger.info("MaxTotalSteps is done, with step=%d", count.step)
         return RecognitionResult(is_done=is_done)
 
 
@@ -159,15 +160,17 @@ class MaximumSteps(RecognitionPolicy):
         )
         is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
         if is_done:
+            model.deal_with_time_out()
             logger.info(
-                "MaximumSteps is done, with"
-                f" model.is_exploring={model.is_exploring}"
-                f" model.matching_steps={model.matching_steps}"
+                "MaximumSteps is done, "
+                "with model.is_exploring=%s model.matching_steps=%d",
+                model.is_exploring,
+                model.matching_steps,
             )
         return RecognitionResult(is_done=is_done)
 
 
-class StepCounter(RecognitionPolicy):
+class StepLimit(RecognitionPolicy):
     """Keep track of various step counters.
 
     Terminal conditions include:
@@ -241,13 +244,18 @@ class StepCounter(RecognitionPolicy):
 
     def _update_counters(self: Self, model: MontyBase) -> None:
         if self._check_if_any_lms_updated(model):
-            if model.step_type == "matching_step":
-                self._matching_steps += 1
-            if model.step_type == "exploratory_step":
+            if model.is_exploring:
                 self._exploring_steps += 1
+            else:
+                self._matching_steps += 1
 
     def _check_if_any_lms_updated(self: Self, model: MontyBase) -> bool:
         # TODO: Find a better way to determine this condition.
+        #       The `check_if_any_lms_updated` method is defined in
+        #       `MontyForGraphMatching` rather than `MontyBase`,
+        #       so the distinction between `step` and `matching_steps`
+        #       (or `exploring_steps`) only applies to `MontyForGraphMatching`
+        #       and its subclasses.
         try:
             return model.check_if_any_lms_updated()
         except AttributeError:
@@ -261,7 +269,7 @@ class StepCounter(RecognitionPolicy):
             self._reset_counters()
 
         is_done: bool = False
-        if model.step_type == "exploratory_step":
+        if model.is_exploring:
             is_done = self._exploring_steps >= self._num_exploring_steps
         elif count.mode is ExperimentMode.TRAIN:
             if self._matching_steps >= self._min_train_steps:
@@ -271,10 +279,11 @@ class StepCounter(RecognitionPolicy):
             is_done = self._matching_steps >= self._max_eval_steps
 
         if is_done:
+            model.deal_with_time_out()
             logger.info(
-                "StepCounter is done, with"
-                f" matching_steps={self._matching_steps}"
-                f" exploring_steps={self._exploring_steps}"
+                "StepLimit is done, with matching_steps=%d exploring_steps=%d",
+                self._matching_steps,
+                self._exploring_steps,
             )
         else:
             self._update_counters(model)
@@ -315,7 +324,7 @@ class MinimumLMs(RecognitionPolicy):
         )
         is_done = num_matched >= self._min_lms
         if is_done:
-            logger.info(f"MinimumLMs is done, with num_matched={num_matched}")
+            logger.info("MinimumLMs is done, with num_matched=%d", num_matched)
         return RecognitionResult(is_done=is_done)
 
 
@@ -351,7 +360,7 @@ class NaiveScan(RecognitionPolicy):
     ) -> RecognitionResult:
         is_done = count.step >= self._step_limit
         if is_done:
-            logger.info(f"NaiveScan is done, with step={count.step}")
+            logger.info("NaiveScan is done, with step=%d", count.step)
         return RecognitionResult(is_done=is_done)
 
 
@@ -409,22 +418,23 @@ class ObjectRecognition(RecognitionPolicy):
             else self._max_eval_steps
         )
         if (not model.is_exploring) and (model.matching_steps >= max_steps):
+            model.deal_with_time_out()
             logger.info(
-                "ObjectRecognition is done, with"
-                f" model.is_exploring={model.is_exploring}"
-                f" model.matching_steps={model.matching_steps}"
+                "ObjectRecognition is done, "
+                "with model.is_exploring=%s model.matching_steps=%d",
+                model.is_exploring,
+                model.matching_steps,
             )
             return RecognitionResult(is_done=True)
 
         if count.step >= self._max_total_steps:
-            logger.info(f"ObjectRecognition is done, with step={count.step}")
+            model.deal_with_time_out()
+            logger.info("ObjectRecognition is done, with step=%d", count.step)
             return RecognitionResult(is_done=True)
 
         is_done = model.is_done
         if is_done:
-            logger.info(
-                f"ObjectRecognition is done, with model.is_done={model.is_done}"
-            )
+            logger.info("ObjectRecognition is done, with model.is_done")
         return RecognitionResult(is_done=is_done)
 
 
@@ -460,5 +470,5 @@ class AnyPolicy(RecognitionPolicy):
             if result.is_done:
                 break
         if result.is_done:
-            logger.info(f"AnyPolicy is done, with result.is_done={result.is_done}")
+            logger.info("AnyPolicy is done, with result.is_done")
         return result

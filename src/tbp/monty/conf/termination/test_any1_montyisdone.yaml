@@ -6,10 +6,9 @@ match_criterion:
 recognition_policy:
   _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
   policies:
-  - _target_: tbp.monty.experiment.recognition_policy.StepCounter
+  - _target_: tbp.monty.experiment.recognition_policy.StepLimit
     min_train_steps: 3
     num_exploring_steps: 1000
     max_train_steps: 2000
-    # min_eval_steps: 3
     max_eval_steps: 1000
   - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone

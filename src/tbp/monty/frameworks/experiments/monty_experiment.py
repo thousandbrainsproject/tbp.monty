@@ -508,8 +508,6 @@ class MontyExperiment:
     def _recognition_complete(self, step: int) -> bool:
         count = RecognitionCounter(step, self.experiment_mode)
         result = self._recognition_policy(self.model, count)
-        if result.is_done:
-            self.model.deal_with_time_out()
         return result.is_done
 
     def run_step(
