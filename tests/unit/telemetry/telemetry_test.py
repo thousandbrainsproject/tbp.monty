@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import cast
 from unittest import TestCase
 
 from hypothesis import given
@@ -63,47 +64,44 @@ class TelemetryEventTest(TestCase):
 
 
 class JsonFormatterTest(TestCase):
-    @given(
-        kind=simple_string_strategy,
-        event_extras=event_extras_strategy,
+    record_strategy = st.builds(
+        logging.LogRecord,
+        name=simple_string_strategy,
         level=st.integers(),
-        logger_name=simple_string_strategy,
-        func_name=simple_string_strategy,
+        pathname=st.just(__file__),
         lineno=st.integers(),
+        msg=st.builds(
+            lambda kind, event_extras: TelemetryEvent(kind=kind, **event_extras),
+            simple_string_strategy,
+            event_extras_strategy,
+        ),
+        args=st.just(()),
+        exc_info=st.none(),
+        func=simple_string_strategy,
     )
-    def test_format_logrecord_to_expected_json(
-        self,
-        kind: str,
-        event_extras: dict,
-        level: int,
-        logger_name: str,
-        func_name: str,
-        lineno: int,
-    ) -> None:
-        event = TelemetryEvent(kind=kind, **event_extras)
-        record = logging.LogRecord(
-            name=logger_name,
-            level=level,
-            pathname=__file__,
-            lineno=lineno,
-            msg=event,
-            args=(),
-            exc_info=None,
-            func=func_name,
-        )
 
-        formatter = JsonFormatter()
-        output = formatter.format(record)
-        data = json.loads(output)
+    def setUp(self) -> None:
+        self.formatter = JsonFormatter()
 
+    @given(record=record_strategy)
+    def test_format_logrecord_to_expected_json(self, record: logging.LogRecord) -> None:
+        data = json.loads(self.formatter.format(record))
         expected = {
-            "level": logging.getLevelName(level),
-            "name": logger_name,
-            "funcName": func_name,
-            "lineno": lineno,
-            **event.model_dump(mode="json"),
+            "level": logging.getLevelName(record.levelno),
+            "name": record.name,
+            "funcName": record.funcName,
+            "lineno": record.lineno,
+            **cast("TelemetryEvent", record.msg).model_dump(mode="json"),
         }
         self.assertEqual(data, expected)
+
+    @given(record=record_strategy)
+    def test_raise_typeerror_if_msg_is_not_telemetry_schema(
+        self, record: logging.LogRecord
+    ) -> None:
+        record.msg = "I am not a schema"
+        with self.assertRaises(TypeError):
+            self.formatter.format(record)
 
 
 class GetTelemeterTest(TestCase):

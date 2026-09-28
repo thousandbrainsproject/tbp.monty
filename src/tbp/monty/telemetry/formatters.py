@@ -11,18 +11,24 @@ import json
 import logging
 from typing import cast
 
-from tbp.monty.telemetry.schemas import TelemetryEvent
+from tbp.monty.telemetry.schemas import TelemetrySchema
 
 
 class JsonFormatter(logging.Formatter):
+    """Serializes a telemetry `LogRecord` instance as a JSON string."""
+
     def format(self, record: logging.LogRecord) -> str:
-        event = cast("TelemetryEvent", record.msg)
+        schema = cast("TelemetrySchema", record.msg)
+
+        if not isinstance(schema, TelemetrySchema):
+            raise TypeError("This formatter only accepts telemetry schemas")
+
         return json.dumps(
             {
                 "level": record.levelname,
                 "name": record.name,
                 "funcName": record.funcName,
                 "lineno": record.lineno,
-                **event.model_dump(mode="json"),
+                **schema.model_dump(mode="json"),
             }
         )
