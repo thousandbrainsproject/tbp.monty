@@ -20,6 +20,7 @@ from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     TangentFrame,
+    get_angle_between,
     normalize,
     project_onto_tangent_plane,
 )
@@ -87,6 +88,15 @@ rotation_objs = quaternions().map(lambda q: Rotation.from_quat([q.x, q.y, q.z, q
 rotation_matrices = quaternions().map(
     lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
 )
+
+
+def test_get_angle_between():
+    v1 = [2, 0, 0]
+    v2 = [0, -3, 0]
+
+    angle = get_angle_between(v1, v2)
+
+    np.testing.assert_allclose(angle, np.pi / 2, atol=DEFAULT_TOLERANCE)
 
 
 class NormalizeTest(unittest.TestCase):

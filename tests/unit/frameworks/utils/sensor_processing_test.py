@@ -20,6 +20,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     FLAT_THRESHOLD,
     arc_from_projection,
     directional_curvature,
+    point_pair_features,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
@@ -75,6 +76,21 @@ def curvature_values(draw):
     k2 = draw(st.floats(min_value=MIN_K, max_value=MAX_K))
     assume(k1 >= k2)
     return k1, k2
+
+
+def test_point_pair_features():
+    actual = point_pair_features(
+        np.array([0.0, 0.0, 0.0]),
+        np.array([3.0, 4.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+        np.array([0.0, 1.0, 0.0]),
+    )
+
+    expected = np.array(
+        [5.0, np.pi / 2, 0.6435011087932844, np.pi / 2]
+    )
+
+    npt.assert_allclose(actual, expected, atol=DEFAULT_TOLERANCE)
 
 
 class ComputeArcFromTangentProjectionTest(unittest.TestCase):

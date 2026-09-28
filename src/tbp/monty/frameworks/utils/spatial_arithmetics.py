@@ -14,7 +14,6 @@ import logging
 import sys
 
 import numpy as np
-import torch
 from numpy.typing import ArrayLike
 
 from tbp.monty.geometry import Rotation
@@ -284,17 +283,24 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
     return np.arccos(np.clip(dot_product, -1, 1))
 
 
-def get_angle_torch(v1, v2):
-    """Get angle between two torch vectors.
+def get_angle_between(v1, v2):
+    """Get the angle between two 3D vectors.
+
+    Uses the atan2 formulation. Unlike ``get_angle``, this does
+    not assume the inputs are unit vectors: the vectors' magnitudes
+    cancel in the ratio, so the result is correct for vectors of any
+    length.
+    A zero-length input yields 0.0, and there is no None handling.
+    See get_angle_beefed_up for the guarded variant.
 
     Args:
-        v1: Vector 1
-        v2: Vector 2
+        v1: Vector 1 (3D)
+        v2: Vector 2 (3D)
 
     Returns:
         angle in radians
     """
-    return torch.atan2(torch.cross(v1, v2).norm(p=2), (v1 * v2).sum())
+    return np.arctan2(np.linalg.norm(np.cross(v1, v2)), np.dot(v1, v2))
 
 
 def check_orthonormal(matrix):

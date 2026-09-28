@@ -14,7 +14,6 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
-import torch
 
 from tbp.monty.memento import Memento
 
@@ -421,18 +420,12 @@ class DisplacementGraphLM(GraphLM):
             )
             displacement = current_location - self.buffer.last_location
 
-            pos1 = torch.tensor(self.buffer.last_location)
-            pos2 = torch.tensor(current_location)
-            norm1 = torch.tensor(
-                # element 0 of current pose is location, element 1 is surface normal
+            ppf = point_pair_features(
+                self.buffer.last_location,
+                current_location,
                 self.buffer.get_current_pose(input_channel=percept_to_use.sender_id)[1],
-                dtype=torch.float64,
-            )
-            norm2 = torch.tensor(
                 percept_to_use.get_nth_pose_vector(pose_vector_index=0),
-                dtype=torch.float64,
             )
-            ppf = point_pair_features(pos1, pos2, norm1, norm2)
         for p in percepts:
             p.set_displacement(displacement=displacement, ppf=ppf)
         return percepts
