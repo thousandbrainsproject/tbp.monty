@@ -32,7 +32,7 @@ class TelemetrySchema(BaseModel):
 
     @field_validator("kind")
     @classmethod
-    def validate_kind(cls, value):
+    def validate_kind(cls, value: str) -> str:
         return value or cls.__name__  # schema class name fallback
 
     def __str__(self) -> str:

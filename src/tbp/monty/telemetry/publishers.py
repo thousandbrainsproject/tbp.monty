@@ -33,7 +33,7 @@ class TelemetryPublisher(logging.Logger):
         telemeter.info(TelemetryEvent(...))
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """Initializes the logger; do not instantiate this class outside its module."""
         super().__init__(*args, **kwargs)
         self.propagate = False  # do not propagate to root logger
@@ -42,7 +42,7 @@ class TelemetryPublisher(logging.Logger):
         if not self.hasHandlers():
             self.addHandler(logging.NullHandler())
 
-    def _log_event(self, level: int, msg: object, *args, **kwargs):
+    def _log_event(self, level: int, msg: object, *args, **kwargs) -> None:
         """Catch-all internal method for emitting telemetry events."""
         # skip 2 frames to get to the caller
         kwargs["stacklevel"] = kwargs.get("stacklevel", 1) + 2
@@ -50,7 +50,7 @@ class TelemetryPublisher(logging.Logger):
         super().log(level, msg, *args, **kwargs)
 
     @override
-    def log(self, level: int, msg: object, *args, **kwargs):
+    def log(self, level: int, msg: object, *args, **kwargs) -> None:
         """Emits a telemetry event at the specified log level.
 
         Args:
@@ -58,16 +58,11 @@ class TelemetryPublisher(logging.Logger):
             msg: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(level, msg, *args, **kwargs)
 
     # Type-hinted equivalent of `log` for convenience
-    def emit(self, level: int, event: TelemetryEvent, *args, **kwargs):
+    def emit(self, level: int, event: TelemetryEvent, *args, **kwargs) -> None:
         """Emits a telemetry event at the specified log level.
 
         Equivalent of `log` method, type-hinted for convenience.
@@ -77,97 +72,67 @@ class TelemetryPublisher(logging.Logger):
             event: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(event, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(level, event, *args, **kwargs)
 
     @override
-    def debug(self, msg: object, *args, **kwargs):
+    def debug(self, msg: object, *args, **kwargs) -> None:
         """Emits a telemetry event at ``DEBUG`` log level.
 
         Args:
             msg: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.DEBUG, msg, *args, **kwargs)
 
     @override
-    def info(self, msg: object, *args, **kwargs):
+    def info(self, msg: object, *args, **kwargs) -> None:
         """Emits a telemetry event at ``INFO`` log level.
 
         Args:
             msg: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.INFO, msg, *args, **kwargs)
 
     @override
-    def warning(self, msg: object, *args, **kwargs):
+    def warning(self, msg: object, *args, **kwargs) -> None:
         """Emits a telemetry event at ``WARNING`` log level.
 
         Args:
             msg: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.WARNING, msg, *args, **kwargs)
 
     @deprecated("Deprecated since Python 3.3. Use `warning()` instead.")
     @override
-    def warn(self, msg: object, *args, **kwargs):
+    def warn(self, msg: object, *args, **kwargs) -> None:
         """Emits a telemetry event at ``WARNING`` log level.
 
         Args:
             msg: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.WARNING, msg, *args, **kwargs)
 
     @override
-    def error(self, msg: object, *args, **kwargs):
+    def error(self, msg: object, *args, **kwargs) -> None:
         """Emits a telemetry event at ``ERROR`` log level.
 
         Args:
             msg: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.ERROR, msg, *args, **kwargs)
 
     @override
-    def exception(self, msg: object, *args, exc_info=True, **kwargs):
+    def exception(self, msg: object, *args, exc_info=True, **kwargs) -> None:
         """Emits a telemetry event at ``ERROR`` log level with exception info attached.
 
         Args:
@@ -175,28 +140,18 @@ class TelemetryPublisher(logging.Logger):
             *args: Passed forward to ``Logger.log`` method.
             exc_info: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.ERROR, msg, *args, exc_info=exc_info, **kwargs)
 
     @override
-    def critical(self, msg: object, *args, **kwargs):
+    def critical(self, msg: object, *args, **kwargs) -> None:
         """Emits a telemetry event at ``CRITICAL`` log level.
 
         Args:
             msg: The `TelemetryEvent` instance.
             *args: Passed forward to ``Logger.log`` method.
             **kwargs: Passed forward to ``Logger.log`` method.
-
-        Raises:
-            TypeError: If ``msg`` is not a `TelemetryEvent`.
         """
-        if not isinstance(msg, TelemetryEvent):
-            raise TypeError("This method is only for telemetry events")
         self._log_event(logging.CRITICAL, msg, *args, **kwargs)
 
     # ``Logger.fatal`` is aliased to ``Logger.critical``, so it must be re-aliased here
