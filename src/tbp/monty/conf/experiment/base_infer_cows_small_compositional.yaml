@@ -6,6 +6,7 @@ defaults:
   - /monty/learning_module: evidence_3lm_heterarchy
   - /monty/sensor_module: 3sm_2d3d_dist
   - /monty/connectivity: 3lm_3sm_heterarchy
+  - /monty/attention_system: default
   - /environment: habitat_dist_agent_sensors3
   - /env_interface: eval_cows_small_predefined
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0

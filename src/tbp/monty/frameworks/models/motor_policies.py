@@ -436,11 +436,7 @@ class PredefinedPolicy(MotorPolicy):
 
 
 class JumpToGoal(MotorPolicy):
-    """Policy that takes observation as input.
-
-    TODO(tslominski-tbp): Use percept.on_object to check if we're on the object instead
-    of relying on PositioningProcedure.depth_at_center for undo check.
-    """
+    """Policy that takes observation as input."""
 
     _undo_action: Action | None
     _is_jumping: bool
@@ -489,9 +485,9 @@ class JumpToGoal(MotorPolicy):
     def __call__(
         self,
         ctx: RuntimeContext,
-        observations: Observations,
+        observations: Observations,  # noqa: ARG002
         state: MotorSystemState,
-        percept: Message,  # noqa: ARG002
+        percept: Message,
         goal: Goal | None,
     ) -> MotorPolicyResult:
         """Return a motor policy result containing the next actions to take.
@@ -536,7 +532,7 @@ class JumpToGoal(MotorPolicy):
           - But if goal is None and we didn't just jump, that's an error.
         """
         if self._is_jumping:
-            result = self._maybe_undo(observations)
+            result = self._maybe_undo(percept)
             if result is not None:
                 return result
             if not goal:
@@ -555,19 +551,19 @@ class JumpToGoal(MotorPolicy):
 
     def _maybe_undo(
         self,
-        observations: Observations,
+        percept: Message,
     ) -> MotorPolicyResult | None:
         """Handle the outcome of a jump.
 
         Args:
-            observations: The observations from the environment.
+            percept: The percept observed after the jump.
 
         Returns:
             Either a `MotorPolicyResult` with undo actions, which should be immediately
             returned by the caller, or `None` which allows the caller to continue
             execution.
         """
-        if self._should_undo(observations):
+        if self._should_undo(percept):
             logger.debug("Returning to previous position")
             result = MotorPolicyResult(self._undo_actions)
             self._reset_jump_state()
@@ -679,24 +675,22 @@ class JumpToGoal(MotorPolicy):
 
         return actions
 
-    def _should_undo(self, observations: Observations) -> bool:
+    def _should_undo(self, percept: Message) -> bool:
         """Check if the jump should be undone.
 
+        A jump is undone when the post-jump percept is not on the object. This
+        covers both jumping into empty space and jumping inside an object's
+        geometry (where the sensor no longer produces an on-object percept).
+
         Args:
-            observations: The observations from the environment.
+            percept: The percept observed after the jump.
 
         Returns:
             True if the jump should be undone, False otherwise.
         """
-        # TODO: Replace this with a check that the percept is on-object.
-        depth_at_center = PositioningProcedure.depth_at_center(
-            agent_id=self._agent_id,
-            observations=observations,
-            sensor_id=self._sensor_id,
-        )
-        should_undo = depth_at_center >= 1.0
+        should_undo = not percept.get_on_object()
         if should_undo:
-            logger.debug("No object visible from hypothesis jump, or inside object!")
+            logger.debug("Not on object after hypothesis jump, undoing it!")
         return should_undo
 
 
