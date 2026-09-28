@@ -14,7 +14,7 @@ import logging
 from typing import Any, Sequence
 
 from tbp.monty.attention.attention_system import (
-    AttentionSystemProtocol,
+    AttentionSystem,
     NoopAttentionSystem,
 )
 from tbp.monty.cmp import Goal, Message
@@ -52,7 +52,7 @@ class MontyBase(Monty):
         min_eval_steps,
         min_train_steps,
         num_exploratory_steps,
-        attention_system: AttentionSystemProtocol | None = None,
+        attention_system: AttentionSystem | None = None,
     ) -> None:
         """Initialize the base class.
 

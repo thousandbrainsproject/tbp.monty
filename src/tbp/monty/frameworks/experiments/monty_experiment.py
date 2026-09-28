@@ -400,6 +400,12 @@ class MontyExperiment:
         lm_to_lm_vote_matrix = instantiate(config.pop("lm_to_lm_vote_matrix"))
         sm_to_agent_dict = instantiate(config.pop("sm_to_agent_dict"))
 
+        attention_system_config = config.pop("attention_system", None)
+        if attention_system_config is not None:
+            attention_system = instantiate(attention_system_config)
+        else:
+            attention_system = None
+
         # Create monty model
         monty_args = config.pop("monty_args", {})
         monty_class = config.pop("monty_class")
@@ -411,6 +417,7 @@ class MontyExperiment:
             sm_to_lm_matrix=sm_to_lm_matrix,
             lm_to_lm_matrix=lm_to_lm_matrix,
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
+            attention_system=attention_system,
             # Pass any leftover configuration parameters downstream to monty_class
             **config,
             **monty_args,

@@ -8,12 +8,19 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from typing import cast
+
 import pytest
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
-from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    LearningModule,
+    Observations,
+)
 from tbp.monty.frameworks.models.motor_policies import (
+    JumpToGoal,
+    PolicyStatus,
     SurfacePolicyCurvatureInformed,
 )
 from tbp.monty.hydra import instantiate_experiment
@@ -27,12 +34,15 @@ import copy
 import shutil
 import tempfile
 import unittest
+from unittest.mock import Mock
 
+import habitat_sim
 import habitat_sim.utils as hab_utils
 import hydra
 import numpy as np
 import quaternion as qt
 from omegaconf import DictConfig
+from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from tbp.monty.cmp import Message
 from tbp.monty.frameworks.actions.actions import (
@@ -43,10 +53,16 @@ from tbp.monty.frameworks.actions.actions import (
     MoveTangentially,
     OrientHorizontal,
     OrientVertical,
+    SetAgentPose,
+    SetSensorRotation,
     TurnLeft,
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environment_utils.transforms import (
+    DepthTo3DLocations,
+    MissingToMaxDepth,
+)
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
@@ -56,9 +72,17 @@ from tbp.monty.frameworks.models.goal_generation import (
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
+    MotorSystemState,
     ProprioceptiveState,
 )
+from tbp.monty.frameworks.models.sensor_modules import CameraSM
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.geometry import Rotation
+from tbp.monty.simulators.habitat import (
+    PRIMITIVE_OBJECT_TYPES,
+    HabitatSim,
+    SingleSensorAgent,
+)
 
 
 class PolicyTest(unittest.TestCase):
@@ -1099,3 +1123,137 @@ class PolicyTest(unittest.TestCase):
         assert np.all(
             np.isclose(agent_direction_hab_3, [-0.965738, 0.09413407, -0.24184476])
         ), "Habitat pose is not as expected"
+
+
+JUMP_AGENT_ID = AgentID("agent_id_0")
+JUMP_SENSOR_ID = SensorID("patch")
+JUMP_RESOLUTION = (64, 64)
+# The agent starts at (0, 1.5, 0) looking down the negative z axis, so an object
+# at this position is centered in the initial view.
+JUMP_OBJECT_POSITION = (0.0, 1.5, -0.35)
+
+
+class JumpToGoalTest(ParametrizedTestCase):
+    """Tests for the JumpToGoal undo check against rendered primitive objects.
+
+    The percept after the jump is built from habitat observations with the standard
+    sensor pipeline, so that `Message.get_on_object()` is observed rather than mocked.
+    The case of interest is a hypothesis-testing jump that lands the agent inside the
+    object's geometry.
+    """
+
+    def setUp(self) -> None:
+        self.agent = SingleSensorAgent(
+            agent_id=JUMP_AGENT_ID,
+            sensor_id=JUMP_SENSOR_ID,
+            resolution=JUMP_RESOLUTION,
+            semantic=True,
+        )
+        self.sensor_module = CameraSM(
+            sensor_module_id=JUMP_SENSOR_ID,
+            features=["on_object", "object_coverage", "pose_vectors"],
+        )
+        self.missing_to_max_depth = MissingToMaxDepth(
+            agent_id=JUMP_AGENT_ID, max_depth=1.0
+        )
+        self.depth_to_3d = DepthTo3DLocations(
+            agent_id=JUMP_AGENT_ID,
+            sensor_ids=[JUMP_SENSOR_ID],
+            resolutions=[JUMP_RESOLUTION],
+            world_coord=True,
+            get_all_points=True,
+            use_semantic_sensor=True,
+        )
+
+    def percept(self, sim: HabitatSim, observations: Observations) -> Message:
+        """Turn observations into a percept using the CameraSM.
+
+        Args:
+            sim: The simulator the observations came from (for proprioceptive state).
+            observations: Raw observations as returned by the simulator.
+
+        Returns:
+            The percept produced by the camera sensor module.
+        """
+        observations = self.missing_to_max_depth.call(observations)
+        observations = self.depth_to_3d.call(observations, state=sim.states)
+        return self.sensor_module.step(
+            Mock(rng=np.random.default_rng(0)),
+            observations[JUMP_AGENT_ID][JUMP_SENSOR_ID],
+        )
+
+    @parametrize(
+        "object_name",
+        [(name,) for name in ("cubeSolid", "capsule3DSolid", "icosphereSolid")],
+    )
+    def test_undoes_jump_that_lands_inside_object(self, object_name: str) -> None:
+        with HabitatSim(agents=[self.agent]) as sim:
+            sim.add_object(object_name, position=JUMP_OBJECT_POSITION)
+
+            observations, _ = sim.reset()
+            pre_jump_state = MotorSystemState(sim.states)
+            pre_jump_percept = self.percept(sim, observations)
+            # Sanity check: the object is in view from the initial pose.
+            self.assertTrue(pre_jump_percept.get_on_object())
+            self.assertEqual(
+                pre_jump_percept._semantic_id,
+                PRIMITIVE_OBJECT_TYPES[object_name],
+            )
+
+            # Teleport the agent to the object's center, i.e. inside its geometry.
+            sim.initialize_agent(
+                JUMP_AGENT_ID,
+                habitat_sim.AgentState(
+                    position=np.array(JUMP_OBJECT_POSITION, dtype=np.float32)
+                ),
+            )
+            observations, _ = sim.step([])
+            post_jump_state = MotorSystemState(sim.states)
+            raw_depth = observations[JUMP_AGENT_ID][JUMP_SENSOR_ID]["depth"]
+            # Habitat renders nothing from inside a closed mesh: the depth at the
+            # image center is 0.
+            self.assertEqual(
+                raw_depth[JUMP_RESOLUTION[0] // 2, JUMP_RESOLUTION[1] // 2], 0.0
+            )
+            post_jump_percept = self.percept(sim, observations)
+
+        self.assertFalse(post_jump_percept.get_on_object())
+
+        policy = JumpToGoal(JUMP_AGENT_ID, JUMP_SENSOR_ID)
+        goal = Mock(
+            location=np.array(JUMP_OBJECT_POSITION),
+            morphological_features={"pose_vectors": np.eye(3)},
+        )
+        jump_result = policy(
+            ctx=Mock(),
+            observations=Mock(),
+            state=pre_jump_state,
+            percept=pre_jump_percept,
+            goal=goal,
+        )
+        self.assertEqual(jump_result.status, PolicyStatus.IN_PROGRESS)
+
+        undo_result = policy(
+            ctx=Mock(),
+            observations=Mock(),
+            state=post_jump_state,
+            percept=post_jump_percept,
+            goal=None,
+        )
+        self.assertEqual(undo_result.status, PolicyStatus.READY)
+        self.assertEqual(len(undo_result.actions), 2)
+        set_agent_pose = cast("SetAgentPose", undo_result.actions[0])
+        self.assertEqual(set_agent_pose.name, "set_agent_pose")
+        set_sensor_rotation = cast("SetSensorRotation", undo_result.actions[1])
+        self.assertEqual(set_sensor_rotation.name, "set_sensor_rotation")
+
+        agent_state = pre_jump_state[JUMP_AGENT_ID]
+        np.testing.assert_array_equal(set_agent_pose.location, agent_state.position)
+        np.testing.assert_array_equal(
+            qt.as_float_array(set_agent_pose.rotation_quat),
+            qt.as_float_array(agent_state.rotation),
+        )
+        np.testing.assert_array_equal(
+            qt.as_float_array(set_sensor_rotation.rotation_quat),
+            qt.as_float_array(agent_state.sensors[JUMP_SENSOR_ID].rotation),
+        )
