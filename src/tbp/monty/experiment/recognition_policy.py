@@ -42,6 +42,12 @@ class RecognitionCounter:
     step: int = 0
     """The current step number."""
 
+    matching_steps: int = 0
+    """Count of matching steps taken."""
+
+    exploring_steps: int = 0
+    """Count of exploring steps taken."""
+
     mode: ExperimentMode = ExperimentMode.EVAL
     """The stepping mode (traning or evaluation)."""
 
@@ -171,10 +177,11 @@ class MaximumSteps(RecognitionPolicy):
 
 
 class StepLimit(RecognitionPolicy):
-    """Keep track of various step counters.
+    """Check step counter limits (and maybe start exploring).
 
     Terminal conditions include:
     - `matching_steps >= {max_train_steps | max_eval_steps}`
+    - `exploring_steps >= num_exploring_steps`
     """
 
     _min_train_steps: int
@@ -188,12 +195,6 @@ class StepLimit(RecognitionPolicy):
 
     _max_eval_steps: int
     """The maximum steps to take in evaluation mode."""
-
-    _matching_steps: int
-    """Count of matching steps taken."""
-
-    _exploring_steps: int
-    """Count of exploring steps taken."""
 
     def __init__(
         self: Self,
@@ -215,7 +216,6 @@ class StepLimit(RecognitionPolicy):
                 - If `min_train_steps` is negative.
                 - If `num_exploring_steps` is negative.
                 - If `max_train_steps` is not positive.
-                - If `min_train_steps > max_train_steps`.
                 - If `max_eval_steps` is not positive.
         """
         if min_train_steps < 0:
@@ -224,10 +224,6 @@ class StepLimit(RecognitionPolicy):
             raise ValueError("num_exploring_steps must be non-negative")
         if max_train_steps <= 0:
             raise ValueError("max_train_steps must be positive")
-        if min_train_steps > max_train_steps:
-            raise ValueError(
-                "min_train_steps must be less than or equal to max_train_steps"
-            )
         if max_eval_steps <= 0:
             raise ValueError("max_eval_steps must be positive")
 
@@ -236,57 +232,26 @@ class StepLimit(RecognitionPolicy):
         self._max_train_steps = max_train_steps
         self._max_eval_steps = max_eval_steps
 
-        self._reset_counters()
-
-    def _reset_counters(self: Self) -> None:
-        self._matching_steps = 0
-        self._exploring_steps = 0
-
-    def _update_counters(self: Self, model: MontyBase) -> None:
-        if self._check_if_any_lms_updated(model):
-            if model.is_exploring:
-                self._exploring_steps += 1
-            else:
-                self._matching_steps += 1
-
-    def _check_if_any_lms_updated(self: Self, model: MontyBase) -> bool:
-        # TODO: Find a better way to determine this condition.
-        #       The `check_if_any_lms_updated` method is defined in
-        #       `MontyForGraphMatching` rather than `MontyBase`,
-        #       so the distinction between `step` and `matching_steps`
-        #       (or `exploring_steps`) only applies to `MontyForGraphMatching`
-        #       and its subclasses.
-        try:
-            return model.check_if_any_lms_updated()
-        except AttributeError:
-            return True
-
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        if count.step == 0:
-            model.switch_to_matching_step()
-            self._reset_counters()
-
         is_done: bool = False
         if model.is_exploring:
-            is_done = self._exploring_steps >= self._num_exploring_steps
+            is_done = count.exploring_steps >= self._num_exploring_steps
         elif count.mode is ExperimentMode.TRAIN:
-            if self._matching_steps >= self._min_train_steps:
+            if count.matching_steps >= self._min_train_steps:
                 model.switch_to_exploratory_step()
-            is_done = self._matching_steps >= self._max_train_steps
+            is_done = count.matching_steps >= self._max_train_steps
         elif count.mode is ExperimentMode.EVAL:
-            is_done = self._matching_steps >= self._max_eval_steps
+            is_done = count.matching_steps >= self._max_eval_steps
 
         if is_done:
             model.deal_with_time_out()
             logger.info(
                 "StepLimit is done, with matching_steps=%d exploring_steps=%d",
-                self._matching_steps,
-                self._exploring_steps,
+                count.matching_steps,
+                count.exploring_steps,
             )
-        else:
-            self._update_counters(model)
 
         return RecognitionResult(is_done=is_done)
 
