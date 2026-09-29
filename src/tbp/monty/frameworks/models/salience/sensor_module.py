@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 
 from tbp.monty.cmp import AttentionRegion, Goal
@@ -108,11 +109,6 @@ class SalienceSM(SensorModule):
             motor_only_step: Whether the current step is a motor-only step.
 
         """
-        if self._save_raw_obs and not self.is_exploring:
-            self._snapshot_telemetry.raw_observation(
-                observation, self.state.rotation, self.state.position
-            )
-
         if motor_only_step:
             return
 
@@ -141,6 +137,59 @@ class SalienceSM(SensorModule):
             )
             for i in range(len(on_object.locations))
         ]
+
+        self._region = self._segment_region(
+            ctx=ctx,
+            rgba=observation["rgba"],
+            on_object_map=on_object.on_object_map,
+            location_map=on_object.location_map,
+        )
+
+        if self._save_raw_obs and not self.is_exploring:
+            self._snapshot_telemetry.raw_observation(
+                observation, self.state.rotation, self.state.position
+            )
+
+    def _segment_region(
+        self,
+        ctx: RuntimeContext,
+        rgba: npt.NDArray[np.uint8],
+        on_object_map: npt.NDArray[np.bool_],
+        location_map: npt.NDArray[np.float64],
+    ) -> AttentionRegion:
+        """Segment the surface under fixation into a region proposal.
+
+        The region is the set of on-object locations inside the segmented
+        surface, expressed as attention weights so it can travel to the
+        attention system via ``propose_region``.
+
+        Args:
+            ctx: The runtime context.
+            observation: Sensor observation.
+            on_object_map: The on-object view of the observation as a boolean mask.
+            location_map: The corresponding 3D locations for each pixel in the observation.
+
+        Returns:
+            The segmentation mask and the region it proposes; None and an
+            empty region without a segmentation strategy.
+        """
+        if self._segmentation_strategy is None:
+            return AttentionRegion.empty()
+
+        segmentation_map = self._segmentation_strategy(ctx=ctx, rgba=rgba)
+
+        region_on_object_map = segmentation_map.astype(bool) & on_object_map
+        region_locations_on_object = location_map[region_on_object_map]
+
+        region = AttentionRegion.uniform(
+            region_locations_on_object, AttentionRegion.MAX_WEIGHT
+        )
+
+        if self._save_raw_obs and not self.is_exploring:
+            self._snapshot_telemetry.segmentation_map(segmentation_map)
+            self._snapshot_telemetry.attention_region(region)
+
+        return region
 
     def _weight_salience(
         self,
