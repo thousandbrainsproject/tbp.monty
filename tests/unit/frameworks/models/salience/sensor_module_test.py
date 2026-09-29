@@ -48,6 +48,8 @@ def mocked_object_observation():
         center_location=None,
         locations=np.empty((0, 3)),
         salience=np.empty([]),
+        on_object_map=np.empty((0, 0)),
+        location_map=np.empty((0, 0, 3)),
     )
     with patch(
         "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation",
@@ -119,6 +121,8 @@ class SalienceSMTest(unittest.TestCase):
             center_location=sentinel.center_location,
             locations=locations,
             salience=sentinel.salience_map,
+            on_object_map=MagicMock(),
+            location_map=MagicMock(),
         )
         self.sensor_module._return_inhibitor.return_value = sentinel.ior_weights  # type: ignore[attr-defined]
         salience = 0.1 * np.array([1, 2, 3])

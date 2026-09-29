@@ -52,8 +52,8 @@ class SensorObservation(TypedDict, total=False):
     rgba: npt.NDArray[np.uint8]
     depth: npt.NDArray[np.float64]  # TODO: Verify specific type
     semantic: npt.NDArray[np.int_]  # TODO: Verify specific type
-    semantic_3d: npt.NDArray[np.int_]  # TODO: Verify specific type
-    sensor_frame_data: npt.NDArray[np.int_]  # TODO: Verify specific type
+    semantic_3d: npt.NDArray[np.float64]
+    sensor_frame_data: npt.NDArray[np.float64]
     cam_to_world: npt.NDArray[np.float64]  # TODO: Verify specific type
     pixel_loc: npt.NDArray[np.float64]  # TODO: Verify specific type
     raw: npt.NDArray[np.uint8]

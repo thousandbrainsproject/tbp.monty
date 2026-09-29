@@ -11,15 +11,23 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 
 
 @dataclass
 class OnObjectObservation:
-    center_location: np.ndarray | None
-    locations: np.ndarray
-    salience: np.ndarray
+    center_location: npt.NDArray[np.float64] | None
+    """3D location corresponding to the central pixel, if it is on an object."""
+    locations: npt.NDArray[np.float64]
+    """3D locations corresponding to on-object pixels."""
+    salience: npt.NDArray[np.float32]
+    """Salience values corresponding to on-object pixels."""
+    on_object_map: npt.NDArray[np.bool_]
+    """H x W boolean array indicating on-object pixels."""
+    location_map: npt.NDArray[np.float64]
+    """H x W x 3 array indicating the 3D location of each pixel."""
 
 
 def on_object_observation(
@@ -59,4 +67,6 @@ def on_object_observation(
         center_location=center_location,
         salience=on_object_salience,
         locations=on_object_locations,
+        on_object_map=on_object,
+        location_map=locations,
     )
