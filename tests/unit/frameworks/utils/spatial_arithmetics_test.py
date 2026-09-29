@@ -90,15 +90,6 @@ rotation_matrices = quaternions().map(
 )
 
 
-def test_get_angle_between():
-    v1 = [2, 0, 0]
-    v2 = [0, -3, 0]
-
-    angle = get_angle_between(v1, v2)
-
-    np.testing.assert_allclose(angle, np.pi / 2, atol=DEFAULT_TOLERANCE)
-
-
 class NormalizeTest(unittest.TestCase):
     @given(nonzero_magnitude_vectors())
     def test_preserves_direction(self, v):
@@ -238,3 +229,42 @@ class TangentFrameTest(unittest.TestCase):
         frame = TangentFrame(n1)
         frame.transport(n2)
         self._assert_orthonormal_frame(frame, n2)
+
+
+class GetAngleBetweenTest(unittest.TestCase):
+    """Test angles between 3D vectors of arbitrary lengths."""
+
+    @given(
+        v1=nonzero_magnitude_vectors(),
+        v2=nonzero_magnitude_vectors(),
+    )
+    @example(v1=np.array([2, 0, 0]), v2=np.array([1, 1, 0]))  # 45 degrees
+    @example(v1=np.array([2, 0, 0]), v2=np.array([3, 0, 0]))  # parallel
+    @example(v1=np.array([2, 0, 0]), v2=np.array([-3, 0, 0]))  # anti-parallel
+    @example(v1=np.array([2, 0, 0]), v2=np.array([0, -3, 0]))  # orthogonal
+    def test_matches_reference(self, v1, v2):
+        """Match a normalized dot-product reference computed in float64."""
+        u1 = v1.astype(np.float64)
+        u2 = v2.astype(np.float64)
+        u1 /= np.linalg.norm(u1)
+        u2 /= np.linalg.norm(u2)
+        expected = np.arccos(np.clip(np.dot(u1, u2), -1.0, 1.0))
+
+        actual = get_angle_between(v1, v2)
+
+        # float32 rounds pi slightly above its float64 representation.
+        assert 0.0 <= actual <= np.pi + DEFAULT_TOLERANCE
+        np.testing.assert_allclose(actual, expected, atol=DEFAULT_TOLERANCE, rtol=0)
+
+    @given(v=vectors_3d())
+    @example(v=np.zeros(3))
+    def test_zero_vector_returns_zero(self, v):
+        """Preserve the documented zero-vector convention."""
+        zero = np.zeros(3, dtype=v.dtype)
+
+        np.testing.assert_allclose(
+            [get_angle_between(zero, v), get_angle_between(v, zero)],
+            [0.0, 0.0],
+            atol=DEFAULT_TOLERANCE,
+            rtol=0,
+        )

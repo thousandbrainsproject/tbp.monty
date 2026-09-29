@@ -299,6 +299,15 @@ def get_angle_between(v1, v2):
 
     Returns:
         angle in radians
+
+    TODO: Consolidate angle helpers around the NumPy atan2 supporting
+      (..., 3) inputs with broadcasting and reductions over axis=-1. In
+      the near term, get_angle_between can replace get_angle without
+      further changes. This function can merge with get_angle_beefed_up
+      by adding handling for zero-length vectors and None. For
+      get_angles_for_all_hypotheses, add support for broadcasting, e.g.
+      get_angle_between(hyp_f, query_f[:, None, :]) and adding axis=-1
+      for reduction.
     """
     return np.arctan2(np.linalg.norm(np.cross(v1, v2)), np.dot(v1, v2))
 

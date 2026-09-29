@@ -78,21 +78,6 @@ def curvature_values(draw):
     return k1, k2
 
 
-def test_point_pair_features():
-    actual = point_pair_features(
-        np.array([0.0, 0.0, 0.0]),
-        np.array([3.0, 4.0, 0.0]),
-        np.array([0.0, 0.0, 1.0]),
-        np.array([0.0, 1.0, 0.0]),
-    )
-
-    expected = np.array(
-        [5.0, np.pi / 2, 0.6435011087932844, np.pi / 2]
-    )
-
-    npt.assert_allclose(actual, expected, atol=DEFAULT_TOLERANCE)
-
-
 class ComputeArcFromTangentProjectionTest(unittest.TestCase):
     def test_known_correction(self):
         # k=1, p=0.5 => arcsin(0.5)/1 = pi/6 (~0.52)
@@ -214,3 +199,40 @@ class DirectionalCurvatureTest(unittest.TestCase):
                 pc1_dir=pc1,
                 pc2_dir=scaled_pc2,
             )
+
+
+class PointPairFeaturesTest(unittest.TestCase):
+    """Test point-pair feature values and ordering."""
+
+    def test_known_values(self):
+        """Return distance followed by the three angles in order."""
+        actual = point_pair_features(
+            np.array([0, 0, 0]),
+            np.array([3, 4, 0]),
+            np.array([1, 0, 0]),
+            np.array([0, 1, 0]),
+        )
+
+        expected = [5.0, np.arccos(3 / 5), np.arccos(4 / 5), np.pi / 2]
+
+        assert isinstance(actual, np.ndarray)
+        assert actual.shape == (4,)
+        npt.assert_allclose(actual, expected, atol=DEFAULT_TOLERANCE, rtol=0)
+
+    def test_coincident_points(self):
+        """Return zero distance and zero displacement angles."""
+        position = np.array([1, 2, 3])
+
+        actual = point_pair_features(
+            position,
+            position,
+            np.array([1, 0, 0]),
+            np.array([0, 1, 0]),
+        )
+
+        npt.assert_allclose(
+            actual,
+            [0.0, 0.0, 0.0, np.pi / 2],
+            atol=DEFAULT_TOLERANCE,
+            rtol=0,
+        )
