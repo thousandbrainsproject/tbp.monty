@@ -217,3 +217,17 @@ class SalienceSMPrivateTest(unittest.TestCase):
             sentinel.randomized
         )
         self.assertEqual(weighted, sentinel.normalized)
+
+
+class SalienceSMSegmentationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.sensor_module = SalienceSM(
+            sensor_module_id="test",
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            snapshot_telemetry=MagicMock(),
+        )
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
+
+    def test_step_calls_segment_region(self) -> None:
+        self.sensor_module._segmentation_strategy = MagicMock()

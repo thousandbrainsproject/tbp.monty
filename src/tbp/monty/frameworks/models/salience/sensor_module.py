@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import quaternion as qt
 
-from tbp.monty.cmp import Goal
+from tbp.monty.cmp import AttentionRegion, Goal
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
@@ -22,6 +22,9 @@ from tbp.monty.frameworks.models.salience.on_object_observation import (
     on_object_observation,
 )
 from tbp.monty.frameworks.models.salience.return_inhibitor import ReturnInhibitor
+from tbp.monty.frameworks.models.salience.segmentation.strategy import (
+    SegmentationStrategy,
+)
 from tbp.monty.frameworks.models.salience.strategies import (
     SalienceStrategy,
     Uniform,
@@ -34,6 +37,16 @@ __all__ = ["SalienceSM"]
 
 
 class SalienceSM(SensorModule):
+    _sensor_module_id: str
+    _save_raw_obs: bool
+    _salience_strategy: SalienceStrategy
+    _return_inhibitor: ReturnInhibitor
+    _snapshot_telemetry: SnapshotTelemetry
+    _goals: list[Goal]
+    is_exploring: bool
+    _segmentation_strategy: SegmentationStrategy | None
+    _region: AttentionRegion
+
     def __init__(
         self,
         sensor_module_id: str,
@@ -41,6 +54,7 @@ class SalienceSM(SensorModule):
         salience_strategy: SalienceStrategy | None = None,
         return_inhibitor: ReturnInhibitor | None = None,
         snapshot_telemetry: SnapshotTelemetry | None = None,
+        segmentation_strategy: SegmentationStrategy | None = None,
     ) -> None:
         self._sensor_module_id = sensor_module_id
         self._save_raw_obs = save_raw_obs
@@ -54,9 +68,11 @@ class SalienceSM(SensorModule):
             SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
         )
 
-        self._goals: list[Goal] = []
+        self._goals = []
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
+        self._segmentation_strategy = segmentation_strategy
+        self._region = AttentionRegion.empty()
 
     @property
     def sensor_module_id(self) -> str:
