@@ -61,7 +61,7 @@ defaults:
   - /logging: silent_warning_train
 
   # /telemetry specifies the telemetry configuration to use. Here, we tell Monty
-  # to use the INFO log level.
+  # to use the WARNING log level.
   - /telemetry: warning
 
 experiment:
