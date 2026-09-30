@@ -59,12 +59,10 @@ def mocked_object_observation():
 
 
 @parameterized_class(
-    ("save_raw_obs", "is_exploring", "should_snapshot"),
+    ("is_exploring",),
     [
-        (True, False, True),
-        (True, True, False),
-        (False, False, False),
-        (False, True, False),
+        (True,),
+        (False,),
     ],
 )
 @pytest.mark.usefixtures("mocked_object_observation")
@@ -93,22 +91,32 @@ class SalienceSMTest(unittest.TestCase):
         )
         self.ctx = RuntimeContext(rng=np.random.RandomState())
 
-    def test_step_snapshots_raw_observation_as_needed(self) -> None:
-        self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
+    def test_step_snapshots_telemetry_if_not_exploring(self) -> None:
         self.sensor_module.is_exploring = self.is_exploring  # type: ignore[attr-defined]
+        self.sensor_module._salience_strategy.return_value = sentinel.salience_map  # type: ignore[attr-defined]
         data: dict[str, Any] = MagicMock()
 
         self.sensor_module.update_state(self.state)
         self.sensor_module.step(self.ctx, data)
 
-        if self.should_snapshot:  # type: ignore[attr-defined]
+        if not self.is_exploring:  # type: ignore[attr-defined]
             self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
                 data, self.state.rotation, ArrayEqual(self.state.position)
             )
+            self.sensor_module._snapshot_telemetry.salience_map.assert_called_once_with(  # type: ignore[attr-defined]
+                sentinel.salience_map
+            )
+            self.sensor_module._snapshot_telemetry.goals.assert_called_once_with(  # type: ignore[attr-defined]
+                self.sensor_module._goals
+            )
+
         else:
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
+            self.sensor_module._snapshot_telemetry.salience_map.assert_not_called()  # type: ignore[attr-defined]
+            self.sensor_module._snapshot_telemetry.goals.assert_not_called()  # type: ignore[attr-defined]
 
     def test_step_returns_no_percept(self) -> None:
+        self.sensor_module.update_state(self.state)
         self.assertIsNone(self.sensor_module.step(self.ctx, self.observation))
 
     @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
@@ -131,7 +139,7 @@ class SalienceSMTest(unittest.TestCase):
             rgba=np.zeros((64, 64, 4), dtype=np.uint8),
             depth=np.zeros((64, 64)),
         )
-
+        self.sensor_module.update_state(self.state)
         self.sensor_module.step(self.ctx, data)
         goals = self.sensor_module.propose_goals()
 

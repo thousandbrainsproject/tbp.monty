@@ -39,7 +39,7 @@ class SalienceSMTelemetry(Protocol):
         position: npt.NDArray[np.float64],
     ) -> None: ...
 
-    def salience_map(self, salience_map: npt.NDArray[np.float32]) -> None: ...
+    def salience_map(self, salience_map: npt.NDArray[np.float64]) -> None: ...
 
     def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None: ...
 
@@ -62,7 +62,7 @@ class NoopSalienceSMTelemetry(SalienceSMTelemetry):
     ) -> None:
         pass
 
-    def salience_map(self, salience_map: npt.NDArray[np.float32]) -> None:
+    def salience_map(self, salience_map: npt.NDArray[np.float64]) -> None:
         pass
 
     def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None:
@@ -99,7 +99,7 @@ class DetailedSalienceSMTelemetry(SalienceSMTelemetry):
 
     _raw_observations: list[SensorObservation]
     _poses: list[dict[str, npt.NDArray[np.float64]]]
-    _salience_maps: list[npt.NDArray[np.float32]]
+    _salience_maps: list[npt.NDArray[np.float64]]
     _segmentation_maps: list[npt.NDArray[np.uint8] | None]
     _goals: list[Sequence[Goal]]
     _attention_regions: list[AttentionRegion]
@@ -142,7 +142,7 @@ class DetailedSalienceSMTelemetry(SalienceSMTelemetry):
             )
         )
 
-    def salience_map(self, salience_map: npt.NDArray[np.float32]) -> None:
+    def salience_map(self, salience_map: npt.NDArray[np.float64]) -> None:
         """Record one step's salience map.
 
         Args:
