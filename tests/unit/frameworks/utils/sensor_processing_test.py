@@ -204,7 +204,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
 class PointPairFeaturesTest(unittest.TestCase):
     """Test point-pair feature values and ordering."""
 
-    def test_known_values(self):
+    def test_returns_expected_distance_followed_by_three_angles_in_order(self) -> None:
         """Return distance followed by the three angles in order."""
         actual = point_pair_features(
             np.array([0, 0, 0]),
@@ -215,11 +215,13 @@ class PointPairFeaturesTest(unittest.TestCase):
 
         expected = [5.0, np.arccos(3 / 5), np.arccos(4 / 5), np.pi / 2]
 
-        assert isinstance(actual, np.ndarray)
-        assert actual.shape == (4,)
-        npt.assert_allclose(actual, expected, atol=DEFAULT_TOLERANCE, rtol=0)
+        self.assertIsInstance(actual, np.ndarray)
+        self.assertEqual(actual.shape, (4,))
+        self.assertTrue(np.allclose(actual, expected, atol=DEFAULT_TOLERANCE, rtol=0))
 
-    def test_coincident_points(self):
+    def test_coincident_points_return_zero_distance_and_zero_displacement_angles(
+        self,
+    ) -> None:
         """Return zero distance and zero displacement angles."""
         position = np.array([1, 2, 3])
 
@@ -230,9 +232,11 @@ class PointPairFeaturesTest(unittest.TestCase):
             np.array([0, 1, 0]),
         )
 
-        npt.assert_allclose(
-            actual,
-            [0.0, 0.0, 0.0, np.pi / 2],
-            atol=DEFAULT_TOLERANCE,
-            rtol=0,
+        self.assertTrue(
+            np.allclose(
+                actual,
+                [0.0, 0.0, 0.0, np.pi / 2],
+                atol=DEFAULT_TOLERANCE,
+                rtol=0,
+            )
         )

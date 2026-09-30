@@ -283,7 +283,7 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
     return np.arccos(np.clip(dot_product, -1, 1))
 
 
-def get_angle_between(v1, v2):
+def get_angle_between(v1: ArrayLike, v2: ArrayLike) -> np.floating:
     """Get the angle between two 3D vectors.
 
     Uses the atan2 formulation. Unlike ``get_angle``, this does

@@ -830,7 +830,9 @@ def pixel_dist_to_center(n_points, patch_width, center_id):
     return np.linalg.norm(pos - pos_center, axis=2)
 
 
-def point_pair_features(pos_i, pos_j, normal_i, normal_j):
+def point_pair_features(
+    pos_i: np.ndarray, pos_j: np.ndarray, normal_i: np.ndarray, normal_j: np.ndarray
+) -> np.ndarray:
     """Return point pair features between two points.
 
     Args:
