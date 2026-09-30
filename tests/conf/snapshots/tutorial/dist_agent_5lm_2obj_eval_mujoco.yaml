@@ -401,7 +401,7 @@ experiment:
         telemetry.tbp.monty:
           handlers:
           - telemetry_console
-          level: INFO
+          level: WARNING
     n_train_epochs: 1
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train_mujoco/pretrained"}

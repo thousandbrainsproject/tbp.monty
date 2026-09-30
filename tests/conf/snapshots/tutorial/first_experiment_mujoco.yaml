@@ -150,7 +150,7 @@ experiment:
         telemetry.tbp.monty:
           handlers:
           - telemetry_console
-          level: INFO
+          level: WARNING
     show_sensor_output: false
     n_train_epochs: 1
     n_eval_epochs: 3

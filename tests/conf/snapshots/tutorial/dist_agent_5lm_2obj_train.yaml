@@ -346,7 +346,7 @@ experiment:
         telemetry.tbp.monty:
           handlers:
           - telemetry_console
-          level: INFO
+          level: WARNING
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
     model_name_or_path: ''
