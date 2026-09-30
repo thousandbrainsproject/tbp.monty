@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
-from unittest.mock import MagicMock, patch, sentinel
+from unittest.mock import ANY, MagicMock, patch, sentinel
 
 import numpy as np
 import numpy.typing as npt
@@ -233,13 +233,46 @@ class SalienceSMPrivateTest(unittest.TestCase):
 
 class SalienceSMSegmentationTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.sensor_module = SalienceSM(
-            sensor_module_id="test",
+        self.sensor_module_id = "test"
+        self.observation = SensorObservation(
+            rgba=np.zeros((64, 64, 4), dtype=np.uint8),
+            depth=np.zeros((64, 64)),
+        )
+        self.default_sensor_state = SensorState(
+            position=(0, 0, 0),
+            rotation=qt.quaternion(1, 0, 0, 0),
+        )
+        self.state = AgentState(
+            sensors={SensorID(self.sensor_module_id): self.default_sensor_state},
+            position=self.default_sensor_state.position,
+            rotation=self.default_sensor_state.rotation,
+        )
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
+
+    @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
+    @patch(
+        "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM._segment_region"
+    )
+    def test_step_calls_segment_region(
+        self, segment_region_mock: MagicMock, on_object_observation_mock: MagicMock
+    ) -> None:
+        sensor_module = SalienceSM(
+            sensor_module_id=self.sensor_module_id,
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),
             snapshot_telemetry=MagicMock(),
         )
-        self.ctx = RuntimeContext(rng=np.random.RandomState())
+        ctx = RuntimeContext(rng=np.random.RandomState())
+        on_object_mock = MagicMock()
+        on_object_observation_mock.return_value = on_object_mock
 
-    def test_step_calls_segment_region(self) -> None:
-        self.sensor_module._segmentation_strategy = MagicMock()
+        sensor_module.update_state(self.state)
+        sensor_module.step(ctx, self.observation)
+
+        segment_region_mock.assert_called_once_with(
+            ctx,
+            ANY,
+            on_object_mock.on_object_map,
+            on_object_mock.location_map,
+        )
+        # self.assertEqual(segment_region_mock.call_args_list[0][0], ctx)
