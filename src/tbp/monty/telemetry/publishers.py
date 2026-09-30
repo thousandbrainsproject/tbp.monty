@@ -61,7 +61,6 @@ class TelemetryPublisher(logging.Logger):
         """
         self._log_event(level, msg, *args, **kwargs)
 
-    # Type-hinted equivalent of `log` for convenience
     def emit(self, level: int, event: TelemetryEvent, *args, **kwargs) -> None:
         """Emits a telemetry event at the specified log level.
 

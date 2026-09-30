@@ -22,13 +22,38 @@ from tbp.monty.telemetry.formatters import JsonFormatter
 from tbp.monty.telemetry.publishers import TelemetryPublisher
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
-simple_string_strategy = st.text(min_size=1, max_size=20)
 
-event_extras_strategy = st.dictionaries(
-    keys=simple_string_strategy.filter(lambda k: k not in TelemetryEvent.model_fields),
-    values=st.one_of(simple_string_strategy, st.floats(), st.none()),
-    max_size=5,
-)
+@st.composite
+def event_extras_strategy(draw: st.DrawFn):
+    extras = draw(
+        st.dictionaries(
+            keys=st.text(min_size=1, max_size=20),
+            values=st.one_of(st.text(min_size=1, max_size=20), st.floats(), st.none()),
+            max_size=5,
+        )
+    )
+
+    # avoid collisions
+    for field in TelemetryEvent.model_fields:
+        extras.pop(field, None)
+
+    return extras
+
+
+@st.composite
+def logrecord_event_strategy(draw: st.DrawFn) -> logging.LogRecord:
+    return logging.LogRecord(
+        name=draw(st.text(min_size=1, max_size=20)),
+        level=draw(st.integers()),
+        pathname=draw(st.just(__file__)),
+        lineno=draw(st.integers()),
+        msg=TelemetryEvent(
+            kind=draw(st.text(min_size=1, max_size=20)), **draw(event_extras_strategy())
+        ),
+        args=draw(st.just(())),
+        exc_info=draw(st.none()),
+        func=draw(st.text(min_size=1, max_size=20)),
+    )
 
 
 class TelemetryLogHandler(logging.Handler):
@@ -50,13 +75,13 @@ class TelemetryEventTest(TestCase):
         self.assertEqual(event.kind, event.__class__.__name__)
         self.assertEqual(event.kind, str(event))
 
-    @given(kind=simple_string_strategy)
+    @given(kind=st.text(min_size=1, max_size=20))
     def test_kind_is_preserved_when_non_empty(self, kind: str) -> None:
         event = TelemetryEvent(kind=kind)
         self.assertEqual(event.kind, kind)
         self.assertEqual(event.kind, str(event))
 
-    @given(kind=simple_string_strategy, event_extras=event_extras_strategy)
+    @given(kind=st.text(min_size=1, max_size=20), event_extras=event_extras_strategy())
     def test_custom_fields_override_kind(self, kind: str, event_extras: dict) -> None:
         event = TelemetryEvent(kind=kind, **event_extras)
         self.assertEqual(event.kind, kind)
@@ -64,26 +89,10 @@ class TelemetryEventTest(TestCase):
 
 
 class JsonFormatterTest(TestCase):
-    record_strategy = st.builds(
-        logging.LogRecord,
-        name=simple_string_strategy,
-        level=st.integers(),
-        pathname=st.just(__file__),
-        lineno=st.integers(),
-        msg=st.builds(
-            lambda kind, event_extras: TelemetryEvent(kind=kind, **event_extras),
-            simple_string_strategy,
-            event_extras_strategy,
-        ),
-        args=st.just(()),
-        exc_info=st.none(),
-        func=simple_string_strategy,
-    )
-
     def setUp(self) -> None:
         self.formatter = JsonFormatter()
 
-    @given(record=record_strategy)
+    @given(record=logrecord_event_strategy())
     def test_format_logrecord_to_expected_json(self, record: logging.LogRecord) -> None:
         data = json.loads(self.formatter.format(record))
         expected = {
@@ -95,7 +104,7 @@ class JsonFormatterTest(TestCase):
         }
         self.assertEqual(data, expected)
 
-    @given(record=record_strategy)
+    @given(record=logrecord_event_strategy())
     def test_raise_typeerror_if_msg_is_not_telemetry_schema(
         self, record: logging.LogRecord
     ) -> None:

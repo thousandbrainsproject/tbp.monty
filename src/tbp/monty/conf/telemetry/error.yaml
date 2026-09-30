@@ -1,8 +1,0 @@
-# @package experiment.config.telemetry
-
-defaults:
-  - base
-
-loggers:
-  telemetry.tbp.monty:
-    level: ERROR

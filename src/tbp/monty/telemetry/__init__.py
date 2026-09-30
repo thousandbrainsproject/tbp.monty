@@ -15,8 +15,7 @@ standard Python `logging` mechanics. Telemetry schemas are passed as the log mes
 ``record.getMessage()`` returns ``schema.kind``.
 
 The telemetry level must be configured via the experiment config YAML. Easiest is adding
-"  - /telemetry: info" under "defaults:". Available configs are "debug", "info",
-"warning", "error", "critical".
+"  - /telemetry: info" under "defaults:". Available configs are "info" and "warning".
 
 The global level is defined via the ``telemetry.tbp.monty`` logger. It can be overridden
 on a per-module basis.
