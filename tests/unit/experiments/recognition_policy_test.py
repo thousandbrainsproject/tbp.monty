@@ -310,7 +310,7 @@ class StepLimitTest(unittest.TestCase):
             mode=ExperimentMode.TRAIN,
         )
         result = policy(model, count)
-        model.switch_to_exploratory_step.assert_called_once()
+        self.assertTrue(result.start_exploring)
         is_done = matching_steps >= max_train_steps
         self.assertEqual(result.is_done, is_done)
 

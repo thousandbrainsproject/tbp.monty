@@ -56,7 +56,14 @@ class RecognitionCounter:
 class RecognitionResult:
     """Aggregated result from the Recognition Policy."""
 
-    is_done: bool
+    is_done: bool = False
+    """A terminal condition has been reached."""
+
+    is_time_out: bool = False
+    """A time-out condition has been reached."""
+
+    start_exploring: bool = False
+    """A transition to 'exploring' mode is requested."""
 
 
 class RecognitionPolicy(Protocol):
@@ -93,7 +100,7 @@ class MontyIsDone(RecognitionPolicy):
         is_done = model.is_done
         if is_done:
             logger.info("MontyIsDone is done, with model.is_done")
-        return RecognitionResult(is_done=is_done)
+        return RecognitionResult(is_done)
 
 
 class MaxTotalSteps(RecognitionPolicy):
@@ -123,7 +130,7 @@ class MaxTotalSteps(RecognitionPolicy):
         is_done = count.step >= self._max_total_steps
         if is_done:
             logger.info("MaxTotalSteps is done, with step=%d", count.step)
-        return RecognitionResult(is_done=is_done)
+        return RecognitionResult(is_done)
 
 
 class MaximumSteps(RecognitionPolicy):
@@ -164,16 +171,18 @@ class MaximumSteps(RecognitionPolicy):
             if count.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
-        if is_done:
-            model.deal_with_time_out()
+        result = RecognitionResult(
+            (not model.is_exploring) and (model.matching_steps >= max_steps)
+        )
+        if result.is_done:
+            result.is_time_out = True
             logger.info(
                 "MaximumSteps is done, "
                 "with model.is_exploring=%s model.matching_steps=%d",
                 model.is_exploring,
                 model.matching_steps,
             )
-        return RecognitionResult(is_done=is_done)
+        return result
 
 
 class StepLimit(RecognitionPolicy):
@@ -235,25 +244,25 @@ class StepLimit(RecognitionPolicy):
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        is_done: bool = False
+        result = RecognitionResult()
         if model.is_exploring:
-            is_done = count.exploring_steps >= self._num_exploring_steps
+            result.is_done = count.exploring_steps >= self._num_exploring_steps
         elif count.mode is ExperimentMode.TRAIN:
             if count.matching_steps >= self._min_train_steps:
-                model.switch_to_exploratory_step()
-            is_done = count.matching_steps >= self._max_train_steps
+                result.start_exploring = True
+            result.is_done = count.matching_steps >= self._max_train_steps
         elif count.mode is ExperimentMode.EVAL:
-            is_done = count.matching_steps >= self._max_eval_steps
+            result.is_done = count.matching_steps >= self._max_eval_steps
 
-        if is_done:
-            model.deal_with_time_out()
+        if result.is_done:
+            result.is_time_out = True
             logger.info(
                 "StepLimit is done, with matching_steps=%d exploring_steps=%d",
                 count.matching_steps,
                 count.exploring_steps,
             )
 
-        return RecognitionResult(is_done=is_done)
+        return result
 
 
 class MinimumLMs(RecognitionPolicy):
@@ -290,7 +299,7 @@ class MinimumLMs(RecognitionPolicy):
         is_done = num_matched >= self._min_lms
         if is_done:
             logger.info("MinimumLMs is done, with num_matched=%d", num_matched)
-        return RecognitionResult(is_done=is_done)
+        return RecognitionResult(is_done)
 
 
 class NaiveScan(RecognitionPolicy):
@@ -326,7 +335,7 @@ class NaiveScan(RecognitionPolicy):
         is_done = count.step >= self._step_limit
         if is_done:
             logger.info("NaiveScan is done, with step=%d", count.step)
-        return RecognitionResult(is_done=is_done)
+        return RecognitionResult(is_done)
 
 
 class ObjectRecognition(RecognitionPolicy):
@@ -382,25 +391,24 @@ class ObjectRecognition(RecognitionPolicy):
             if count.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
+        result = RecognitionResult()
         if (not model.is_exploring) and (model.matching_steps >= max_steps):
-            model.deal_with_time_out()
+            result.is_done = True
+            result.is_time_out = True
             logger.info(
                 "ObjectRecognition is done, "
                 "with model.is_exploring=%s model.matching_steps=%d",
                 model.is_exploring,
                 model.matching_steps,
             )
-            return RecognitionResult(is_done=True)
-
-        if count.step >= self._max_total_steps:
-            model.deal_with_time_out()
+        elif count.step >= self._max_total_steps:
+            result.is_done = True
+            result.is_time_out = True
             logger.info("ObjectRecognition is done, with step=%d", count.step)
-            return RecognitionResult(is_done=True)
-
-        is_done = model.is_done
-        if is_done:
+        elif model.is_done:
+            result.is_done = True
             logger.info("ObjectRecognition is done, with model.is_done")
-        return RecognitionResult(is_done=is_done)
+        return result
 
 
 class AnyPolicy(RecognitionPolicy):

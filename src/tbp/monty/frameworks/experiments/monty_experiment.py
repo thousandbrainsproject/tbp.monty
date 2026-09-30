@@ -519,6 +519,10 @@ class MontyExperiment:
 
     def _recognition_complete(self, count: RecognitionCounter) -> bool:
         result = self._recognition_policy(self.model, count)
+        if result.start_exploring:
+            self.model.switch_to_exploratory_step()
+        if result.is_time_out:
+            self.model.deal_with_time_out()
         return result.is_done
 
     def _check_if_any_lms_updated(self: Self) -> bool:
