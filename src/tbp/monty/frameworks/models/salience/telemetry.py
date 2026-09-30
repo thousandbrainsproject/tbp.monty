@@ -41,7 +41,7 @@ class SalienceSMTelemetry(Protocol):
 
     def salience_map(self, salience_map: npt.NDArray[np.float32]) -> None: ...
 
-    def segmentation_map(self, segmentation_map: npt.NDArray[np.float64]) -> None: ...
+    def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None: ...
 
     def goals(self, goals: Sequence[Goal]) -> None: ...
 
@@ -65,7 +65,7 @@ class NoopSalienceSMTelemetry(SalienceSMTelemetry):
     def salience_map(self, salience_map: npt.NDArray[np.float32]) -> None:
         pass
 
-    def segmentation_map(self, segmentation_map: npt.NDArray[np.float64]) -> None:
+    def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None:
         pass
 
     def goals(self, goals: Sequence[Goal]) -> None:
@@ -100,7 +100,7 @@ class DetailedSalienceSMTelemetry(SalienceSMTelemetry):
     _raw_observations: list[SensorObservation]
     _poses: list[dict[str, npt.NDArray[np.float64]]]
     _salience_maps: list[npt.NDArray[np.float32]]
-    _segmentation_maps: list[npt.NDArray[np.float64] | None]
+    _segmentation_maps: list[npt.NDArray[np.uint8] | None]
     _goals: list[Sequence[Goal]]
     _attention_regions: list[AttentionRegion]
 
@@ -150,7 +150,7 @@ class DetailedSalienceSMTelemetry(SalienceSMTelemetry):
         """
         self._salience_maps.append(salience_map)
 
-    def segmentation_map(self, segmentation_map: npt.NDArray[np.float64]) -> None:
+    def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None:
         """Record one step's segmentation mask.
 
         Args:

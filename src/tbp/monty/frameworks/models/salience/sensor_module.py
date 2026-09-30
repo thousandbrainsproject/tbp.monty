@@ -30,7 +30,10 @@ from tbp.monty.frameworks.models.salience.strategies import (
     SalienceStrategy,
     Uniform,
 )
-from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
+from tbp.monty.frameworks.models.salience.telemetry import (
+    NoopSalienceSMTelemetry,
+    SalienceSMTelemetry,
+)
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.memento import Memento
 
@@ -39,10 +42,9 @@ __all__ = ["SalienceSM"]
 
 class SalienceSM(SensorModule):
     _sensor_module_id: str
-    _save_raw_obs: bool
     _salience_strategy: SalienceStrategy
     _return_inhibitor: ReturnInhibitor
-    _snapshot_telemetry: SnapshotTelemetry
+    _snapshot_telemetry: SalienceSMTelemetry
     _goals: list[Goal]
     is_exploring: bool
     _segmentation_strategy: SegmentationStrategy | None
@@ -51,14 +53,12 @@ class SalienceSM(SensorModule):
     def __init__(
         self,
         sensor_module_id: str,
-        save_raw_obs: bool = False,
         salience_strategy: SalienceStrategy | None = None,
         return_inhibitor: ReturnInhibitor | None = None,
-        snapshot_telemetry: SnapshotTelemetry | None = None,
+        snapshot_telemetry: SalienceSMTelemetry | None = None,
         segmentation_strategy: SegmentationStrategy | None = None,
     ) -> None:
         self._sensor_module_id = sensor_module_id
-        self._save_raw_obs = save_raw_obs
         self._salience_strategy = (
             Uniform() if salience_strategy is None else salience_strategy
         )
@@ -66,7 +66,9 @@ class SalienceSM(SensorModule):
             ReturnInhibitor() if return_inhibitor is None else return_inhibitor
         )
         self._snapshot_telemetry = (
-            SnapshotTelemetry() if snapshot_telemetry is None else snapshot_telemetry
+            NoopSalienceSMTelemetry()
+            if snapshot_telemetry is None
+            else snapshot_telemetry
         )
 
         self._goals = []
@@ -145,7 +147,7 @@ class SalienceSM(SensorModule):
             location_map=on_object.location_map,
         )
 
-        if self._save_raw_obs and not self.is_exploring:
+        if not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
@@ -165,13 +167,14 @@ class SalienceSM(SensorModule):
 
         Args:
             ctx: The runtime context.
-            observation: Sensor observation.
+            rgba: The RGB image from the sensor.
             on_object_map: The on-object view of the observation as a boolean mask.
-            location_map: The corresponding 3D locations for each pixel in the observation.
+            location_map: The corresponding 3D locations for each pixel in the
+                observation.
 
         Returns:
-            The segmentation mask and the region it proposes; None and an
-            empty region without a segmentation strategy.
+            The region it proposes; an empty region if there is no segmentation
+                strategy.
         """
         if self._segmentation_strategy is None:
             return AttentionRegion.empty()
@@ -185,7 +188,7 @@ class SalienceSM(SensorModule):
             region_locations_on_object, AttentionRegion.MAX_WEIGHT
         )
 
-        if self._save_raw_obs and not self.is_exploring:
+        if not self.is_exploring:
             self._snapshot_telemetry.segmentation_map(segmentation_map)
             self._snapshot_telemetry.attention_region(region)
 
