@@ -137,7 +137,7 @@ In our current experiment set up, we divide time into episodes. **Each episode e
 
 This check can be divided into **global Monty checks and local LM checks** (purple box). An individual LM can reach its terminal state much earlier than the overall Monty system. For example, if one LM does not have a model of the shown object it will reach no match quite fast while the other LMs will continue until they recognize the object. Or one LM might receive some unique evidence about an object and recognize it before all other LMs do.
 
-The `match_criterion` experiment setting controls which learning modules must reach the terminal `match` state before the episode ends. To end the episode after a configured number of LMs match, use `AnyLMsMatch`:
+The `match_criterion` experiment setting controls which learning modules must reach the terminal `match` state before the episode ends. Experiment configs set it through the `/termination` config group in `src/tbp/monty/conf/termination/`, alongside the `recognition_policy` that enforces the step limits. To end the episode after a configured number of LMs match, use `AnyLMsMatch`:
 
 ```yaml
 match_criterion:

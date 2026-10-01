@@ -41,6 +41,10 @@ If not, and more information is needed, _do not close the Issue_. Instead, proce
 
 A valid Issue is on-topic, well-formatted, contains expected information, and does not violate the code of conduct.
 
+### LLMs
+
+If the **Maintainer** feels that the Issue does not meet the [Large Language Model Use](../large-language-model-use.md) guidelines, the **Maintainer** will apply both, the `triaged`, and the `reads as generated` labels and take no further action.
+
 ## Labels
 
 Multiple labels can be assigned to an Issue.
@@ -51,6 +55,7 @@ Multiple labels can be assigned to an Issue.
 - `infrastructure`: Apply this label if the Issue relates to infrastructure like GitHub, continuous integration, continuous deployment, publishing, etc.
 - `invalid`: Apply this label if you are rejecting the Issue for validity.
 - `needs discussion`: Apply this label if the Issue is missing information to determine what to do with it.
+- `reads as generated`: Apply this label if the Issue does not meet the [Large Language Model Use](../large-language-model-use.md) guidelines.
 - `triaged`: At a minimum, apply this label if the Issue is valid and you have triaged it.
 
 ## Priority & Severity
@@ -96,6 +101,10 @@ A valid Pull Request is on-topic, well-formatted, contains expected information,
 A Draft Pull Request is ignored and not triaged.
 
 ## Evaluation Criteria
+
+### LLMs
+
+If the **Maintainer** feels that the Pull Request does not meet the [Large Language Model Use](../large-language-model-use.md) guidelines, the **Maintainer** will apply both, the `triaged`, and the `reads as generated` labels and take no further action.
 
 ### Title
 
@@ -176,6 +185,7 @@ Multiple labels can be assigned to a Pull Request. For example, an `enhancement`
 - `infrastructure`: Apply this label if the Pull Request concerns infrastructure such as GitHub, continuous integration, continuous deployment, publishing, etc.
 - `invalid`: Apply this label if you are rejecting the Pull Request for validity.
 - `rfc:proposal`: Apply this label if the Pull Request is a [Request For Comments (RFC)](../request-for-comments-rfc.md).
+- `reads as generated`: Apply this label if the Pull Request does not meet the [Large Language Model Use](../large-language-model-use.md) guidelines.
 - `triaged`: At a minimum, apply this label if the Pull Request is valid, you triaged it, and it should continue the [Pull Request Flow](../pull-requests/pull-request-flow.md).
 
 ## Priority & Severity

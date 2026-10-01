@@ -15,7 +15,7 @@ from typing import Any, Collection, Dict, Protocol, Sequence, TypedDict
 import numpy as np
 import numpy.typing as npt
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.learning_module import ExperimentLearningModule
 from tbp.monty.experiment.monty import ExperimentMonty
@@ -160,7 +160,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         self._pass_goals()
         self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
-        self._post_step()
 
     def _exploratory_step(
         self,
@@ -182,7 +181,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         self._pass_goals()
         self._step_motor_system(ctx, observations, proprioceptive_state)
         self._set_step_type_and_check_if_done()
-        self._post_step()
 
     @abc.abstractmethod
     def step(
@@ -257,11 +255,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
 
         Update what self.is_done returns to the experiment.
         """
-        pass
-
-    @abc.abstractmethod
-    def _post_step(self):
-        """Hook for doing things like updating counters."""
         pass
 
     ###
@@ -572,6 +565,9 @@ class SensorModule(RuntimeSensorModule, ExperimentSensorModule, metaclass=abc.AB
 
     def propose_goals(self) -> list[Goal]:
         return []
+
+    def propose_region(self) -> AttentionRegion:
+        return AttentionRegion.empty()
 
     @abc.abstractmethod
     def reset(self) -> None:

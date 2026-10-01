@@ -139,11 +139,7 @@ class EvidenceLMTest(BaseGraphTest):
             exp.run()
 
         self.assertEqual(
-            len(
-                exp.model.learning_modules[0].buffer.get_all_locations_on_object(
-                    input_channel="patch"
-                )
-            ),
+            len(exp.model.learning_modules[0].buffer.get_all_locations_on_object()),
             len(
                 exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                     "patch"

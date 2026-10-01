@@ -11,7 +11,6 @@ import unittest
 from unittest.mock import Mock
 
 import numpy as np
-import numpy.testing as npt
 import pytest
 from hypothesis import assume, example, given
 from hypothesis import strategies as st
@@ -20,6 +19,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     FLAT_THRESHOLD,
     arc_from_projection,
     directional_curvature,
+    point_pair_features,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
@@ -81,7 +81,7 @@ class ComputeArcFromTangentProjectionTest(unittest.TestCase):
     def test_known_correction(self):
         # k=1, p=0.5 => arcsin(0.5)/1 = pi/6 (~0.52)
         result = arc_from_projection(0.5, curvature=1.0)
-        npt.assert_allclose(result, np.pi / 6)
+        np.testing.assert_allclose(result, np.pi / 6)
 
     def test_out_of_bounds_params_edge_case(self):
         # kp = 1.0 exactly: guard fires, returns projection unchanged
@@ -140,7 +140,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
             pc1_dir=pc1,
             pc2_dir=pc2,
         )
-        npt.assert_allclose(result, 0.0, atol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(result, 0.0, atol=DEFAULT_TOLERANCE)
 
     @given(
         angle=st.floats(min_value=0, max_value=2 * np.pi),
@@ -161,7 +161,7 @@ class DirectionalCurvatureTest(unittest.TestCase):
             DEFAULT_TOLERANCE * abs(k2),
             DEFAULT_TOLERANCE,
         )
-        npt.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(result, expected, atol=tol, rtol=DEFAULT_TOLERANCE)
 
     @given(vectors=orthonormal_vectors())
     def test_out_of_plane_movement_raises(self, vectors):
@@ -198,3 +198,38 @@ class DirectionalCurvatureTest(unittest.TestCase):
                 pc1_dir=pc1,
                 pc2_dir=scaled_pc2,
             )
+
+
+class PointPairFeaturesTest(unittest.TestCase):
+    def test_returns_expected_distance_followed_by_three_angles_in_order(self) -> None:
+        actual = point_pair_features(
+            np.array([0.0, 0.0, 0.0]),
+            np.array([3.0, 4.0, 0.0]),
+            np.array([1.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0]),
+        )
+
+        expected = [5.0, np.arccos(3 / 5), np.arccos(4 / 5), np.pi / 2]
+
+        self.assertIsInstance(actual, np.ndarray)
+        self.assertEqual(actual.shape, (4,))
+        np.testing.assert_allclose(actual, expected, atol=DEFAULT_TOLERANCE, rtol=0)
+
+    def test_coincident_points_return_zero_distance_and_zero_displacement_angles(
+        self,
+    ) -> None:
+        position = np.array([1.0, 2.0, 3.0])
+
+        actual = point_pair_features(
+            position,
+            position,
+            np.array([1.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0]),
+        )
+
+        np.testing.assert_allclose(
+            actual,
+            [0.0, 0.0, 0.0, np.pi / 2],
+            atol=DEFAULT_TOLERANCE,
+            rtol=0,
+        )

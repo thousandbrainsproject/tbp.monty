@@ -27,7 +27,7 @@ from pathlib import Path
 import hydra
 import pandas as pd
 import torch
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from tbp.monty.frameworks.run_parallel import main
 
@@ -70,7 +70,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(cfg)
 
         ###
@@ -121,7 +120,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_cfg)
 
         ###
@@ -158,7 +156,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_lt_cfg)
 
         eval_dir_lt = self.output_dir / "lt"
@@ -182,7 +179,6 @@ class RunParallelTest(unittest.TestCase):
             exp.run()
 
         # parallel run
-        OmegaConf.clear_resolvers()  # main will re-register resolvers
         main(self.eval_gt_cfg)
 
         eval_dir_gt = self.output_dir / "gt"

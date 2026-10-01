@@ -14,6 +14,7 @@ import json
 import numpy as np
 import pandas as pd
 import wandb
+from omegaconf import DictConfig
 from typing_extensions import override
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -40,24 +41,24 @@ class WandbWrapper(MontyHandler):
     def __init__(
         self,
         wandb_handlers: list,
-        run_name: str,
         wandb_group: str | None = None,
-        config: dict | None = None,
         resume_wandb_run: bool = False,
         wandb_id: str | None = None,
     ):
-        self.name = run_name
         self.group = wandb_group
-        self.config = config
+        self.resume_wandb_run = resume_wandb_run
+        self.wandb_id = wandb_id if wandb_id is not None else ""
+        self.wandb_handlers = wandb_handlers
+
+    def wandb_init(self, run_name: str, config: DictConfig) -> None:
         self.wandb_logger = wandb.init(
-            name=self.name,
+            name=run_name + "_" + (self.wandb_id or ""),
             group=self.group,
             project="Monty",
-            config=config,
-            resume=resume_wandb_run,
-            id=wandb_id,
+            config=dict(config),
+            resume=self.resume_wandb_run,
+            id=self.wandb_id or "",
         )
-        self.wandb_handlers = [wandb_handler() for wandb_handler in wandb_handlers]
 
     def report_episode(
         self,

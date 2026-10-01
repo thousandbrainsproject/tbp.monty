@@ -43,6 +43,10 @@ class TwoDMovementTest(unittest.TestCase):
         self.current_state = self.env._state()
         self.prev_loc = self.current_state[AGENT_ID].sensors[SENSOR_ID].position
 
+    def test_default_camera_intrinsics_match_ipad(self):
+        self.assertAlmostEqual(self.env.hfov, 54.201)
+        self.assertAlmostEqual(self.env.depth_clip_value, 1.1)
+
     def test_move_forward(self):
         action = MoveForward(agent_id=AGENT_ID, distance=1)
         _ = self.env.step([action])

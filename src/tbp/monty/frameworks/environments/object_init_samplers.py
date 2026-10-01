@@ -18,7 +18,7 @@ from typing_extensions import NotRequired
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.geometry import Rotation
-from tbp.monty.math import EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import ONES_VECTOR, EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
 
 
 class MultiObjectNames(TypedDict):
@@ -51,7 +51,7 @@ class Default:
             rotation=cast("QuaternionWXYZ", tuple(rotation.as_quat())),
             euler_rotation=euler_rotation,
             position=(rng.uniform(-0.5, 0.5), 0.0, 0.0),
-            scale=(1.0, 1.0, 1.0),
+            scale=ONES_VECTOR,
         )
 
 
@@ -69,7 +69,7 @@ class Predefined(Default):
         # for every pose specified.
         self.positions = positions or [(0.0, 1.5, 0.0)]
         self.rotations = rotations or [(0.0, 0.0, 0.0), (45.0, 0.0, 0.0)]
-        self.scales = scales or [(1.0, 1.0, 1.0)]
+        self.scales = scales or [ONES_VECTOR]
         self.change_every_episode = change_every_episode
 
     def __call__(
@@ -123,7 +123,7 @@ class RandomRotation(Default):
         if scale is not None:
             self.scale = scale
         else:
-            self.scale = (1.0, 1.0, 1.0)
+            self.scale = ONES_VECTOR
 
     def __call__(
         self,

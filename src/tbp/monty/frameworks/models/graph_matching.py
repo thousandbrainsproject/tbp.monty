@@ -10,23 +10,22 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, ClassVar, Collection, Sequence
+from typing import Any, Collection, Sequence
 
 import numpy as np
 import torch
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty import telemetry
+from tbp.monty.cmp import Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.experiment.recognition_status import (
+    RecognitionConclusion,
+    RecognitionStatus,
+)
 from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
-from tbp.monty.frameworks.loggers.graph_matching_loggers import (
-    BasicGraphMatchingLogger,
-    DetailedGraphMatchingLogger,
-    SelectiveEvidenceLogger,
-)
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     LMMemory,
@@ -42,30 +41,19 @@ from tbp.monty.frameworks.telemetry.episode.schemas import (
 )
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
+from tbp.monty.runtime import is_location_only_step
+from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching", "TerminalState"]
 
 logger = logging.getLogger(__name__)
-telemeter = telemetry.getTelemeter(
-    __name__, event_level=telemetry.INFO, snapshot_level=telemetry.TRACE
-)  # TODO telemetry: equivalent of logger.setLevel
+telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing objects using graphs."""
 
     _match_criterion: MatchCriterion
-
-    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
-        # Don't do any formal logging, just save models. Used for pretraining.
-        "SILENT": BaseMontyLogger,
-        # Log things like basic stats.csv files, data to reproduce experiments
-        "BASIC": BasicGraphMatchingLogger,
-        # Utter deforestation
-        "DETAILED": DetailedGraphMatchingLogger,
-        # Save specific stats necessary for object similarity analysis.
-        "SELECTIVE": SelectiveEvidenceLogger,
-    }
 
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""
@@ -183,16 +171,6 @@ class MontyForGraphMatching(MontyBase):
 
         return False
 
-    # ------------------ Getters & Setters ---------------------
-
-    def set_is_done(self):
-        """Set the model's `is_done` flag.
-
-        Method that e.g. experiment classes can use to set the model's flag if
-        e.g. the total number of episode steps possible has been exceeded.
-        """
-        self._is_done = True
-
     # ------------------ Logging & Saving ----------------------
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
         lm_dict = {}
@@ -255,8 +233,9 @@ class MontyForGraphMatching(MontyBase):
                 lm_step_method(ctx, sensory_inputs)
                 if self.step_type == "matching_step":
                     logger.debug(f"Stepping learning module {i}")
+
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
-                    lm_processed=True
+                    lm_processed=not is_location_only_step(sensory_inputs)
                 )
             else:
                 if self.step_type == "matching_step":
@@ -612,6 +591,9 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Update the possible matches given an observation."""
+        if is_location_only_step(percepts):
+            return
+
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
@@ -622,15 +604,17 @@ class GraphLM(LearningModule):
         else:
             logger.debug("we have not moved yet.")
 
+        feature_percepts = [p for p in percepts if p.process_features_in_lm]
+
         self._compute_possible_matches(
-            ctx, percepts, first_movement_detected=first_movement_detected
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
         )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
         if self.gsg is not None:
-            self.gsg.step(ctx, percepts)
+            self.gsg.step(ctx, feature_percepts)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
@@ -642,6 +626,9 @@ class GraphLM(LearningModule):
         percepts: Sequence[Message],
     ) -> None:
         """Step without trying to recognize object (updating possible matches)."""
+        if is_location_only_step(percepts):
+            return
+
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
@@ -728,7 +715,7 @@ class GraphLM(LearningModule):
                 self.buffer.get_num_observations_on_object() > 0
             ):  # lm has gotten input during episode
                 self.buffer.stats["detected_location_rel_body"] = (
-                    self.buffer.get_current_location(input_channel="first")
+                    self.buffer.current_location()
                 )
         # 1 possible match
         elif (
@@ -752,6 +739,15 @@ class GraphLM(LearningModule):
                 self.set_individual_ts(None)
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
+
+    @property
+    def recognition_status(self) -> RecognitionStatus:
+        conclusion = (
+            RecognitionConclusion(self.terminal_state)
+            if self.terminal_state is not None
+            else None
+        )
+        return RecognitionStatus(conclusion=conclusion)
 
     # ------------------ Getters & Setters ---------------------
 
@@ -1045,9 +1041,12 @@ class GraphLM(LearningModule):
         Returns:
             Percepts with displacements.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         if self.buffer.last_location is not None:
-            current_location = np.mean([p.location for p in sm_percepts], axis=0)
             displacement = current_location - self.buffer.last_location
         else:
             displacement = np.zeros(3)
@@ -1133,7 +1132,6 @@ class GraphMemory(LMMemory):
         """
         self.graph_delta_thresholds = graph_delta_thresholds
         self.k = k
-        self.mode: ExperimentMode | None = None
         self.models_in_memory = {}
 
         # Array representation of features for each graph -> faster matching
@@ -1161,7 +1159,7 @@ class GraphMemory(LMMemory):
                     input_channel_features,
                     input_channel_locations,
                 ) = self._extract_entries_with_content(
-                    features[input_channel], locations[input_channel]
+                    features[input_channel], locations
                 )
                 # Update graph
                 if (
@@ -1373,6 +1371,7 @@ class GraphMemory(LMMemory):
         self.models_in_memory[graph_id][input_channel] = model
 
         logger.info(f"Added new graph with id {graph_id} to memory.")
+        telemeter.info(TelemetryEvent(kind="NewGraphAdded", graph_id=graph_id))
 
     def _extend_graph(
         self,

@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 
 
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from tbp.monty.frameworks.run import main as run_serial
 from tbp.monty.frameworks.run_parallel import main as run_parallel
@@ -16,11 +16,9 @@ from tbp.monty.frameworks.run_parallel import main as run_parallel
 
 def serial_run(config: DictConfig):
     """Executes the experiment in serial mode."""
-    OmegaConf.clear_resolvers()  # main will re-register resolvers
     run_serial(config)
 
 
 def parallel_run(config: DictConfig):
     """Executes the experiment in parallel mode."""
-    OmegaConf.clear_resolvers()  # main will re-register resolvers
     run_parallel(config)
