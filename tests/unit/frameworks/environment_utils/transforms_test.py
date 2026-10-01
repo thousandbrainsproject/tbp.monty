@@ -24,9 +24,9 @@ from tbp.monty.frameworks.environment_utils.transforms import (
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
-    SensorObservation,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.observations import SensorObservation
 from tests.unit.statistics import total_variation
 
 AGENT_ID = AgentID("0")
