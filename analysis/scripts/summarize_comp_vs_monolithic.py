@@ -23,11 +23,12 @@ Run from the repo root, e.g.::
 
     python -m analysis.scripts.summarize_comp_vs_monolithic
 
-which compares ``base_infer_objects_with_stickers_comp_models_mujoco``
-against ``base_infer_objects_with_stickers_monolithic_models_mujoco``; pass
-other run names or directories to compare other runs. The figure goes to
-``~/tbp/projects/comp_benefits_figures/figures/`` unless ``--output`` says
-otherwise.
+which compares ``one_rot_infer_objects_with_stickers_comp_models_mujoco``
+against ``one_rot_infer_objects_with_stickers_monolithic_models_mujoco``. Pass
+``--rand_rot`` to compare the ``randrot_...`` runs instead (``--one_rot`` is
+the default), or pass run names or directories directly to compare other runs.
+The figure goes to ``~/tbp/projects/comp_benefits_figures/figures/`` unless
+``--output`` says otherwise.
 """
 
 from __future__ import annotations
@@ -48,9 +49,16 @@ if TYPE_CHECKING:
 # wandb's run colors, as in compare_comp_monolithic.py.
 COLORS = {"Monolithic": "#f737bd", "Compositional": "#00a0df"}
 DEFAULT_FIGURE_DIR = Path("~/tbp/projects/comp_benefits_figures/figures").expanduser()
+# Default run names per rotation condition, selected by --one_rot/--rand_rot.
 DEFAULT_RUNS = {
-    "Monolithic": "base_infer_objects_with_stickers_monolithic_models_mujoco",
-    "Compositional": "base_infer_objects_with_stickers_comp_models_mujoco",
+    "one_rot": {
+        "Monolithic": "one_rot_infer_objects_with_stickers_monolithic_models_mujoco",
+        "Compositional": "one_rot_infer_objects_with_stickers_comp_models_mujoco",
+    },
+    "rand_rot": {
+        "Monolithic": "randrot_infer_objects_with_stickers_monolithic_models_mujoco",
+        "Compositional": "randrot_infer_objects_with_stickers_comp_models_mujoco",
+    },
 }
 
 
@@ -146,13 +154,11 @@ def draw_accuracy(ax: Axes, summaries: dict[str, RunSummary]) -> None:
     # the converged/MLH split.
     ax.legend(
         handles=[
-            plt.matplotlib.patches.Patch(color="dimgray", label="Converged (correct)"),
-            plt.matplotlib.patches.Patch(
-                color="lightgray", label="MLH only (correct_mlh)"
-            ),
+            plt.matplotlib.patches.Patch(color="dimgray", label="Converged"),
+            plt.matplotlib.patches.Patch(color="lightgray", label="Non-Converged"),
         ],
         fontsize=8,
-        loc="upper right",
+        loc="upper left",
     )
     ax.set_xticks(x, summaries.keys())
     ax.set_ylabel("Accuracy (%)")
@@ -166,6 +172,7 @@ def draw_violin(
     values: dict[str, np.ndarray],
     ylabel: str,
     seed: int = 42,
+    plot_mean: bool = True,
 ) -> None:
     """One panel: a violin per run with the episode values scattered on top.
 
@@ -175,6 +182,7 @@ def draw_violin(
         values: The episodes' values per run name, left to right.
         ylabel: The y axis label.
         seed: Seed for the horizontal jitter of the scatter.
+        plot_mean: Whether to plot the mean of the episodes as a horizontal line.
     """
     rng = np.random.default_rng(seed)
     x = np.arange(len(values))
@@ -192,11 +200,39 @@ def draw_violin(
                 body.set_alpha(0.5)
         jitter = rng.uniform(-0.08, 0.08, size=len(episode_values))
         ax.scatter(xi + jitter, episode_values, s=12, color=color, zorder=3, alpha=0.5)
+        # Plot mean if requested
+        mean_value = np.mean(episode_values)
+        ax.hlines(
+            mean_value,
+            xi - 0.32,
+            xi + 0.32,
+            colors=color,
+            linewidth=2,
+            linestyles="dashed" if not plot_mean else "solid",
+            alpha=0.8 if plot_mean else 0.5,
+            zorder=4,
+        ) if plot_mean else None
     ax.set_xticks(x, values.keys())
     ax.set_xlim(-0.6, len(values) - 0.4)
     ax.set_ylim(bottom=0)
     ax.set_ylabel(ylabel)
     ax.set_title(title, fontweight="bold")
+
+
+def _compositional_last(runs: dict[str, os.PathLike]) -> dict[str, os.PathLike]:
+    """Reorder the runs so ``"Compositional"`` is plotted last (rightmost).
+
+    Args:
+        runs: Run directory per display name, in any order.
+
+    Returns:
+        The same mapping with ``"Compositional"`` moved to the end; other
+        runs keep their relative order.
+    """
+    ordered = {name: path for name, path in runs.items() if name != "Compositional"}
+    if "Compositional" in runs:
+        ordered["Compositional"] = runs["Compositional"]
+    return ordered
 
 
 def create_summary_figure(
@@ -206,16 +242,24 @@ def create_summary_figure(
 ) -> Path:
     """Plot the three summary panels for the runs side by side.
 
+    The ``"Compositional"`` run is always plotted rightmost, whatever order
+    ``runs`` lists it in.
+
     Args:
         runs: Run directory per display name (``"Compositional"``,
             ``"Monolithic"``).
         learning_module: The higher-level module the panels describe.
         output: Where to save the figure; defaults to
-            ``DEFAULT_FIGURE_DIR / summary_<first run name>.png``.
+            ``DEFAULT_FIGURE_DIR / summary_<first run name>.png``, where the
+            first run is the first entry of ``runs`` as passed in.
 
     Returns:
         Path to the saved figure.
     """
+    if output is None:
+        first = Path(next(iter(runs.values()))).name
+        output = DEFAULT_FIGURE_DIR / f"summary_{first}.png"
+    runs = _compositional_last(runs)
     summaries = {
         name: summarize_run(path, learning_module) for name, path in runs.items()
     }
@@ -242,6 +286,7 @@ def create_summary_figure(
         "Rotation Error",
         {n: s.rotation_errors for n, s in summaries.items()},
         ylabel="Rotation Error (degrees)",
+        plot_mean=True,
     )
     episodes = ", ".join(f"{n}: {s.n_episodes} episodes" for n, s in summaries.items())
     fig.suptitle(
@@ -250,9 +295,6 @@ def create_summary_figure(
         fontsize=9,
     )
     fig.tight_layout()
-    if output is None:
-        first = Path(next(iter(runs.values()))).name
-        output = DEFAULT_FIGURE_DIR / f"summary_{first}.png"
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=150, bbox_inches="tight")
@@ -271,21 +313,43 @@ if __name__ == "__main__":
         "compositional",
         type=run_directory,
         nargs="?",
-        default=run_directory(DEFAULT_RUNS["Compositional"]),
-        help="run dir or name",
+        default=None,
+        help="run dir or name (default per --one_rot/--rand_rot)",
     )
     parser.add_argument(
         "monolithic",
         type=run_directory,
         nargs="?",
-        default=run_directory(DEFAULT_RUNS["Monolithic"]),
-        help="run dir or name",
+        default=None,
+        help="run dir or name (default per --one_rot/--rand_rot)",
     )
+    rotation = parser.add_mutually_exclusive_group()
+    rotation.add_argument(
+        "--one_rot",
+        dest="rotation",
+        action="store_const",
+        const="one_rot",
+        help="compare the one_rot_... runs (default)",
+    )
+    rotation.add_argument(
+        "--rand_rot",
+        dest="rotation",
+        action="store_const",
+        const="rand_rot",
+        help="compare the randrot_... runs",
+    )
+    parser.set_defaults(rotation="one_rot")
     parser.add_argument("--learning-module", default="LM_2", help="the HL LM")
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
+    default_runs = DEFAULT_RUNS[args.rotation]
     create_summary_figure(
-        {"Compositional": args.compositional, "Monolithic": args.monolithic},
+        {
+            "Compositional": args.compositional
+            or run_directory(default_runs["Compositional"]),
+            "Monolithic": args.monolithic
+            or run_directory(default_runs["Monolithic"]),
+        },
         learning_module=args.learning_module,
         output=args.output,
     )

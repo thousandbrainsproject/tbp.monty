@@ -254,25 +254,52 @@ def channel_markers(channels: list[str], ids_only: bool = False) -> dict[str, st
     }
 
 
+def child_lm_keys(memory: dict, lm_dict: dict) -> list:
+    """Return the lm_dict keys of the LMs feeding the selected LM's channels."""
+    keys = []
+    for stored_channels in memory.values():
+        for channel in stored_channels:
+            if not channel.startswith("learning_module_"):
+                continue
+            lm_id = int(channel.removeprefix("learning_module_"))
+            key = lm_id if lm_id in lm_dict else str(lm_id)
+            if key in lm_dict and key not in keys:
+                keys.append(key)
+    return keys
+
+
 def collect_object_id_colors(
     memory: dict,
+    lm_dict: dict,
     id_names: dict[int, str],
 ) -> dict[float, str]:
     """Assign a bold color to every object ID stored in the LM's memory.
 
-    Colors are assigned across all stored objects (not just the plotted
-    selection) so each ID keeps the same color regardless of --objects.
+    Colors are assigned by name order over every object learned by the child
+    LMs feeding the selected LM (not just the IDs the selected LM actually
+    stored), so each object keeps the same color across checkpoints even when
+    a model failed to associate some children with their parents. IDs stored
+    in the selected LM's memory that are missing from the child LMs are still
+    included as candidates.
     """
-    ids: set[float] = set()
+    stored: set[float] = set()
     for stored_channels in memory.values():
         for wrapper in stored_channels.values():
             graph = getattr(wrapper, "_graph", wrapper)
             values = feature_values(graph, "object_id")
             if values is not None:
-                ids.update(np.unique(values).tolist())
-    ordered = sorted(ids, key=lambda value: id_names.get(int(value), str(value)))
+                stored.update(np.unique(values).tolist())
+    candidates = set(stored)
+    for lm_key in child_lm_keys(memory, lm_dict):
+        child_memory = lm_dict[lm_key].get("graph_memory", {})
+        if isinstance(child_memory, dict):
+            candidates.update(
+                float(encode_object_name(name)) for name in child_memory
+            )
+    ordered = sorted(candidates, key=lambda value: id_names.get(int(value), str(value)))
     colors = cycle(OBJECT_ID_COLORS)
-    return {value: next(colors) for value in ordered}
+    assigned = {value: next(colors) for value in ordered}
+    return {value: assigned[value] for value in ordered if value in stored}
 
 
 def id_marker_spec(spec: str) -> tuple[str, str]:
@@ -370,7 +397,22 @@ def plot_object(
         if (graph := channel_graph(memory, object_name, channel)) is not None
     }
     if not graphs:
-        raise ValueError(f"{object_name!r} has none of {channels}")
+        # The model never learned any of the requested channels for this
+        # object (e.g. no lower-level LM inputs were stored), so show a
+        # placeholder instead of a point cloud.
+        axis.set_axis_off()
+        axis.text2D(
+            0.5,
+            0.5,
+            "No learned child features.",
+            transform=axis.transAxes,
+            ha="center",
+            va="center",
+            fontsize=10,
+            color="#666666",
+        )
+        axis.set_title(f"{object_name}\n0 total", fontsize=9)
+        return
     points_by_channel = {
         channel: graph_points(graph, object_name, channel)
         for channel, graph in graphs.items()
@@ -665,7 +707,7 @@ def main() -> None:
     id_names = decode_object_ids(lm_dict)
     # With --sm_only no object-ID channels are drawn, so skip the ID legend.
     object_id_colors = (
-        {} if args.sm_only else collect_object_id_colors(memory, id_names)
+        {} if args.sm_only else collect_object_id_colors(memory, lm_dict, id_names)
     )
     object_id_markers = collect_object_id_markers(
         object_id_colors, id_names, dict(args.id_markers or [])

@@ -364,7 +364,7 @@ experiment:
           wandb_id:
             _target_: wandb.util.generate_id
           wandb_group: benchmark_experiments
-      run_name: base_infer_objects_with_stickers_comp_models_mujoco
+      run_name: one_rot_infer_objects_with_stickers_comp_models_mujoco
     show_sensor_output: false
     max_train_steps: 1000
     max_eval_steps: 100
