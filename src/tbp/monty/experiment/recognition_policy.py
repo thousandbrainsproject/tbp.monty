@@ -171,11 +171,12 @@ class MaximumSteps(RecognitionPolicy):
             if count.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
+        is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
         result = RecognitionResult(
-            (not model.is_exploring) and (model.matching_steps >= max_steps)
+            is_done=is_done,
+            is_time_out=is_done,
         )
         if result.is_done:
-            result.is_time_out = True
             logger.info(
                 "MaximumSteps is done, "
                 "with model.is_exploring=%s model.matching_steps=%d",
@@ -186,7 +187,7 @@ class MaximumSteps(RecognitionPolicy):
 
 
 class StepLimit(RecognitionPolicy):
-    """Check step counter limits (and maybe start exploring).
+    """Check step counter limits.
 
     Terminal conditions include:
     - `matching_steps >= {max_train_steps | max_eval_steps}`
@@ -244,18 +245,29 @@ class StepLimit(RecognitionPolicy):
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        result = RecognitionResult()
         if model.is_exploring:
-            result.is_done = count.exploring_steps >= self._num_exploring_steps
+            is_done = count.exploring_steps >= self._num_exploring_steps
+            result = RecognitionResult(
+                is_done=is_done,
+                is_time_out=is_done,
+            )
         elif count.mode is ExperimentMode.TRAIN:
-            if count.matching_steps >= self._min_train_steps:
-                result.start_exploring = True
-            result.is_done = count.matching_steps >= self._max_train_steps
+            is_done = count.matching_steps >= self._max_train_steps
+            result = RecognitionResult(
+                is_done=is_done,
+                is_time_out=is_done,
+                start_exploring=(count.matching_steps >= self._min_train_steps),
+            )
         elif count.mode is ExperimentMode.EVAL:
-            result.is_done = count.matching_steps >= self._max_eval_steps
+            is_done = count.matching_steps >= self._max_eval_steps
+            result = RecognitionResult(
+                is_done=is_done,
+                is_time_out=is_done,
+            )
+        else:
+            result = RecognitionResult()
 
         if result.is_done:
-            result.is_time_out = True
             logger.info(
                 "StepLimit is done, with matching_steps=%d exploring_steps=%d",
                 count.matching_steps,
@@ -391,10 +403,8 @@ class ObjectRecognition(RecognitionPolicy):
             if count.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        result = RecognitionResult()
         if (not model.is_exploring) and (model.matching_steps >= max_steps):
-            result.is_done = True
-            result.is_time_out = True
+            result = RecognitionResult(is_done=True, is_time_out=True)
             logger.info(
                 "ObjectRecognition is done, "
                 "with model.is_exploring=%s model.matching_steps=%d",
@@ -402,12 +412,13 @@ class ObjectRecognition(RecognitionPolicy):
                 model.matching_steps,
             )
         elif count.step >= self._max_total_steps:
-            result.is_done = True
-            result.is_time_out = True
+            result = RecognitionResult(is_done=True, is_time_out=True)
             logger.info("ObjectRecognition is done, with step=%d", count.step)
         elif model.is_done:
-            result.is_done = True
+            result = RecognitionResult(is_done=True)
             logger.info("ObjectRecognition is done, with model.is_done")
+        else:
+            result = RecognitionResult()
         return result
 
 

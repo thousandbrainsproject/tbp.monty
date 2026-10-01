@@ -81,7 +81,7 @@ def _model_with_step_type(
     model = MagicMock()
     model.step_type = step_type
     model.is_exploring = step_type == "exploratory_step"
-    model.check_if_any_lms_updated = MagicMock(return_value=True)
+    model.check_if_any_lms_updated.return_value = True
     return model
 
 
@@ -247,6 +247,7 @@ class StepLimitTest(unittest.TestCase):
         result = policy(model, count)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
 
     @given(
         mode=st.sampled_from(ExperimentMode),
@@ -271,6 +272,7 @@ class StepLimitTest(unittest.TestCase):
         result = policy(model, count)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
 
     @given(
         exploring_steps=st.integers(min_value=0),
@@ -289,6 +291,7 @@ class StepLimitTest(unittest.TestCase):
         result = policy(model, count)
         is_done = exploring_steps >= num_exploring_steps
         self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
 
     @given(
         match_asc=ascending_ints(min_value=1),
@@ -313,6 +316,7 @@ class StepLimitTest(unittest.TestCase):
         self.assertTrue(result.start_exploring)
         is_done = matching_steps >= max_train_steps
         self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
 
 
 class MinimumLMsTest(unittest.TestCase):

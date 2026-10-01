@@ -535,7 +535,7 @@ class MontyExperiment:
         try:
             return self.model.check_if_any_lms_updated()
         except AttributeError:
-            return True
+            return False
 
     def run_step(
         self, ctx: RuntimeContext, step: int, actions: list[Action]
