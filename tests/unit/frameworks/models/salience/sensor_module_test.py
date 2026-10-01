@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
-from unittest.mock import MagicMock, patch, sentinel
+from unittest.mock import ANY, MagicMock, patch, sentinel
 
 import numpy as np
 import numpy.typing as npt
@@ -48,6 +48,8 @@ def mocked_object_observation():
         center_location=None,
         locations=np.empty((0, 3)),
         salience=np.empty([]),
+        on_object_map=np.empty((0, 0)),
+        location_map=np.empty((0, 0, 3)),
     )
     with patch(
         "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation",
@@ -57,12 +59,10 @@ def mocked_object_observation():
 
 
 @parameterized_class(
-    ("save_raw_obs", "is_exploring", "should_snapshot"),
+    ("is_exploring",),
     [
-        (True, False, True),
-        (True, True, False),
-        (False, False, False),
-        (False, True, False),
+        (True,),
+        (False,),
     ],
 )
 @pytest.mark.usefixtures("mocked_object_observation")
@@ -91,22 +91,32 @@ class SalienceSMTest(unittest.TestCase):
         )
         self.ctx = RuntimeContext(rng=np.random.RandomState())
 
-    def test_step_snapshots_raw_observation_as_needed(self) -> None:
-        self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
+    def test_step_snapshots_telemetry_if_not_exploring(self) -> None:
         self.sensor_module.is_exploring = self.is_exploring  # type: ignore[attr-defined]
+        self.sensor_module._salience_strategy.return_value = sentinel.salience_map  # type: ignore[attr-defined]
         data: dict[str, Any] = MagicMock()
 
         self.sensor_module.update_state(self.state)
         self.sensor_module.step(self.ctx, data)
 
-        if self.should_snapshot:  # type: ignore[attr-defined]
+        if not self.is_exploring:  # type: ignore[attr-defined]
             self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
                 data, self.state.rotation, ArrayEqual(self.state.position)
             )
+            self.sensor_module._snapshot_telemetry.salience_map.assert_called_once_with(  # type: ignore[attr-defined]
+                sentinel.salience_map
+            )
+            self.sensor_module._snapshot_telemetry.goals.assert_called_once_with(  # type: ignore[attr-defined]
+                self.sensor_module._goals
+            )
+
         else:
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
+            self.sensor_module._snapshot_telemetry.salience_map.assert_not_called()  # type: ignore[attr-defined]
+            self.sensor_module._snapshot_telemetry.goals.assert_not_called()  # type: ignore[attr-defined]
 
     def test_step_returns_no_percept(self) -> None:
+        self.sensor_module.update_state(self.state)
         self.assertIsNone(self.sensor_module.step(self.ctx, self.observation))
 
     @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
@@ -119,6 +129,8 @@ class SalienceSMTest(unittest.TestCase):
             center_location=sentinel.center_location,
             locations=locations,
             salience=sentinel.salience_map,
+            on_object_map=MagicMock(),
+            location_map=MagicMock(),
         )
         self.sensor_module._return_inhibitor.return_value = sentinel.ior_weights  # type: ignore[attr-defined]
         salience = 0.1 * np.array([1, 2, 3])
@@ -127,7 +139,7 @@ class SalienceSMTest(unittest.TestCase):
             rgba=np.zeros((64, 64, 4), dtype=np.uint8),
             depth=np.zeros((64, 64)),
         )
-
+        self.sensor_module.update_state(self.state)
         self.sensor_module.step(self.ctx, data)
         goals = self.sensor_module.propose_goals()
 
@@ -217,3 +229,50 @@ class SalienceSMPrivateTest(unittest.TestCase):
             sentinel.randomized
         )
         self.assertEqual(weighted, sentinel.normalized)
+
+
+class SalienceSMSegmentationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.sensor_module_id = "test"
+        self.observation = SensorObservation(
+            rgba=np.zeros((64, 64, 4), dtype=np.uint8),
+            depth=np.zeros((64, 64)),
+        )
+        self.default_sensor_state = SensorState(
+            position=(0, 0, 0),
+            rotation=qt.quaternion(1, 0, 0, 0),
+        )
+        self.state = AgentState(
+            sensors={SensorID(self.sensor_module_id): self.default_sensor_state},
+            position=self.default_sensor_state.position,
+            rotation=self.default_sensor_state.rotation,
+        )
+        self.ctx = RuntimeContext(rng=np.random.RandomState())
+
+    @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
+    @patch(
+        "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM._segment_region"
+    )
+    def test_step_calls_segment_region(
+        self, segment_region_mock: MagicMock, on_object_observation_mock: MagicMock
+    ) -> None:
+        sensor_module = SalienceSM(
+            sensor_module_id=self.sensor_module_id,
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            snapshot_telemetry=MagicMock(),
+        )
+        ctx = RuntimeContext(rng=np.random.RandomState())
+        on_object_mock = MagicMock()
+        on_object_observation_mock.return_value = on_object_mock
+
+        sensor_module.update_state(self.state)
+        sensor_module.step(ctx, self.observation)
+
+        segment_region_mock.assert_called_once_with(
+            ctx,
+            ANY,
+            on_object_mock.on_object_map,
+            on_object_mock.location_map,
+        )
+        # self.assertEqual(segment_region_mock.call_args_list[0][0], ctx)
