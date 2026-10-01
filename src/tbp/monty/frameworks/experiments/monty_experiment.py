@@ -14,12 +14,12 @@ import logging
 import logging.config
 import pprint
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import hydra
 import numpy as np
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
@@ -143,7 +143,7 @@ class MontyExperiment:
         Args:
             config: config specifying variables of the experiment.
         """
-        self.init_loggers(self.config["logging"])
+        self.init_loggers(self.config["logging"], self.config.get("telemetry", {}))
         logger.info(self.config)
 
         self._create_monty()
@@ -261,12 +261,24 @@ class MontyExperiment:
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: dict[str, Any]) -> None:
-        """Initialize logger with specified log level.
+    def init_loggers(
+        self, logging_config: dict[str, Any], telemetry_config: dict[str, Any]
+    ) -> None:
+        """Initialize logger and telemeter with specified log level.
 
         Args:
             logging_config: Logging configuration.
+            telemetry_config: Telemetry configuration.
         """
+        if telemetry_config:
+            telemetry_config["version"] = 1
+            telemetry_config["disable_existing_loggers"] = False
+            logging.config.dictConfig(
+                cast("dict", OmegaConf.to_container(telemetry_config, resolve=True))
+                if OmegaConf.is_config(telemetry_config)
+                else telemetry_config
+            )
+
         # Unpack individual logging arguments
         self.python_log_level = logging_config["python_log_level"]
         self.log_to_file = logging_config["python_log_to_file"]
