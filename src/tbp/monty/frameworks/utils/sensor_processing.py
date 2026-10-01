@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+import numpy.typing as npt
 from numpy.typing import ArrayLike
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
@@ -831,8 +832,11 @@ def pixel_dist_to_center(n_points, patch_width, center_id):
 
 
 def point_pair_features(
-    pos_i: np.ndarray, pos_j: np.ndarray, normal_i: np.ndarray, normal_j: np.ndarray
-) -> np.ndarray:
+    pos_i: npt.NDArray[np.float64],
+    pos_j: npt.NDArray[np.float64],
+    normal_i: npt.NDArray[np.float64],
+    normal_j: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
     """Return point pair features between two points.
 
     Args:
@@ -842,9 +846,9 @@ def point_pair_features(
         normal_j: Surface normal of point 2.
 
     Returns:
-        Point pair features.
+        Point pair features as a numpy array of shape (4,).
     """
-    pseudo = pos_j - pos_i
+    pseudo: npt.NDArray[np.float64] = pos_j - pos_i
     return np.array(
         [
             np.linalg.norm(pseudo),

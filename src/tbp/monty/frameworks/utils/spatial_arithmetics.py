@@ -14,6 +14,7 @@ import logging
 import sys
 
 import numpy as np
+import numpy.typing as npt
 from numpy.typing import ArrayLike
 
 from tbp.monty.geometry import Rotation
@@ -283,7 +284,9 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
     return np.arccos(np.clip(dot_product, -1, 1))
 
 
-def get_angle_between(v1: ArrayLike, v2: ArrayLike) -> np.floating:
+def get_angle_between(
+    v1: npt.NDArray[np.float64], v2: npt.NDArray[np.float64]
+) -> float:
     """Get the angle between two 3D vectors.
 
     Uses the atan2 formulation. Unlike ``get_angle``, this does
@@ -307,9 +310,11 @@ def get_angle_between(v1: ArrayLike, v2: ArrayLike) -> np.floating:
       by adding handling for zero-length vectors and None. For
       get_angles_for_all_hypotheses, add support for broadcasting, e.g.
       get_angle_between(hyp_f, query_f[:, None, :]) and adding axis=-1
-      for reduction.
+      for reduction. Note that when broadcasting is added, it might
+      make sense to make a separate get_angles_beetween function to support
+      typing.
     """
-    return np.arctan2(np.linalg.norm(np.cross(v1, v2)), np.dot(v1, v2))
+    return float(np.arctan2(np.linalg.norm(np.cross(v1, v2)), np.dot(v1, v2)))
 
 
 def check_orthonormal(matrix):

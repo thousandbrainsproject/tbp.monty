@@ -235,40 +235,38 @@ class GetAngleBetweenTest(unittest.TestCase):
     """Test angles between 3D vectors of arbitrary lengths."""
 
     @given(
-        v1=nonzero_magnitude_vectors(),
-        v2=nonzero_magnitude_vectors(),
+        v1=nonzero_magnitude_vectors(dtype=np.float64),
+        v2=nonzero_magnitude_vectors(dtype=np.float64),
     )
-    @example(v1=np.array([2, 0, 0]), v2=np.array([1, 1, 0]))  # 45 degrees
-    @example(v1=np.array([2, 0, 0]), v2=np.array([3, 0, 0]))  # parallel
-    @example(v1=np.array([2, 0, 0]), v2=np.array([-3, 0, 0]))  # anti-parallel
-    @example(v1=np.array([2, 0, 0]), v2=np.array([0, -3, 0]))  # orthogonal
+    @example(v1=np.array([2.0, 0.0, 0.0]), v2=np.array([1.0, 1.0, 0.0]))  # 45 degrees
+    @example(v1=np.array([2.0, 0.0, 0.0]), v2=np.array([3.0, 0.0, 0.0]))  # parallel
+    @example(
+        v1=np.array([2.0, 0.0, 0.0]), v2=np.array([-3.0, 0.0, 0.0])
+    )  # anti-parallel
+    @example(v1=np.array([2.0, 0.0, 0.0]), v2=np.array([0.0, -3.0, 0.0]))  # orthogonal
     def test_matches_normalized_dot_product(
-        self, v1: np.ndarray, v2: np.ndarray
+        self, v1: npt.NDArray[np.float64], v2: npt.NDArray[np.float64]
     ) -> None:
-        """Match a normalized dot-product reference computed in float64."""
-        u1 = v1.astype(np.float64)
-        u2 = v2.astype(np.float64)
+        u1 = v1.copy()
+        u2 = v2.copy()
         u1 /= np.linalg.norm(u1)
         u2 /= np.linalg.norm(u2)
-        expected = np.arccos(np.clip(np.dot(u1, u2), -1.0, 1.0))
+        expected = float(np.arccos(np.clip(np.dot(u1, u2), -1.0, 1.0)))
 
         actual = get_angle_between(v1, v2)
 
-        # float32 rounds pi slightly above its float64 representation.
-        self.assertTrue(0.0 <= actual <= np.pi + DEFAULT_TOLERANCE)
+        self.assertTrue(0.0 <= actual <= np.pi)
         self.assertTrue(np.allclose(actual, expected, atol=DEFAULT_TOLERANCE, rtol=0))
 
-    @given(v=vectors_3d())
+    @given(v=vectors_3d(dtype=np.float64))
     @example(v=np.zeros(3))
-    def test_zero_vector_returns_zero(self, v: np.ndarray) -> None:
+    def test_zero_vector_returns_zero(self, v: npt.NDArray[np.float64]) -> None:
         """Preserve the documented zero-vector convention."""
-        zero = np.zeros(3, dtype=v.dtype)
+        zero = np.zeros(3)
 
-        self.assertTrue(
-            np.allclose(
-                [get_angle_between(zero, v), get_angle_between(v, zero)],
-                [0.0, 0.0],
-                atol=DEFAULT_TOLERANCE,
-                rtol=0,
-            )
+        np.testing.assert_allclose(
+            [get_angle_between(zero, v), get_angle_between(v, zero)],
+            [0.0, 0.0],
+            atol=DEFAULT_TOLERANCE,
+            rtol=0,
         )
