@@ -413,7 +413,7 @@ class ReadMe:
         parent_id: str | None,
         file_path: str,
     ) -> tuple[str, bool]:
-        """Create a new ReadMe guide or update an existing guide after rendering its local Markdown source.
+        """Create a new ReadMe guide or update an existing guide after rendering it.
 
         Renders the document body using the local source path, then delegates the
         ReadMe API operation to ``create_or_update_rendered_doc``.
@@ -421,8 +421,10 @@ class ReadMe:
         Args:
             order: Position of the guide within its category or parent guide.
             category_id: URI of the ReadMe category containing the guide.
-            doc: Guide data including title, slug, body, and optional description and hidden status.
-            parent_id: Optional URI of the parent guide. Only exists if it is a nested resource.
+            doc: Guide data including title, slug, body, and optional description and
+                hidden status.
+            parent_id: Optional URI of the parent guide. Only exists if it is a
+                nested resource.
             file_path: Local source path used when rendering the Markdown body.
 
         Returns:
@@ -453,15 +455,17 @@ class ReadMe:
         """Create or update a ReadMe guide whose body is already rendered.
 
         Builds the ReadMe request from the supplied document, including its
-        category, position, privacy, optional parent, and optional description and hidden status.
-        Existing guides are updated in place; otherwise, a new guide is created.
+        category, position, privacy, optional parent, and optional description and
+        hidden status. Existing guides are updated in place; otherwise, a new
+        guide is created.
 
         Args:
             order: Position of the guide within its category or parent guide.
             category_id: URI of the ReadMe category containing the guide.
             doc: Pre-rendered guide data including title, slug, body, and optional
                 metadata.
-            parent_id: Optional URI of the parent guide. Only exists if it is a nested resource.
+            parent_id: Optional URI of the parent guide. Only exists if it is a
+                nested resource.
 
         Returns:
             A tuple containing the guide URI and whether a new guide was created.
