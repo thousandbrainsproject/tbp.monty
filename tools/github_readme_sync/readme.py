@@ -413,7 +413,7 @@ class ReadMe:
         parent_id: str | None,
         file_path: str,
     ) -> tuple[str, bool]:
-        """Create or update a guide after rendering its local Markdown source.
+        """Create a new ReadMe guide or update an existing guide after rendering its local Markdown source.
 
         Renders the document body using the local source path, then delegates the
         ReadMe API operation to ``create_or_update_rendered_doc``.
@@ -470,6 +470,8 @@ class ReadMe:
             ValueError: If ReadMe creates the guide with an unexpected slug or
                 returns the created guide without a URI.
         """
+        # This payload is used when updating an existing guide.
+        # "slug" is omitted as updating a doc uses its slug in the patch URL.
         update_doc_request = {
             "title": doc["title"],
             "type": "basic",
@@ -507,9 +509,7 @@ class ReadMe:
             create_doc_request,
             # Prevent ReadMe from silently changing a duplicate slug into slug-1.
             # A slug collision will instead cause the request to fail.
-            headers={
-                "prefer": "handling=strict",
-            },
+            headers={"prefer": "handling=strict"},
         )
 
         actual_slug = created.get("slug")

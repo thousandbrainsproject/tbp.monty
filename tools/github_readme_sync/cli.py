@@ -119,19 +119,23 @@ def main():
     publish_preview_parser.add_argument(
         "--expected-repository",
         required=True,
+        help="Expected repository in owner/name format",
     )
     publish_preview_parser.add_argument(
         "--expected-pr-number",
         required=True,
         type=int,
+        help="Expected pull request number for the preview",
     )
     publish_preview_parser.add_argument(
         "--expected-head-sha",
         required=True,
+        help="Expected head commit SHA for the pull request",
     )
     publish_preview_parser.add_argument(
         "--expected-base-ref",
         required=True,
+        help="Expected base branch for the pull request",
     )
 
     # Check external links command
