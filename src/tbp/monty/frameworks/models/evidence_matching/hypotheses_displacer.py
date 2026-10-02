@@ -35,6 +35,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_angles_for_all_hypotheses,
     rotate_pose_dependent_features,
 )
+from tbp.monty.geometry import Rotation
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +188,7 @@ class DefaultHypothesesDisplacer:
                 new_evidence = self._calculate_evidence_for_new_locations(
                     graph_id=graph_id,
                     input_channel=channel,
+                    pose_kind=pose_kinds[channel],
                     search_locations=search_locations[hyp_idxs_to_test],
                     channel_possible_poses=hypotheses.poses[hyp_idxs_to_test],
                     channel_features=features[channel],
@@ -236,6 +238,7 @@ class DefaultHypothesesDisplacer:
         self,
         graph_id: str,
         input_channel: str,
+        pose_kind: PoseKind,
         search_locations: np.ndarray,
         channel_possible_poses: np.ndarray,
         channel_features: dict,
@@ -244,7 +247,7 @@ class DefaultHypothesesDisplacer:
 
         First, the search locations are used to find the nearest nodes in the graph
         model. Then we calculate the error between the stored pose features and the
-        sensed ones. Additionally we look at whether the non-pose features match at the
+        sensed ones. Additionally, we look at whether the non-pose features match at the
         neighboring nodes. Everything is weighted by the nodes distance from the search
         location.
         If there are no nodes in the search radius (max_match_distance), evidence = -1.
@@ -252,8 +255,21 @@ class DefaultHypothesesDisplacer:
         We do this for every incoming input channel and its features if they are stored
         in the graph and take the average over the evidence from all input channels.
 
+        Args:
+            graph_id: The ID of the current graph.
+            input_channel: Input channel to calculate evidence for.
+            pose_kind: Kind of pose sent by the input channel. Object poses are
+                compared as full rotations; surface poses by the surface normal
+                and curvature directions.
+            search_locations: Hypothesized locations to test, shape (H, 3).
+            channel_possible_poses: Hypothesized rotations, shape (H, 3, 3).
+            channel_features: Sensed features of the input channel.
+
         Returns:
-            The location evidence.
+            The location evidence, shape (H,).
+
+        Raises:
+            ValueError: If the pose kind is unknown.
         """
         logger.debug(
             f"Calculating evidence for {graph_id} using input from {input_channel}"
@@ -300,12 +316,21 @@ class DefaultHypothesesDisplacer:
         )
         # Calculate the pose error for each hypothesis
         # shape=(H, K)
-        radius_evidence = self._get_pose_evidence_matrix(
-            pose_transformed_features,
-            new_pos_features,
-            input_channel,
-            node_distance_weights,
-        )
+        if pose_kind is PoseKind.OBJECT:
+            radius_evidence = self._get_object_pose_evidence_matrix(
+                pose_transformed_features,
+                new_pos_features,
+            )
+        elif pose_kind is PoseKind.SURFACE:
+            radius_evidence = self._get_sensory_pose_evidence_matrix(
+                pose_transformed_features,
+                new_pos_features,
+                input_channel,
+                node_distance_weights,
+            )
+        else:
+            raise ValueError(f"Unknown pose kind: {pose_kind}")
+
         # Set the evidences which are too far away to -1
         radius_evidence[mask] = -1
         # If a node is too far away, weight the negative evidence fully (*1). This
@@ -345,7 +370,44 @@ class DefaultHypothesesDisplacer:
     def _get_node_distance_weights(self, distances):
         return (self.max_match_distance - distances) / self.max_match_distance
 
-    def _get_pose_evidence_matrix(
+    def _get_object_pose_evidence_matrix(
+        self,
+        query_features: dict,
+        node_features: dict,
+    ) -> np.ndarray:
+        """Get evidence from the rotation between sensed and stored object orientations.
+
+        Object orientations are full, signed rotations. We compare them by the angle of
+        the relative rotation between the hypothesis-rotated sensed pose and the pose
+        stored at each node. Evidence falls linearly from 1 at 0 degrees to -1 at 180
+        degrees. All three pose vectors count equally, so channel feature weights are
+        not used.
+
+        Args:
+            query_features: Observed features with pose vectors rotated by each
+                hypothesis, shape (H, 3, 3).
+            node_features: Features at nodes that are being tested. Pose vectors have
+                shape (H, K, 9).
+
+        Returns:
+            Pose evidence per hypothesis and node, shape (H, K). In range [-1, 1].
+        """
+        num_hyps, num_neighbors = node_features["pose_vectors"].shape[:2]
+        # Pose vectors store each axis of the pose's frame as a row, for surface and
+        # object poses alike. Transposing puts the axes in columns, which is the
+        # rotation from the pose's frame into the hypothesis-rotated frame.
+        stored_poses = Rotation.from_matrix(
+            node_features["pose_vectors"].reshape(-1, 3, 3).swapaxes(-1, -2)
+        )
+        sensed_poses = Rotation.from_matrix(
+            np.repeat(
+                query_features["pose_vectors"].swapaxes(-1, -2), num_neighbors, axis=0
+            )
+        )
+        angle_error = (stored_poses.inv() * sensed_poses).magnitude()
+        return 1 - 2 * angle_error.reshape(num_hyps, num_neighbors) / np.pi
+
+    def _get_sensory_pose_evidence_matrix(
         self,
         query_features,
         node_features,

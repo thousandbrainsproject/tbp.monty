@@ -22,6 +22,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
+from tbp.monty.geometry import Rotation
 
 
 class DefaultHypothesesDisplacerTest(TestCase):
@@ -80,6 +81,7 @@ class DefaultHypothesesDisplacerTest(TestCase):
         evidence = self.displacer._calculate_evidence_for_new_locations(
             graph_id="test_object",
             input_channel="channel_a",
+            pose_kind=PoseKind.SURFACE,
             search_locations=np.zeros((1, 3)),
             channel_possible_poses=np.eye(3).reshape(1, 3, 3),
             channel_features={
@@ -188,3 +190,51 @@ class DefaultHypothesesDisplacerTest(TestCase):
         # With 2 channels (C=2), range is [-C, 2C] = [-2, 4], mapped to [0, 1]:
         # prediction_error = (-2.0 + 2*2) / (3*2) = 1/3
         self.assertAlmostEqual(telemetry.mlh_prediction_error, 1 / 3)
+
+    def test_channel_missing_from_pose_kinds_raises(self) -> None:
+        hypotheses = Hypotheses(
+            evidence=np.zeros(1),
+            locations=np.zeros((1, 3)),
+            poses=np.eye(3).reshape(1, 3, 3),
+            possible=np.ones(1, dtype=bool),
+        )
+
+        with patch.object(
+            self.displacer,
+            "_calculate_evidence_for_new_locations",
+            return_value=np.zeros(1),
+        ):
+            with self.assertRaises(KeyError):
+                self.displacer.compute_evidence(
+                    features={
+                        "channel_a": {"pose_fully_defined": True},
+                        "channel_b": {"pose_fully_defined": True},
+                    },
+                    evidence_update_threshold=-np.inf,
+                    graph_id="test_object",
+                    hypotheses=hypotheses,
+                    pose_kinds={"channel_a": PoseKind.SURFACE},
+                )
+
+
+class ObjectPoseEvidenceTest(TestCase):
+    def setUp(self) -> None:
+        self.displacer = DefaultHypothesesDisplacer(
+            feature_weights={},
+            graph_memory=Mock(),
+            max_match_distance=0.01,
+            feature_evidence_scorer=Mock(),
+        )
+
+    def _evidence(self, sensed: Rotation, stored: Rotation) -> float:
+        query_features = {"pose_vectors": sensed.as_matrix().reshape(1, 3, 3)}
+        node_features = {"pose_vectors": stored.as_matrix().reshape(1, 1, 9)}
+        evidence = self.displacer._get_object_pose_evidence_matrix(
+            query_features, node_features
+        )
+        return evidence[0, 0]
+
+    def test_flip_about_first_pose_vector_gives_min_evidence(self) -> None:
+        """The surface pose path would score this as a match."""
+        flipped = Rotation.from_euler("x", 180, degrees=True)
+        self.assertAlmostEqual(self._evidence(flipped, Rotation.identity()), -1.0)
