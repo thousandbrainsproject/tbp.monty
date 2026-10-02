@@ -18,6 +18,7 @@ from hypothesis import strategies as st
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
 )
+from tbp.monty.frameworks.models.evidence_matching.channels import PoseKind
 from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import (
     EvidenceSlopeTracker,
     HypothesesSelection,
@@ -107,6 +108,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             features={"patch": {"pose_fully_defined": True}},
             graph_id="object1",
             evidence_update_threshold=0,
+            pose_kinds={"patch": PoseKind.SURFACE},
         )
 
         assert result is not None  # for type narrowing
@@ -428,6 +430,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
                 features={"patch": {"pose_fully_defined": True}},
                 graph_id="new_object",
                 evidence_update_threshold=0,
+                pose_kinds={"patch": PoseKind.SURFACE},
             )
 
         # Verify the new tracker was added to evidence_slope_trackers for graph_id

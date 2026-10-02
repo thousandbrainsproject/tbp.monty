@@ -14,6 +14,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 from scipy.spatial import KDTree
 
+from tbp.monty.frameworks.models.evidence_matching.channels import PoseKind
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
     DefaultFeatureEvidenceScorer,
 )
@@ -135,6 +136,10 @@ class DefaultHypothesesDisplacerTest(TestCase):
                 evidence_update_threshold=-np.inf,
                 graph_id="test_object",
                 hypotheses=displaced,
+                pose_kinds={
+                    "channel_a": PoseKind.SURFACE,
+                    "channel_b": PoseKind.SURFACE,
+                },
             )
 
         # Expected: past_weight * old_evidence + present_weight * summed_new
@@ -173,6 +178,10 @@ class DefaultHypothesesDisplacerTest(TestCase):
                 evidence_update_threshold=-np.inf,
                 graph_id="test_object",
                 hypotheses=displaced,
+                pose_kinds={
+                    "channel_a": PoseKind.SURFACE,
+                    "channel_b": PoseKind.SURFACE,
+                },
             )
 
         # MLH is index 0 (evidence 5.0), summed evidence at MLH = 1.5 + 0.5 = 2.0

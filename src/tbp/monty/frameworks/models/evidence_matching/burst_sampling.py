@@ -10,13 +10,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from typing import Any, Literal, Mapping
 
 import numpy as np
 import numpy.typing as npt
 from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.channels import (
+    PoseKind,
     all_usable_input_channels,
 )
 from tbp.monty.frameworks.models.evidence_matching.evidence_slope_tracker import (
@@ -306,6 +307,7 @@ class BurstSamplingHypothesesUpdater:
         features: dict,
         graph_id: str,
         evidence_update_threshold: float,
+        pose_kinds: Mapping[str, PoseKind],
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
         """Update hypothesis evidence from sensed features via burst sampling.
 
@@ -319,6 +321,8 @@ class BurstSamplingHypothesesUpdater:
             features: Input features keyed by channel name.
             graph_id: Identifier of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
+            pose_kinds: Kind of pose sent by each input channel. Must contain every
+                usable channel in `features`.
 
         Returns:
             A tuple containing the updated hypotheses (or None if no channels available)
@@ -372,6 +376,7 @@ class BurstSamplingHypothesesUpdater:
                     evidence_update_threshold=evidence_update_threshold,
                     graph_id=graph_id,
                     hypotheses=existing_hypotheses,
+                    pose_kinds=pose_kinds,
                 )
             )
         else:

@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Mapping, Protocol
 
 import numpy as np
 import numpy.typing as npt
 
 from tbp.monty.frameworks.models.evidence_matching.channels import (
+    PoseKind,
     all_usable_input_channels,
 )
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
@@ -73,6 +74,7 @@ class HypothesesDisplacer(Protocol):
         evidence_update_threshold: float,
         graph_id: str,
         hypotheses: Hypotheses,
+        pose_kinds: Mapping[str, PoseKind],
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
         """Updates evidence by comparing sensed features to features in the model.
 
@@ -85,6 +87,8 @@ class HypothesesDisplacer(Protocol):
             evidence_update_threshold: Evidence update threshold.
             graph_id: The ID of the current graph.
             hypotheses: Hypotheses to compute evidence for.
+            pose_kinds: Kind of pose sent by each input channel. Must contain every
+                usable channel in `features`.
 
         Returns:
             Hypotheses with computed evidence and telemetry.
@@ -160,6 +164,7 @@ class DefaultHypothesesDisplacer:
         evidence_update_threshold: float,
         graph_id: str,
         hypotheses: Hypotheses,
+        pose_kinds: Mapping[str, PoseKind],
     ) -> tuple[Hypotheses, HypothesisDisplacerTelemetry]:
         search_locations = hypotheses.locations
 

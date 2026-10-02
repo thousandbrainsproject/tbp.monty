@@ -10,13 +10,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
+from typing import Any, ContextManager, Dict, Literal, Mapping, Optional, Protocol
 
 import numpy as np
 import numpy.typing as npt
 from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.channels import (
+    PoseKind,
     all_usable_input_channels,
 )
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
@@ -83,6 +84,7 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
         features: dict,
         graph_id: str,
         evidence_update_threshold: float,
+        pose_kinds: Mapping[str, PoseKind],
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
         """Update hypothesis evidence from sensed features (and initialize as needed).
 
@@ -91,6 +93,8 @@ class HypothesesUpdater(ContextManager[Self], Protocol):
             features: Input features keyed by channel name.
             graph_id: ID of the graph being updated.
             evidence_update_threshold: Evidence update threshold.
+            pose_kinds: Kind of pose sent by each input channel. Must contain every
+                usable channel in `features`.
 
         Returns:
             Updated hypothesis space (or None if no channels available) and telemetry.
@@ -228,6 +232,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         features: dict,
         graph_id: str,
         evidence_update_threshold: float,
+        pose_kinds: Mapping[str, PoseKind],
     ) -> tuple[Hypotheses | None, HypothesesUpdateTelemetry]:
         # Get all usable input channels
         # NOTE: We might also want to check the confidence in the input channel
@@ -265,6 +270,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 evidence_update_threshold=evidence_update_threshold,
                 graph_id=graph_id,
                 hypotheses=hypotheses,
+                pose_kinds=pose_kinds,
             )
         )
 

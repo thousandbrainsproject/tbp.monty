@@ -23,6 +23,7 @@ from scipy.spatial import KDTree
 from tbp.monty.cmp import Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.models.evidence_matching.channels import channel_pose_kinds
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
@@ -948,6 +949,7 @@ class EvidenceGraphLM(GraphLM):
                 features=features,
                 graph_id=graph_id,
                 evidence_update_threshold=update_threshold,
+                pose_kinds=channel_pose_kinds(self.buffer.channel_sender_types),
             )
         )
 
