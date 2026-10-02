@@ -355,6 +355,11 @@ def pose_vector_merge(
 ) -> npt.NDArray[np.float64]:
     """Merge newly observed pose vectors into previous ones using a weighted mean.
 
+    Pose vectors store each axis of the pose's frame as a row, so the 3x3 matrix is
+    the transpose (inverse) of the frame's rotation. We average these matrices
+    directly without transposing: the rotation mean of inverses is the inverse of
+    the rotation mean, so the result is already in the same row layout.
+
     Args:
         new_pose_vecs: Flat array of nine elements holding the pose vectors averaged
             over the new observations.
