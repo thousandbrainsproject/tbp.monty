@@ -410,58 +410,85 @@ class ReadMe:
         order: int,
         category_id: str,
         doc: dict,
-        parent_id: str,
+        parent_id: str | None,
         file_path: str,
     ) -> tuple[str, bool]:
-        """Create a new ReadMe guide or update an existing guide.
+        """Create or update a guide after rendering its local Markdown source.
 
-        Process the guide's Markdown content and construct the request payload
-        expected by the ReadMe API. If a guide with the requested slug already
-        exists, update it. Otherwise, create a new guide using the requested slug.
+        Renders the document body using the local source path, then delegates the
+        ReadMe API operation to ``create_or_update_rendered_doc``.
 
         Args:
             order: Position of the guide within its category or parent guide.
             category_id: URI of the ReadMe category containing the guide.
-            doc: Guide data, including its title, slug, body, and optional
-                description and hidden status.
-            parent_id: Optional URI of the parent guide. Only exists if it
-                is a nested resource.
-            file_path: Path to the source Markdown file, used when processing the
-                guide's content.
+            doc: Guide data including title, slug, body, and optional metadata.
+            parent_id: Optional URI of the parent guide.
+            file_path: Local source path used when rendering the Markdown body.
 
         Returns:
-            A tuple containing the guide's URI and a boolean indicating whether the
-            guide was created. The boolean is ``False`` when an existing guide was
-            updated. The URI is used to set the parent of any nested guides.
-
-        Raises:
-            ValueError: If ReadMe creates the guide with a different slug than the
-                requested slug, or if the creation response does not contain a URI.
+            A tuple containing the guide URI and whether a new guide was created.
         """
-        # Convert the document body into the format expected by ReadMe.
-        markdown = self.process_markdown(
+        rendered_doc = dict(doc)
+
+        rendered_doc["body"] = self.process_markdown(
             doc["body"],
             file_path,
             doc["slug"],
         )
 
-        # This payload is used when updating an existing guide.
-        #
-        # "slug" is omitted as updating a doc uses its slug in the patch URL.
+        return self.create_or_update_rendered_doc(
+            order=order,
+            category_id=category_id,
+            doc=rendered_doc,
+            parent_id=parent_id,
+        )
+
+    def create_or_update_rendered_doc(
+        self,
+        order: int,
+        category_id: str,
+        doc: dict,
+        parent_id: str | None,
+    ) -> tuple[str, bool]:
+        """Create or update a ReadMe guide whose body is already rendered.
+
+        Builds the ReadMe request from the supplied document, including its
+        category, position, privacy, optional parent, and optional description.
+        Existing guides are updated in place; otherwise, a new guide is created.
+
+        Args:
+            order: Position of the guide within its category or parent guide.
+            category_id: URI of the ReadMe category containing the guide.
+            doc: Pre-rendered guide data including title, slug, body, and optional
+                metadata.
+            parent_id: Optional URI of the parent guide.
+
+        Returns:
+            A tuple containing the guide URI and whether a new guide was created.
+
+        Raises:
+            ValueError: If ReadMe creates the guide with an unexpected slug or
+                returns the created guide without a URI.
+        """
         update_doc_request = {
             "title": doc["title"],
             "type": "basic",
-            "content": {"body": markdown},
-            "category": {"uri": category_id},
+            "content": {
+                "body": doc["body"],
+            },
+            "category": {
+                "uri": category_id,
+            },
             "privacy": {
                 "view": ("anyone_with_link" if doc.get("hidden", False) else "public")
             },
             "position": order,
         }
 
-        # Include the parent URI when this guide is nested under another guide.
         if parent_id:
-            update_doc_request["parent"] = {"uri": parent_id}
+            update_doc_request["parent"] = {
+                "uri": parent_id,
+            }
 
         if "description" in doc:
             update_doc_request["content"]["excerpt"] = doc["description"]
@@ -473,29 +500,28 @@ class ReadMe:
                 self._branch_url(f"/guides/{doc['slug']}"),
                 update_doc_request,
             )
+
             return existing_doc["uri"], False
 
-        # The guide does not exist, so create it using the requested slug.
         create_doc_request = dict(update_doc_request)
         create_doc_request["slug"] = doc["slug"]
 
         created = post(
             self._branch_url("/guides"),
             create_doc_request,
-            # Prevent ReadMe from silently changing a duplicate slug into slug-1.
-            # A slug collision will instead cause the request to fail.
-            headers={"prefer": "handling=strict"},
+            headers={
+                "prefer": "handling=strict",
+            },
         )
 
         actual_slug = created.get("slug")
         created_uri = created.get("uri")
 
-        # Keep this protection even though strict handling should prevent
-        # ReadMe from assigning a different slug.
         if actual_slug != doc["slug"]:
             raise ValueError(
-                f"ReadMe created {doc['title']!r} with slug "
-                f"{actual_slug!r}; expected {doc['slug']!r}"
+                f"ReadMe created {doc['title']!r} "
+                f"with slug {actual_slug!r}; "
+                f"expected {doc['slug']!r}"
             )
 
         if not created_uri:

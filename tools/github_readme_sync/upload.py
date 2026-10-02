@@ -69,6 +69,111 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     rdme.make_version_stable()
 
 
+def upload_rendered(
+    new_hierarchy,
+    rdme: ReadMe,
+):
+    """Upload a pre-rendered documentation hierarchy to ReadMe.
+
+    Creates the target ReadMe version if necessary, creates or updates each
+    category and document in the supplied hierarchy, and removes resources
+    that no longer exist in the hierarchy. Unlike ``upload``, document bodies
+    are already rendered and do not require access to the local source files.
+
+    Args:
+        new_hierarchy: Pre-rendered documentation hierarchy to upload.
+        rdme: ReadMe client configured for the target version.
+    """
+    logger.info(f"Uploading rendered preview to version: {rdme.version}")
+    logger.info(f"URL: https://docs.thousandbrains.org/v{rdme.version}/docs")
+
+    rdme.create_version_if_not_exists()
+
+    to_be_deleted = get_all_categories_docs(rdme)
+
+    for category in new_hierarchy:
+        cat_id, created = rdme.create_category_if_not_exists(category["title"])
+
+        logger.info(
+            f"\n{BLUE}{category['title'].upper()}{GRAY}{created * ' [created]'}{RESET}"
+        )
+
+        set_do_not_delete(
+            to_be_deleted,
+            category["title"],
+        )
+
+        process_rendered_children(
+            parent=category,
+            cat_id=cat_id,
+            rdme=rdme,
+            to_be_deleted=to_be_deleted,
+        )
+
+    logger.info("")
+
+    if to_be_deleted:
+        for item in reversed(to_be_deleted):
+            if item.type == "doc":
+                rdme.delete_doc(item.id)
+            elif item.type == "category":
+                rdme.delete_category(item.id)
+
+    rdme.make_version_stable()
+
+
+def process_rendered_children(
+    parent,
+    cat_id,
+    rdme,
+    to_be_deleted: list[ReadMeItem],
+    level=0,
+    parent_doc_id=None,
+):
+    """Create or update pre-rendered documents beneath a parent.
+
+    Processes each child document in order, removes documents that still
+    exist from the cleanup list, and recursively processes nested children.
+
+    Args:
+        parent: Parent category or document containing a ``children`` list.
+        cat_id: URI of the ReadMe category containing the documents.
+        rdme: ReadMe client used to create or update documents.
+        to_be_deleted: Existing ReadMe resources that have not yet been matched
+            to resources in the new hierarchy.
+        level: Current nesting depth, used when logging document changes.
+        parent_doc_id: Optional URI of the parent document in ReadMe.
+    """
+    for i, doc in enumerate(parent["children"]):
+        doc_id, created = rdme.create_or_update_rendered_doc(
+            order=i,
+            category_id=cat_id,
+            doc=doc,
+            parent_id=parent_doc_id,
+        )
+
+        print_child(
+            level=level,
+            doc=doc,
+            created=created,
+        )
+
+        set_do_not_delete(
+            to_be_deleted,
+            doc["slug"],
+        )
+
+        if doc["children"]:
+            process_rendered_children(
+                parent=doc,
+                cat_id=cat_id,
+                rdme=rdme,
+                to_be_deleted=to_be_deleted,
+                level=level + 1,
+                parent_doc_id=doc_id,
+            )
+
+
 def process_children(
     parent,
     cat_id,
