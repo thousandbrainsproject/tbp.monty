@@ -21,9 +21,9 @@ from typing_extensions import Literal
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
-    SensorObservation,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.observations import SensorObservation
 from tbp.monty.simulators.habitat.sensors import (
     RGBDSensorConfig,
     SemanticSensorConfig,
