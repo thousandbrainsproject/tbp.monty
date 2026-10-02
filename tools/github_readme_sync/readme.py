@@ -421,8 +421,8 @@ class ReadMe:
         Args:
             order: Position of the guide within its category or parent guide.
             category_id: URI of the ReadMe category containing the guide.
-            doc: Guide data including title, slug, body, and optional metadata.
-            parent_id: Optional URI of the parent guide.
+            doc: Guide data including title, slug, body, and optional description and hidden status.
+            parent_id: Optional URI of the parent guide. Only exists if it is a nested resource.
             file_path: Local source path used when rendering the Markdown body.
 
         Returns:
@@ -453,7 +453,7 @@ class ReadMe:
         """Create or update a ReadMe guide whose body is already rendered.
 
         Builds the ReadMe request from the supplied document, including its
-        category, position, privacy, optional parent, and optional description.
+        category, position, privacy, optional parent, and optional description and hidden status.
         Existing guides are updated in place; otherwise, a new guide is created.
 
         Args:
@@ -461,7 +461,7 @@ class ReadMe:
             category_id: URI of the ReadMe category containing the guide.
             doc: Pre-rendered guide data including title, slug, body, and optional
                 metadata.
-            parent_id: Optional URI of the parent guide.
+            parent_id: Optional URI of the parent guide. Only exists if it is a nested resource.
 
         Returns:
             A tuple containing the guide URI and whether a new guide was created.
@@ -473,22 +473,17 @@ class ReadMe:
         update_doc_request = {
             "title": doc["title"],
             "type": "basic",
-            "content": {
-                "body": doc["body"],
-            },
-            "category": {
-                "uri": category_id,
-            },
+            "content": {"body": doc["body"]},
+            "category": {"uri": category_id},
             "privacy": {
                 "view": ("anyone_with_link" if doc.get("hidden", False) else "public")
             },
             "position": order,
         }
 
+        # Include the parent URI when this guide is nested under another guide.
         if parent_id:
-            update_doc_request["parent"] = {
-                "uri": parent_id,
-            }
+            update_doc_request["parent"] = {"uri": parent_id}
 
         if "description" in doc:
             update_doc_request["content"]["excerpt"] = doc["description"]
@@ -503,12 +498,15 @@ class ReadMe:
 
             return existing_doc["uri"], False
 
+        # The guide does not exist, so create it using the requested slug.
         create_doc_request = dict(update_doc_request)
         create_doc_request["slug"] = doc["slug"]
 
         created = post(
             self._branch_url("/guides"),
             create_doc_request,
+            # Prevent ReadMe from silently changing a duplicate slug into slug-1.
+            # A slug collision will instead cause the request to fail.
             headers={
                 "prefer": "handling=strict",
             },
@@ -517,11 +515,12 @@ class ReadMe:
         actual_slug = created.get("slug")
         created_uri = created.get("uri")
 
+        # Keep this protection even though strict handling should prevent
+        # ReadMe from assigning a different slug.
         if actual_slug != doc["slug"]:
             raise ValueError(
-                f"ReadMe created {doc['title']!r} "
-                f"with slug {actual_slug!r}; "
-                f"expected {doc['slug']!r}"
+                f"ReadMe created {doc['title']!r} with slug "
+                f"{actual_slug!r}; expected {doc['slug']!r}"
             )
 
         if not created_uri:
