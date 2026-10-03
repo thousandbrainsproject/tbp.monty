@@ -431,7 +431,6 @@ class DefaultHypothesesDisplacer:
         # TODO S: simplify by looping over pose vectors
         evidences_shape = node_distance_weights.shape[:2]
         pose_evidence_weighted = np.zeros(evidences_shape)
-        # TODO H: at higher level LMs we may want to look at all pose vectors.
         # Currently we skip the third since the second curv dir is always 90 degree
         # from the first.
         # Get angles between three pose features
