@@ -9,6 +9,7 @@ on:
       - opened
       - unlabeled
       - synchronize
+      - ready_for_review
 
 permissions:
   pull-requests: write
