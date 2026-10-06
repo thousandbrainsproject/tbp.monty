@@ -86,6 +86,3 @@ experiment:
       # Every experiment has a unique run name. This is used to identify the
       # experiment in the logs and to save a trained model.
       run_name: first_experiment
-      loggers:
-        tbp.monty.experiment.recognition_policy:
-          level: INFO
