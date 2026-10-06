@@ -16,6 +16,9 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 import quaternion as qt
+from hypothesis import given
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 from parameterized import parameterized_class
 
 from tbp.monty.cmp import Goal
@@ -29,6 +32,10 @@ from tbp.monty.frameworks.models.salience.sensor_module import (
     SalienceSM,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tests.strategies.arrays import (
+    bool_array,
+    uint8_array,
+)
 
 
 class ArrayEqual:
@@ -304,3 +311,47 @@ class SalienceSMSegmentationTest(unittest.TestCase):
             location_map=on_object_mock.location_map,
         )
         self.assertIs(proposed_region, segment_region_mock.return_value)
+
+
+@st.composite
+def segmented_region_on_object_map_and_location_map(
+    draw: st.DrawFn,
+) -> tuple[npt.NDArray[np.uint8], npt.NDArray[np.bool_], npt.NDArray[np.float64]]:
+    # draw the shape here:
+    image_shape = draw(
+        st.tuples(
+            st.integers(min_value=0, max_value=10),
+            st.integers(min_value=0, max_value=10),
+        )
+    )
+
+    segmentation_map = draw(uint8_array(image_shape))
+    on_object_map = draw(bool_array(image_shape))
+    location_map = draw(
+        arrays(
+            dtype=np.float64,
+            shape=image_shape + (3,),
+            elements=st.floats(allow_nan=False, allow_infinity=False),
+            fill=st.just(0.0),
+        )
+    )
+    return segmentation_map, on_object_map, location_map
+
+
+class SalienceSMStaticTest(unittest.TestCase):
+    @given(maps=segmented_region_on_object_map_and_location_map())
+    def test_region_locations_on_object_returns_correct_locations(
+        self,
+        maps: tuple[
+            npt.NDArray[np.uint8], npt.NDArray[np.bool_], npt.NDArray[np.float64]
+        ],
+    ) -> None:
+        segmentation_map, on_object_map, location_map = maps
+
+        region_on_object_map = segmentation_map.astype(bool) & on_object_map
+        expected_locations = location_map[region_on_object_map]
+        actual_locations = SalienceSM.region_locations_on_object(
+            segmentation_map, on_object_map, location_map
+        )
+
+        np.testing.assert_array_equal(actual_locations, expected_locations)
