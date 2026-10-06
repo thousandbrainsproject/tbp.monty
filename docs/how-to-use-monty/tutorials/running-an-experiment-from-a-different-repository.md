@@ -8,50 +8,31 @@ If you have your own repository and want to run your own experiment or a benchma
 >
 > We have a [tbp.monty_project_template](https://github.com/thousandbrainsproject/tbp.monty_project_template) template repository, so that you can quickly use [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty) for your project, prototype, or paper.
 
-First, you will need to install `tbp.monty` as a dependency using `conda`. You will need to add `thousandbrainsproject` to your list of channels, as well as the specific `tbp.monty` dependency:
-
-```yaml
-# environment.yaml
-
-# ...
-channels:
-  # ...
-  - thousandbrainsproject
-
-dependencies:
-  # ...
-  - thousandbrainsproject::tbp.monty
-  - pip
-  - pip:
-    - -e .[dev]
-```
-
-You'll also want to add `tbp.monty` and a [Hydra](https://hydra.cc/) dependency to your `pyproject.toml`:
+First, you will need to add `tbp.monty` with the `simulator_mujoco` extra as a dependency along with [Hydra](https://hydra.cc/) for configuration. Additionally, you'll need to include extra build dependencies required by `tbp.monty`:
 
 ```toml
-[project]
+# pyproject.toml
+
 # ...
 dependencies = [
     # ...
-    "tbp.monty", # imported via conda (thousandbrainsproject::tbp.monty)
+    "tbp.monty[simulator_mujoco]",
     "hydra-core>=1.3.2", # Hydra is used for configuring Monty
 ]
+
+# These are required by tbp.monty
+[tool.uv.extra-build-dependencies]
+torch-scatter = ["setuptools", "torch"]
+torch-sparse = ["torch"]
 ```
 
-With the `enviroment.yaml` configured, create your environment:
+Sync your environment:
 
 ```
-conda env create -f environment.yaml
+uv sync --extra dev
 ```
 
-> [!NOTE]
->
-> `tbp.monty` is only distributed for `x86_64` architecture, so if you are on Apple Silicon, your `conda` environment needs to be created using `--subdir=osx64` option:
-> ```
-> conda env create -f environment.yaml --subdir=osx-64
-> ```
-
-Once your `conda` environment is configured, the general setup is:
+Once your environment is installed, the general setup is:
 
 ```python
 from tbp.monty.frameworks.run_env import setup_env
@@ -85,7 +66,7 @@ if __name__ == "__main__":
 
 The above scripts let you run the existing `tbp.monty` experiments from your own project. For example:
 ```
-python run.py experiment=tutorial/first_experiment
+uv run python run.py experiment=tutorial/first_experiment_mujoco
 ```
 
 To run your own experiment, you need to configure it using [Hydra](https://hydra.cc/) (`hydra-core>=1.3.2`). For the purpose of this tutorial, we'll assume that your Hydra configuration is stored in `src/project/conf`:
@@ -104,11 +85,11 @@ run_parallel.py
 
 With the above setup in place and a correct configuration present in `example.yaml`, you can now execute it via:
 ```
-python run.py experiment=example
+uv run python run.py experiment=example
 ```
 or
 ```
-python run_parallel.py experiment=example
+uv run python run_parallel.py experiment=example
 ```
 
 For a full working example, see the template repository: https://github.com/thousandbrainsproject/tbp.monty_project_template.

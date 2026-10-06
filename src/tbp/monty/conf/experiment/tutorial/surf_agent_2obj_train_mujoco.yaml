@@ -20,7 +20,7 @@ defaults:
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   # The termination configuration decides when an episode ends.
-  - /termination: any1_maxtotalsteps_6000
+  - /termination: any1_objectrecognition_t1000_e500_tot6000
   # The logging configuration.
   - /logging: silent_warning_train
   - /telemetry: warning
@@ -39,4 +39,4 @@ experiment:
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       # Ensure the run name is unique per experiment configuration.
-      run_name: surf_agent_1lm_2obj_train_mujoco
+      run_name: surf_agent_2obj_train_mujoco

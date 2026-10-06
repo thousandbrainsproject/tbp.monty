@@ -20,7 +20,7 @@ experiment:
     # We will evaluate each of the 3 test rotations
     n_train_epochs: 3
     # Specify the path where we saved the pretrained model
-    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train_mujoco/pretrained"}
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_2obj_train_mujoco/pretrained"}
     n_eval_epochs: 3
     seed: 42
     supervised_lm_ids: []
@@ -30,4 +30,3 @@ experiment:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       # Specify a name for the evaluation run
       run_name: surf_agent_2obj_eval_mujoco
-      wandb_group: gm_eval_runs

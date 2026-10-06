@@ -3,7 +3,7 @@
 do_train: true
 train_env_interface_args:
   # Here we specify which objects to learn. "mug" and "banana" come from the YCB dataset.
-  # If you don't have the YCB dataset, replace with names from habitat (e.g.,
+  # If you don't have the YCB dataset, replace MuJoCo primitive object names (e.g.,
   # "capsule3DSolid", "cubeSolid", etc.).
   object_names:
   - mug

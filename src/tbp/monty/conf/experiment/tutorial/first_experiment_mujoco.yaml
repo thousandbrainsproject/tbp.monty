@@ -10,7 +10,7 @@
 # specify.
 defaults:
   # /monty defines what Monty we will use and how many exploration, evaluation,
-  # training, and total steps to configure it with.
+  # and training steps to configure it with.
   - /monty: graph_exp1000_e3_t3
 
   # /monty/motor_system_config specifies what motor system and motor policy to
@@ -52,8 +52,9 @@ defaults:
   # /termination specifies when an episode ends. The match criterion decides
   # which learning modules must recognize the object, and the recognition
   # policy adds step limits. We stop once any one learning module has matched
-  # or after 6000 steps.
-  - /termination: any1_maxtotalsteps_6000
+  # or after the running episode executes 1 training step, or 500 evaluation steps, or
+  # 6000 total steps.
+  - /termination: any1_objectrecognition_t1_e500_tot6000
 
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we

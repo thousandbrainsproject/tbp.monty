@@ -17,7 +17,7 @@ In this tutorial we will introduce the basic mechanics of Monty experiment confi
 >
 > Below instructions assume you'll be running an experiment within the checked out `tbp.monty` repository. This is the recommended way to start. Once you are familiar with Monty, if you'd rather setup your experiment in your own repository, then take a look at [Running An Experiment From A Different Repository](./running-an-experiment-from-a-different-repository.md).
 
-Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf` directory serves as the root configuration directory, and experiment configs are located under `src/tbp/monty/conf/experiment`. The experiment config for this tutorial is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment.yaml` which contains the following:
+Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf` directory serves as the root configuration directory, and experiment configs are located under `src/tbp/monty/conf/experiment`. The experiment config for this tutorial is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment_mujoco.yaml` which contains the following:
 
 ```yaml
 # @package _global_
@@ -53,12 +53,12 @@ defaults:
   - /monty/connectivity: 1lm_1sm
 
   # /environment specifies the environment configuration to use. We use a
-  # Habitat simulator environment, loaded with the YCB dataset, and Monty
+  # MuJoCo simulator environment, loaded with the YCB dataset, and Monty
   # controls a "distant" agent. Distant agent is like an eye, looking at things
   # from a distance.
-  - /environment: habitat_ycb_dist_agent_semantics0
+  - /environment: mujoco_ycb_dist_agent
 
-  # /env_interface specifies how to setup the enviromment for the experiment.
+  # /env_interface specifies how to set up the environment for the experiment.
   # We will train on one object and use a predefined rotation for placement of
   # one object.
   - /env_interface: tutorial_train_1obj_predefined
@@ -74,13 +74,18 @@ defaults:
   # /termination specifies when an episode ends. The match criterion decides
   # which learning modules must recognize the object, and the recognition
   # policy adds step limits. We stop once any one learning module has matched
-  # or after 6000 steps.
-  - /termination: any1_maxtotalsteps_6000
+  # or after the running episode executes 1 training step, or 500 evaluation steps, or
+  # 6000 total steps.
+  - /termination: any1_objectrecognition_t1_e500_tot6000
 
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we
   # output the data logs and python logs where training models are saved.
   - /logging: silent_warning_train
+
+  # /telemetry specifies the telemetry configuration to use. Here, we tell Monty
+  # to use the INFO log level.
+  - /telemetry: info
 
 experiment:
   # The top-level _target_ is what kind of experiment we want to run.
@@ -103,7 +108,8 @@ experiment:
     logging:
       # Every experiment has a unique run name. This is used to identify the
       # experiment in the logs and to save a trained model.
-      run_name: first_experiment
+      run_name: first_experiment_mujoco
+
 ```
 
 # Running the Experiment
@@ -111,16 +117,16 @@ experiment:
 Monty experiments are run with `run.py` (or `run_parallel.py`) located directly under `tbp.monty`. To run the experiment defined above, `cd` into `tbp.monty`, make sure the `tbp.monty` environment has been activated (via `conda activate tbp.monty`), and enter
 
 ```shell
-python run.py experiment=tutorial/first_experiment
+uv run python run.py experiment=tutorial/first_experiment_mujoco
 ```
 
-The `experiment` argument is determined by the location of the experiment config, relative to the `src/tbp/monty/conf/experiment` directory. This experiment is named `tutorial/first_experiment` since the config is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment.yaml`.
+The `experiment` argument is determined by the location of the experiment config, relative to the `src/tbp/monty/conf/experiment` directory. This experiment is named `tutorial/first_experiment_mujoco` since the config is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment_mujoco.yaml`.
 
 # What Just Happened?
 
 Now that you have run your first experiment, let's unpack what happened. This first section involves a lot of text, but rest assured, once you grok this first experiment, the rest of the tutorials will be much more interactive and will focus on running experiments and using tooling. This first experiment is virtually the simplest one possible, but it is designed to familiarize you with all the pieces and parts of the experimental workflow to give you a good foundation for further experimentation.
 
-Experiments are implemented as Python classes with a `run` method. In essence, `run.py` creates an experiment from a config and calls the experiment's `run` method. **Notice that `first_experiment` has `do_eval` set to `false`, so the experiment will only do training.**
+Experiments are implemented as Python classes with a `run` method. In essence, `run.py` creates an experiment from a config and calls the experiment's `run` method. For the purpose of this tutorial, `first_experiment_mujoco` is configured to only run training and does not run inference.
 
 ## Experiment Structure: Epochs, Episodes, and Steps
 
@@ -150,11 +156,11 @@ If you examine the `MontyExperiment` class, the parent class of `MontySupervised
         - Do post-epoch logging.
     - Do post-train logging.
 
-and **this is exactly the procedure that was executed when you ran** `python run.py experiment=tutorial/first_experiment`. (Please note that we're writing `MontyExperiment` in the above sequence rather than `MontySupervisedObjectPretrainingExperiment` for the sake of generality). When we run Monty in evaluation mode, `MontyExperiment.run` calls `MontyExperiment.evaluate`, resulting in the same sequence of calls minus the model updating step in `MontyExperiment.post_episode`. See the [experiment description in the How Monty Works section](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
+and **this is exactly the procedure that was executed when you ran** `uv run python run.py experiment=tutorial/first_experiment_mujoco`. (Please note that we're writing `MontyExperiment` in the above sequence rather than `MontySupervisedObjectPretrainingExperiment` for the sake of generality). When we run Monty in evaluation mode, `MontyExperiment.run` calls `MontyExperiment.evaluate`, resulting in the same sequence of calls minus the model updating step in `MontyExperiment.post_episode`. See the [experiment description in the How Monty Works section](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
 
 ## Model
 
-The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, and 3 minimum train steps.
+The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3` model, which is a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, and 3 minimum train steps.
 
 ```yaml
 # @package experiment.config.monty_config
@@ -174,7 +180,7 @@ Note that in our `/monty/connectivity: 1lm_1sm` the `sm_to_agent_dict` field of 
 
 ## Environment
 
-The environment is specified in the `/environment` section of `defaults`. In this case, we are using a Habitat simulator environment, loaded with the YCB dataset, where Monty controls a "distant" agent.
+The environment is specified in the `/environment` section of `defaults`. In this case, we are using a MuJoCo simulator environment, loaded with the YCB dataset, where Monty controls a "distant" agent.
 
 ## Steps
 
@@ -184,7 +190,7 @@ As mentioned previously, in `/monty: graph_exp1000_e3_t3`, notice that the model
 
 You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
 
-**In this particular experiment, `n_train_epochs` was set to 1, and `max_train_steps` was set to 1. This means a single epoch was run, with one matching step per episode**. In the next section, we go up a level from the model step to understand episodes and epochs.
+**In this particular experiment, `n_train_epochs` was set to 1, and `/termination` was set to `any1_objectrecognition_t1_e500_tot6000`. This means a single epoch was run, with one training matching step ("`t1`") per episode**. In the next section, we go up a level from the model step to understand episodes and epochs.
 
 ## Environment Interface
 

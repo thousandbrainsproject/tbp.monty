@@ -6,7 +6,7 @@ title: Using Monty in a Custom Application
 > If you've arrived at this page and you're relatively new to Monty, then we would recommend you start by reading some of our other documentation first. Once you're comfortable with the core concepts of Monty, then we think you'll enjoy learning about how to apply it to custom applications in the following tutorial!
 
 # Introduction
-Monty aims to implement a **general-purpose algorithm for understanding and interacting with the world**. It was designed to be very modular so that the same Monty configuration can be tested in many different environments and various Monty configurations can be compared in the same environment. Up to now, the tutorials have demonstrated Monty in a simulated environment (HabitatSim) where a sensor explores 3D objects and recognizes their ID and pose. Here, we will show you how to use Monty in other environments.
+Monty aims to implement a **general-purpose algorithm for understanding and interacting with the world**. It was designed to be very modular so that the same Monty configuration can be tested in many different environments and various Monty configurations can be compared in the same environment. Up to now, the tutorials have demonstrated Monty in a simulated environment (MuJoCo) where a sensor explores 3D objects and recognizes their ID and pose. Here, we will show you how to use Monty in other environments.
 
 ## What Kind of Applications can Monty Be Used For?
 **Monty is a sensorimotor modeling system. It is NOT made for learning from static datasets** (although some can be framed to introduce movement, such as the Omniglot example below). Any application where you want to use Monty should have some concept of movement and how movement will change the state of the agent and what is being observed.
@@ -23,15 +23,15 @@ Information flow in Monty implements a sensorimotor loop. Observations from the 
 
 ![Information flow in Monty. Note, this is a simplified view as there can also be model-free policies that bypass the learning module.](../../figures/how-to-use-monty/monty_information_flow_simplified.png)
 
-Additionally, the environment `Interface` can implement specific functions to be executed at different points in the experiment, such as resetting the agent position and showing a new object or scene at the beginning of a new episode.
+Additionally, the environment `Interface` can implement specific functions to be executed at different points by the experiment, such as resetting the agent position and showing a new object or scene at the beginning of a new episode.
 
-To use Monty in a custom environment, you usually need to customize the environment `Interface` class and write a custom implementation of the `SimulatedObjectEnvironment` protocol. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `OneObjectPerEpisodeInterface` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
+To use Monty in a custom environment, you usually need to customize the environment `Interface` class and write a custom implementation of the `SimulatedObjectEnvironment` protocol. For example, if you look back at the previous tutorials, you will see that for those MuJoCo experiments, we've been using the `OneObjectPerEpisodeInterface` and the `MuJoCoSimulator`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
 ![Key elements to define for a custom environment interface](../../figures/how-to-use-monty/defining_env_and_env_interface.png)
 
 ### Environment
 The first thing to figure out is how movement should be defined in your environment. What actions are possible, and how do these actions change the agent's state and observations?
 
-If you are working with an existing environment, such as one used for reinforcement learning (for example, the Habitat environment we are using), you might just need to wrap this into the `.step()` function of your custom `Environment` class such that when `env.step(actions)` is called, observations and proprioceptive state are returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the environment `OmniglotInterface` or `SaccadeOnImageInterface` as examples (more details below).
+If you are working with an existing environment, such as one used for reinforcement learning, you might just need to wrap this into the `.step()` function of your custom `Environment` class such that when `env.step(actions)` is called, observations and proprioceptive state are returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the environment `OmniglotInterface` or `SaccadeOnImageInterface` as examples (more details below).
 
 The observations should be returned as `Observations` with one entry per agent in the environment. Each agent should have `SensorObservations` for each of its sensors. For example, if there is one agent with two sensors that each sense two types of modalities, it would look like this:
 
@@ -137,8 +137,9 @@ defaults:
   - /environment: two_d_data_omniglot
   - /env_interface: train_omniglot
   - /env_interface/transform: depthto3d_sensor1
-  - /termination: any1_maxtotalsteps_6000
+  - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: silent_warning_train
+  - /telemetry: warning
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -151,6 +152,7 @@ experiment:
     supervised_lm_ids: all
     logging:
       run_name: omniglot_training
+
 ```
 
 One noteworthy highlight would be the `- /env_interface: train_omniglot` environment interface setup:
@@ -203,6 +205,7 @@ defaults:
   - /env_interface/transform: depthto3d_sensor1
   - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: tutorial_detailed_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -210,7 +213,7 @@ experiment:
     show_sensor_output: false
     n_train_epochs: 3
     n_eval_epochs: 1
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/omniglot_training/pretrained/}
     seed: 42
     supervised_lm_ids: []
     logging:
@@ -222,7 +225,7 @@ experiment:
 
 The above configurations are already included in Monty at `src/tbp/monty/conf/experiment/tutorial/omniglot_training.yaml` and `src/tbp/monty/conf/experiment/tutorial/omniglot_inference.yaml`.
 
-You can run training by calling `python run.py experiment=tutorial/omniglot_training` and then run inference on these models by calling `python run.py experiment=tutorial/omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
+You can run training by calling `uv run python run.py experiment=tutorial/omniglot_training` and then run inference on these models by calling `uv run python run.py experiment=tutorial/omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
 > ❗️ Generalization Performance on Omniglot is Bad Without Hierarchy
 > Note that we currently don't get good generalization performance on the Omniglot dataset. If you use `eval_env_interface_args.versions: [2, 2, 2, 2, 2, 2]` in the inference config, which shows previously unseen versions of the characters, you will see that performance degrades a lot. This is because the Omniglot characters are fundamentally compositional objects (strokes relative to each other), and compositional objects can only be modeled by stacking two learning modules hierarchically. The above configs do not do this. Our research team is hard at work getting Monty to model compositional objects.
@@ -277,6 +280,7 @@ defaults:
   - /env_interface/transform: none
   - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: basic_warning_wandb_evidence_eval_runs
+  - /telemetry: warning
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -290,7 +294,6 @@ experiment:
     python_log_level: DEBUG
     logging:
       run_name: monty_meets_world_2dimage_inference
-
 ```
 For more configs to test on different subsets of the Monty Meets World dataset (such as bright or dark images, hand intrusion, and multiple objects), you can find the RGBD image benchmark configs at:
 - [world_image_from_stream_on_scanned_model](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/conf/experiment/world_image_from_stream_on_scanned_model.yaml)
@@ -303,9 +306,9 @@ For more configs to test on different subsets of the Monty Meets World dataset (
 > 📘 Follow Along
 > To run this experiment, you first need to download our 2D image dataset called `worldimages`. You can find instructions for this [here](https://docs.thousandbrains.org/docs/benchmark-experiments#monty-meets-world).
 >
-> You will also need to [download the pre-trained models](https://docs.thousandbrains.org/docs/getting-started#42-download-pretrained-models). Alternatively, you can run pre-training yourself by running `python run.py experiment=only_surf_agent_training_numenta_lab_obj`. Running pre-training requires the Habitat simulator and [downloading the `numenta_lab` 3D mesh dataset](https://docs.thousandbrains.org/docs/benchmark-experiments#monty-meets-world).
+> You will also need to [download the pre-trained models](https://docs.thousandbrains.org/docs/getting-started#42-download-pretrained-models). Alternatively, you can run pre-training yourself by running `uv run python run.py experiment=only_surf_agent_training_numenta_lab_obj`. Running pre-training requires the Habitat simulator and [downloading the `numenta_lab` 3D mesh dataset](https://docs.thousandbrains.org/docs/benchmark-experiments#monty-meets-world).
 
-To run the experiment, call `python run.py experiment=tutorial/monty_meets_world_2dimage_inference`. If you don't want to log to wandb, set the `WANDB_MODE=disabled` environment variable, or change to a logging configuration without any wandb configured (e.g., `basic_info_monty_runs`). If you just want to run a quick test on a few of the images, adjust the `scenes` and `versions` parameters in `config.eval_env_interface_args`.
+To run the experiment, call `uv run python run.py experiment=tutorial/monty_meets_world_2dimage_inference`. If you don't want to log to wandb, set the `WANDB_MODE=disabled` environment variable, or change to a logging configuration without any wandb configured (e.g., `basic_info_monty_runs`). If you just want to run a quick test on a few of the images, adjust the `scenes` and `versions` parameters in `config.eval_env_interface_args`.
 
 # Other Things You May Need to Customize
 If your application uses sensors different from our commonly used cameras and depth sensors, or you want to extract specific features from your sensory input, you will need to define a custom sensor module. The sensor module receives the raw observations from the environment interface and converts them into the CMP, which contains features at poses. For more details on converting raw observations into the CMP, see our [documentation on sensor modules](https://docs.thousandbrains.org/docs/sensor-module).

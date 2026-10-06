@@ -43,10 +43,12 @@ Monty experiments are defined and configured using [Hydra](https://hydra.cc/). T
     - `train_env_interface_args`: Specifies how the interface should interact with the environment. For instance, which objects should be shown in what episodes and in which orientations and locations.
     - `eval_env_interface_class`: environment `Interface`
     - `eval_env_interface_args`: Same purpose as `train_env_interface_args` but allows for presenting Monty with different conditions between training and evaluation.
+    - `match_criterion`: The match criterion decides which learning modules must recognize the object.
+    - `recognition_policy`: The recognition policy decides when an experiment episode is over.
 
 # Setting up the Experiment Config for Pretraining
 
-To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_train.yaml`. Let's highlight the various aspects of a training experiment configuration.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_train_mujoco.yaml`. Let's highlight the various aspects of a training experiment configuration.
 
 ```yaml
 # @package _global_
@@ -61,13 +63,13 @@ experiment:
     # ...
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: surf_agent_1lm_2obj_train
+      run_name: surf_agent_2obj_train_mujoco
 ```
 
 > [!NOTE]
 > **Where Logs and Models are Saved**
 >
-> Loggers have `output_dir` and `run_name` parameters, and since we will use `run.py`, the output will be saved to `OUTPUT_DIR/RUN_NAME`. The `MontySupervisedObjectPretrainingExperiment` suffixes `pretrained`, so the final model will be stored at `OUTPUT_DIR/RUN_NAME/pretrained`, which in our case will be `~/tbp/results/monty/projects/surf_agent_1lm_2obj_train/pretrained`.
+> Loggers have `output_dir` and `run_name` parameters, and since we will use `run.py`, the output will be saved to `OUTPUT_DIR/RUN_NAME`. The `MontySupervisedObjectPretrainingExperiment` suffixes `pretrained`, so the final model will be stored at `OUTPUT_DIR/RUN_NAME/pretrained`, which in our case will be `~/tbp/results/monty/projects/surf_agent_2obj_train_mujoco/pretrained`.
 >
 
 Next, we specify which objects the model will train on in the dataset, including the rotations in which the objects will be presented. The following code specifies two objects ("mug" and "banana") and 14 unique rotations, which means that both the mug and the banana will be shown 14 times, each time in a different rotation. During each of the overall 28 episodes, the sensors will move over the respective object and collect multiple observations to update the model of the object.
@@ -93,7 +95,7 @@ Opening `src/tbp/monty/conf/env_interface/tutorial_train_2obj_predefined.yaml` w
 do_train: true
 train_env_interface_args:
   # Here we specify which objects to learn. "mug" and "banana" come from the YCB dataset.
-  # If you don't have the YCB dataset, replace with names from habitat (e.g.,
+  # If you don't have the YCB dataset, replace MuJoCo primitive object names (e.g.,
   # "capsule3DSolid", "cubeSolid", etc.).
   object_names:
   - mug
@@ -105,7 +107,7 @@ train_env_interface_args:
 train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
 ```
 
-The constant `${constants.rotations_all}` is used in our pretraining and many of our benchmark experiments since the rotations it returns provide a good set of views from all around the object. Its name comes from picturing an imaginary cube surrounding an object. If we look at the object from each of the cube's faces, we get 6 unique views that typically cover most of the object's surface. We can also look at the object from each of the cube's 8 corners which provides an extra set of views that help fill in any gaps. The 14 rotations provided by `${constants.rotations_all}` will rotate the object as if an observer were looking at the object from each of the cube's faces and corners like so:
+The constant `${constants.rotations_all}` is used in our pretraining and many of our benchmark experiments since the rotations it returns provide a good set of views from all around the object. Picture an imaginary cube surrounding an object. If we look at the object from each of the cube's faces, we get 6 unique views that typically cover most of the object's surface. We can also look at the object from each of the cube's 8 corners which provides an extra set of views that help fill in any gaps. The 14 rotations provided by `${constants.rotations_all}` will rotate the object as if an observer were looking at the object from each of the cube's faces and corners like so:
 
 ![learned_models](../../figures/how-to-use-monty/cube_face_and_corner_views_spam.png)
 
@@ -113,7 +115,6 @@ Now we define the entire configuration that specifies one complete Monty experim
 
 ```yaml
 # @package _global_
-
 # The configuration for the pretraining experiment.
 defaults:
   # The Monty configuration details.
@@ -130,14 +131,15 @@ defaults:
   # The Monty connectivity configuration.
   - /monty/connectivity: 1lm_1sm
   # The environment configuration.
-  - /environment: habitat_ycb_surf_agent
+  - /environment: mujoco_ycb_surf_agent
   # The environment interface configures how the experiment controls the environment.
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   # The termination configuration decides when an episode ends.
-  - /termination: any1_maxtotalsteps_6000
+  - /termination: any1_objectrecognition_t1000_e500_tot6000
   # The logging configuration.
   - /logging: silent_warning_train
+  - /telemetry: warning
 
 experiment:
   # The MontySupervisedObjectPretrainingExperiment will provide the model with the
@@ -153,7 +155,7 @@ experiment:
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       # Ensure the run name is unique per experiment configuration.
-      run_name: surf_agent_1lm_2obj_train
+      run_name: surf_agent_2obj_train_mujoco
 ```
 
 Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md) and a training environment interface to initialize our objects at different orientations for each episode. `/monty/*` composes multiple configs that together describe the complete sensorimotor modeling system. Here is a short breakdown of its components:
@@ -169,10 +171,10 @@ To get an idea of what each sensor module sees and the information passed on to 
 
 To run this experiment, call the `run.py` script with the experiment name as the `experiment` argument.
 ```shell
-python run.py experiment=tutorial/surf_agent_2obj_train
+uv run python run.py experiment=tutorial/surf_agent_2obj_train_mujoco
 ```
 
-This will take a few minutes to complete and then you can inspect and visualize the learned models. To do so, create a script and paste in the following code. The location and name of the script is unimportant, but we called it `pretraining_tutorial_analysis.py` and placed it outside of the repository at `~/monty_scripts`.
+This will take a few minutes to complete and then you can inspect and visualize the learned models. To do so, create a script and paste in the following code. Name the script `pretraining_tutorial_analysis.py`, place it in the project directory, and run it: `uv run python pretraining_tutorial_analysis.py`.
 
 ```python
 from pathlib import Path
@@ -183,7 +185,7 @@ from tbp.monty.frameworks.utils.logging_utils import load_stats
 from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Specify where pretraining data is stored.
-exp_path = Path("~/tbp/results/monty/projects/surf_agent_1lm_2obj_train").expanduser()
+exp_path = Path("~/tbp/results/monty/projects/surf_agent_2obj_train_mujoco").expanduser()
 pretrained_dict = exp_path / "pretrained"
 
 train_stats, eval_stats, detailed_stats, lm_models = load_stats(

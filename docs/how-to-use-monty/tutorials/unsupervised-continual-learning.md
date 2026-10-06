@@ -14,7 +14,7 @@ Our model will have one surface agent connected to one sensor module connected t
 
 # Setting up the Experiment Config for Continual Learning
 
-To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_unsupervised.yaml` file.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_unsupervised_mujoco.yaml` file.
 
 ```yaml
 # @package _global_
@@ -27,14 +27,15 @@ defaults:
   - /monty: graph_exp1000_e3_t100
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
-  # We will use the default surface sensor modules (one habitat surface patch, one logging view finder)
+  # We will use the default surface sensor modules
   - /monty/sensor_module: camera_surf
   - /monty/connectivity: 1lm_1sm
-  - /environment: habitat_ycb_surf_agent
+  - /environment: mujoco_ycb_surf_agent
   - /env_interface: tutorial_train_2obj_random
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /termination: any1_objectrecognition_t2000_e500_tot5000
   - /logging: basic_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -48,7 +49,7 @@ experiment:
     do_eval: false
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: surf_agent_2obj_unsupervised
+      run_name: surf_agent_2obj_unsupervised_mujoco
 ```
 
 Looking into the details of learning module configuration in `src/tbp/monty/conf/monty/learning_module/evidence_tutorial_surf_agent_2obj_unsupervised.yaml`:
@@ -71,7 +72,7 @@ learning_module_0:
     patch:
       # Weighting saturation and value less since these might change under different
       # lighting conditions.
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   x_percent_threshold: 20
   # Thresholds to use for when two points are considered different enough to
   # both be stored in memory.
@@ -117,7 +118,7 @@ train_env_interface_args:
 train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
 ```
 
-If you have read our previous tutorials on [pretraining](pretraining-a-model.md) or [running inference with a pretrained model](running-inference-with-a-pretrained-model.md), you may spot a few differences in this setup. For pretraining, we used the `MontySupervisedObjectPretrainingExperiment` class which also performs training (and not evaluation). While that was a training-only setup, it is different from our unsupervised continual learning config since it supplies object labels to learning modules. For running inference with a pretrained model, we used the `MontyObjectRecognitionExperiment` class but specified that we only wanted to perform evaluation by using `- /env_interface: tutorial_eval_2obj_predefined_r3`, which specified `do_eval: true`. In contrast, here we used the `MontyObjectRecognitionExperiment` with `- /env_interface: tutorial_train_2obj_random`, which specifies `do_train: true` (where `do_eval: false` is the default). This combination of experiment class and `do_train`/`do_eval` arguments is specific to unsupervised continual learning. We have also increased `min_training_steps`, `object_evidence_threshold`, and `required_symmetry_evidence` to avoid early misclassification when there are fewer objects in memory.
+If you have read our previous tutorials on [pretraining](pretraining-a-model.md) or [running inference with a pretrained model](running-inference-with-a-pretrained-model.md), you may spot a few differences in this setup. For pretraining, we used the `MontySupervisedObjectPretrainingExperiment` class which also performs training (and not evaluation). While that was a training-only setup, it is different from our unsupervised continual learning config since it supplies object labels to learning modules. For running inference with a pretrained model, we used the `MontyObjectRecognitionExperiment` class but specified that we only wanted to perform evaluation by using `- /env_interface: tutorial_eval_2obj_predefined_r3`, which specified `do_eval: true`. In contrast, here we used the `MontyObjectRecognitionExperiment` with `- /env_interface: tutorial_train_2obj_random`, which specifies `do_train: true` (where `do_eval: false` is the default). This combination of experiment class and `do_train`/`do_eval` arguments is specific to unsupervised continual learning. We have also increased `max_training_steps`, `object_evidence_threshold`, and `required_symmetry_evidence` to avoid early misclassification when there are fewer objects in memory.
 
 Besides these crucial changes, we have also made a few minor adjustments to simplify the rest of the configs. First, we did not use tutorial-specific sensor module, motor system, or connectivity configs. Second, we are using a `RandomRotation` object initializer which randomly rotates an object at the beginning of each episode rather than rotating an object by a specific user-defined rotation. Third, we are using the `- /logging: basic_info_monty_runs` configuration. This is equivalent to setting up a default logging configuration and specifying that we only want a `BasicCSVStatsHandler`.
 
@@ -126,11 +127,11 @@ Besides these crucial changes, we have also made a few minor adjustments to simp
 To run this experiment, call the `run.py` script with an experiment name as the `experiment` argument like so:
 
 ```shell
-python run.py experiment=tutorial/surf_agent_2obj_unsupervised
+uv run python run.py experiment=tutorial/surf_agent_2obj_unsupervised_mujoco
 ```
 
 # Inspecting the Results
-Once complete, you can inspect the simulation results and visualize the learned models. The logs are located at `~/tbp/results/monty/projects/surf_agent_2obj_unsupervised`. Open `train_stats.csv`, and you should see a table with six rows--one row for each episode. The first 7 columns should look something like this:
+Once complete, you can inspect the simulation results and visualize the learned models. The logs are located at `~/tbp/results/monty/projects/surf_agent_2obj_unsupervised_mujoco`. Open `train_stats.csv`, and you should see a table with six rows--one row for each episode. The first 7 columns should look something like this:
 
 ![](../../figures/how-to-use-monty/unsupervised_stats.png)
 
@@ -140,7 +141,7 @@ In all subsequent episodes, Monty correctly identified the objects as indicated 
 
 Note that Monty receives minimal information about when a new epoch has started, with the only indication of this being that evidence scores are reset to 0 (an assumption which we intend to relax in the future). If a new object was introduced in the second or third epoch it should again detect no_match and learn a new model for this object. Also note that for logging purposes we save which object was sensed during each episode and what model was updated or associated with this object. Monty has no access to this information. It can happen that multiple objects are merged into one object or that multiple models are learned for one object. This is tracked in `mean_objects_per_graph` and `mean_graphs_per_object` in the .csv statistics as well as in `possible_match_sources` for each model to calculate whether the performance was `correct` or `confused`.
 
-We can visualize how models are acquired and refined by plotting an object's model after different epochs. To do so, create a script and paste in the following code. The name and location of the script is arbitrary, but we called it `unsupervised_learning_analysis.py` and placed it at `~/monty_scripts`.
+We can visualize how models are acquired and refined by plotting an object's model after different epochs. To do so, create a script and paste in the following code. Name the script `unsupervised_learning_analysis.py`, place it in the project directory, and run it: `uv run python unsupervised_learning_analysis.py`.
 ```python
 from pathlib import Path
 
@@ -157,7 +158,7 @@ def load_graph(exp_dir: Path, epoch: int, object_name: str) -> GraphObjectModel:
     return state_dict["lm_dict"][0]["graph_memory"][object_name]["patch"]
 
 
-exp_dir = Path("~/tbp/results/monty/projects/surf_agent_2obj_unsupervised").expanduser()
+exp_dir = Path("~/tbp/results/monty/projects/surf_agent_2obj_unsupervised_mujoco").expanduser()
 n_epochs = 3
 obj_name = "new_object1"   # The generated object ID corresponding to the bowl
 
@@ -168,12 +169,11 @@ fig = plt.figure(figsize=(8, 3))
 for epoch in range(n_epochs):
     ax = fig.add_subplot(1, n_epochs, epoch + 1, projection="3d")
     plot_graph(graphs[epoch], ax=ax)
-    ax.view_init(95, 90, 0)
+    ax.view_init(125, 115, 0)
     ax.set_title(f"epoch {epoch}")
 fig.suptitle("Bowl Object Models")
 fig.tight_layout()
 plt.show()
-
 ```
 After running this script, you should see a plot with three views of the bowl object model at each epoch like so:
 
