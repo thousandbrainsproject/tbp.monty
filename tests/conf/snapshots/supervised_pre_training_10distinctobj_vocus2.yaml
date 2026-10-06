@@ -195,9 +195,14 @@ experiment:
     recognition_policy:
       _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
       policies:
-      - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
+      - _target_: tbp.monty.experiment.recognition_policy.StepLimit
+        min_train_steps: 3
+        num_exploring_steps: 500
+        max_train_steps: 500
+        max_eval_steps: 500
       - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
         max_total_steps: 100
+      - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
     logging:
       python_log_level: INFO
       python_log_to_file: true
