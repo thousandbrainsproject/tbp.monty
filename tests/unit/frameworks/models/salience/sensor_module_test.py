@@ -230,6 +230,33 @@ class SalienceSMPrivateTest(unittest.TestCase):
         )
         self.assertEqual(weighted, sentinel.normalized)
 
+    def test_segment_region_returns_empty_region_if_no_segmentation_strategy(
+        self,
+    ) -> None:
+        sensor_module = SalienceSM(
+            sensor_module_id="test",
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            snapshot_telemetry=MagicMock(),
+        )
+        region = sensor_module._segment_region(
+            ctx=MagicMock(),
+            rgba=MagicMock(),
+            on_object_map=MagicMock(),
+            location_map=MagicMock(),
+        )
+        self.assertEqual(len(region), 0)
+
+    def test_segment_region_invokes_segmentation_strategy(self) -> None:
+        segmentation_strategy_mock = MagicMock()
+        sensor_module = SalienceSM(
+            sensor_module_id="test",
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            snapshot_telemetry=MagicMock(),
+            segmentation_strategy=segmentation_strategy_mock,
+        )
+
 
 class SalienceSMSegmentationTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -253,7 +280,7 @@ class SalienceSMSegmentationTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM._segment_region"
     )
-    def test_step_calls_segment_region(
+    def test_step_segments_region_and_stores_it_for_propose_region(
         self, segment_region_mock: MagicMock, on_object_observation_mock: MagicMock
     ) -> None:
         sensor_module = SalienceSM(
@@ -268,11 +295,12 @@ class SalienceSMSegmentationTest(unittest.TestCase):
 
         sensor_module.update_state(self.state)
         sensor_module.step(ctx, self.observation)
+        proposed_region = sensor_module.propose_region()
 
         segment_region_mock.assert_called_once_with(
-            ctx,
-            ANY,
-            on_object_mock.on_object_map,
-            on_object_mock.location_map,
+            ctx=ctx,
+            rgba=ANY,
+            on_object_map=on_object_mock.on_object_map,
+            location_map=on_object_mock.location_map,
         )
-        # self.assertEqual(segment_region_mock.call_args_list[0][0], ctx)
+        self.assertIs(proposed_region, segment_region_mock.return_value)

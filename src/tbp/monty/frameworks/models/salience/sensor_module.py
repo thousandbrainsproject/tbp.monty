@@ -183,8 +183,9 @@ class SalienceSM(SensorModule):
 
         segmentation_map = self._segmentation_strategy(ctx=ctx, rgba=rgba)
 
-        region_on_object_map = segmentation_map.astype(bool) & on_object_map
-        region_locations_on_object = location_map[region_on_object_map]
+        region_locations_on_object = self.region_locations_on_object(
+            segmentation_map, on_object_map, location_map
+        )
 
         region = AttentionRegion.uniform(
             region_locations_on_object, AttentionRegion.MAX_WEIGHT
@@ -195,6 +196,26 @@ class SalienceSM(SensorModule):
             self._snapshot_telemetry.attention_region(region)
 
         return region
+
+    @staticmethod
+    def region_locations_on_object(
+        segmentation_map: npt.NDArray[np.uint8],
+        on_object_map: npt.NDArray[np.bool_],
+        location_map: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        """Return the 3D locations of the segmented region that are on the object.
+
+        Args:
+            segmentation_map: The segmentation map of the image.
+            on_object_map: The on-object view of the observation as a boolean mask.
+            location_map: The corresponding 3D locations for each pixel in the
+                observation.
+
+        Returns:
+            The 3D locations of the segmented region that are on the object.
+        """
+        region_on_object_map = segmentation_map.astype(bool) & on_object_map
+        return location_map[region_on_object_map]
 
     def _weight_salience(
         self,
@@ -243,3 +264,6 @@ class SalienceSM(SensorModule):
 
     def propose_goals(self) -> list[Goal]:
         return self._goals
+
+    def propose_region(self) -> AttentionRegion:
+        return self._region
