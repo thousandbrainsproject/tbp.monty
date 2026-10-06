@@ -19,7 +19,6 @@ import quaternion as qt
 from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
-from parameterized import parameterized_class
 
 from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
@@ -244,7 +243,7 @@ class SalienceSMPrivateTest(unittest.TestCase):
         "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM.region_locations_on_object"
     )
     @patch("tbp.monty.frameworks.models.salience.sensor_module.AttentionRegion")
-    def test_segment_region_invokes_segmentation_strategy(
+    def test_segment_region_creates_segmentation_map(
         self,
         attention_region_mock: MagicMock,  # noqa: ARG002
         region_locations_on_object_mock: MagicMock,
@@ -252,8 +251,6 @@ class SalienceSMPrivateTest(unittest.TestCase):
         segmentation_strategy_mock = MagicMock()
         segmentation_strategy_mock.return_value = sentinel.segmentation_map
         snapshot_telemetry_mock = MagicMock()
-        # segmentation_map_mock = MagicMock()
-        # snapshot_telemetry_mock.segmentation_map = segmentation_map_mock
         sensor_module = SalienceSM(
             sensor_module_id="test",
             salience_strategy=MagicMock(),
@@ -280,6 +277,77 @@ class SalienceSMPrivateTest(unittest.TestCase):
         snapshot_telemetry_mock.segmentation_map.assert_called_once_with(
             sentinel.segmentation_map
         )
+
+    @patch(
+        "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM.region_locations_on_object"
+    )
+    @patch("tbp.monty.frameworks.models.salience.sensor_module.AttentionRegion")
+    def test_segment_region_creates_region_locations_on_object(
+        self,
+        attention_region_mock: MagicMock,
+        region_locations_on_object_mock: MagicMock,
+    ) -> None:
+        segmentation_strategy_mock = MagicMock()
+        segmentation_strategy_mock.return_value = sentinel.segmentation_map
+        sensor_module = SalienceSM(
+            sensor_module_id="test",
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            segmentation_strategy=segmentation_strategy_mock,
+        )
+        rgba_mock = MagicMock()
+        on_object_map_mock = MagicMock()
+        location_map_mock = MagicMock()
+
+        sensor_module._segment_region(
+            ctx=self.ctx,
+            rgba=rgba_mock,
+            on_object_map=on_object_map_mock,
+            location_map=location_map_mock,
+        )
+
+        region_locations_on_object_mock.assert_called_once_with(
+            sentinel.segmentation_map, on_object_map_mock, location_map_mock
+        )
+        attention_region_mock.uniform.assert_called_once_with(
+            region_locations_on_object_mock.return_value,
+            ANY,
+        )
+
+    @patch(
+        "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM.region_locations_on_object"
+    )
+    @patch("tbp.monty.frameworks.models.salience.sensor_module.AttentionRegion")
+    def test_segment_region_creates_uniformly_weighted_attention_region(
+        self,
+        attention_region_mock: MagicMock,
+        region_locations_on_object_mock: MagicMock,
+    ) -> None:
+        snapshot_telemetry_mock = MagicMock()
+        sensor_module = SalienceSM(
+            sensor_module_id="test",
+            salience_strategy=MagicMock(),
+            return_inhibitor=MagicMock(),
+            snapshot_telemetry=snapshot_telemetry_mock,
+            segmentation_strategy=MagicMock(),
+        )
+
+        segmented_region = sensor_module._segment_region(
+            ctx=self.ctx,
+            rgba=MagicMock(),
+            on_object_map=MagicMock(),
+            location_map=MagicMock(),
+        )
+
+        attention_region_mock.uniform.assert_called_once_with(
+            region_locations_on_object_mock.return_value,
+            attention_region_mock.MAX_WEIGHT,
+        )
+        snapshot_telemetry_mock.attention_region.assert_called_once_with(
+            attention_region_mock.uniform.return_value
+        )
+        self.assertIs(segmented_region, attention_region_mock.uniform.return_value)
+
 
 class SalienceSMSegmentationTest(unittest.TestCase):
     def setUp(self) -> None:
