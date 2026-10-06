@@ -46,7 +46,6 @@ class SalienceSM(SensorModule):
     _return_inhibitor: ReturnInhibitor
     _snapshot_telemetry: SalienceSMTelemetry
     _goals: list[Goal]
-    is_exploring: bool
     _segmentation_strategy: SegmentationStrategy | None
     _region: AttentionRegion
 
@@ -72,8 +71,6 @@ class SalienceSM(SensorModule):
         )
 
         self._goals = []
-        # TODO: Goes away once experiment code is extracted
-        self.is_exploring = False
         self._segmentation_strategy = segmentation_strategy
         self._region = AttentionRegion.empty()
 
@@ -147,12 +144,11 @@ class SalienceSM(SensorModule):
             location_map=on_object.location_map,
         )
 
-        if not self.is_exploring:
-            self._snapshot_telemetry.raw_observation(
-                observation, self.state.rotation, self.state.position
-            )
-            self._snapshot_telemetry.salience_map(salience_map)
-            self._snapshot_telemetry.goals(self._goals)
+        self._snapshot_telemetry.raw_observation(
+            observation, self.state.rotation, self.state.position
+        )
+        self._snapshot_telemetry.salience_map(salience_map)
+        self._snapshot_telemetry.goals(self._goals)
 
     def _segment_region(
         self,
@@ -191,9 +187,8 @@ class SalienceSM(SensorModule):
             region_locations_on_object, AttentionRegion.MAX_WEIGHT
         )
 
-        if not self.is_exploring:
-            self._snapshot_telemetry.segmentation_map(segmentation_map)
-            self._snapshot_telemetry.attention_region(region)
+        self._snapshot_telemetry.segmentation_map(segmentation_map)
+        self._snapshot_telemetry.attention_region(region)
 
         return region
 
@@ -260,7 +255,6 @@ class SalienceSM(SensorModule):
         self._goals.clear()
         self._return_inhibitor.reset()
         self._snapshot_telemetry.reset()
-        self.is_exploring = False
 
     def propose_goals(self) -> list[Goal]:
         return self._goals

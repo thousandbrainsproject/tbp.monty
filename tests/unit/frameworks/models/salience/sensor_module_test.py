@@ -65,13 +65,6 @@ def mocked_object_observation():
         yield
 
 
-@parameterized_class(
-    ("is_exploring",),
-    [
-        (True,),
-        (False,),
-    ],
-)
 @pytest.mark.usefixtures("mocked_object_observation")
 class SalienceSMTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -98,29 +91,22 @@ class SalienceSMTest(unittest.TestCase):
         )
         self.ctx = RuntimeContext(rng=np.random.RandomState())
 
-    def test_step_snapshots_telemetry_if_not_exploring(self) -> None:
-        self.sensor_module.is_exploring = self.is_exploring  # type: ignore[attr-defined]
+    def test_step_snapshots_telemetry(self) -> None:
         self.sensor_module._salience_strategy.return_value = sentinel.salience_map  # type: ignore[attr-defined]
-        data: dict[str, Any] = MagicMock()
+        data = MagicMock()
 
         self.sensor_module.update_state(self.state)
         self.sensor_module.step(self.ctx, data)
 
-        if not self.is_exploring:  # type: ignore[attr-defined]
-            self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
-                data, self.state.rotation, ArrayEqual(self.state.position)
-            )
-            self.sensor_module._snapshot_telemetry.salience_map.assert_called_once_with(  # type: ignore[attr-defined]
-                sentinel.salience_map
-            )
-            self.sensor_module._snapshot_telemetry.goals.assert_called_once_with(  # type: ignore[attr-defined]
-                self.sensor_module._goals
-            )
-
-        else:
-            self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
-            self.sensor_module._snapshot_telemetry.salience_map.assert_not_called()  # type: ignore[attr-defined]
-            self.sensor_module._snapshot_telemetry.goals.assert_not_called()  # type: ignore[attr-defined]
+        self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
+            data, self.state.rotation, ArrayEqual(self.state.position)
+        )
+        self.sensor_module._snapshot_telemetry.salience_map.assert_called_once_with(  # type: ignore[attr-defined]
+            sentinel.salience_map
+        )
+        self.sensor_module._snapshot_telemetry.goals.assert_called_once_with(  # type: ignore[attr-defined]
+            self.sensor_module._goals
+        )
 
     def test_step_returns_no_percept(self) -> None:
         self.sensor_module.update_state(self.state)
@@ -254,16 +240,46 @@ class SalienceSMPrivateTest(unittest.TestCase):
         )
         self.assertEqual(len(region), 0)
 
-    def test_segment_region_invokes_segmentation_strategy(self) -> None:
+    @patch(
+        "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM.region_locations_on_object"
+    )
+    @patch("tbp.monty.frameworks.models.salience.sensor_module.AttentionRegion")
+    def test_segment_region_invokes_segmentation_strategy(
+        self,
+        attention_region_mock: MagicMock,  # noqa: ARG002
+        region_locations_on_object_mock: MagicMock,
+    ) -> None:
         segmentation_strategy_mock = MagicMock()
+        segmentation_strategy_mock.return_value = sentinel.segmentation_map
+        snapshot_telemetry_mock = MagicMock()
+        # segmentation_map_mock = MagicMock()
+        # snapshot_telemetry_mock.segmentation_map = segmentation_map_mock
         sensor_module = SalienceSM(
             sensor_module_id="test",
             salience_strategy=MagicMock(),
             return_inhibitor=MagicMock(),
-            snapshot_telemetry=MagicMock(),
+            snapshot_telemetry=snapshot_telemetry_mock,
             segmentation_strategy=segmentation_strategy_mock,
         )
+        rgba_mock = MagicMock()
 
+        sensor_module._segment_region(
+            ctx=self.ctx,
+            rgba=rgba_mock,
+            on_object_map=MagicMock(),
+            location_map=MagicMock(),
+        )
+
+        segmentation_strategy_mock.assert_called_once_with(
+            ctx=self.ctx,
+            rgba=rgba_mock,
+        )
+        region_locations_on_object_mock.assert_called_once_with(
+            sentinel.segmentation_map, ANY, ANY
+        )
+        snapshot_telemetry_mock.segmentation_map.assert_called_once_with(
+            sentinel.segmentation_map
+        )
 
 class SalienceSMSegmentationTest(unittest.TestCase):
     def setUp(self) -> None:
