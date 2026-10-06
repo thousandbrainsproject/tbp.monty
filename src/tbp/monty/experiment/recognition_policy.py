@@ -448,9 +448,14 @@ class AnyPolicy(RecognitionPolicy):
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        result = RecognitionResult(is_done=False)
+        result = RecognitionResult()
         for policy in self._policies:
-            result = policy(model, count)
+            rr = policy(model, count)
+            result = RecognitionResult(
+                is_done=result.is_done or rr.is_done,
+                is_time_out=result.is_time_out or rr.is_time_out,
+                start_exploring=result.start_exploring or rr.start_exploring,
+            )
             if result.is_done:
                 break
         if result.is_done:

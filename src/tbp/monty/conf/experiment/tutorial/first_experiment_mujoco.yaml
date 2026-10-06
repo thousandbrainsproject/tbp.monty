@@ -51,9 +51,9 @@ defaults:
 
   # /termination specifies when an episode ends. The match criterion decides
   # which learning modules must recognize the object, and the recognition
-  # policy adds step limits. We stop once any one learning module has matched
-  # or after 6000 steps.
-  - /termination: any1_maxtotalsteps_6000
+  # policy adds step limits. We stop once any one learning module has matched,
+  # or after 20 steps exploring, or 6000 total steps.
+  - /termination: any1_train_steps_3_20_tot6000
 
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we
