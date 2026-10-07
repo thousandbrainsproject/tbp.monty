@@ -93,7 +93,11 @@ class SlicMerge(SegmentationStrategy):
         return self.create_mask(rgb.shape[:2], region_image, accepted_regions)
 
     @staticmethod
-    def create_mask(mask_shape, region_image, accepted_regions):
+    def create_mask(
+        mask_shape: tuple[int, int],
+        region_image: npt.NDArray[np.int64],
+        accepted_regions: set[int],
+    ) -> npt.NDArray[np.uint8]:
         # Create output mask from the set of accepted regions.
         mask = np.zeros(mask_shape, dtype=np.uint8)
         for lbl in accepted_regions:
@@ -101,11 +105,55 @@ class SlicMerge(SegmentationStrategy):
 
         return mask
 
-    def _merge_regions(self, region_image, region_colors, adj):
+    @staticmethod
+    def build_adjacency_graph(
+        region_image: npt.NDArray[np.int64], n_regions: int
+    ) -> list[set[int]]:
+        # Build adjacency graph. adj[region_id] contains the ids of neighboring regions.
+        adj = [set() for _ in range(n_regions)]
+
+        # - Find each region's left and right neighbors.
+        h_neighbors = region_image[:, :-1] != region_image[:, 1:]
+        for i, j in zip(*np.where(h_neighbors)):
+            a, b = region_image[i, j], region_image[i, j + 1]
+            adj[a].add(b)
+            adj[b].add(a)
+
+        # - Find each region's top and bottom neighbors.
+        v_neighbors = region_image[:-1, :] != region_image[1:, :]
+        for i, j in zip(*np.where(v_neighbors)):
+            a, b = region_image[i, j], region_image[i + 1, j]
+            adj[a].add(b)
+            adj[b].add(a)
+        return adj
+
+    @staticmethod
+    def extract_region_colors(
+        rgb: npt.NDArray[np.uint8], region_image: npt.NDArray[np.int64]
+    ) -> tuple[int, npt.NDArray[np.float32]]:
+        # Get a version of the input image that's in the color space we want to
+        # use for merging. By default, this is the LAB color space.
+        merge_image = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+
+        # Compute mean color per superpixel
+        n_regions = region_image.max() + 1
+        region_colors = np.zeros((n_regions, 3), dtype=np.float32)
+        for lbl in range(n_regions):
+            mask = region_image == lbl
+            if mask.any():
+                region_colors[lbl] = merge_image[mask].mean(axis=0)
+        return n_regions, region_colors
+
+    def _merge_regions(
+        self,
+        region_image: npt.NDArray[np.int64],
+        region_colors: npt.NDArray[np.float32],
+        adj: list[set[int]],
+    ) -> set[int]:
         # Breadth-first merge from the point of fixation.
         height, width = region_image.shape[:2]
         central_region = region_image[height // 2, width // 2]
-        accepted_regions: set[int] = {central_region}
+        accepted_regions = {central_region}
         visited = {central_region}
         queue = deque([central_region])
         while queue:
@@ -125,41 +173,6 @@ class SlicMerge(SegmentationStrategy):
                     accepted_regions.add(neighbor)
                     queue.append(neighbor)
         return accepted_regions
-
-    @staticmethod
-    def build_adjacency_graph(region_image, n_regions):
-        # Build adjacency graph. adj[region_id] contains the ids of neighboring regions.
-        adj: list[set[int]] = [set() for _ in range(n_regions)]
-
-        # - Find each region's left and right neighbors.
-        h_neighbors = region_image[:, :-1] != region_image[:, 1:]
-        for i, j in zip(*np.where(h_neighbors)):
-            a, b = region_image[i, j], region_image[i, j + 1]
-            adj[a].add(b)
-            adj[b].add(a)
-
-        # - Find each region's top and bottom neighbors.
-        v_neighbors = region_image[:-1, :] != region_image[1:, :]
-        for i, j in zip(*np.where(v_neighbors)):
-            a, b = region_image[i, j], region_image[i + 1, j]
-            adj[a].add(b)
-            adj[b].add(a)
-        return adj
-
-    @staticmethod
-    def extract_region_colors(rgb: npt.NDArray[np.uint8], region_image):
-        # Get a version of the input image that's in the color space we want to
-        # use for merging. By default, this is the LAB color space.
-        merge_image = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
-
-        # Compute mean color per superpixel
-        n_regions = region_image.max() + 1
-        region_colors = np.zeros((n_regions, 3), dtype=np.float32)
-        for lbl in range(n_regions):
-            mask = region_image == lbl
-            if mask.any():
-                region_colors[lbl] = merge_image[mask].mean(axis=0)
-        return n_regions, region_colors
 
     def _segment_image(self, rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.int64]:
         # Run SLIC to get initial superpixel segmentation. It returns a 2D image
