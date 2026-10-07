@@ -527,6 +527,10 @@ class MontyExperiment:
                     count.exploring_steps += 1
                 else:
                     count.matching_steps += 1
+        if count.step < 3:
+            logger.warning("Episode only ran %d steps!", count.step)
+        else:
+            logger.info("Episode ran %d steps.", count.step)
         return count.step
 
     def _recognition_complete(self, count: RecognitionCounter) -> bool:
