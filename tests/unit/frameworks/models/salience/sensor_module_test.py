@@ -233,7 +233,7 @@ class SalienceSMPrivateTest(unittest.TestCase):
         )
         region = sensor_module._segment_region(
             ctx=MagicMock(),
-            rgba=MagicMock(),
+            rgb=MagicMock(),
             on_object_map=MagicMock(),
             location_map=MagicMock(),
         )
@@ -258,18 +258,18 @@ class SalienceSMPrivateTest(unittest.TestCase):
             snapshot_telemetry=snapshot_telemetry_mock,
             segmentation_strategy=segmentation_strategy_mock,
         )
-        rgba_mock = MagicMock()
+        rgb_mock = MagicMock()
 
         sensor_module._segment_region(
             ctx=self.ctx,
-            rgba=rgba_mock,
+            rgb=rgb_mock,
             on_object_map=MagicMock(),
             location_map=MagicMock(),
         )
 
         segmentation_strategy_mock.assert_called_once_with(
             ctx=self.ctx,
-            rgba=rgba_mock,
+            rgb=rgb_mock,
         )
         region_locations_on_object_mock.assert_called_once_with(
             sentinel.segmentation_map, ANY, ANY
@@ -295,13 +295,13 @@ class SalienceSMPrivateTest(unittest.TestCase):
             return_inhibitor=MagicMock(),
             segmentation_strategy=segmentation_strategy_mock,
         )
-        rgba_mock = MagicMock()
+        rgb_mock = MagicMock()
         on_object_map_mock = MagicMock()
         location_map_mock = MagicMock()
 
         sensor_module._segment_region(
             ctx=self.ctx,
-            rgba=rgba_mock,
+            rgb=rgb_mock,
             on_object_map=on_object_map_mock,
             location_map=location_map_mock,
         )
@@ -334,7 +334,7 @@ class SalienceSMPrivateTest(unittest.TestCase):
 
         segmented_region = sensor_module._segment_region(
             ctx=self.ctx,
-            rgba=MagicMock(),
+            rgb=MagicMock(),
             on_object_map=MagicMock(),
             location_map=MagicMock(),
         )
@@ -390,7 +390,7 @@ class SalienceSMSegmentationTest(unittest.TestCase):
 
         segment_region_mock.assert_called_once_with(
             ctx=ctx,
-            rgba=ANY,
+            rgb=ANY,
             on_object_map=on_object_mock.on_object_map,
             location_map=on_object_mock.location_map,
         )

@@ -20,5 +20,5 @@ class SegmentationStrategy(Protocol):
     def __call__(
         self,
         ctx: RuntimeContext,
-        rgba: npt.NDArray[np.uint8],
+        rgb: npt.NDArray[np.uint8],
     ) -> npt.NDArray[np.uint8]: ...

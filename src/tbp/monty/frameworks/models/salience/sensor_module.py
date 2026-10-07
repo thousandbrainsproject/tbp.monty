@@ -139,7 +139,7 @@ class SalienceSM(SensorModule):
 
         self._region = self._segment_region(
             ctx=ctx,
-            rgba=observation["rgba"],
+            rgb=observation["rgba"][:, :, :3],
             on_object_map=on_object.on_object_map,
             location_map=on_object.location_map,
         )
@@ -153,7 +153,7 @@ class SalienceSM(SensorModule):
     def _segment_region(
         self,
         ctx: RuntimeContext,
-        rgba: npt.NDArray[np.uint8],
+        rgb: npt.NDArray[np.uint8],
         on_object_map: npt.NDArray[np.bool_],
         location_map: npt.NDArray[np.float64],
     ) -> AttentionRegion:
@@ -165,7 +165,7 @@ class SalienceSM(SensorModule):
 
         Args:
             ctx: The runtime context.
-            rgba: The RGB image from the sensor.
+            rgb: The RGB image from the sensor.
             on_object_map: The on-object view of the observation as a boolean mask.
             location_map: The corresponding 3D locations for each pixel in the
                 observation.
@@ -177,7 +177,7 @@ class SalienceSM(SensorModule):
         if self._segmentation_strategy is None:
             return AttentionRegion.empty()
 
-        segmentation_map = self._segmentation_strategy(ctx=ctx, rgba=rgba)
+        segmentation_map = self._segmentation_strategy(ctx=ctx, rgb=rgb)
 
         region_locations_on_object = self.region_locations_on_object(
             segmentation_map, on_object_map, location_map
