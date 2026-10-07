@@ -43,7 +43,7 @@ class SlicMergeCallTest(unittest.TestCase):
         build_adjacency_graph_mock: MagicMock,
         extract_region_colors_mock: MagicMock,
         segment_image_mock: MagicMock,
-    ):
+    ) -> None:
         slic_merge = SlicMerge()
         rgb = MagicMock()
         extract_region_colors_mock.return_value = (MagicMock(), MagicMock())
@@ -86,7 +86,7 @@ class SlicMergeCallTest(unittest.TestCase):
         build_adjacency_graph_mock: MagicMock,
         extract_region_colors_mock: MagicMock,
         segment_image_mock: MagicMock,
-    ):
+    ) -> None:
         slic_merge = SlicMerge()
         rgb = MagicMock()
         extract_region_colors_mock.return_value = (
@@ -106,11 +106,119 @@ class SlicMergeCallTest(unittest.TestCase):
             ANY, sentinel.region_colors, ANY
         )
 
-    def test_builds_adjacency_graph(self):
-        pass
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._segment_image"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.extract_region_colors"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.build_adjacency_graph"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._merge_regions"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.create_mask"
+    )
+    def test_builds_adjacency_graph(
+        self,
+        create_mask_mock: MagicMock,  # noqa: ARG002
+        merge_regions_mock: MagicMock,
+        build_adjacency_graph_mock: MagicMock,
+        extract_region_colors_mock: MagicMock,
+        segment_image_mock: MagicMock,
+    ) -> None:
+        slic_merge = SlicMerge()
+        rgb = MagicMock()
+        extract_region_colors_mock.return_value = (sentinel.n_regions, MagicMock())
 
-    def test_merges_regions(self):
-        pass
+        slic_merge(MagicMock(), rgb)
 
-    def test_creates_mask(self):
-        pass
+        build_adjacency_graph_mock.assert_called_once_with(
+            segment_image_mock.return_value, sentinel.n_regions
+        )
+        merge_regions_mock.assert_called_once_with(
+            ANY, ANY, build_adjacency_graph_mock.return_value
+        )
+
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._segment_image"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.extract_region_colors"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.build_adjacency_graph"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._merge_regions"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.create_mask"
+    )
+    def test_merges_regions(
+        self,
+        create_mask_mock: MagicMock,
+        merge_regions_mock: MagicMock,
+        build_adjacency_graph_mock: MagicMock,
+        extract_region_colors_mock: MagicMock,
+        segment_image_mock: MagicMock,
+    ) -> None:
+        slic_merge = SlicMerge()
+        rgb = MagicMock()
+        extract_region_colors_mock.return_value = (
+            MagicMock(),
+            sentinel.region_colors,
+        )
+
+        slic_merge(MagicMock(), rgb)
+
+        merge_regions_mock.assert_called_once_with(
+            segment_image_mock.return_value,
+            sentinel.region_colors,
+            build_adjacency_graph_mock.return_value,
+        )
+        create_mask_mock.assert_called_once_with(
+            ANY, ANY, merge_regions_mock.return_value
+        )
+
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._segment_image"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.extract_region_colors"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.build_adjacency_graph"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._merge_regions"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.create_mask"
+    )
+    def test_creates_mask(
+        self,
+        create_mask_mock: MagicMock,
+        merge_regions_mock: MagicMock,
+        build_adjacency_graph_mock: MagicMock,  # noqa: ARG002
+        extract_region_colors_mock: MagicMock,
+        segment_image_mock: MagicMock,
+    ) -> None:
+        slic_merge = SlicMerge()
+        rgb = MagicMock()
+        rgb.shape.__getitem__.return_value = sentinel.rgb_shape
+        extract_region_colors_mock.return_value = (
+            MagicMock(),
+            MagicMock(),
+        )
+
+        mask = slic_merge(MagicMock(), rgb)
+
+        create_mask_mock.assert_called_once_with(
+            sentinel.rgb_shape,
+            segment_image_mock.return_value,
+            merge_regions_mock.return_value,
+        )
+        self.assertIs(mask, create_mask_mock.return_value)

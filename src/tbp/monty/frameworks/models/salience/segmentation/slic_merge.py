@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Any, cast
+from typing import cast
 
 import cv2
 import numpy as np
@@ -90,7 +90,9 @@ class SlicMerge(SegmentationStrategy):
         n_regions, region_colors = self.extract_region_colors(rgb, region_image)
         adj = self.build_adjacency_graph(region_image, n_regions)
         accepted_regions = self._merge_regions(region_image, region_colors, adj)
-        return self.create_mask(rgb.shape[:2], region_image, accepted_regions)
+        return self.create_mask(
+            cast("tuple[int, int]", rgb.shape[:2]), region_image, accepted_regions
+        )
 
     @staticmethod
     def create_mask(
@@ -110,7 +112,7 @@ class SlicMerge(SegmentationStrategy):
         region_image: npt.NDArray[np.int64], n_regions: int
     ) -> list[set[int]]:
         # Build adjacency graph. adj[region_id] contains the ids of neighboring regions.
-        adj = [set() for _ in range(n_regions)]
+        adj: list[set[int]] = [set() for _ in range(n_regions)]
 
         # - Find each region's left and right neighbors.
         h_neighbors = region_image[:, :-1] != region_image[:, 1:]
