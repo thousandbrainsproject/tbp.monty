@@ -519,3 +519,54 @@ class AnyPolicyTest(unittest.TestCase):
         for not_called in policies[num_called:]:
             not_called.assert_not_called()
         model.assert_not_called()
+
+    def test_recognition_result_aggregation(self) -> None:
+        default_result = MagicMock(RecognitionPolicy, return_value=RecognitionResult())
+        is_done_result = MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(is_done=True)
+        )
+        is_time_out_result = MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(is_time_out=True)
+        )
+        start_exploring_result = MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(start_exploring=True)
+        )
+        is_done_time_out_result = MagicMock(
+            RecognitionPolicy,
+            return_value=RecognitionResult(is_done=True, is_time_out=True),
+        )
+
+        model = MagicMock()
+        count = RecognitionCounter()
+
+        policy = AnyPolicy([default_result])
+        result = policy(model, count)
+        self.assertFalse(result.is_done)
+        self.assertFalse(result.is_time_out)
+        self.assertFalse(result.start_exploring)
+
+        policy = AnyPolicy(
+            [
+                start_exploring_result,
+                is_done_result,
+                is_time_out_result,
+                default_result,
+            ]
+        )
+        result = policy(model, count)
+        self.assertTrue(result.is_done)
+        self.assertFalse(result.is_time_out)
+        self.assertTrue(result.start_exploring)
+
+        policy = AnyPolicy(
+            [
+                default_result,
+                is_time_out_result,
+                start_exploring_result,
+                is_done_time_out_result,
+            ]
+        )
+        result = policy(model, count)
+        self.assertTrue(result.is_done)
+        self.assertTrue(result.is_time_out)
+        self.assertTrue(result.start_exploring)
