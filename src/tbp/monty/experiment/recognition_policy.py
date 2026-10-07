@@ -459,5 +459,5 @@ class AnyPolicy(RecognitionPolicy):
             if result.is_done:
                 break
         if result.is_done:
-            logger.info("AnyPolicy is done, with result.is_done")
+            logger.info("AnyPolicy is done, with %s", result)
         return result
