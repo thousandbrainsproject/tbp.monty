@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Any
+from typing import Any, cast
 
 import cv2
 import numpy as np
@@ -161,22 +161,25 @@ class SlicMerge(SegmentationStrategy):
                 region_colors[lbl] = merge_image[mask].mean(axis=0)
         return n_regions, region_colors
 
-    def _segment_image(self, rgb: npt.NDArray[np.uint8]) -> npt.NDArray[Any]:
+    def _segment_image(self, rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.int64]:
         # Run SLIC to get initial superpixel segmentation. It returns a 2D image
         # where each pixel holds the (integer-valued) ID of the region it was
         # assigned to.
-        return slic(
-            rgb,
-            n_segments=self._n_seeds,
-            compactness=self._compactness,
-            max_num_iter=self._max_iter,
-            sigma=self._sigma,
-            spacing=None,
-            convert2lab=True,
-            enforce_connectivity=self._enforce_connectivity,
-            min_size_factor=self._min_size_factor,
-            max_size_factor=self._max_size_factor,
-            start_label=0,
-            mask=None,
-            channel_axis=-1,
+        return cast(
+            "npt.NDArray[np.int64]",
+            slic(
+                rgb,
+                n_segments=self._n_seeds,
+                compactness=self._compactness,
+                max_num_iter=self._max_iter,
+                sigma=self._sigma,
+                spacing=None,
+                convert2lab=True,
+                enforce_connectivity=self._enforce_connectivity,
+                min_size_factor=self._min_size_factor,
+                max_size_factor=self._max_size_factor,
+                start_label=0,
+                mask=None,
+                channel_axis=-1,
+            ),
         )
