@@ -79,8 +79,8 @@ class SlicMerge(SegmentationStrategy):
         rgb: npt.NDArray[np.uint8],
     ) -> npt.NDArray[np.uint8]:
         region_image = self._segment_image(rgb)
-        n_regions, region_colors = self.extract_region_colors(rgb, region_image)
-        adj = self.build_adjacency_graph(region_image, n_regions)
+        region_colors = self.extract_region_colors(rgb, region_image)
+        adj = self.build_adjacency_graph(region_image, len(region_colors))
         accepted_regions = self._merge_regions(region_image, region_colors, adj)
         return self.create_mask(
             cast("tuple[int, int]", rgb.shape[:2]), region_image, accepted_regions
@@ -124,7 +124,7 @@ class SlicMerge(SegmentationStrategy):
     @staticmethod
     def extract_region_colors(
         rgb: npt.NDArray[np.uint8], region_image: npt.NDArray[np.int64]
-    ) -> tuple[int, npt.NDArray[np.float32]]:
+    ) -> npt.NDArray[np.float32]:
         # Get a version of the input image that's in the color space we want to
         # use for merging. By default, this is the LAB color space.
         cv2_lab_max_value = 255
@@ -137,7 +137,7 @@ class SlicMerge(SegmentationStrategy):
     @staticmethod
     def compute_superpixel_mean_colors(
         region_image: npt.NDArray[np.int64], merge_image: npt.NDArray[np.float32]
-    ) -> tuple[int, npt.NDArray[np.float32]]:
+    ) -> npt.NDArray[np.float32]:
         # Compute mean color per superpixel
         n_regions = region_image.max() + 1
         region_colors = np.zeros((n_regions, 3), dtype=np.float32)
@@ -145,7 +145,7 @@ class SlicMerge(SegmentationStrategy):
             mask = region_image == lbl
             if mask.any():
                 region_colors[lbl] = merge_image[mask].mean(axis=0)
-        return n_regions, region_colors
+        return region_colors
 
     def _merge_regions(
         self,

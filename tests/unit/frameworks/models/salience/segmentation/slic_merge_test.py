@@ -49,7 +49,6 @@ class SlicMergeCallTest(unittest.TestCase):
     ) -> None:
         slic_merge = SlicMerge()
         rgb = MagicMock()
-        extract_region_colors_mock.return_value = (MagicMock(), MagicMock())
 
         slic_merge(MagicMock(), rgb)
 
@@ -92,22 +91,17 @@ class SlicMergeCallTest(unittest.TestCase):
     ) -> None:
         slic_merge = SlicMerge()
         rgb = MagicMock()
-        extract_region_colors_mock.return_value = (
-            sentinel.n_regions,
-            sentinel.region_colors,
-        )
+        n_regions_sentinel = 5
+        region_colors_sentinel = np.zeros((n_regions_sentinel, 3))
+        extract_region_colors_mock.return_value = region_colors_sentinel
 
         slic_merge(MagicMock(), rgb)
 
         extract_region_colors_mock.assert_called_once_with(
             rgb, segment_image_mock.return_value
         )
-        build_adjacency_graph_mock.assert_called_once_with(
-            ANY, sentinel.n_regions
-        )
-        merge_regions_mock.assert_called_once_with(
-            ANY, sentinel.region_colors, ANY
-        )
+        build_adjacency_graph_mock.assert_called_once_with(ANY, n_regions_sentinel)
+        merge_regions_mock.assert_called_once_with(ANY, region_colors_sentinel, ANY)
 
     @patch(
         "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._segment_image"
@@ -134,12 +128,13 @@ class SlicMergeCallTest(unittest.TestCase):
     ) -> None:
         slic_merge = SlicMerge()
         rgb = MagicMock()
-        extract_region_colors_mock.return_value = (sentinel.n_regions, MagicMock())
+        n_regions_sentinel = 5
+        extract_region_colors_mock.return_value = np.zeros((n_regions_sentinel, 3))
 
         slic_merge(MagicMock(), rgb)
 
         build_adjacency_graph_mock.assert_called_once_with(
-            segment_image_mock.return_value, sentinel.n_regions
+            segment_image_mock.return_value, n_regions_sentinel
         )
         merge_regions_mock.assert_called_once_with(
             ANY, ANY, build_adjacency_graph_mock.return_value
@@ -170,16 +165,14 @@ class SlicMergeCallTest(unittest.TestCase):
     ) -> None:
         slic_merge = SlicMerge()
         rgb = MagicMock()
-        extract_region_colors_mock.return_value = (
-            MagicMock(),
-            sentinel.region_colors,
-        )
+        region_colors_sentinel = np.zeros((5, 3))
+        extract_region_colors_mock.return_value = region_colors_sentinel
 
         slic_merge(MagicMock(), rgb)
 
         merge_regions_mock.assert_called_once_with(
             segment_image_mock.return_value,
-            sentinel.region_colors,
+            region_colors_sentinel,
             build_adjacency_graph_mock.return_value,
         )
         create_mask_mock.assert_called_once_with(
@@ -274,5 +267,23 @@ class SlicMergeExtractRegionColorsTest(unittest.TestCase):
             ANY, ArrayEqual(merge_image)
         )
 
-    def test_call_compute_superpixel_mean_colors(self) -> None:
-        pass
+    @given(cvt_color_lab=uint8_array(shape=(3,)))
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.compute_superpixel_mean_colors"
+    )
+    @patch("tbp.monty.frameworks.models.salience.segmentation.slic_merge.cv2.cvtColor")
+    def test_computes_superpixel_mean_colors(
+        self,
+        cvt_color_mock: MagicMock,
+        compute_superpixel_mean_colors_mock: MagicMock,
+        cvt_color_lab: npt.NDArray[np.uint8],
+    ) -> None:
+        cvt_color_mock.return_value = cvt_color_lab
+        merge_image = cvt_color_lab.astype(np.float32) / 255.0
+
+        result = SlicMerge.extract_region_colors(MagicMock(), sentinel.region_image)
+
+        compute_superpixel_mean_colors_mock.assert_called_once_with(
+            sentinel.region_image, ArrayEqual(merge_image)
+        )
+        self.assertIs(result, compute_superpixel_mean_colors_mock.return_value)
