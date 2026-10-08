@@ -132,6 +132,12 @@ class SlicMerge(SegmentationStrategy):
             cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32) / cv2_lab_max_value
         )
 
+        return SlicMerge.compute_superpixel_mean_colors(region_image, merge_image)
+
+    @staticmethod
+    def compute_superpixel_mean_colors(
+        region_image: npt.NDArray[np.int64], merge_image: npt.NDArray[np.float32]
+    ) -> tuple[int, npt.NDArray[np.float32]]:
         # Compute mean color per superpixel
         n_regions = region_image.max() + 1
         region_colors = np.zeros((n_regions, 3), dtype=np.float32)

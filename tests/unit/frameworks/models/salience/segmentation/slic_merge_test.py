@@ -12,12 +12,15 @@ import unittest
 from dataclasses import dataclass
 from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
 
+import cv2
 import numpy as np
 import numpy.typing as npt
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.salience.segmentation.slic_merge import SlicMerge
+from tests.strategies.arrays import uint8_array
+from tests.unit.frameworks.models.salience.sensor_module_test import ArrayEqual
 
 
 class SlicMergeCallTest(unittest.TestCase):
@@ -248,3 +251,28 @@ class SlicMergeSegmentImageTest(unittest.TestCase):
             channel_axis=-1,
         )
         self.assertIs(result, slic_mock.return_value)
+
+class SlicMergeExtractRegionColorsTest(unittest.TestCase):
+    @given(cvt_color_lab=uint8_array(shape=(3,)))
+    @patch(
+        "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge.compute_superpixel_mean_colors"
+    )
+    @patch("tbp.monty.frameworks.models.salience.segmentation.slic_merge.cv2.cvtColor")
+    def test_converts_to_normalized_lab_image(
+        self,
+        cvt_color_mock: MagicMock,
+        compute_superpixel_mean_colors_mock: MagicMock,
+        cvt_color_lab: npt.NDArray[np.uint8],
+    ) -> None:
+        cvt_color_mock.return_value = cvt_color_lab
+        merge_image = cvt_color_lab.astype(np.float32) / 255.0
+
+        SlicMerge.extract_region_colors(sentinel.rgb, MagicMock())
+
+        cvt_color_mock.assert_called_once_with(sentinel.rgb, cv2.COLOR_RGB2LAB)
+        compute_superpixel_mean_colors_mock.assert_called_once_with(
+            ANY, ArrayEqual(merge_image)
+        )
+
+    def test_call_compute_superpixel_mean_colors(self) -> None:
+        pass
