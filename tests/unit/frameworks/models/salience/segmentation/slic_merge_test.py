@@ -222,3 +222,29 @@ class SlicMergeCallTest(unittest.TestCase):
             merge_regions_mock.return_value,
         )
         self.assertIs(mask, create_mask_mock.return_value)
+
+class SlicMergeSegmentImageTest(unittest.TestCase):
+    @patch("tbp.monty.frameworks.models.salience.segmentation.slic_merge.slic")
+    def test_invokes_slic_with_configured_parameters(
+        self, slic_mock: MagicMock
+    ) -> None:
+        slic_merge = SlicMerge()
+
+        result = slic_merge._segment_image(sentinel.rgb)
+
+        slic_mock.assert_called_once_with(
+            sentinel.rgb,
+            n_segments=slic_merge._n_seeds,
+            compactness=slic_merge._compactness,
+            max_num_iter=slic_merge._max_iter,
+            sigma=slic_merge._sigma,
+            spacing=None,
+            convert2lab=True,
+            enforce_connectivity=True,
+            min_size_factor=slic_merge._min_size_factor,
+            max_size_factor=slic_merge._max_size_factor,
+            start_label=0,
+            mask=None,
+            channel_axis=-1,
+        )
+        self.assertIs(result, slic_mock.return_value)
