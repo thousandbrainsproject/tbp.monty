@@ -31,21 +31,11 @@ from tbp.monty.frameworks.models.salience.sensor_module import (
     SalienceSM,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tests.equal import ArrayEqual
 from tests.strategies.arrays import (
     bool_array,
     uint8_array,
 )
-
-
-class ArrayEqual:
-    def __init__(self, arr: npt.ArrayLike):
-        self.arr = arr
-
-    def __eq__(self, other: npt.ArrayLike):
-        return np.array_equal(self.arr, other)
-
-    def __hash__(self):
-        return hash(np.asarray(self.arr).tobytes())
 
 
 @pytest.fixture

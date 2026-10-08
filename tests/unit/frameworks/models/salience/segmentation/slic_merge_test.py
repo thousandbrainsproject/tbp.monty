@@ -19,8 +19,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.salience.segmentation.slic_merge import SlicMerge
+from tests.equal import ArrayEqual
 from tests.strategies.arrays import uint8_array
-from tests.unit.frameworks.models.salience.sensor_module_test import ArrayEqual
 
 
 class SlicMergeCallTest(unittest.TestCase):
