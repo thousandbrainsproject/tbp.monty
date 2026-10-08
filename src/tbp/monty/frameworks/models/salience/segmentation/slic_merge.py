@@ -40,10 +40,9 @@ class SlicMerge(SegmentationStrategy):
         compactness: float = 10.0,
         max_iter: int = 10,
         sigma: float = 1.0,
-        enforce_connectivity: bool = True,
         min_size_factor: float = 0.5,
         max_size_factor: float = 3.0,
-        merge_threshold: float = 10,
+        merge_threshold: float = 0.1,
     ) -> None:
         """Initialize the SLIC superpixel segmentation with region merging strategy.
 
@@ -56,26 +55,19 @@ class SlicMerge(SegmentationStrategy):
                 superpixels.
             max_iter: Maximum number of iterations for SLIC.
             sigma: Width of Gaussian smoothing kernel for pre-processing.
-            enforce_connectivity: Whether to enforce connectivity of superpixels.
             min_size_factor: Minimum superpixel size, as a fraction of the
                 nominal size `image_pixels / n_seeds`. Smaller connected
                 fragments are merged into an adjacent superpixel.
             max_size_factor: Maximum superpixel size, as a fraction of the
                 nominal size. Larger connected regions are split.
-            merge_threshold: Color distance threshold for merging superpixels,
-                where "color distance" refers to the CIE76. Standard values:
-                    < 1: not perceptible
-                    1-2: perceptible through close observation
-                    2-10: perceptible at a glance
-                    10-50: colors are more similar than opposite
-                    > 50: colors are more opposite than similar
+            merge_threshold: Color distance threshold for merging superpixels. Pertains
+                to the LAB 0-1 space.
         """
         # slic parameters
         self._n_seeds = n_seeds
         self._compactness = compactness
         self._max_iter = max_iter
         self._sigma = sigma
-        self._enforce_connectivity = enforce_connectivity
         self._min_size_factor = min_size_factor
         self._max_size_factor = max_size_factor
         # post-slic merging parameters
@@ -135,7 +127,10 @@ class SlicMerge(SegmentationStrategy):
     ) -> tuple[int, npt.NDArray[np.float32]]:
         # Get a version of the input image that's in the color space we want to
         # use for merging. By default, this is the LAB color space.
-        merge_image = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+        cv2_lab_max_value = 255
+        merge_image = (
+            cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32) / cv2_lab_max_value
+        )
 
         # Compute mean color per superpixel
         n_regions = region_image.max() + 1
@@ -190,7 +185,7 @@ class SlicMerge(SegmentationStrategy):
                 sigma=self._sigma,
                 spacing=None,
                 convert2lab=True,
-                enforce_connectivity=self._enforce_connectivity,
+                enforce_connectivity=True,
                 min_size_factor=self._min_size_factor,
                 max_size_factor=self._max_size_factor,
                 start_label=0,
