@@ -21,6 +21,8 @@ sensor_module_0:
       pose_fully_defined: 0.01 # flip bool in 1% of cases
     location: 0.002 # add gaussian noise with 0.002 std
 sensor_module_1:
-  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
   sensor_module_id: view_finder
-  save_raw_obs: true
+  sensor_id: view_finder
+  transforms:
+    - _target_: tbp.monty.experiment.sensor_modules.telemetry.Snapshot

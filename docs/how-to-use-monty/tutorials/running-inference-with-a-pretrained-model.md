@@ -114,9 +114,10 @@ sensor_module_0:
       pose_fully_defined: 0.01 # flip bool in 1% of cases
     location: 0.002 # add gaussian noise with 0.002 std (0.2cm)
 sensor_module_1:
-  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
   sensor_module_id: view_finder
-  save_raw_obs: false
+  sensor_id: view_finder
+  transforms: []
 ```
 
 There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using `delta_threshold` parameters to only send an observation to the learning module if the features have changed significantly. Note that `CameraSM` can be used as either a surface or distant agent, for which `is_surface_sm` should be appropriately set.

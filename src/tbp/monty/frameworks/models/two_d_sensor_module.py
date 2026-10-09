@@ -19,7 +19,6 @@ from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
-    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -50,6 +49,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tbp.monty.memento import Memento
+from tbp.monty.observations import SensorObservation
 
 logger = logging.getLogger(__name__)
 

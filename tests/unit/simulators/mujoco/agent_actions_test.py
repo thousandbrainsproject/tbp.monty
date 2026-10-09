@@ -50,9 +50,9 @@ from tbp.monty.simulators.mujoco.simulator import (
     DEFAULT_RESOLUTION,
     ActuateMethodMissing,
 )
+from tests.strategies.geometry import position
 from tests.unit.simulators.mujoco.strategies import (
     constrained_angle,
-    position,
     unit_quaternion,
     x_rotation_quaterion,
 )

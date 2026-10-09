@@ -550,8 +550,12 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
             buffer_data[f"LM_{i}"] = lm_dict  # NOTE: probably same for all LMs
 
         for i, sm in enumerate(model.sensor_modules):
-            if len(sm.state_dict()["raw_observations"]) > 0:
-                buffer_data[f"SM_{i}"] = sm.state_dict()
+            state_dict = sm.state_dict()
+            if (
+                "raw_observations" in state_dict
+                and len(state_dict["raw_observations"]) > 0
+            ):
+                buffer_data[f"SM_{i}"] = state_dict
 
         # TODO ensure will work with multiple, independent sensor agents
         buffer_data["motor_system"] = {}
@@ -632,8 +636,12 @@ class SelectiveEvidenceLogger(BasicGraphMatchingLogger):
             buffer_data[f"LM_{i}"] = lm_dict
 
         for i, sm in enumerate(model.sensor_modules):
-            if len(sm.state_dict()["raw_observations"]) > 0:
+            state_dict = sm.state_dict()
+            if (
+                "raw_observations" in state_dict
+                and len(state_dict["raw_observations"]) > 0
+            ):
                 # Only store first observation
-                buffer_data[f"SM_{i}"] = sm.state_dict()["raw_observations"][0]
+                buffer_data[f"SM_{i}"] = state_dict["raw_observations"][0]
 
         self.data["DETAILED"][episodes] = buffer_data
