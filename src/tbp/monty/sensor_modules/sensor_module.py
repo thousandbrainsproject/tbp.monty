@@ -134,7 +134,7 @@ class SensorModule(RuntimeSensorModule, Snapshotable):
     def sensor_module_id(self) -> str:
         return self._sensor_module_id
 
-    def load_state_dict(self, state: Memento) -> None:
+    def load_state_dict(self, memento: Memento) -> None:
         pass
 
     def propose_goals(self) -> Collection[Goal]:
