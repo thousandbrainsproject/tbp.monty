@@ -32,12 +32,12 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
-    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.observations import SensorObservation
 
 if TYPE_CHECKING:
     from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator

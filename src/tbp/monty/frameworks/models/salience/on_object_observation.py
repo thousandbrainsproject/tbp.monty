@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
+from tbp.monty.observations import SensorObservation
 
 
 @dataclass
