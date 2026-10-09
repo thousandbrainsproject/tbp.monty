@@ -19,6 +19,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.salience.segmentation.slic_merge import SlicMerge
+from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.matchers import ArrayEqual
 from tests.strategies.arrays import uint8_array
 
@@ -288,10 +289,6 @@ class SlicMergeExtractRegionColorsTest(unittest.TestCase):
         )
         self.assertIs(result, compute_superpixel_mean_colors_mock.return_value)
 
-class SlicMergeComputeSuperpixelMeanColorsTest(unittest.TestCase):
-    def test_fails(self) -> None:
-        self.assertFalse("todo")
-
 
 @dataclass
 class BuildAdjacencyGraphTestInputs:
@@ -508,7 +505,9 @@ class SlicMergeMergeRegionsTest(unittest.TestCase):
             row_count=st.integers(min_value=1, max_value=5),
             column_count=st.integers(min_value=1, max_value=5),
             max_tile_size=st.integers(min_value=1, max_value=5),
-            threshold=st.floats(min_value=1e-6, max_value=1.1 * np.sqrt(3)),
+            threshold=st.floats(
+                min_value=DEFAULT_TOLERANCE, max_value=1.1 * np.sqrt(3)
+            ),
         )
     )
     def test_stuff(self, inputs: MergeRegionsInput) -> None:
@@ -521,3 +520,32 @@ class SlicMergeMergeRegionsTest(unittest.TestCase):
         )
 
         self.assertEqual(result, inputs.accepted_regions)
+
+
+class SlicMergeComputeSuperpixelMeanColorsTest(unittest.TestCase):
+    @given(
+        inputs=generate_merge_regions_input(
+            row_count=st.integers(min_value=1, max_value=5),
+            column_count=st.integers(min_value=1, max_value=5),
+            max_tile_size=st.integers(min_value=1, max_value=5),
+            threshold=st.floats(
+                min_value=DEFAULT_TOLERANCE, max_value=1.1 * np.sqrt(3)
+            ),
+        )
+    )
+    def test_computes_superpixel_mean_colors(self, inputs: MergeRegionsInput) -> None:
+        region_image = inputs.region_image
+        region_colors = inputs.region_colors
+        rows, cols = region_image.shape
+        merge_image = np.zeros((rows, cols, 3), dtype=np.float32)
+        for i, c in enumerate(region_colors):
+            merge_image[region_image == i] = c
+
+        result = SlicMerge.compute_superpixel_mean_colors(region_image, merge_image)
+
+        np.testing.assert_allclose(result, region_colors, atol=DEFAULT_TOLERANCE)
+
+
+class SlicMergeCreateMaskTest(unittest.TestCase):
+    def test_creates_mask(self):
+        self.assertTrue(False)
