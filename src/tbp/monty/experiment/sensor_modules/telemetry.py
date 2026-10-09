@@ -20,6 +20,23 @@ from tbp.monty.sensor_modules.sensor_module import Payload, TransformContext
 
 
 class Snapshot(ExperimentTransform):
+    """Appends observation and sensor pose to the payload telemetry.
+
+    Reads:
+    - `ctx.sensor_state.rotation`
+    - `ctx.sensor_state.position`
+    - `payload.observation`
+
+    Writes:
+    - `payload.telemetry["raw_observations"]`
+    - `payload.telemetry["sm_properties"]`
+
+    Appends the current observation to ``payload.telemetry["raw_observations"]``.
+    Appends the current sensor pose to ``payload.telemetry["sm_properties"]``. After a
+    reset is triggered, both ``payload.telemetry["raw_observations"]`` and
+    ``payload.telemetry["sm_properties"]`` are cleared before appending new data.
+    """
+
     _reset: bool = False
 
     def __call__(self: Self, ctx: TransformContext, payload: Payload) -> Payload:
