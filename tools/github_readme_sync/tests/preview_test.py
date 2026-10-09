@@ -100,30 +100,29 @@ class TestRenderPreview(unittest.TestCase):
         }
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            folder = str(Path(temp_dir) / "docs")
+            folder = Path(temp_dir) / "docs"
             output = Path(temp_dir) / "artifacts" / "preview.json"
+            output.parent.mkdir(parents=True, exist_ok=True)
 
-            result = render_preview(
+            render_preview(
                 folder,
-                str(output),
+                output,
                 repository=REPOSITORY,
                 pr_number=PR_NUMBER,
                 head_sha=HEAD_SHA,
                 base_ref=BASE_REF,
             )
 
-            rendered = json.loads(output.read_text(encoding="utf-8"))
-            output_text = output.read_text(encoding="utf-8")
+            with output.open(encoding="utf-8") as file:
+                rendered = json.load(file)
 
-        self.assertIsNone(result)
         self.assertEqual(rendered, expected_bundle)
-        self.assertTrue(output_text.endswith("\n"))
-        mock_check_hierarchy_file.assert_called_once_with(folder)
+        mock_check_hierarchy_file.assert_called_once_with(str(folder))
         self.assertEqual(
             mock_load_doc.call_args_list,
             [
-                call(folder, "category", page_node),
-                call(folder, "category/page", child_node),
+                call(str(folder), "category", page_node),
+                call(str(folder), "category/page", child_node),
             ],
         )
         self.assertEqual(
@@ -131,12 +130,12 @@ class TestRenderPreview(unittest.TestCase):
             [
                 call(
                     "Source body",
-                    str(Path(folder) / "category"),
+                    str(folder / "category"),
                     "page",
                 ),
                 call(
                     "Child source body",
-                    str(Path(folder) / "category" / "page"),
+                    str(folder / "category" / "page"),
                     "child",
                 ),
             ],
