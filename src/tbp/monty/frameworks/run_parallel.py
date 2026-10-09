@@ -690,6 +690,7 @@ def run_episodes_parallel(
             project="Monty",
             config=experiments[0],
             id=wandb.util.generate_id(),
+            tags=experiments[0]["config"].get("wandb_tags"),
         )
         print(f"Wandb setup took {time.time() - start_time} seconds")
     start_time = time.time()
