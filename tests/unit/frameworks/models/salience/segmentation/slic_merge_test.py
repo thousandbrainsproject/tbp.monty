@@ -15,7 +15,7 @@ from unittest.mock import ANY, MagicMock, patch, sentinel
 import cv2
 import numpy as np
 import numpy.typing as npt
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.salience.segmentation.slic_merge import SlicMerge
@@ -380,9 +380,8 @@ def generate_colors_within_relative_threshold(
     draw: st.DrawFn, origin: npt.NDArray[np.float32], threshold: float, steps: int
 ) -> list[npt.NDArray[np.float32]]:
     colors: list[npt.NDArray[np.float32]] = [origin]
-    color = origin.copy()
     for _ in range(steps):
-        color = draw(color_within_threshold(color, threshold))
+        color = draw(color_within_threshold(origin, threshold))
         colors.append(color)
     return colors
 
@@ -409,20 +408,33 @@ def generate_region_colors(
         i: disjoint_colors[i] for i in range(len(adj))
     }
     current_region_id = center_region_id
-    region_colors[current_region_id] = accepted_colors.pop(0)
+    region_radial_distance_from_origin = 0
+    region_colors[current_region_id] = accepted_colors[
+        region_radial_distance_from_origin
+    ]
     accepted_regions = {current_region_id}
     # technically, should be region_count - 2, but this will never happend due to
     # if not neighbors check
     accepted_region_count = draw(st.integers(min_value=0, max_value=region_count - 1))
+    visited_neighbors: set[int] = set()
     for _ in range(accepted_region_count):
         neighbors = adj[current_region_id] - accepted_regions
         if not neighbors:
-            break
+            if not visited_neighbors:
+                break
+            visited_neighbors_list = list(visited_neighbors)
+            next_current_region_id = draw(st.sampled_from(visited_neighbors_list))
+            current_region_id = next_current_region_id
+            region_radial_distance_from_origin += 1
+            visited_neighbors.clear()
+            continue
         neighbor_list = list(neighbors)
         next_region_id = draw(st.sampled_from(neighbor_list))
-        region_colors[next_region_id] = accepted_colors.pop(0)
+        region_colors[next_region_id] = accepted_colors[
+            region_radial_distance_from_origin
+        ]
         accepted_regions.add(next_region_id)
-        current_region_id = next_region_id
+        visited_neighbors.add(next_region_id)
 
     region_colors_array = np.zeros((len(adj), 3), dtype=np.float32)
     for i, color in region_colors.items():
