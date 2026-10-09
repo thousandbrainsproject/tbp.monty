@@ -10,8 +10,7 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
-from turtle import width
-from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
+from unittest.mock import ANY, MagicMock, patch, sentinel
 
 import cv2
 import numpy as np
@@ -370,7 +369,7 @@ def color_within_threshold(
     draw: st.DrawFn, origin: npt.NDArray[np.float32], threshold: float
 ) -> npt.NDArray[np.float32]:
     axis = draw(st.integers(min_value=0, max_value=2))
-    scale = draw(st.floats(min_value=-1.0, max_value=1.0))
+    scale = draw(st.floats(min_value=-0.9, max_value=0.9))
     out = origin.copy()
     out[axis] += threshold * scale
     return out
@@ -390,8 +389,8 @@ def generate_colors_within_relative_threshold(
 
 @st.composite
 def generate_region_colors(
-    draw: st.DrawFn, adj: list[set[int]], threshold: float
-) -> tuple[set[int], dict[int, npt.NDArray[np.float32]]]:
+    draw: st.DrawFn, adj: list[set[int]], threshold: float, center_region_id: int
+) -> tuple[set[int], npt.NDArray[np.float32]]:
     region_count = len(adj)
     origin_color = np.zeros(3, dtype=np.float32)
 
@@ -409,7 +408,6 @@ def generate_region_colors(
     region_colors: dict[int, npt.NDArray[np.float32]] = {
         i: disjoint_colors[i] for i in range(len(adj))
     }
-    center_region_id = len(adj) // 2
     current_region_id = center_region_id
     region_colors[current_region_id] = accepted_colors.pop(0)
     accepted_regions = {current_region_id}
@@ -426,15 +424,20 @@ def generate_region_colors(
         accepted_regions.add(next_region_id)
         current_region_id = next_region_id
 
-    return accepted_regions, region_colors
+    region_colors_array = np.zeros((len(adj), 3), dtype=np.float32)
+    for i, color in region_colors.items():
+        region_colors_array[i] = color
+
+    return accepted_regions, region_colors_array
 
 
 @dataclass
 class MergeRegionsInput:
-    region_colors: dict[int, npt.NDArray[np.float32]]
+    region_colors: npt.NDArray[np.float32]
     region_image: npt.NDArray[np.int64]
     adjacency: list[set[int]]
     accepted_regions: set[int]
+    merge_threshold: float
 
 
 @st.composite
@@ -445,22 +448,34 @@ def generate_merge_regions_input(
     max_tile_size: st.SearchStrategy[int],
     threshold: st.SearchStrategy[float],
 ) -> MergeRegionsInput:
-    n_rows = draw(row_count)
-    n_cols = draw(column_count)
-    n_regions = n_rows * n_cols
-    adjacency = adjacency_from_tile_spec(n_rows, n_cols, n_regions)
+    build_adjacency_inputs = draw(
+        build_adjacency_graph_test_inputs(
+            row_count=row_count,
+            column_count=column_count,
+            max_tile_size=max_tile_size,
+        )
+    )
+    region_image = build_adjacency_inputs.region_image
+    center_region_id = region_image[
+        region_image.shape[0] // 2, region_image.shape[1] // 2
+    ]
+    adjacency = build_adjacency_inputs.adjacency
     threshold_val = draw(threshold)
     accepted_regions, region_colors = draw(
-        generate_region_colors(adj=adjacency, threshold=threshold_val)
+        generate_region_colors(
+            adj=adjacency, threshold=threshold_val, center_region_id=center_region_id
+        )
     )
-
-    # TODO: Generate region_image or reconsider what we need for the test
 
     return MergeRegionsInput(
         region_colors=region_colors,
+        region_image=region_image,
         adjacency=adjacency,
         accepted_regions=accepted_regions,
+        merge_threshold=threshold_val,
     )
+
+
 class SlicMergeBuildAdjencyGraphTest(unittest.TestCase):
     @given(
         inputs=build_adjacency_graph_test_inputs(
@@ -476,6 +491,21 @@ class SlicMergeBuildAdjencyGraphTest(unittest.TestCase):
         self.assertEqual(result, inputs.adjacency)
 
 class SlicMergeMergeRegionsTest(unittest.TestCase):
-    @given(region_colors=generate_region_colors())
-    def test_stuff(self, region_colors: dict[int, npt.NDArray[np.float32]]) -> None:
-        pass
+    @given(
+        inputs=generate_merge_regions_input(
+            row_count=st.integers(min_value=1, max_value=5),
+            column_count=st.integers(min_value=1, max_value=5),
+            max_tile_size=st.integers(min_value=1, max_value=5),
+            threshold=st.floats(min_value=1e-6, max_value=1.1 * np.sqrt(3)),
+        )
+    )
+    def test_stuff(self, inputs: MergeRegionsInput) -> None:
+        slic_merge = SlicMerge(merge_threshold=inputs.merge_threshold)
+
+        result = slic_merge._merge_regions(
+            region_image=inputs.region_image,
+            region_colors=inputs.region_colors,
+            adj=inputs.adjacency,
+        )
+
+        self.assertEqual(result, inputs.accepted_regions)
