@@ -8,9 +8,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, runtime_checkable
 
-from typing_extensions import Self
+from pydantic import ConfigDict, validate_call
 
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.sensor_modules.sensor_module import (
@@ -26,6 +26,7 @@ __all__ = [
 ]
 
 
+@runtime_checkable
 class ResettableSensorModule(RuntimeSensorModule, Protocol):
     """A Sensor Module that can be reset."""
 
@@ -34,13 +35,14 @@ class ResettableSensorModule(RuntimeSensorModule, Protocol):
         ...
 
 
+@runtime_checkable
 class ExperimentTransform(Transform, Protocol):
     """An experimental transform with experiment affordances.
 
     Allows for resetting the internal state of the transform.
     """
 
-    def reset(self: Self) -> None:
+    def reset(self) -> None:
         """Reset the internal state of this transform.
 
         The protocol offers a default implementation that does nothing.
@@ -56,15 +58,16 @@ class ExperimentSensorModule(SensorModule, ResettableSensorModule):
 
     _transforms: Sequence[ExperimentTransform]
 
+    @validate_call(config=ConfigDict(arbitrary_types_allowed=True))
     def __init__(
-        self: Self,
+        self,
         sensor_module_id: str,
         sensor_id: SensorID,
         transforms: Sequence[ExperimentTransform],
     ) -> None:
         super().__init__(sensor_module_id, sensor_id, transforms)
 
-    def reset(self: Self) -> None:
+    def reset(self) -> None:
         """Reset the internal state of this Sensor Module."""
         for transform in self._transforms:
             transform.reset()
