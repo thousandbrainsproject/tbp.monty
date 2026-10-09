@@ -29,6 +29,7 @@ from tools.github_readme_sync.hierarchy import (  # noqa: E402
     create_hierarchy_file,
 )
 from tools.github_readme_sync.index import generate_index  # noqa: E402
+from tools.github_readme_sync.preview import render_preview  # noqa: E402
 from tools.github_readme_sync.readme import ReadMe  # noqa: E402
 from tools.github_readme_sync.upload import upload  # noqa: E402
 
@@ -65,6 +66,42 @@ def main():
     )
     upload_parser.add_argument("folder", help="The directory containing docs to upload")
     upload_parser.add_argument("version", help="The version to upload the docs under")
+
+    render_preview_parser = subparsers.add_parser(
+        "render-preview",
+        help=("Render docs into a JSON preview bundle without ReadMe credentials"),
+    )
+    render_preview_parser.add_argument(
+        "folder",
+        type=Path,
+        help="The directory containing docs to render",
+    )
+    render_preview_parser.add_argument(
+        "output_file",
+        type=Path,
+        help="Path to write the preview JSON bundle",
+    )
+    render_preview_parser.add_argument(
+        "--repository",
+        required=True,
+        help="Repository in owner/name format",
+    )
+    render_preview_parser.add_argument(
+        "--pr-number",
+        required=True,
+        type=int,
+        help="Pull request number for the preview",
+    )
+    render_preview_parser.add_argument(
+        "--head-sha",
+        required=True,
+        help="Head commit SHA for the pull request",
+    )
+    render_preview_parser.add_argument(
+        "--base-ref",
+        required=True,
+        help="Base branch for the pull request",
+    )
 
     # Check external links command
     check_external_parser = subparsers.add_parser(
@@ -115,6 +152,20 @@ def main():
         check_env()
         hierarchy = check_hierarchy_file(args.folder)
         upload(hierarchy, args.folder, rdme=ReadMe(args.version))
+
+    elif args.command == "render-preview":
+        check_image_path()
+
+        args.output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        render_preview(
+            args.folder,
+            args.output_file,
+            repository=args.repository,
+            pr_number=args.pr_number,
+            head_sha=args.head_sha,
+            base_ref=args.base_ref,
+        )
 
     elif args.command == "check-external":
         check_readme_api_key()
