@@ -21,8 +21,8 @@ SCHEMA_VERSION = 1
 
 
 def render_preview(
-    folder: str,
-    output_file: str,
+    folder: Path,
+    output_file: Path,
     *,
     repository: str,
     pr_number: int,
@@ -44,7 +44,7 @@ def render_preview(
         head_sha: Commit SHA for the pull request head.
         base_ref: Base branch that the preview is expected to target.
     """
-    hierarchy = check_hierarchy_file(folder)
+    hierarchy = check_hierarchy_file(str(folder))
     # Markdown rendering does not require a ReadMe version or API access.
     renderer = ReadMe(version="")
 
@@ -71,19 +71,15 @@ def render_preview(
         "documents": documents,
     }
 
-    output_path = Path(output_file)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(bundle, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    with output_file.open(mode="w", encoding="utf-8") as f:
+        json.dump(bundle, f, ensure_ascii=False)
 
 
 def _render_children(
     parent: dict,
-    folder: str,
+    folder: Path,
     renderer: ReadMe,
-    path_prefix: str = "",
+    path_prefix: Path = Path(),
 ) -> list[dict]:
     """Render all child documents beneath one hierarchy node.
 
@@ -100,17 +96,17 @@ def _render_children(
         The rendered child documents in hierarchy order.
     """
     rendered_children = []
-    parent_path = f"{path_prefix}{parent['slug']}"
+    parent_path = path_prefix / parent["slug"]
 
     for child in parent["children"]:
-        doc = load_doc(folder, parent_path, child)
+        doc = load_doc(str(folder), str(parent_path), child)
 
         rendered_doc = {
             "title": doc["title"],
             "slug": doc["slug"],
             "body": renderer.process_markdown(
                 doc["body"],
-                str(Path(folder) / parent_path),
+                str(folder / parent_path),
                 doc["slug"],
             ),
             "hidden": bool(doc.get("hidden", False)),
@@ -119,7 +115,7 @@ def _render_children(
                     parent=child,
                     folder=folder,
                     renderer=renderer,
-                    path_prefix=f"{parent_path}/",
+                    path_prefix=parent_path,
                 )
                 if child.get("children")
                 else []
