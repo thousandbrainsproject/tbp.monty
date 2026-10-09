@@ -8,9 +8,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from turtle import width
 import unittest
 from dataclasses import dataclass
+from turtle import width
 from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
 
 import cv2
@@ -302,7 +302,7 @@ class BuildAdjacencyGraphTestInputs:
 
 
 @st.composite
-def build_adjacency_graph(
+def build_adjacency_graph_test_inputs(
     draw: st.DrawFn,
     row_count: st.SearchStrategy[int],
     column_count: st.SearchStrategy[int],
@@ -314,13 +314,15 @@ def build_adjacency_graph(
         draw: A function used to draw values from the given search strategies.
         row_count: A search strategy for the number of rows in the region image.
         column_count: A search strategy for the number of columns in the region image.
+        max_tile_size: A search strategy for the maximum height/width (in pixels) of
+            each tile in the grid.
 
     Returns:
         BuildAdjacencyGraphTestInputs
 
-    The adjacency graph assumes that the image is divided into a grid of square regions,
-    where each region is adjacent to its immediate neighbors left, right, top, bottom
-    without wrapping.
+    The adjacency graph assumes that the image is divided into a grid of
+    identically-sized rectangular regions, where each region is adjacent to its
+    immediate neighbors left, right, top, bottom (without wrapping).
     """
     n_rows = draw(row_count)
     n_cols = draw(column_count)
@@ -345,8 +347,12 @@ def build_adjacency_graph(
                 adjacency[lbl].add(lbl + n_cols)
                 adjacency[lbl + n_cols].add(lbl)
 
+    row_labels = np.repeat(np.arange(n_rows), heights)
+    col_labels = np.repeat(np.arange(n_cols), widths)
+    region_image = (row_labels[:, None] * n_cols + col_labels[None, :]).astype(np.int64)
+
     return BuildAdjacencyGraphTestInputs(
-        region_image=np.arange(n_regions, dtype=np.int64).reshape(n_rows, n_cols),
+        region_image=region_image,
         n_regions=n_regions,
         adjacency=adjacency,
     )
@@ -354,9 +360,10 @@ def build_adjacency_graph(
 
 class SlicMergeBuildAdjencyGraphTest(unittest.TestCase):
     @given(
-        inputs=build_adjacency_graph(
+        inputs=build_adjacency_graph_test_inputs(
             row_count=st.integers(min_value=1, max_value=10),
             column_count=st.integers(min_value=1, max_value=10),
+            max_tile_size=st.integers(min_value=1, max_value=5),
         )
     )
     def test_builds_adjacency_graph_for_a_square_grid_of_unique_regions(
