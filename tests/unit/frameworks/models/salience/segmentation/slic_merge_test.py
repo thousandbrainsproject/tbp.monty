@@ -336,16 +336,7 @@ def build_adjacency_graph_test_inputs(
         n_cols, draw(st.integers(min_value=1, max_value=max_tile_size_val))
     )
 
-    adjacency: list[set[int]] = [set() for _ in range(n_regions)]
-    for r in range(n_rows):
-        for c in range(n_cols):
-            lbl = r * n_cols + c
-            if c + 1 < n_cols:
-                adjacency[lbl].add(lbl + 1)
-                adjacency[lbl + 1].add(lbl)
-            if r + 1 < n_rows:
-                adjacency[lbl].add(lbl + n_cols)
-                adjacency[lbl + n_cols].add(lbl)
+    adjacency = adjacency_from_tile_spec(n_rows, n_cols, n_regions)
 
     row_labels = np.repeat(np.arange(n_rows), heights)
     col_labels = np.repeat(np.arange(n_cols), widths)
@@ -358,6 +349,118 @@ def build_adjacency_graph_test_inputs(
     )
 
 
+def adjacency_from_tile_spec(
+    n_rows: int, n_cols: int, n_regions: int
+) -> list[set[int]]:
+    adjacency: list[set[int]] = [set() for _ in range(n_regions)]
+    for r in range(n_rows):
+        for c in range(n_cols):
+            lbl = r * n_cols + c
+            if c + 1 < n_cols:
+                adjacency[lbl].add(lbl + 1)
+                adjacency[lbl + 1].add(lbl)
+            if r + 1 < n_rows:
+                adjacency[lbl].add(lbl + n_cols)
+                adjacency[lbl + n_cols].add(lbl)
+    return adjacency
+
+
+@st.composite
+def color_within_threshold(
+    draw: st.DrawFn, origin: npt.NDArray[np.float32], threshold: float
+) -> npt.NDArray[np.float32]:
+    axis = draw(st.integers(min_value=0, max_value=2))
+    scale = draw(st.floats(min_value=-1.0, max_value=1.0))
+    out = origin.copy()
+    out[axis] += threshold * scale
+    return out
+
+
+@st.composite
+def generate_colors_within_relative_threshold(
+    draw: st.DrawFn, origin: npt.NDArray[np.float32], threshold: float, steps: int
+) -> list[npt.NDArray[np.float32]]:
+    colors: list[npt.NDArray[np.float32]] = [origin]
+    color = origin.copy()
+    for _ in range(steps):
+        color = draw(color_within_threshold(color, threshold))
+        colors.append(color)
+    return colors
+
+
+@st.composite
+def generate_region_colors(
+    draw: st.DrawFn, adj: list[set[int]], threshold: float
+) -> tuple[set[int], dict[int, npt.NDArray[np.float32]]]:
+    region_count = len(adj)
+    origin_color = np.zeros(3, dtype=np.float32)
+
+    far_enough_in_color_space = 2 * len(adj) * threshold
+    disjoint_origin = origin_color.copy() + far_enough_in_color_space
+    disjoint_colors = draw(
+        generate_colors_within_relative_threshold(
+            disjoint_origin, threshold, region_count
+        )
+    )
+    accepted_colors = draw(
+        generate_colors_within_relative_threshold(origin_color, threshold, region_count)
+    )
+
+    region_colors: dict[int, npt.NDArray[np.float32]] = {
+        i: disjoint_colors[i] for i in range(len(adj))
+    }
+    center_region_id = len(adj) // 2
+    current_region_id = center_region_id
+    region_colors[current_region_id] = accepted_colors.pop(0)
+    accepted_regions = {current_region_id}
+    # technically, should be region_count - 2, but this will never happend due to
+    # if not neighbors check
+    accepted_region_count = draw(st.integers(min_value=0, max_value=region_count - 1))
+    for _ in range(accepted_region_count):
+        neighbors = adj[current_region_id] - accepted_regions
+        if not neighbors:
+            break
+        neighbor_list = list(neighbors)
+        next_region_id = draw(st.sampled_from(neighbor_list))
+        region_colors[next_region_id] = accepted_colors.pop(0)
+        accepted_regions.add(next_region_id)
+        current_region_id = next_region_id
+
+    return accepted_regions, region_colors
+
+
+@dataclass
+class MergeRegionsInput:
+    region_colors: dict[int, npt.NDArray[np.float32]]
+    region_image: npt.NDArray[np.int64]
+    adjacency: list[set[int]]
+    accepted_regions: set[int]
+
+
+@st.composite
+def generate_merge_regions_input(
+    draw: st.DrawFn,
+    row_count: st.SearchStrategy[int],
+    column_count: st.SearchStrategy[int],
+    max_tile_size: st.SearchStrategy[int],
+    threshold: st.SearchStrategy[float],
+) -> MergeRegionsInput:
+    n_rows = draw(row_count)
+    n_cols = draw(column_count)
+    n_regions = n_rows * n_cols
+    adjacency = adjacency_from_tile_spec(n_rows, n_cols, n_regions)
+    threshold_val = draw(threshold)
+    accepted_regions, region_colors = draw(
+        generate_region_colors(adj=adjacency, threshold=threshold_val)
+    )
+
+    # TODO: Generate region_image or reconsider what we need for the test
+
+    return MergeRegionsInput(
+        region_colors=region_colors,
+        adjacency=adjacency,
+        accepted_regions=accepted_regions,
+    )
 class SlicMergeBuildAdjencyGraphTest(unittest.TestCase):
     @given(
         inputs=build_adjacency_graph_test_inputs(
@@ -371,3 +474,8 @@ class SlicMergeBuildAdjencyGraphTest(unittest.TestCase):
     ) -> None:
         result = SlicMerge.build_adjacency_graph(inputs.region_image, inputs.n_regions)
         self.assertEqual(result, inputs.adjacency)
+
+class SlicMergeMergeRegionsTest(unittest.TestCase):
+    @given(region_colors=generate_region_colors())
+    def test_stuff(self, region_colors: dict[int, npt.NDArray[np.float32]]) -> None:
+        pass
