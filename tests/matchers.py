@@ -16,8 +16,8 @@ class ArrayEqual:
     def __init__(self, arr: npt.ArrayLike):
         self.arr = arr
 
-    def __eq__(self, other: object):
+    def __eq__(self, other: object) -> bool:
         return np.array_equal(self.arr, np.asanyarray(other))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(np.asarray(self.arr).tobytes())

@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from turtle import width
 import unittest
 from dataclasses import dataclass
 from unittest.mock import ANY, MagicMock, Mock, call, patch, sentinel
@@ -19,7 +20,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from tbp.monty.frameworks.models.salience.segmentation.slic_merge import SlicMerge
-from tests.equal import ArrayEqual
+from tests.matchers import ArrayEqual
 from tests.strategies.arrays import uint8_array
 
 
@@ -287,3 +288,79 @@ class SlicMergeExtractRegionColorsTest(unittest.TestCase):
             sentinel.region_image, ArrayEqual(merge_image)
         )
         self.assertIs(result, compute_superpixel_mean_colors_mock.return_value)
+
+class SlicMergeComputeSuperpixelMeanColorsTest(unittest.TestCase):
+    def test_fails(self) -> None:
+        self.assertFalse("todo")
+
+
+@dataclass
+class BuildAdjacencyGraphTestInputs:
+    region_image: npt.NDArray[np.int64]
+    n_regions: int
+    adjacency: list[set[int]]
+
+
+@st.composite
+def build_adjacency_graph(
+    draw: st.DrawFn,
+    row_count: st.SearchStrategy[int],
+    column_count: st.SearchStrategy[int],
+    max_tile_size: st.SearchStrategy[int],
+) -> BuildAdjacencyGraphTestInputs:
+    """Generates test inputs for building an adjacency graph test.
+
+    Args:
+        draw: A function used to draw values from the given search strategies.
+        row_count: A search strategy for the number of rows in the region image.
+        column_count: A search strategy for the number of columns in the region image.
+
+    Returns:
+        BuildAdjacencyGraphTestInputs
+
+    The adjacency graph assumes that the image is divided into a grid of square regions,
+    where each region is adjacent to its immediate neighbors left, right, top, bottom
+    without wrapping.
+    """
+    n_rows = draw(row_count)
+    n_cols = draw(column_count)
+    n_regions = n_rows * n_cols
+    max_tile_size_val = draw(max_tile_size)
+
+    heights = np.full(
+        n_rows, draw(st.integers(min_value=1, max_value=max_tile_size_val))
+    )
+    widths = np.full(
+        n_cols, draw(st.integers(min_value=1, max_value=max_tile_size_val))
+    )
+
+    adjacency: list[set[int]] = [set() for _ in range(n_regions)]
+    for r in range(n_rows):
+        for c in range(n_cols):
+            lbl = r * n_cols + c
+            if c + 1 < n_cols:
+                adjacency[lbl].add(lbl + 1)
+                adjacency[lbl + 1].add(lbl)
+            if r + 1 < n_rows:
+                adjacency[lbl].add(lbl + n_cols)
+                adjacency[lbl + n_cols].add(lbl)
+
+    return BuildAdjacencyGraphTestInputs(
+        region_image=np.arange(n_regions, dtype=np.int64).reshape(n_rows, n_cols),
+        n_regions=n_regions,
+        adjacency=adjacency,
+    )
+
+
+class SlicMergeBuildAdjencyGraphTest(unittest.TestCase):
+    @given(
+        inputs=build_adjacency_graph(
+            row_count=st.integers(min_value=1, max_value=10),
+            column_count=st.integers(min_value=1, max_value=10),
+        )
+    )
+    def test_builds_adjacency_graph_for_a_square_grid_of_unique_regions(
+        self, inputs: BuildAdjacencyGraphTestInputs
+    ) -> None:
+        result = SlicMerge.build_adjacency_graph(inputs.region_image, inputs.n_regions)
+        self.assertEqual(result, inputs.adjacency)
