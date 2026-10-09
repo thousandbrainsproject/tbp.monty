@@ -31,7 +31,7 @@ from tbp.monty.frameworks.models.salience.sensor_module import (
     SalienceSM,
 )
 from tbp.monty.frameworks.sensors import SensorID
-from tests.equal import ArrayEqual
+from tests.matchers import ArrayEqual
 from tests.strategies.arrays import (
     bool_array,
     uint8_array,
