@@ -5,15 +5,15 @@ match_criterion:
   count: 1
 recognition_policy:
   _target_: tbp.monty.experiment.recognition_policy.MinEvalSteps
-  min_eval_steps: 3
+  min_eval_steps: 0
   prior:
     _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
     policies:
     - _target_: tbp.monty.experiment.recognition_policy.StepLimit
-      min_train_steps: 3
-      num_exploring_steps: 20
-      max_train_steps: 20
-      max_eval_steps: 20
+      min_train_steps: 0
+      num_exploring_steps: 3
+      max_train_steps: 1
+      max_eval_steps: 1
     - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
-      max_total_steps: 6000
+      max_total_steps: 5
     - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone

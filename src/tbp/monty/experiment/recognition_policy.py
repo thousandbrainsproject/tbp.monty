@@ -15,13 +15,16 @@ from typing import Protocol, Sequence
 
 from typing_extensions import Self
 
+from tbp.monty import telemetry
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.monty_base import MontyBase
+from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = [
     "AnyPolicy",
     "MaxTotalSteps",
     "MaximumSteps",
+    "MinEvalSteps",
     "MinimumLMs",
     "MontyIsDone",
     "NaiveScan",
@@ -33,6 +36,7 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+telemeter = telemetry.getTelemeter(__name__)
 
 
 @dataclass
@@ -101,6 +105,77 @@ class MontyIsDone(RecognitionPolicy):
         if is_done:
             logger.info("MontyIsDone is done, with model.is_done")
         return RecognitionResult(is_done)
+
+
+class MinEvalSteps(RecognitionPolicy):
+    """**Prevent** termination while `matching_steps < min_eval_steps`."""
+
+    _prior: RecognitionPolicy
+    """The policy used to determine prior bias."""
+
+    _min_eval_steps: int
+    """The minimum steps to take in matching mode."""
+
+    def __init__(
+        self: Self,
+        prior: RecognitionPolicy,
+        min_eval_steps: int = 0,
+    ) -> None:
+        """Initialize the policy.
+
+        Args:
+            prior: The policy used to determine prior bias.
+            min_eval_steps: The minimum steps to take in matching mode.
+
+        Raises:
+            ValueError:
+                If `min_train_steps` is negative.
+        """
+        if min_eval_steps < 0:
+            raise ValueError("min_eval_steps must be non-negative")
+
+        self._prior = prior
+        self._min_eval_steps = min_eval_steps
+
+    def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,
+    ) -> RecognitionResult:
+        # Determine prior bias
+        result = self._prior(model, count)
+
+        # Prevent termination if `min_eval_steps` have not been taken.
+        if (
+            count.mode is ExperimentMode.EVAL
+            and count.matching_steps < self._min_eval_steps
+        ):
+            result.is_done = False
+
+        # Force termination if the model says it is done.
+        if model.is_done:
+            result.is_done = True
+
+        # Report reason for termination.
+        if result.is_done:
+            logger.info(
+                "MinEvalSteps is done, with model.is_done=%s matching_steps=%d",
+                model.is_done,
+                count.matching_steps,
+            )
+            telemeter.info(
+                TelemetryEvent(
+                    kind="TerminalCondition",
+                    model=dict(
+                        is_done=model.is_done,
+                        is_exploring=model.is_exploring,
+                    ),
+                    count=count,
+                    result=result,
+                )
+            )
+
+        return result
 
 
 class MaxTotalSteps(RecognitionPolicy):
