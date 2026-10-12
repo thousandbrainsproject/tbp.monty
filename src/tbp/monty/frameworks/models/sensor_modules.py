@@ -21,7 +21,6 @@ from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
-    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -39,6 +38,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
+from tbp.monty.observations import SensorObservation
 
 __all__ = [
     "CameraSM",
