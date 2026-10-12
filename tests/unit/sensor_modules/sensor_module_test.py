@@ -28,10 +28,10 @@ from tests.strategies.motor_system_state import agent_state_with_sensor
 
 
 class SensorModuleTest(unittest.TestCase):
-    def assert_transform_ctx_equals(
+    def assert_transform_ctx_matches(
         self, transform_ctx: TransformContext, expected_ctx: TransformContext
     ) -> None:
-        self.assertEqual(transform_ctx.rng, expected_ctx.rng)
+        self.assertIs(transform_ctx.rng, expected_ctx.rng)
         self.assertIs(transform_ctx.agent_state, expected_ctx.agent_state)
         np.testing.assert_array_equal(
             transform_ctx.sensor_state.position, expected_ctx.sensor_state.position
@@ -39,8 +39,10 @@ class SensorModuleTest(unittest.TestCase):
         self.assertEqual(
             transform_ctx.sensor_state.rotation, expected_ctx.sensor_state.rotation
         )
-        self.assertFalse(transform_ctx.motor_only_step)
-        self.assertFalse(transform_ctx.suppress_runtime_errors)
+        self.assertIs(transform_ctx.motor_only_step, expected_ctx.motor_only_step)
+        self.assertIs(
+            transform_ctx.suppress_runtime_errors, expected_ctx.suppress_runtime_errors
+        )
 
     def setUp(self) -> None:
         self._sensor_module_id = "test"
@@ -130,7 +132,7 @@ class SensorModuleTest(unittest.TestCase):
         sensor_module.step(ctx, observation)
 
         transform1_ctx = transform1.call_args_list[0].args[0]
-        self.assert_transform_ctx_equals(
+        self.assert_transform_ctx_matches(
             transform1_ctx,
             TransformContext(
                 rng=ctx.rng,
@@ -152,7 +154,7 @@ class SensorModuleTest(unittest.TestCase):
             ),
         )
         transform2_ctx = transform2.call_args_list[0].args[0]
-        self.assert_transform_ctx_equals(
+        self.assert_transform_ctx_matches(
             transform2_ctx,
             TransformContext(
                 rng=ctx.rng,
@@ -189,7 +191,7 @@ class SensorModuleTest(unittest.TestCase):
 
         self.assertEqual(percept, sentinel.transform2_percept)
         transform2_ctx = transform2.call_args_list[0].args[0]
-        self.assert_transform_ctx_equals(
+        self.assert_transform_ctx_matches(
             transform2_ctx,
             TransformContext(
                 rng=ctx.rng,
@@ -229,7 +231,7 @@ class SensorModuleTest(unittest.TestCase):
 
         self.assertEqual(goals, sentinel.transform2_goals)
         transform2_ctx = transform2.call_args_list[0].args[0]
-        self.assert_transform_ctx_equals(
+        self.assert_transform_ctx_matches(
             transform2_ctx,
             TransformContext(
                 rng=ctx.rng,
@@ -269,7 +271,7 @@ class SensorModuleTest(unittest.TestCase):
 
         self.assertEqual(region, sentinel.transform2_region)
         transform2_ctx = transform2.call_args_list[0].args[0]
-        self.assert_transform_ctx_equals(
+        self.assert_transform_ctx_matches(
             transform2_ctx,
             TransformContext(
                 rng=ctx.rng,
@@ -309,7 +311,7 @@ class SensorModuleTest(unittest.TestCase):
 
         self.assertIs(memento, sentinel.transform2_telemetry)
         transform2_ctx = transform2.call_args_list[0].args[0]
-        self.assert_transform_ctx_equals(
+        self.assert_transform_ctx_matches(
             transform2_ctx,
             TransformContext(
                 rng=ctx.rng,

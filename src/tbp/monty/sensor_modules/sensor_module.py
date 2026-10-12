@@ -14,7 +14,6 @@ from typing import Any, Collection, Protocol, Sequence, runtime_checkable
 import numpy as np
 import quaternion as qt
 from pydantic import ConfigDict, validate_call
-from typing_extensions import Self
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -47,7 +46,7 @@ class Transform(Protocol):
     """A transform that can be applied to a payload."""
 
     def __call__(
-        self: Self,
+        self,
         ctx: TransformContext,
         payload: Payload,
     ) -> Payload:
@@ -129,7 +128,7 @@ class SensorModule(RuntimeSensorModule, Snapshotable):
 
     @validate_call(config=ConfigDict(arbitrary_types_allowed=True))
     def __init__(
-        self: Self,
+        self,
         sensor_module_id: str,
         sensor_id: SensorID,
         transforms: Sequence[Transform],
@@ -166,7 +165,7 @@ class SensorModule(RuntimeSensorModule, Snapshotable):
         return self._telemetry
 
     def step(
-        self: Self,
+        self,
         ctx: RuntimeContext,
         observation: SensorObservation,
         motor_only_step: bool = False,
@@ -192,7 +191,7 @@ class SensorModule(RuntimeSensorModule, Snapshotable):
         self._telemetry = payload.telemetry
         return payload.percept
 
-    def update_state(self: Self, agent: AgentState) -> None:
+    def update_state(self, agent: AgentState) -> None:
         self._agent_state = agent
         sensor = agent.sensors[self._sensor_id]
         self._sensor_state = SensorState(
