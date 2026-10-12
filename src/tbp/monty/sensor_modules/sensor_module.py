@@ -9,10 +9,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Collection, Protocol, Sequence
+from typing import Any, Collection, Protocol, Sequence, runtime_checkable
 
 import numpy as np
 import quaternion as qt
+from pydantic import ConfigDict, validate_call
 from typing_extensions import Self
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message
@@ -41,6 +42,7 @@ class TransformContext:
     suppress_runtime_errors: bool = False
 
 
+@runtime_checkable
 class Transform(Protocol):
     """A transform that can be applied to a payload."""
 
@@ -61,6 +63,7 @@ class Transform(Protocol):
         ...
 
 
+@runtime_checkable
 class RuntimeSensorModule(Protocol):
     """Monty runtime interface to a Sensor Module."""
 
@@ -108,6 +111,13 @@ class RuntimeSensorModule(Protocol):
 
 
 class SensorModule(RuntimeSensorModule, Snapshotable):
+    """A sensor module implemented as a pipeline of configurable transforms.
+
+    This sensor module does not implement a specific observation processing itself.
+    Instead, it is a generic mechanism for processing a ``SensorObservation`` through
+    a configurable sequence of transforms to produce sensor module outputs.
+    """
+
     _agent_state: AgentState
     _goals: list[Goal]
     _region: AttentionRegion | None
@@ -117,12 +127,21 @@ class SensorModule(RuntimeSensorModule, Snapshotable):
     _telemetry: dict[str, Any]
     _transforms: Sequence[Transform]
 
+    @validate_call(config=ConfigDict(arbitrary_types_allowed=True))
     def __init__(
         self: Self,
         sensor_module_id: str,
         sensor_id: SensorID,
         transforms: Sequence[Transform],
     ) -> None:
+        """Initialize the sensor module.
+
+        Args:
+            sensor_module_id: The unique identifier for this sensor module.
+            sensor_id: The unique identifier for the sensor associated with this module.
+            transforms: A sequence of transforms to process the ``Payload`` containing
+                the sensor observation and produce sensor module outputs.
+        """
         self._goals = []
         self._region = None
         self._sensor_module_id = sensor_module_id
@@ -152,16 +171,6 @@ class SensorModule(RuntimeSensorModule, Snapshotable):
         observation: SensorObservation,
         motor_only_step: bool = False,
     ) -> Message | None:
-        """Process an observation into a percept and goals.
-
-        Args:
-            ctx: The runtime context.
-            observation: Sensor observation.
-            motor_only_step: Whether the current step is a motor-only step.
-
-        Returns:
-            An optional percept with features and morphological features.
-        """
         transform_ctx = TransformContext(
             rng=ctx.rng,
             agent_state=self._agent_state,
