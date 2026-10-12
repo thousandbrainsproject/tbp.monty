@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from typing import Protocol, Sequence, runtime_checkable
 
-from pydantic import ConfigDict, validate_call
+from pydantic import BeforeValidator, ConfigDict, validate_call
+from typing_extensions import Annotated
 
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.sensor_modules.sensor_module import (
@@ -62,7 +63,7 @@ class ExperimentSensorModule(SensorModule, ResettableSensorModule):
         self,
         sensor_module_id: str,
         sensor_id: SensorID,
-        transforms: Sequence[ExperimentTransform],
+        transforms: Annotated[Sequence[ExperimentTransform], BeforeValidator(tuple)],
     ) -> None:
         super().__init__(sensor_module_id, sensor_id, transforms)
 

@@ -13,7 +13,8 @@ from typing import Any, Collection, Protocol, Sequence, runtime_checkable
 
 import numpy as np
 import quaternion as qt
-from pydantic import ConfigDict, validate_call
+from pydantic import BeforeValidator, ConfigDict, validate_call
+from typing_extensions import Annotated
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -131,7 +132,7 @@ class SensorModule(RuntimeSensorModule, Snapshotable):
         self,
         sensor_module_id: str,
         sensor_id: SensorID,
-        transforms: Sequence[Transform],
+        transforms: Annotated[Sequence[Transform], BeforeValidator(tuple)],
     ) -> None:
         """Initialize the sensor module.
 
