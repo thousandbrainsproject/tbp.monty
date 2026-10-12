@@ -14,7 +14,6 @@ from pydantic import ConfigDict, validate_call
 
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.sensor_modules.sensor_module import (
-    RuntimeSensorModule,
     SensorModule,
     Transform,
 )
@@ -27,7 +26,7 @@ __all__ = [
 
 
 @runtime_checkable
-class ResettableSensorModule(RuntimeSensorModule, Protocol):
+class ResettableSensorModule(Protocol):
     """A Sensor Module that can be reset."""
 
     def reset(self) -> None:
