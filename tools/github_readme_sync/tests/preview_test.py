@@ -101,19 +101,19 @@ class TestRenderPreview(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             folder = Path(temp_dir) / "docs"
-            output = Path(temp_dir) / "artifacts" / "preview.json"
-            output.parent.mkdir(parents=True, exist_ok=True)
+            output_file = Path(temp_dir) / "artifacts" / "preview.json"
+            output_file.parent.mkdir(parents=True, exist_ok=True)
 
             render_preview(
                 folder=folder,
-                output_file=output,
+                output_file=output_file,
                 repository=REPOSITORY,
                 pr_number=PR_NUMBER,
                 head_sha=HEAD_SHA,
                 base_ref=BASE_REF,
             )
 
-            with output.open(encoding="utf-8") as file:
+            with output_file.open(encoding="utf-8") as file:
                 rendered = json.load(file)
 
         self.assertEqual(rendered, expected_bundle)
