@@ -106,7 +106,7 @@ class TestRenderPreview(unittest.TestCase):
 
             render_preview(
                 folder=folder,
-                output=output,
+                output_file=output,
                 repository=REPOSITORY,
                 pr_number=PR_NUMBER,
                 head_sha=HEAD_SHA,
