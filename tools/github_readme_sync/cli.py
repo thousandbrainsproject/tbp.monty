@@ -159,8 +159,8 @@ def main():
         args.output_file.parent.mkdir(parents=True, exist_ok=True)
 
         render_preview(
-            args.folder,
-            args.output_file,
+            folder=args.folder,
+            output_file=args.output_file,
             repository=args.repository,
             pr_number=args.pr_number,
             head_sha=args.head_sha,

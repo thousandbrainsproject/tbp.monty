@@ -105,8 +105,8 @@ class TestRenderPreview(unittest.TestCase):
             output.parent.mkdir(parents=True, exist_ok=True)
 
             render_preview(
-                folder,
-                output,
+                folder=folder,
+                output=output,
                 repository=REPOSITORY,
                 pr_number=PR_NUMBER,
                 head_sha=HEAD_SHA,
