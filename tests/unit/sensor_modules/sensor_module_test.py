@@ -165,7 +165,7 @@ class SensorModuleTest(unittest.TestCase):
             ),
         )
         transform2_payload = transform2.call_args_list[0].args[1]
-        self.assertEqual(transform2_payload, sentinel.transform1_payload)
+        self.assertIs(transform2_payload, sentinel.transform1_payload)
 
     def test_step_returns_last_transforms_payload_percept(self) -> None:
         observation = MagicMock()
@@ -189,7 +189,7 @@ class SensorModuleTest(unittest.TestCase):
 
         percept = sensor_module.step(ctx, observation)
 
-        self.assertEqual(percept, sentinel.transform2_percept)
+        self.assertIs(percept, sentinel.transform2_percept)
         transform2_ctx = transform2.call_args_list[0].args[0]
         self.assert_transform_ctx_matches(
             transform2_ctx,
@@ -202,7 +202,7 @@ class SensorModuleTest(unittest.TestCase):
             ),
         )
         transform2_payload = transform2.call_args_list[0].args[1]
-        self.assertEqual(transform2_payload, sentinel.transform1_payload)
+        self.assertIs(transform2_payload, sentinel.transform1_payload)
 
     def test_step_prepares_last_transforms_payload_goals_for_propose_goals(
         self,
@@ -229,7 +229,7 @@ class SensorModuleTest(unittest.TestCase):
         sensor_module.step(ctx, observation)
         goals = sensor_module.propose_goals()
 
-        self.assertEqual(goals, sentinel.transform2_goals)
+        self.assertIs(goals, sentinel.transform2_goals)
         transform2_ctx = transform2.call_args_list[0].args[0]
         self.assert_transform_ctx_matches(
             transform2_ctx,
@@ -242,7 +242,7 @@ class SensorModuleTest(unittest.TestCase):
             ),
         )
         transform2_payload = transform2.call_args_list[0].args[1]
-        self.assertEqual(transform2_payload, sentinel.transform1_payload)
+        self.assertIs(transform2_payload, sentinel.transform1_payload)
 
     def test_step_prepares_last_transforms_payload_region_for_propose_region(
         self,
@@ -269,7 +269,7 @@ class SensorModuleTest(unittest.TestCase):
         sensor_module.step(ctx, observation)
         region = sensor_module.propose_region()
 
-        self.assertEqual(region, sentinel.transform2_region)
+        self.assertIs(region, sentinel.transform2_region)
         transform2_ctx = transform2.call_args_list[0].args[0]
         self.assert_transform_ctx_matches(
             transform2_ctx,
@@ -282,7 +282,7 @@ class SensorModuleTest(unittest.TestCase):
             ),
         )
         transform2_payload = transform2.call_args_list[0].args[1]
-        self.assertEqual(transform2_payload, sentinel.transform1_payload)
+        self.assertIs(transform2_payload, sentinel.transform1_payload)
 
     def test_step_prepares_last_transforms_payload_telemetry_for_state_dict(
         self,
@@ -322,7 +322,7 @@ class SensorModuleTest(unittest.TestCase):
             ),
         )
         transform2_payload = transform2.call_args_list[0].args[1]
-        self.assertEqual(transform2_payload, sentinel.transform1_payload)
+        self.assertIs(transform2_payload, sentinel.transform1_payload)
 
 
 class SensorModulePrivateTest(unittest.TestCase):
