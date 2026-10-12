@@ -23,7 +23,6 @@ SCHEMA_VERSION = 1
 def render_preview(
     folder: Path,
     output_file: Path,
-    *,
     repository: str,
     pr_number: int,
     head_sha: str,
