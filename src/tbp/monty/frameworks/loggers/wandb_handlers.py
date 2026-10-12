@@ -58,6 +58,7 @@ class WandbWrapper(MontyHandler):
             config=dict(config),
             resume=self.resume_wandb_run,
             id=self.wandb_id or "",
+            tags=config.get("wandb_tags"),
         )
 
     def report_episode(
