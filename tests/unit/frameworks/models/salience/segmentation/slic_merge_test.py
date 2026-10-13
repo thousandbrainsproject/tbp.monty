@@ -540,7 +540,7 @@ class SlicMergeComputeSuperpixelMeanColorsTest(unittest.TestCase):
 
         result = SlicMerge.compute_superpixel_mean_colors(region_image, merge_image)
 
-        np.testing.assert_allclose(result, region_colors, atol=DEFAULT_TOLERANCE)
+        np.testing.assert_allclose(result, region_colors, rtol=DEFAULT_TOLERANCE)
 
 
 class SlicMergeCreateMaskTest(unittest.TestCase):
