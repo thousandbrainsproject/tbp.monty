@@ -38,17 +38,58 @@ class SalienceSMTelemetry(Protocol):
         raw_observation: SensorObservation,
         rotation: qt.quaternion,
         position: VectorXYZ,
-    ) -> None: ...
+    ) -> None:
+        """Record a snapshot of a raw observation and its pose information.
 
-    def salience_map(self, salience_map: npt.NDArray[np.float64]) -> None: ...
+        Args:
+            raw_observation: Raw observation.
+            rotation: Rotation of the sensor.
+            position: Position of the sensor.
+        """
+        ...
 
-    def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None: ...
+    def salience_map(self, salience_map: npt.NDArray[np.float64]) -> None:
+        """Record one step's salience map.
 
-    def goals(self, goals: Sequence[Goal]) -> None: ...
+        Args:
+            salience_map: The 2D salience map.
+        """
+        ...
 
-    def attention_region(self, region: AttentionRegion) -> None: ...
+    def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None:
+        """Record one step's segmentation mask.
 
-    def state_dict(self) -> Memento: ...
+        Args:
+            segmentation_map: The 2D segmentation mask.
+        """
+        ...
+
+    def goals(self, goals: Sequence[Goal]) -> None:
+        """Record one step's proposed goals.
+
+        Args:
+            goals: The goals the sensor module proposed this step.
+        """
+        ...
+
+    def attention_region(self, region: AttentionRegion) -> None:
+        """Record the attention region proposed this step.
+
+        Args:
+            region: The proposed region.
+        """
+        ...
+
+    def state_dict(self) -> Memento:
+        """Return all recorded telemetry.
+
+        Returns:
+            Raw observations in `raw_observations` with poses in
+            `sm_properties`, salience maps in `salience_maps`, segmentation
+            masks in `segmentation_maps`, goal columns in `goals`, and the
+            proposed regions in `attention_regions`.
+        """
+        ...
 
 
 class NoopSalienceSMTelemetry(SalienceSMTelemetry):
@@ -128,13 +169,6 @@ class DetailedSalienceSMTelemetry(SalienceSMTelemetry):
         rotation: qt.quaternion,
         position: VectorXYZ,
     ) -> None:
-        """Record a snapshot of a raw observation and its pose information.
-
-        Args:
-            raw_observation: Raw observation.
-            rotation: Rotation of the sensor.
-            position: Position of the sensor.
-        """
         self._raw_observations.append(raw_observation)
         self._poses.append(
             dict(
@@ -144,46 +178,18 @@ class DetailedSalienceSMTelemetry(SalienceSMTelemetry):
         )
 
     def salience_map(self, salience_map: npt.NDArray[np.float64]) -> None:
-        """Record one step's salience map.
-
-        Args:
-            salience_map: The 2D salience map.
-        """
         self._salience_maps.append(salience_map)
 
     def segmentation_map(self, segmentation_map: npt.NDArray[np.uint8]) -> None:
-        """Record one step's segmentation mask.
-
-        Args:
-            segmentation_map: The 2D segmentation mask.
-        """
         self._segmentation_maps.append(segmentation_map)
 
     def goals(self, goals: Sequence[Goal]) -> None:
-        """Record one step's proposed goals.
-
-        Args:
-            goals: The goals the sensor module proposed this step.
-        """
         self._goals.append(goals)
 
     def attention_region(self, region: AttentionRegion) -> None:
-        """Record the attention region proposed this step.
-
-        Args:
-            region: The proposed region.
-        """
         self._attention_regions.append(region)
 
     def state_dict(self) -> Memento:
-        """Return all recorded telemetry.
-
-        Returns:
-            Raw observations in `raw_observations` with poses in
-            `sm_properties`, salience maps in `salience_maps`, segmentation
-            masks in `segmentation_maps`, goal columns in `goals`, and the
-            proposed regions in `attention_regions`.
-        """
         return dict(
             goals=self._goals,
             attention_regions=self._attention_regions,

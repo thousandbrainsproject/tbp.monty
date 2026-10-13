@@ -209,7 +209,7 @@ class SalienceSMPrivateTest(unittest.TestCase):
         self.sensor_module._normalize_salience.assert_called_once_with(
             sentinel.randomized
         )
-        self.assertEqual(weighted, sentinel.normalized)
+        self.assertIs(weighted, sentinel.normalized)
 
     def test_segment_region_returns_empty_region_if_no_segmentation_strategy(
         self,
@@ -390,7 +390,6 @@ class SalienceSMSegmentationTest(unittest.TestCase):
 def segmented_region_on_object_map_and_location_map(
     draw: st.DrawFn,
 ) -> tuple[npt.NDArray[np.uint8], npt.NDArray[np.bool_], npt.NDArray[np.float64]]:
-    # draw the shape here:
     image_shape = draw(
         st.tuples(
             st.integers(min_value=0, max_value=10),

@@ -23,7 +23,13 @@ from tbp.monty.frameworks.models.salience.segmentation.strategy import (
 
 
 class SlicMerge(SegmentationStrategy):
-    """Scikit-image SLIC superpixel segmentation with region merging."""
+    """Scikit-image SLIC superpixel segmentation with region merging.
+
+    Returned region encloses the central point of fixation. Merging strategy is a
+    breadth-first merge around the central region.
+
+    See https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.slic
+    """
 
     _n_seeds: int
     _compactness: float
@@ -88,24 +94,33 @@ class SlicMerge(SegmentationStrategy):
         region_image: npt.NDArray[np.int64],
         accepted_regions: set[int],
     ) -> npt.NDArray[np.uint8]:
-        # Create output mask from the set of accepted regions.
         return np.isin(region_image, list(accepted_regions)).astype(np.uint8)
 
     @staticmethod
     def build_adjacency_graph(
         region_image: npt.NDArray[np.int64], n_regions: int
     ) -> list[set[int]]:
-        # Build adjacency graph. adj[region_id] contains the ids of neighboring regions.
+        """Builds the adjency graph.
+
+        Args:
+            region_image: The labeled region image.
+            n_regions: The number of regions in the image.
+
+        Returns:
+            A list of sets, where each set contains the ids of neighboring regions for
+            the corresponding region.
+        """
+        # adj[region_id] contains the ids of neighboring regions.
         adj: list[set[int]] = [set() for _ in range(n_regions)]
 
-        # - Find each region's left and right neighbors.
+        # Find each region's left and right neighbors.
         h_neighbors = region_image[:, :-1] != region_image[:, 1:]
         for i, j in zip(*np.where(h_neighbors)):
             a, b = region_image[i, j], region_image[i, j + 1]
             adj[a].add(b)
             adj[b].add(a)
 
-        # - Find each region's top and bottom neighbors.
+        # Find each region's top and bottom neighbors.
         v_neighbors = region_image[:-1, :] != region_image[1:, :]
         for i, j in zip(*np.where(v_neighbors)):
             a, b = region_image[i, j], region_image[i + 1, j]
@@ -117,8 +132,7 @@ class SlicMerge(SegmentationStrategy):
     def extract_region_colors(
         rgb: npt.NDArray[np.uint8], region_image: npt.NDArray[np.int64]
     ) -> npt.NDArray[np.float32]:
-        # Get a version of the input image that's in the color space we want to
-        # use for merging. By default, this is the LAB color space.
+        """Returns the mean color of each superpixel in LAB 0-1 color space."""
         cv2_lab_max_value = 255
         merge_image = (
             cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32) / cv2_lab_max_value
@@ -130,7 +144,6 @@ class SlicMerge(SegmentationStrategy):
     def compute_superpixel_mean_colors(
         region_image: npt.NDArray[np.int64], merge_image: npt.NDArray[np.float32]
     ) -> npt.NDArray[np.float32]:
-        # Compute mean color per superpixel
         n_regions = region_image.max() + 1
         region_colors = np.zeros((n_regions, 3), dtype=np.float32)
         for lbl in range(n_regions):
@@ -145,7 +158,7 @@ class SlicMerge(SegmentationStrategy):
         region_colors: npt.NDArray[np.float32],
         adj: list[set[int]],
     ) -> set[int]:
-        # Breadth-first merge from the point of fixation.
+        """Returns breadth-first merged regions from the point of fixation."""
         height, width = region_image.shape[:2]
         central_region = region_image[height // 2, width // 2]
         accepted_regions = {central_region}
@@ -170,9 +183,12 @@ class SlicMerge(SegmentationStrategy):
         return accepted_regions
 
     def _segment_image(self, rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.int64]:
-        # Run SLIC to get initial superpixel segmentation. It returns a 2D image
-        # where each pixel holds the (integer-valued) ID of the region it was
-        # assigned to.
+        """Segments the input RGB image into superpixels using SLIC.
+
+        Returns:
+            A 2D image where each pixel holds the (integer-valued) ID of the region
+                it was assigned to.
+        """
         return cast(
             "npt.NDArray[np.int64]",
             slic(

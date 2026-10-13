@@ -41,6 +41,13 @@ __all__ = ["SalienceSM"]
 
 
 class SalienceSM(SensorModule):
+    """A wide field-of-view sensor module that proposes locations to attend to.
+
+    Implements inhibition-of-return, and can be configured with different strategies for
+    ranking target locations. It can also be configured with a segmentation strategy
+    to propose ``AttentionRegion``s.
+    """
+
     _sensor_module_id: str
     _salience_strategy: SalienceStrategy
     _return_inhibitor: ReturnInhibitor
@@ -160,8 +167,7 @@ class SalienceSM(SensorModule):
         """Segment the surface under fixation into a region proposal.
 
         The region is the set of on-object locations inside the segmented
-        surface, expressed as attention weights so it can travel to the
-        attention system via ``propose_region``.
+        surface, where each location is associated with an attention weight.
 
         Args:
             ctx: The runtime context.
@@ -171,7 +177,7 @@ class SalienceSM(SensorModule):
                 observation.
 
         Returns:
-            The region it proposes; an empty region if there is no segmentation
+            The attention region. The region is empty if there is no segmentation
                 strategy.
         """
         if self._segmentation_strategy is None:
