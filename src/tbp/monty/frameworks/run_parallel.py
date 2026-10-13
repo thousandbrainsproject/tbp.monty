@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import multiprocessing as mp
 import os
 import re
 import shutil
@@ -21,7 +22,6 @@ import hydra
 import numpy as np
 import pandas as pd
 import torch
-import torch.multiprocessing as mp
 import wandb
 from omegaconf import DictConfig, OmegaConf
 
