@@ -29,7 +29,6 @@ class SlicMerge(SegmentationStrategy):
     _compactness: float
     _max_iter: int
     _sigma: float
-    _enforce_connectivity: bool
     _min_size_factor: float
     _max_size_factor: float
     _merge_threshold: float

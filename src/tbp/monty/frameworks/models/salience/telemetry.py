@@ -15,6 +15,7 @@ import numpy.typing as npt
 import quaternion as qt
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
+from tbp.monty.math import VectorXYZ
 from tbp.monty.memento import Memento
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ class SalienceSMTelemetry(Protocol):
         self,
         raw_observation: SensorObservation,
         rotation: qt.quaternion,
-        position: npt.NDArray[np.float64],
+        position: VectorXYZ,
     ) -> None: ...
 
     def salience_map(self, salience_map: npt.NDArray[np.float64]) -> None: ...
@@ -58,7 +59,7 @@ class NoopSalienceSMTelemetry(SalienceSMTelemetry):
         self,
         raw_observation: SensorObservation,
         rotation: qt.quaternion,
-        position: npt.NDArray[np.float64],
+        position: VectorXYZ,
     ) -> None:
         pass
 
@@ -125,7 +126,7 @@ class DetailedSalienceSMTelemetry(SalienceSMTelemetry):
         self,
         raw_observation: SensorObservation,
         rotation: qt.quaternion,
-        position: npt.NDArray[np.float64],
+        position: VectorXYZ,
     ) -> None:
         """Record a snapshot of a raw observation and its pose information.
 
