@@ -90,7 +90,7 @@ During the August 2026 Rome Focus Week, we connected Monty to [ARC-AGI-3](https:
 ![](../figures/community/arc_agi_3_temporal_model.png)
 *A temporal model of a game learned by Monty. Each layer along the vertical axis is a game step, so you can see the red piece move from the past (bottom) to the future (top).*
 
-The team also used the game engine to build simple custom maze games, learned compositional models of game maps from 304 sprites, and prototyped a sensor module that directs attention to whatever changed after an action.
+The team also used the game engine to build simple custom maze games, learned compositional models of game maps from 304 sprites, and prototyped a sensor module that directs attention to areas that visually changed after an action.
 
 ![](../figures/community/arc_agi_3_compositional_maps.png)
 *Ground truth game maps (top) and the compositional maps Monty learned from them (bottom), labeled by the recognized child sprites.*
