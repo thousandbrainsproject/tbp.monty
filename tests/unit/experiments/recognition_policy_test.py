@@ -25,6 +25,7 @@ from tbp.monty.experiment.recognition_policy import (
     RecognitionCounter,
     RecognitionPolicy,
     RecognitionResult,
+    StepLimit,
 )
 from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
@@ -41,7 +42,9 @@ def ascending_ints(draw: st.DrawFn, min_value: int):
     return (a, b)
 
 
-def _model_is_done(is_done: bool) -> MagicMock:
+def _model_is_done(
+    is_done: bool,
+) -> MagicMock:
     model = MagicMock()
     model.is_done = is_done
     return model
@@ -61,12 +64,24 @@ def _model_with_conclusions(
 
 
 def _model_with_recognition(
-    is_done: bool, is_exploring: bool, matching_steps: int
+    is_done: bool,
+    is_exploring: bool,
+    matching_steps: int,
 ) -> MagicMock:
     model = MagicMock()
     model.is_done = is_done
     model.is_exploring = is_exploring
     model.matching_steps = matching_steps
+    return model
+
+
+def _model_with_step_type(
+    step_type: str = "matching_step",
+) -> MagicMock:
+    model = MagicMock()
+    model.step_type = step_type
+    model.is_exploring = step_type == "exploratory_step"
+    model.check_if_any_lms_updated.return_value = True
     return model
 
 
@@ -180,10 +195,128 @@ class MaximumStepsTest(unittest.TestCase):
             is_done=False, is_exploring=False, matching_steps=matching_steps
         )
         policy = MaximumSteps(max_train_steps, max_eval_steps)
-        count = RecognitionCounter(0, mode)
+        count = RecognitionCounter(mode=mode)
         result = policy(model, count)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
+
+
+class StepLimitTest(unittest.TestCase):
+    @given(min_train_steps=st.integers(max_value=-1))
+    def test_raises_value_error_if_min_train_steps_is_negative(
+        self, min_train_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepLimit(min_train_steps=min_train_steps)
+
+    @given(num_exploring_steps=st.integers(max_value=-1))
+    def test_raises_value_error_if_num_exploring_steps_is_negative(
+        self, num_exploring_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepLimit(num_exploring_steps=num_exploring_steps)
+
+    @given(max_train_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_train_steps_is_not_positive(
+        self, max_train_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepLimit(max_train_steps=max_train_steps)
+
+    @given(max_eval_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_eval_steps_is_not_positive(
+        self, max_eval_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            StepLimit(max_eval_steps=max_eval_steps)
+
+    @given(
+        mode=st.sampled_from(ExperimentMode),
+        matching_steps=st.integers(min_value=0),
+        max_steps=st.integers(min_value=1),
+    )
+    def test_matching_times_out_at_or_after_max_steps(
+        self,
+        mode: ExperimentMode,
+        matching_steps: int,
+        max_steps: int,
+    ) -> None:
+        model = _model_with_step_type("matching_step")
+        policy = StepLimit(max_train_steps=max_steps, max_eval_steps=max_steps)
+        count = RecognitionCounter(matching_steps=matching_steps, mode=mode)
+        result = policy(model, count)
+        is_done = matching_steps >= max_steps
+        self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
+
+    @given(
+        mode=st.sampled_from(ExperimentMode),
+        matching_steps=st.integers(min_value=0),
+        max_train_steps=st.integers(min_value=1),
+        max_eval_steps=st.integers(min_value=1),
+    )
+    def test_selects_max_steps_by_mode(
+        self,
+        mode: ExperimentMode,
+        matching_steps: int,
+        max_train_steps: int,
+        max_eval_steps: int,
+    ) -> None:
+        max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
+        model = _model_with_step_type()
+        policy = StepLimit(
+            max_train_steps=max_train_steps,
+            max_eval_steps=max_eval_steps,
+        )
+        count = RecognitionCounter(matching_steps=matching_steps, mode=mode)
+        result = policy(model, count)
+        is_done = matching_steps >= max_steps
+        self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
+
+    @given(
+        exploring_steps=st.integers(min_value=0),
+        num_exploring_steps=st.integers(min_value=1),
+    )
+    def test_exploring_times_out_at_or_after_num_exploring_steps(
+        self,
+        exploring_steps: int,
+        num_exploring_steps: int,
+    ) -> None:
+        model = _model_with_step_type("exploratory_step")
+        policy = StepLimit(num_exploring_steps=num_exploring_steps)
+        count = RecognitionCounter(
+            exploring_steps=exploring_steps, mode=ExperimentMode.TRAIN
+        )
+        result = policy(model, count)
+        is_done = exploring_steps >= num_exploring_steps
+        self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
+
+    @given(
+        match_asc=ascending_ints(min_value=1),
+        max_train_steps=st.integers(min_value=1),
+    )
+    def test_switch_to_explore_after_min_train_steps(
+        self,
+        match_asc: tuple[int, int],
+        max_train_steps: int,
+    ) -> None:
+        (min_train_steps, matching_steps) = match_asc
+        model = _model_with_step_type()
+        policy = StepLimit(
+            min_train_steps=min_train_steps,
+            max_train_steps=max_train_steps,
+        )
+        count = RecognitionCounter(
+            matching_steps=matching_steps,
+            mode=ExperimentMode.TRAIN,
+        )
+        result = policy(model, count)
+        self.assertTrue(result.start_exploring)
+        is_done = matching_steps >= max_train_steps
+        self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.is_time_out, is_done)
 
 
 class MinimumLMsTest(unittest.TestCase):
@@ -284,8 +417,6 @@ class ObjectRecognitionTest(unittest.TestCase):
         result = policy(model, count)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
-        if is_done:
-            model.deal_with_time_out.assert_called_once()
 
     @given(
         mode=st.sampled_from(ExperimentMode),
@@ -300,11 +431,11 @@ class ObjectRecognitionTest(unittest.TestCase):
         at_limit = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=max_steps
         )
-        self.assertTrue(policy(at_limit, RecognitionCounter(0, mode)).is_done)
+        self.assertTrue(policy(at_limit, RecognitionCounter(mode=mode)).is_done)
         before_limit = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=max_steps - 1
         )
-        self.assertFalse(policy(before_limit, RecognitionCounter(0, mode)).is_done)
+        self.assertFalse(policy(before_limit, RecognitionCounter(mode=mode)).is_done)
 
     @given(
         max_total_steps=st.integers(min_value=1),
@@ -327,7 +458,6 @@ class ObjectRecognitionTest(unittest.TestCase):
         count = RecognitionCounter(max_total_steps + extra)
         result = policy(model, count)
         self.assertTrue(result.is_done)
-        model.deal_with_time_out.assert_called_once()
 
     @given(
         is_done=st.booleans(),
@@ -351,7 +481,6 @@ class ObjectRecognitionTest(unittest.TestCase):
         count = RecognitionCounter(step)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
-        model.deal_with_time_out.assert_not_called()
 
 
 @st.composite
@@ -390,3 +519,54 @@ class AnyPolicyTest(unittest.TestCase):
         for not_called in policies[num_called:]:
             not_called.assert_not_called()
         model.assert_not_called()
+
+    def test_recognition_result_aggregation(self) -> None:
+        default_result = MagicMock(RecognitionPolicy, return_value=RecognitionResult())
+        is_done_result = MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(is_done=True)
+        )
+        is_time_out_result = MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(is_time_out=True)
+        )
+        start_exploring_result = MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(start_exploring=True)
+        )
+        is_done_time_out_result = MagicMock(
+            RecognitionPolicy,
+            return_value=RecognitionResult(is_done=True, is_time_out=True),
+        )
+
+        model = MagicMock()
+        count = RecognitionCounter()
+
+        policy = AnyPolicy([default_result])
+        result = policy(model, count)
+        self.assertFalse(result.is_done)
+        self.assertFalse(result.is_time_out)
+        self.assertFalse(result.start_exploring)
+
+        policy = AnyPolicy(
+            [
+                start_exploring_result,
+                is_done_result,
+                is_time_out_result,
+                default_result,
+            ]
+        )
+        result = policy(model, count)
+        self.assertTrue(result.is_done)
+        self.assertFalse(result.is_time_out)
+        self.assertTrue(result.start_exploring)
+
+        policy = AnyPolicy(
+            [
+                default_result,
+                is_time_out_result,
+                start_exploring_result,
+                is_done_time_out_result,
+            ]
+        )
+        result = policy(model, count)
+        self.assertTrue(result.is_done)
+        self.assertTrue(result.is_time_out)
+        self.assertTrue(result.start_exploring)

@@ -21,7 +21,6 @@ from hypothesis.extra.numpy import arrays
 
 from tbp.monty.cmp import Goal
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
@@ -30,6 +29,7 @@ from tbp.monty.frameworks.models.salience.sensor_module import (
     SalienceSM,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.observations import SensorObservation
 from tests.matchers import ArrayEqual
 from tests.strategies.arrays import (
     bool_array,

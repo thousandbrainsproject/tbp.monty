@@ -14,9 +14,9 @@ import numpy as np
 import numpy.typing as npt
 import quaternion as qt
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.math import VectorXYZ
 from tbp.monty.memento import Memento
+from tbp.monty.observations import SensorObservation
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

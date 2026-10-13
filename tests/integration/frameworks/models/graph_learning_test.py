@@ -505,7 +505,7 @@ class GraphLearningTest(BaseGraphTest):
                 "on object",
             )
 
-    def test_detailed_logging(self):
+    def test_detailed_logging(self) -> None:
         exp = instantiate_experiment(self.feature_pred_off_object_cfg.experiment)
         with exp:
             exp.run()

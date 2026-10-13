@@ -9,6 +9,7 @@ on:
       - opened
       - unlabeled
       - synchronize
+      - ready_for_review
 
 permissions:
   pull-requests: write
@@ -70,8 +71,8 @@ jobs:
         run: |
           echo "This PR has been triaged."
           exit 0
-      - name: triaged label is absent
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'triaged') }}
+      - name: is not draft and triaged label is absent
+        if: ${{ github.event.pull_request.draft == false && !contains(github.event.pull_request.labels.*.name, 'triaged') }}
         run: |
           echo "This PR is missing the 'triaged' label."
           echo "A maintainer will apply it during triage."

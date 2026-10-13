@@ -194,6 +194,7 @@ explicit_package_bases = true
 ignore_missing_imports = true
 mypy_path = "src"
 warn_unused_configs = true
+plugins = ["pydantic.mypy"]
 
 [tool.ruff]
 line-length = 88

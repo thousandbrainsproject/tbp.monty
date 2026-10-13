@@ -7,12 +7,12 @@ The **raw output from sensors in the environment is sent to the sensor module an
 
 ![Observation processing into the Cortical Messaging Protocol on the example of an RGBD sensor. The sensor patch comprises a small area of the object (blue square) and if the sensor is a camera it returns an RGBD image. We apply a transform (see section below for details) to this image which calculates the x, y, z locations relative to the agent’s body for each pixel using the depth values and the sensor location. From these points in space, the sensor module then calculates the surface normal and principal curvature directions at the center point of the patch (pose). Additionally, the sensor module can extract pose-independent features such as color and the magnitude of curvature. The pose (location + surface normal and curvature direction) and features make up the observation at time step t and are the output of the sensor module.](../figures/how-monty-works/observations_w_labels.png)
 
-| List of all sensor module classes | Description                                                                                                                                                                                                                                                                                                                    |
-| --------------------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **SensorModule**                  | Abstract sensor module class.                                                                                                                                                                                                                                                                                                  |
+| List of all sensor module classes | Description |
+| --- | --- |
+| **tbp.monty.frameworks.models.abstract_monty_classes.SensorModule** | Abstract sensor module class. Still present as some of the below sensor modules implement it for historical reasons.|
+| **tbp.monty.sensor_modules.sensor_module.SensorModule** | A generic sensor module that fully derives its functionality from the transforms it is configured with. It exists to make it easier to assemble desired functionality without having to write a new sensor module from scratch. New functionality can reuse existing transforms and add only the missing capability.
 | **CameraSM**                     | Sensor module connected to an RGBD camera. Extracts pose and features in CMP format from an RGBD patch. Keeps track of agent and sensor states. Also checks if observation is on object and should be sent to LM. Can be configured to add feature noise.                                                                      |
 | **TwoDSensorModule**             | Sensor module connected to an RGBD camera that converts observations into a 2D surface frame. It reports 2D movement through `location` and `displacement`, and represents local 2D morphological edge direction in `pose_vectors`.                                                                                           |
-| **Probe**                   | A probe that can be inserted into Monty in place of a sensor module. It will track raw observations for logging, and can be used by experiments for positioning procedures, visualization, etc. What distinguishes a probe from a sensor module is that it does not process observations and does not emit a Cortical Message. |
 | **SalienceSM** | A wide field-of-view sensor module that proposes locations to attend to. Implements inhibition-of-return, and can be configured with different strategies for ranking target locations. |
 
 ## Features Extracted by the Sensor Module
@@ -30,7 +30,7 @@ Each sensor module accepts `delta_thresholds`, which configure a `FeatureChangeF
 # Transforms
 Before sending information to the sensor module which extracts features and poses, we can apply transforms to the raw input. Possible transforms are listed in tables below.  **Transforms are applied to all sensors in an environment before sending observations to the SMs** and are specified in the environment interface arguments.
 
-> [!NOTE] 
+> [!NOTE]
 > There is [ongoing work](https://github.com/thousandbrainsproject/tbp.monty/pull/911) to integrate transforms into the sensor module class.
 
 

@@ -1,0 +1,63 @@
+# Copyright 2026 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
+import quaternion as qt
+from typing_extensions import Self
+
+from tbp.monty.experiment.sensor_module import ExperimentTransform
+from tbp.monty.observations import SensorObservation
+from tbp.monty.sensor_modules.sensor_module import Payload, TransformContext
+
+
+class Snapshot(ExperimentTransform):
+    """Appends observation and sensor pose to the payload telemetry.
+
+    Reads:
+    - `ctx.sensor_state.rotation`
+    - `ctx.sensor_state.position`
+    - `payload.observation`
+
+    Writes:
+    - `payload.telemetry["raw_observations"]`
+    - `payload.telemetry["sm_properties"]`
+
+    Appends the current observation to ``payload.telemetry["raw_observations"]``.
+    Appends the current sensor pose to ``payload.telemetry["sm_properties"]``. After a
+    reset is triggered, both ``payload.telemetry["raw_observations"]`` and
+    ``payload.telemetry["sm_properties"]`` are cleared before appending new data.
+    """
+
+    _reset: bool = False
+
+    def __call__(self: Self, ctx: TransformContext, payload: Payload) -> Payload:
+        if self._reset:
+            payload.telemetry["raw_observations"] = []
+            payload.telemetry["sm_properties"] = []
+            self._reset = False
+
+        raw_observations: list[SensorObservation] = payload.telemetry.setdefault(
+            "raw_observations", []
+        )
+        raw_observations.append(payload.observation)
+
+        sm_properties: list[dict[str, Any]] = payload.telemetry.setdefault(
+            "sm_properties", []
+        )
+        sm_rotation = qt.as_float_array(ctx.sensor_state.rotation)
+        sm_location = np.array(ctx.sensor_state.position)
+        sm_properties.append({"sm_rotation": sm_rotation, "sm_location": sm_location})
+
+        return payload
+
+    def reset(self) -> None:
+        self._reset = True

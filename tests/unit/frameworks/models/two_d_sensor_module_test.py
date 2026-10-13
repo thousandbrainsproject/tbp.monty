@@ -18,12 +18,12 @@ import quaternion as qt
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.two_d_sensor_module import TwoDSensorModule
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.edge_detection import DEFAULT_POSE_2D, EdgeFeatures
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.observations import SensorObservation
 from tests.unit.frameworks.utils.edge_detection_test import (
     PATCH_SIZE,
     sensor_observation,

@@ -63,9 +63,11 @@ experiment:
           - mean_curvature_sc
           save_raw_obs: true
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: true
+          sensor_id: view_finder
+          transforms:
+          - _target_: tbp.monty.experiment.sensor_modules.telemetry.Snapshot
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -204,6 +206,21 @@ experiment:
             _target_: wandb.util.generate_id
           wandb_group: benchmark_experiments
       run_name: monty_meets_world_2dimage_inference
+    telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
+      loggers:
+        telemetry.tbp.monty:
+          handlers:
+          - telemetry_console
+          level: WARNING
     show_sensor_output: true
     n_train_epochs: 3
     n_eval_epochs: 1
