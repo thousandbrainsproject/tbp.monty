@@ -360,8 +360,15 @@ class SalienceSMSegmentationTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM._segment_region"
     )
+    @patch(
+        "tbp.monty.frameworks.models.salience.sensor_module.SalienceSM._weight_salience"
+    )
     def test_step_segments_region_and_stores_it_for_propose_region(
-        self, segment_region_mock: MagicMock, on_object_observation_mock: MagicMock
+        self,
+        # weight_salience mocked not to interfere with segment_region under test
+        weight_salience_mock: MagicMock,  # noqa: ARG002
+        segment_region_mock: MagicMock,
+        on_object_observation_mock: MagicMock,
     ) -> None:
         sensor_module = SalienceSM(
             sensor_module_id=self.sensor_module_id,
