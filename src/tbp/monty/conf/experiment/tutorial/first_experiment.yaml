@@ -53,7 +53,6 @@ defaults:
   # which learning modules must recognize the object, and the recognition
   # policy adds step limits.
   - /termination: any1_min_e0_t0_exp3_max_t1_e1_tot5
-  # - /termination: any1_min_e3_t3_exp1000_max_t1_e500_tot6000
 
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we
@@ -87,13 +86,5 @@ experiment:
       # experiment in the logs and to save a trained model.
       run_name: first_experiment
       loggers:
-        tbp.monty:
-          level: INFO
-        tbp.monty.frameworks:
-          level: WARNING
-        tbp.monty.experiment:
-          level: WARNING
-        tbp.monty.experiment.recognition_policy:
-          level: DEBUG
         telemetry.tbp.monty:
           level: INFO
