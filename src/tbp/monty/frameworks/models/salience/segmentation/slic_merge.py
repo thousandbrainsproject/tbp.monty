@@ -81,22 +81,15 @@ class SlicMerge(SegmentationStrategy):
         region_colors = self.extract_region_colors(rgb, region_image)
         adj = self.build_adjacency_graph(region_image, len(region_colors))
         accepted_regions = self._merge_regions(region_image, region_colors, adj)
-        return self.create_mask(
-            cast("tuple[int, int]", rgb.shape[:2]), region_image, accepted_regions
-        )
+        return self.create_mask(region_image, accepted_regions)
 
     @staticmethod
     def create_mask(
-        mask_shape: tuple[int, int],
         region_image: npt.NDArray[np.int64],
         accepted_regions: set[int],
     ) -> npt.NDArray[np.uint8]:
         # Create output mask from the set of accepted regions.
-        mask = np.zeros(mask_shape, dtype=np.uint8)
-        for lbl in accepted_regions:
-            mask[region_image == lbl] = 1
-
-        return mask
+        return np.isin(region_image, list(accepted_regions)).astype(np.uint8)
 
     @staticmethod
     def build_adjacency_graph(

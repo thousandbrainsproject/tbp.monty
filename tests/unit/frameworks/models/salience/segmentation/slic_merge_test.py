@@ -63,9 +63,7 @@ class SlicMergeCallTest(unittest.TestCase):
         merge_regions_mock.assert_called_once_with(
             segment_image_mock.return_value, ANY, ANY
         )
-        create_mask_mock.assert_called_once_with(
-            ANY, segment_image_mock.return_value, ANY
-        )
+        create_mask_mock.assert_called_once_with(segment_image_mock.return_value, ANY)
 
     @patch(
         "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._segment_image"
@@ -176,9 +174,7 @@ class SlicMergeCallTest(unittest.TestCase):
             region_colors_sentinel,
             build_adjacency_graph_mock.return_value,
         )
-        create_mask_mock.assert_called_once_with(
-            ANY, ANY, merge_regions_mock.return_value
-        )
+        create_mask_mock.assert_called_once_with(ANY, merge_regions_mock.return_value)
 
     @patch(
         "tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge._segment_image"
@@ -205,7 +201,6 @@ class SlicMergeCallTest(unittest.TestCase):
     ) -> None:
         slic_merge = SlicMerge()
         rgb = MagicMock()
-        rgb.shape.__getitem__.return_value = sentinel.rgb_shape
         extract_region_colors_mock.return_value = (
             MagicMock(),
             MagicMock(),
@@ -214,7 +209,6 @@ class SlicMergeCallTest(unittest.TestCase):
         mask = slic_merge(MagicMock(), rgb)
 
         create_mask_mock.assert_called_once_with(
-            sentinel.rgb_shape,
             segment_image_mock.return_value,
             merge_regions_mock.return_value,
         )
@@ -563,11 +557,11 @@ class SlicMergeCreateMaskTest(unittest.TestCase):
     def test_creates_mask_of_accepted_regions(self, inputs: MergeRegionsInput) -> None:
         region_image = inputs.region_image
         accepted_regions = inputs.accepted_regions
-        expected_mask = np.isin(region_image, list(accepted_regions)).astype(np.uint8)
+        expected_mask = np.zeros(region_image.shape, dtype=np.uint8)
+        for lbl in accepted_regions:
+            expected_mask[region_image == lbl] = 1
 
-        result = SlicMerge.create_mask(
-            region_image.shape, region_image, accepted_regions
-        )
+        result = SlicMerge.create_mask(region_image, accepted_regions)
 
         self.assertEqual(result.dtype, np.uint8)
         np.testing.assert_array_equal(result, expected_mask)
