@@ -14,12 +14,12 @@ import logging
 import logging.config
 import pprint
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import hydra
 import numpy as np
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
@@ -143,7 +143,7 @@ class MontyExperiment:
         Args:
             config: config specifying variables of the experiment.
         """
-        self.init_loggers(self.config["logging"])
+        self.init_loggers(self.config["logging"], self.config.get("telemetry", {}))
         logger.info(self.config)
 
         self._create_monty()
@@ -261,12 +261,24 @@ class MontyExperiment:
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: dict[str, Any]) -> None:
-        """Initialize logger with specified log level.
+    def init_loggers(
+        self, logging_config: dict[str, Any], telemetry_config: dict[str, Any]
+    ) -> None:
+        """Initialize logger and telemeter with specified log level.
 
         Args:
             logging_config: Logging configuration.
+            telemetry_config: Telemetry configuration.
         """
+        if telemetry_config:
+            telemetry_config["version"] = 1
+            telemetry_config["disable_existing_loggers"] = False
+            logging.config.dictConfig(
+                cast("dict", OmegaConf.to_container(telemetry_config, resolve=True))
+                if OmegaConf.is_config(telemetry_config)
+                else telemetry_config
+            )
+
         # Unpack individual logging arguments
         self.python_log_level = logging_config["python_log_level"]
         self.log_to_file = logging_config["python_log_to_file"]
@@ -504,18 +516,42 @@ class MontyExperiment:
         Returns:
             The number of total steps taken in the episode.
         """
-        step = 0
+        count = RecognitionCounter(mode=self.experiment_mode)
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
-        while not self._recognition_complete(step):
-            actions = self.run_step(ctx, step, actions)
-            step += 1
-        return step
+        while not self._recognition_complete(count):
+            actions = self.run_step(ctx, count.step, actions)
+            count.step += 1
+            if self._check_if_any_lms_updated():
+                if self.model.is_exploring:
+                    count.exploring_steps += 1
+                else:
+                    count.matching_steps += 1
+        if count.step < 3:
+            logger.warning("Episode only ran %d steps!", count.step)
+        else:
+            logger.info("Episode ran %d steps.", count.step)
+        return count.step
 
-    def _recognition_complete(self, step: int) -> bool:
-        rc = RecognitionCounter(step, self.experiment_mode)
-        rr = self._recognition_policy(self.model, rc)
-        return rr.is_done
+    def _recognition_complete(self, count: RecognitionCounter) -> bool:
+        result = self._recognition_policy(self.model, count)
+        if result.start_exploring:
+            self.model.switch_to_exploratory_step()
+        if result.is_time_out:
+            self.model.deal_with_time_out()
+        return result.is_done
+
+    def _check_if_any_lms_updated(self: Self) -> bool:
+        # TODO: Find a better way to determine this condition.
+        #       The `check_if_any_lms_updated` method is defined in
+        #       `MontyForGraphMatching` rather than `MontyBase`,
+        #       so the distinction between `step` and `matching_steps`
+        #       (or `exploring_steps`) only applies to `MontyForGraphMatching`
+        #       and its subclasses.
+        try:
+            return self.model.check_if_any_lms_updated()
+        except AttributeError:
+            return False
 
     def run_step(
         self, ctx: RuntimeContext, step: int, actions: list[Action]

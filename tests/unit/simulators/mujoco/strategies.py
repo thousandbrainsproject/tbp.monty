@@ -14,15 +14,7 @@ import numpy as np
 from hypothesis import strategies as st
 
 from tbp.monty.geometry import Rotation
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
-
-
-@st.composite
-def position(draw) -> VectorXYZ:
-    x = draw(st.floats(min_value=-10.0, max_value=10.0))
-    y = draw(st.floats(min_value=-10.0, max_value=10.0))
-    z = draw(st.floats(min_value=-10.0, max_value=10.0))
-    return x, y, z
+from tbp.monty.math import QuaternionWXYZ
 
 
 @st.composite

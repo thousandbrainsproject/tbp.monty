@@ -11,6 +11,7 @@ defaults:
   - /env_interface/transform: depthto3d_sensor1
   - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: tutorial_detailed_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

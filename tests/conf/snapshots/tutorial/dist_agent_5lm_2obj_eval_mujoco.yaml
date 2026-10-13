@@ -204,9 +204,10 @@ experiment:
           sensor_module_id: patch_4
           save_raw_obs: false
         sensor_module_5:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: false
+          sensor_id: view_finder
+          transforms: []
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0
@@ -387,6 +388,21 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
+    telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
+      loggers:
+        telemetry.tbp.monty:
+          handlers:
+          - telemetry_console
+          level: INFO
     n_train_epochs: 1
     n_eval_epochs: 1
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train_mujoco/pretrained"}

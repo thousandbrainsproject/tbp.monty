@@ -188,9 +188,11 @@ experiment:
             distance: 0.05
           save_raw_obs: true
         sensor_module_3:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: true
+          sensor_id: view_finder
+          transforms:
+          - _target_: tbp.monty.experiment.sensor_modules.telemetry.Snapshot
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0
@@ -348,7 +350,7 @@ experiment:
     show_sensor_output: false
     n_train_epochs: 7
     n_eval_epochs: 7
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_cows_3d_children/pretrained/}
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_cows_3d_children/pretrained/
     seed: 42
     supervised_lm_ids:
     - learning_module_1

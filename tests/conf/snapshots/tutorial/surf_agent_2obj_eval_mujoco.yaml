@@ -87,9 +87,10 @@ experiment:
               pose_fully_defined: 0.01
             location: 0.002
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: false
+          sensor_id: view_finder
+          transforms: []
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -184,6 +185,21 @@ experiment:
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       wandb_group: gm_eval_runs
+    telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
+      loggers:
+        telemetry.tbp.monty:
+          handlers:
+          - telemetry_console
+          level: INFO
     show_sensor_output: true
     n_train_epochs: 3
     model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_2obj_train_mujoco/pretrained"}
