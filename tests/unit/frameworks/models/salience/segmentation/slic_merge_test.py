@@ -220,6 +220,7 @@ class SlicMergeCallTest(unittest.TestCase):
         )
         self.assertIs(mask, create_mask_mock.return_value)
 
+
 class SlicMergeSegmentImageTest(unittest.TestCase):
     @patch("tbp.monty.frameworks.models.salience.segmentation.slic_merge.slic")
     def test_invokes_slic_with_configured_parameters(
@@ -245,6 +246,7 @@ class SlicMergeSegmentImageTest(unittest.TestCase):
             channel_axis=-1,
         )
         self.assertIs(result, slic_mock.return_value)
+
 
 class SlicMergeExtractRegionColorsTest(unittest.TestCase):
     @given(cvt_color_lab=uint8_array(shape=(3,)))
@@ -499,6 +501,7 @@ class SlicMergeBuildAdjencyGraphTest(unittest.TestCase):
         result = SlicMerge.build_adjacency_graph(inputs.region_image, inputs.n_regions)
         self.assertEqual(result, inputs.adjacency)
 
+
 class SlicMergeMergeRegionsTest(unittest.TestCase):
     @given(
         inputs=generate_merge_regions_input(
@@ -547,5 +550,24 @@ class SlicMergeComputeSuperpixelMeanColorsTest(unittest.TestCase):
 
 
 class SlicMergeCreateMaskTest(unittest.TestCase):
-    def test_creates_mask(self):
-        self.assertTrue(False)
+    @given(
+        inputs=generate_merge_regions_input(
+            row_count=st.integers(min_value=1, max_value=5),
+            column_count=st.integers(min_value=1, max_value=5),
+            max_tile_size=st.integers(min_value=1, max_value=5),
+            threshold=st.floats(
+                min_value=DEFAULT_TOLERANCE, max_value=1.1 * np.sqrt(3)
+            ),
+        )
+    )
+    def test_creates_mask_of_accepted_regions(self, inputs: MergeRegionsInput) -> None:
+        region_image = inputs.region_image
+        accepted_regions = inputs.accepted_regions
+        expected_mask = np.isin(region_image, list(accepted_regions)).astype(np.uint8)
+
+        result = SlicMerge.create_mask(
+            region_image.shape, region_image, accepted_regions
+        )
+
+        self.assertEqual(result.dtype, np.uint8)
+        np.testing.assert_array_equal(result, expected_mask)
