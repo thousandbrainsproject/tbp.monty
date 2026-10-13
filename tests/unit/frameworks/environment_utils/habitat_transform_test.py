@@ -23,7 +23,6 @@ from tbp.monty.frameworks.environment_utils.transforms import (
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
     Observations,
-    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -32,6 +31,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.geometry import Rotation
+from tbp.monty.observations import SensorObservation
 
 AGENT_ID = AgentID("camera")
 SENSOR_ID = SensorID("sensor_01")

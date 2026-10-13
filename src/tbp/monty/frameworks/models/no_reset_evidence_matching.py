@@ -121,13 +121,28 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         for lm in self.learning_modules:
             lm.set_individual_ts(None)
 
-    def _reset_modules_buffers(self):
-        """Resets buffers for LMs and SMs."""
+    def _reset_modules_buffers(self) -> None:
+        """Resets buffers for LMs and SMs.
+
+        TODO: Reconsider what to do here. There is a distinction between resetting
+              the modules, which may have impact on their processing, vs clearing
+              buffers that will not be returned to. The intent of this method is
+              a performance optimization to clear the buffers, so a generic
+              lm.reset() or sm.reset() will not work as intended, but reaching into
+              assumed methods and clearing them individually won't work in the long
+              term either.
+        """
         for lm in self.learning_modules:
             lm.buffer.reset()
         for sm in self.sensor_modules:
             sm.processed_obs = []
-            sm._snapshot_telemetry.reset()
+            # The below code reproduces previous behavior of resetting
+            # snapshot telemetry, but does so conditionally, so it
+            # does not fail on sensor modules that lack this attribute.
+            if hasattr(sm, "_snapshot_telemetry"):
+                snapshot_telemetry = sm._snapshot_telemetry
+                if hasattr(snapshot_telemetry, "reset"):
+                    snapshot_telemetry.reset()
 
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
