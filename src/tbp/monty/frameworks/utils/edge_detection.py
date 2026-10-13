@@ -15,13 +15,13 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     TangentFrame,
     normalize,
     project_onto_tangent_plane,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.observations import SensorObservation
 
 logger = logging.getLogger(__name__)
 

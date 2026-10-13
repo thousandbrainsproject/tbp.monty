@@ -195,9 +195,11 @@ experiment:
             distance: 0.05
           save_raw_obs: true
         sensor_module_3:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: true
+          sensor_id: view_finder
+          transforms:
+          - _target_: tbp.monty.experiment.sensor_modules.telemetry.Snapshot
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0
