@@ -95,7 +95,7 @@ The team also used the game engine to build simple custom maze games, learned co
 ![](../figures/community/arc_agi_3_compositional_maps.png)
 *Ground truth game maps (top) and the compositional maps Monty learned from them (bottom), labeled by the recognized child sprites.*
 
-ARC-AGI-3 turned out to be a rich testbed for many open problems on our roadmap, including unsupervised object discovery, occlusion, scale, object behavior, and causality. It would make a great community project! See the [feat.arc_agi_3 repository](https://github.com/thousandbrainsproject/feat.arc_agi_3) to try it out.
+ARC-AGI-3 [is a rich testbed for many open problems on our roadmap](https://www.youtube.com/watch?v=qqPxhMXePpk), including unsupervised object discovery, occlusion, scale, object behavior, and causality. It would make a great community project! See the [feat.arc_agi_3 repository](https://github.com/thousandbrainsproject/feat.arc_agi_3) to try it out.
 
 Watch the presentation:
 
