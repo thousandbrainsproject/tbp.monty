@@ -513,7 +513,7 @@ class SlicMergeMergeRegionsTest(unittest.TestCase):
             ),
         )
     )
-    def test_stuff(self, inputs: MergeRegionsInput) -> None:
+    def test_merges_regions(self, inputs: MergeRegionsInput) -> None:
         slic_merge = SlicMerge(merge_threshold=inputs.merge_threshold)
 
         result = slic_merge._merge_regions(
