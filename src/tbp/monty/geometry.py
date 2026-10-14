@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Iterable
 
 import numpy as np
@@ -362,3 +363,42 @@ class Rotation:
 
     def __setstate__(self, state: ScipyRotation) -> None:
         object.__setattr__(self, "_rot", state)
+
+
+# TODO: Turn into SurfacePoseVectors(Rotation) eventually.
+@dataclass
+class SurfacePoseVectors:
+    """Surface normal, and two principal curvature vectors."""
+
+    value: npt.NDArray[np.float64]
+    """
+    Rotation Matrix of shape (3, 3) containing [surface_normal, principal_curvature_1,
+    principal_curvature_2]
+
+    These are in row-major order, and in [z (SN), x (PC1), y (PC2)] order. This should
+    be a proper Rotation matrix (i.e. Determinant = 1 &&  Vectors are Orthonormal). This
+    class does not validate for proper Rotation matrix, and we do create invalid
+    instances.
+    """
+
+
+# TODO: Replace with Rotation eventually.
+@dataclass
+class OrientationMatrix:
+    """Rotation matrix representing object orientation."""
+
+    value: npt.NDArray[np.float64]
+    """
+    Rotation Matrix of shape (3, 3) representing [x_axis, y_axis, z_axis] of object
+    orientation.
+    """
+
+
+@dataclass
+class GazeDirection:
+    """Matrix containing a gaze goal in the negative direction of surface normal."""
+
+    value: npt.NDArray[np.float64]
+    """
+    Matrix of shape (3, 3) representing [- surface_normal, NaN, NaN].
+    """

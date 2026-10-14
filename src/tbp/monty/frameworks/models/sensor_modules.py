@@ -36,7 +36,7 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tbp.monty.memento import Memento
 from tbp.monty.observations import SensorObservation
 
@@ -292,12 +292,14 @@ class ObservationProcessor:
             pose_fully_defined = True
 
         morphological_features: dict[str, Any] = {
-            "pose_vectors": np.vstack(
-                [
-                    surface_normal,
-                    dir1,
-                    dir2,
-                ]
+            "pose_vectors": SurfacePoseVectors(
+                np.vstack(
+                    [
+                        surface_normal,
+                        dir1,
+                        dir2,
+                    ]
+                )
             ),
             "pose_fully_defined": pose_fully_defined,
         }
