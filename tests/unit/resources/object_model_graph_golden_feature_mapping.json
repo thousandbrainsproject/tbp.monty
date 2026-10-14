@@ -1,0 +1,68 @@
+{
+  "node": {
+    "node_ids": [
+      0,
+      1
+    ],
+    "pose_vectors": [
+      1,
+      10
+    ],
+    "pose_fully_defined": [
+      10,
+      11
+    ],
+    "hsv": [
+      11,
+      14
+    ],
+    "curvature": [
+      14,
+      15
+    ]
+  },
+  "edge": {
+    "node_ids": [
+      0,
+      1
+    ],
+    "pose_vectors": [
+      1,
+      10
+    ],
+    "pose_fully_defined": [
+      10,
+      11
+    ],
+    "hsv": [
+      11,
+      14
+    ],
+    "curvature": [
+      14,
+      15
+    ]
+  },
+  "ppf": {
+    "node_ids": [
+      0,
+      1
+    ],
+    "pose_vectors": [
+      1,
+      10
+    ],
+    "pose_fully_defined": [
+      10,
+      11
+    ],
+    "hsv": [
+      11,
+      14
+    ],
+    "curvature": [
+      14,
+      15
+    ]
+  }
+}

@@ -8,10 +8,15 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
+import json
 import unittest
+from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -20,8 +25,14 @@ from tbp.monty.frameworks.models.object_model import (
     GridObjectModel,
     GridTooSmallError,
 )
+from tbp.monty.frameworks.utils.object_model_utils import (
+    NumpyGraph,
+    orthonormal_pose_vectors,
+)
 from tbp.monty.frameworks.utils.spatial_arithmetics import check_orthonormal
 from tbp.monty.geometry import Rotation
+
+RESOURCES = Path(__file__).parents[2] / "resources"  # tests/unit/resources
 
 
 class ObjectModelTest(unittest.TestCase):
@@ -355,3 +366,115 @@ class ObjectModelTest(unittest.TestCase):
                 self.dummy_locs,
                 self.dummy_features,
             )
+
+
+class GraphObjectModelGoldenTest(unittest.TestCase):
+    """NumPy graph build must reproduce the frozen torch golden output.
+
+    Characterization test over object_model_graph_golden.npz, captured pre-refactor.
+    """
+
+    def setUp(self) -> None:
+        self.golden = np.load(RESOURCES / "object_model_graph_golden.npz")
+        self.golden_fm = json.loads(
+            (RESOURCES / "object_model_graph_golden_feature_mapping.json").read_text()
+        )
+
+        # Inputs must match the capture script exactly
+        self.dummy_locs = np.array(
+            [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0]]
+        )
+        pv = np.eye(3).flatten()
+        self.dummy_features = {
+            "pose_vectors": np.vstack([pv, pv, pv, pv]),
+            "pose_fully_defined": np.array([True, True, True, True]),
+            "hsv": np.array(
+                [[0.1, 1.0, 1.0], [0.0, 1.0, 1.0], [0.9, 1.0, 1.0], [0.8, 1.0, 1.0]]
+            ),
+            "curvature": np.array([0.0, 1.0, 2.0, 1.0]),
+        }
+        self.dummy_thresholds = {
+            "distance": 0.5,
+            "pose_vectors": np.ones(3),
+            "hsv": [0.1, 1.0, 1.0],
+            "curvature": 0.1,
+        }
+
+        normals = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 1.0, 1.0]]
+        cds = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [1.0, -1.0, 0.0]]
+        self.ppf_features = {
+            "pose_vectors": np.vstack(
+                [
+                    orthonormal_pose_vectors(np.array(n), np.array(c))
+                    for n, c in zip(normals, cds)
+                ]
+            ),
+            "pose_fully_defined": np.array([True, True, True, True]),
+            "hsv": np.array(
+                [[0.1, 1.0, 1.0], [0.3, 1.0, 1.0], [0.6, 1.0, 1.0], [0.9, 1.0, 1.0]]
+            ),
+            "curvature": np.array([0.0, 1.0, 2.0, 3.0]),
+        }
+        self.ppf_locs = np.array(
+            [[0.0, 0.0, 0.0], [0.2, 0.1, 0.3], [0.4, 0.5, 0.1], [0.1, 0.6, 0.7]]
+        )
+        self.ppf_thresholds = {
+            "distance": 0.0001,
+            "pose_vectors": np.ones(3),
+            "hsv": [0.1, 1.0, 1.0],
+            "curvature": 0.1,
+        }
+
+    def _build(
+        self,
+        locs: npt.NDArray[np.float64],
+        feats: dict,
+        thresholds: dict,
+        k_n: int | None,
+        ppf: bool = False,
+    ) -> NumpyGraph:
+        m = GraphObjectModel("golden")
+        m.build_model(locs, feats, k_n=k_n, graph_delta_thresholds=thresholds)
+        if ppf:
+            m.add_ppf_to_graph()
+        return m._graph
+
+    def _assert_nodes(self, g: NumpyGraph, prefix: str) -> None:
+        np.testing.assert_allclose(g.x, self.golden[f"{prefix}_x"], atol=1e-6, rtol=0)
+        np.testing.assert_allclose(
+            g.pos, self.golden[f"{prefix}_pos"], atol=1e-6, rtol=0
+        )
+        np.testing.assert_allclose(
+            g.norm, self.golden[f"{prefix}_norm"], atol=1e-6, rtol=0
+        )
+        self.assertEqual(g.feature_mapping, self.golden_fm[prefix])
+
+    def test_nodes_only(self) -> None:
+        self._assert_nodes(
+            self._build(
+                self.dummy_locs, self.dummy_features, self.dummy_thresholds, k_n=None
+            ),
+            "node",
+        )
+
+    def test_nodes_and_edges(self) -> None:
+        g = self._build(
+            self.dummy_locs, self.dummy_features, self.dummy_thresholds, k_n=2
+        )
+        self._assert_nodes(g, "edge")
+
+        # edge_index first and exact - ordering drift corrupts edge_attr rows
+        np.testing.assert_array_equal(g.edge_index, self.golden["edge_edge_index"])
+        np.testing.assert_allclose(
+            g.edge_attr, self.golden["edge_edge_attr"], atol=1e-6, rtol=0
+        )
+
+    def test_ppf(self) -> None:
+        g = self._build(
+            self.ppf_locs, self.ppf_features, self.ppf_thresholds, k_n=2, ppf=True
+        )
+        self._assert_nodes(g, "ppf")
+        np.testing.assert_array_equal(g.edge_index, self.golden["ppf_edge_index"])
+        np.testing.assert_allclose(
+            g.edge_attr, self.golden["ppf_edge_attr"], atol=1e-6, rtol=0
+        )
