@@ -167,9 +167,6 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
       run_name: first_experiment
-      loggers:
-        telemetry.tbp.monty:
-          level: INFO
     telemetry:
       formatters:
         telemetry_formatter:
