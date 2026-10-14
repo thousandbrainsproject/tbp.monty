@@ -9,14 +9,18 @@
 
 import logging
 from unittest import TestCase
-from unittest.mock import patch, sentinel
+from unittest.mock import MagicMock, patch
 
 from tbp.monty.frameworks.models.evidence_matching import graph_memory
+from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
+    EvidenceGraphMemory,
+)
+from tbp.monty.frameworks.models.object_model import GridTooSmallError
 
 
 class EvidenceGraphMemoryTest(TestCase):
     def setUp(self) -> None:
-        self.memory = graph_memory.EvidenceGraphMemory(
+        self.memory = EvidenceGraphMemory(
             max_nodes_per_graph=10,
             max_graph_size=0.3,
             num_model_voxels_per_dim=50,
@@ -24,13 +28,11 @@ class EvidenceGraphMemoryTest(TestCase):
 
     def test_build_graph_warns_when_grid_is_too_small(self) -> None:
         with patch.object(graph_memory, "GridObjectModel") as model_class:
-            model_class.return_value.build_model.side_effect = (
-                graph_memory.GridTooSmallError
-            )
+            model_class.return_value.build_model.side_effect = GridTooSmallError
             with self.assertLogs(graph_memory.logger, level="WARNING") as captured:
                 self.memory._build_graph(
-                    locations=sentinel.locations,
-                    features=sentinel.features,
+                    locations=MagicMock(),
+                    features=MagicMock(),
                     graph_id="test_object",
                     input_channel="patch",
                 )
@@ -47,8 +49,8 @@ class EvidenceGraphMemoryTest(TestCase):
         with patch.object(graph_memory, "GridObjectModel") as model_class:
             with self.assertLogs(graph_memory.logger, level="INFO") as captured:
                 self.memory._build_graph(
-                    locations=sentinel.locations,
-                    features=sentinel.features,
+                    locations=MagicMock(),
+                    features=MagicMock(),
                     graph_id="test_object",
                     input_channel="patch",
                 )
