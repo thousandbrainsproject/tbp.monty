@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, Literal, Sequence
+from typing import Any, ClassVar, Iterable, Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -403,6 +403,9 @@ class AttentionRegion:
 
     locations: npt.NDArray[np.floating]
     weights: npt.NDArray[np.floating]
+
+    MIN_WEIGHT: ClassVar[float] = -1.0
+    MAX_WEIGHT: ClassVar[float] = 1.0
 
     def __post_init__(self) -> None:
         """Coerce the arrays and check they describe the same N locations.

@@ -91,3 +91,19 @@ class OnObjectObservationTest(unittest.TestCase):
         on_object = on_object_observation(raw_observation, data["salience_map"])
         np.testing.assert_array_equal(on_object.locations, np.zeros((0, 3)))  # type: ignore[arg-type]
         np.testing.assert_array_equal(on_object.salience, np.zeros((0,)))  # type: ignore[arg-type]
+
+    def test_on_object_on_object_map_has_shape_of_input_image(self) -> None:
+        raw_observation, data = self.create_data(central_pixel_on_object=True)
+
+        on_object = on_object_observation(raw_observation, data["salience_map"])
+        self.assertEqual(
+            on_object.on_object_map.shape, raw_observation["rgba"].shape[:2]
+        )
+
+    def test_on_object_location_map_has_shape_of_input_image(self) -> None:
+        raw_observation, data = self.create_data(central_pixel_on_object=True)
+
+        on_object = on_object_observation(raw_observation, data["salience_map"])
+        self.assertEqual(
+            on_object.location_map.shape, raw_observation["rgba"].shape[:2] + (3,)
+        )
