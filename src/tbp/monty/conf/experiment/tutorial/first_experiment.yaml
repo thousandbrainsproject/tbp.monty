@@ -85,6 +85,3 @@ experiment:
       # Every experiment has a unique run name. This is used to identify the
       # experiment in the logs and to save a trained model.
       run_name: first_experiment
-      loggers:
-        telemetry.tbp.monty:
-          level: INFO
