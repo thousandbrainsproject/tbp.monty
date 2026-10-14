@@ -116,26 +116,40 @@ class MinEvalSteps(RecognitionPolicy):
     _min_eval_steps: int
     """The minimum steps to take in matching mode."""
 
+    _max_total_steps: int
+    """The maximum number of steps before forcing termination."""
+
     def __init__(
         self: Self,
         prior: RecognitionPolicy,
         min_eval_steps: int = 0,
+        max_total_steps: int = 1,
     ) -> None:
         """Initialize the policy.
 
         Args:
             prior: The policy used to determine prior bias.
             min_eval_steps: The minimum steps to take in matching mode.
+            max_total_steps: The maximum number of steps before forcing termination.
 
         Raises:
             ValueError:
-                If `min_train_steps` is negative.
+                - If `min_eval_steps` is negative.
+                - If `max_total_steps` is not positive.
+                - If `min_eval_steps > max_total_steps`.
         """
         if min_eval_steps < 0:
             raise ValueError("min_eval_steps must be non-negative")
+        if max_total_steps <= 0:
+            raise ValueError("max_total_steps must be positive")
+        if min_eval_steps > max_total_steps:
+            raise ValueError(
+                "min_eval_steps must be less than or equal to max_total_steps"
+            )
 
         self._prior = prior
         self._min_eval_steps = min_eval_steps
+        self._max_total_steps = max_total_steps
 
     def __call__(
         self: Self,
@@ -152,6 +166,11 @@ class MinEvalSteps(RecognitionPolicy):
         ):
             result.is_done = False
 
+        # Force termination if `max_total_steps` is reached.
+        if count.step >= self._max_total_steps:
+            result.is_done = True
+            result.is_time_out = True
+
         # Force termination if the model says it is done.
         if model.is_done:
             result.is_done = True
@@ -159,8 +178,9 @@ class MinEvalSteps(RecognitionPolicy):
         # Report reason for termination.
         if result.is_done:
             logger.info(
-                "MinEvalSteps is done, with model.is_done=%s matching_steps=%d",
+                "MinEvalSteps is done, with model.is_done=%s step=%d matching_steps=%d",
                 model.is_done,
+                count.step,
                 count.matching_steps,
             )
             telemeter.info(
@@ -205,7 +225,7 @@ class MaxTotalSteps(RecognitionPolicy):
         is_done = count.step >= self._max_total_steps
         if is_done:
             logger.info("MaxTotalSteps is done, with step=%d", count.step)
-        return RecognitionResult(is_done)
+        return RecognitionResult(is_done=is_done, is_time_out=is_done)
 
 
 class MaximumSteps(RecognitionPolicy):
