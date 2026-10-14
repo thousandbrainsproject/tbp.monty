@@ -20,6 +20,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
     project_onto_tangent_plane,
 )
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tbp.monty.observations import SensorObservation
 
@@ -48,7 +49,7 @@ def _angle_to_pose_2d(
     cam_to_world: np.ndarray,
     surface_normal: np.ndarray,
     tangent_frame: TangentFrame,
-) -> np.ndarray:
+) -> SurfacePoseVectors:
     """Build 2D pose vectors from an edge angle.
 
     The image-space edge direction is projected onto the local tangent plane and
@@ -82,12 +83,14 @@ def _angle_to_pose_2d(
     edge_tangent_v = np.dot(edge_tangent_world, tangent_frame.basis_v)
     edge_tangent_2d = normalize(np.array([edge_tangent_u, edge_tangent_v, 0.0]))
 
-    return np.array(
-        [
-            [0.0, 0.0, 1.0],
-            edge_tangent_2d,
-            [-edge_tangent_2d[1], edge_tangent_2d[0], 0.0],
-        ]
+    return SurfacePoseVectors(
+        np.array(
+            [
+                [0.0, 0.0, 1.0],
+                edge_tangent_2d,
+                [-edge_tangent_2d[1], edge_tangent_2d[0], 0.0],
+            ]
+        )
     )
 
 
