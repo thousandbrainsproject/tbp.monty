@@ -3,11 +3,15 @@ title: Attention System
 ---
 
 # Attention System
-Attention is the process of selecting which parts of the sensory world deserve the next action, and which parts should be ignored for the time being. Many signals can contribute to that selection: the bottom-up salience of a stimulus, the goals of the task at hand, a tendency not to revisit what was just examined, and the boundaries of the object currently being looked at. In Monty, attention is defined by a region of space. Components (e.g., sensor modules) "propose" regions that they consider meaningful. The attention system accumulates and integrates these proposed regions and uses them to filter out goals that do not lie within the attentional region.
+When learning or inferring compositional objects or objects embedded in a larger scene, it is necessary to constrain observations to within the object of interest. A random walk or even salience-driven movements  generally does not keep Monty on an object long enough for it to be inferred. If learning, stray observations that span multiple objects would result in learned models that contain multiple objects within it. For these reasons, Monty can be configured with an attention system.
 
-The attention system sits between the components that propose goals and the [motor system](motor-system.md) that acts on them. On every step, the Monty class collects goals from its learning modules and sensor modules, collects attention regions from its sensor modules, and passes both to the attention system. The attention system returns the goals that the motor system is allowed to consider. If no attention system is configured, Monty uses a `NoopAttentionSystem` and every goal passes through unchanged.
+In Monty, attention is defined by a region of space. Other components (e.g., sensor modules) may "propose" regions that they consider meaningful, and the attention system will fold those proposals into a persistent representation with which goals (which determine actions) may be filtered out.
 
-`DefaultAttentionSystem` works on a sparse voxel grid over the body-centered 3D space. Each step proceeds as follows:
+The attention system sits between the components that propose goals and the [motor system](motor-system.md) that acts on them. On every step, the Monty class collects goals and proposed regions from its sensor modules and learning modules and passes this data onto the attention system, returning a filtered set of goals.
+
+Monty can currently be configured with either the `NoopAttentionSystem` (which does not filter goals at all) or the `DefaultAttentionSystem`. The `DefaultAttentionSystem` maintains a sparse voxel grid in shared, body-centric 3D space. Since the `DefaultAttentionSystem` is the Monty's primary implementation, the remainder of this document refers explicitly to its implementation details.
+
+At each step, the `DefaultAttentionSystem` proceeds as follows:
 
 1. The proposed attention regions are voxelized into a new grid. Where several locations land in the same voxel, their weights are pooled.
 2. The weights in the existing grid decay toward zero, and voxels whose weights are close enough to zero expire and are removed.
@@ -17,16 +21,16 @@ The attention system sits between the components that propose goals and the [mot
 Each of these stages is a configurable component, described below.
 
 ## AttentionRegion
-An `AttentionRegion` is a set of 3D locations relative to the body, each carrying an attention weight in the range -1 to 1. Positive weights mark places that should attract action, and negative weights mark places that should be inhibited. Regions are currently proposed by sensor modules; see the [Salience Sensor Module](sensor-module/salience-sm.md#segmentationstrategy) for the one that does so today. `AttentionRegion` is defined alongside `Goal` and `Message` in the [cortical messaging protocol module](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/cmp.py), but it is not itself a CMP message: it describes a spatial extent rather than a feature at a pose.
+An `AttentionRegion` is a set of 3D locations relative to the body, each associated with an "attention weight" Positive weights mark places that should attract action, and negative weights mark places that should be inhibited. Regions are currently proposed by `SalienceSM`'s [segmentation strategy](sensor-module/salience-sm.md#segmentationstrategy), though any sensor module may written to propose them. Note that `AttentionRegion` is defined alongside `Goal` and `Message` in the [cortical messaging protocol module](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/cmp.py).
 
 ## VoxelGrid
-The attention system stores its memory in a `VoxelGrid`, a sparse grid of cubic voxels with one weight per occupied voxel. The voxel size is a parameter of the attention system. Voxels are half-open, so a point that lies exactly on the boundary between two voxels belongs to the one with the larger coordinate.
+The `DefaultAttentionSystem` represents an attentional space as a `VoxelGrid`, a sparse grid of cubic voxels with one weight per occupied voxel. The spatial extent of each voxel is configurable via the `DefaultAttentionSystem`'s `voxel_size` parameter. (Note that voxel-based representations are not a requirement of attention system implementations in general -- so long as an implementation obeys the `AttentionSystem` protocol, spaces/volumes  can be represented in any way.)
 
 ## WeightPooler
-When several locations from the proposed regions fall into the same voxel, a `WeightPooler` reduces their weights to a single value. The default, `negative_priority_max_pool`, lets inhibition dominate: if any location in the voxel carries a negative weight, the most negative weight is used, otherwise the maximum weight is used.
+When several locations from the proposed regions fall into the same voxel, their weights must somehow be combined in order to assign their resulting voxel a single weight. This is the job of the `DefaultAttentionSystem`'s `WeightPooler`. By default, we use the `negative_priority_max_pool` which lets inhibition dominate: if any location in the voxel carries a negative weight, the most negative weight is used, otherwise the maximum weight is used.
 
 ## VoxelGridWeightDecay
-Before the new proposal is merged in, a `VoxelGridWeightDecay` moves the weights of the existing grid toward zero so that attention fades unless it is renewed. There are two implementations:
+Before the newly proposed grid is merged into the attention system's , a `VoxelGridWeightDecay` moves the weights of the existing grid toward zero so that attention fades unless it is renewed. There are two implementations:
  - `NoopDecay`: Leaves every weight untouched, so attention persists until it is overwritten.
  - `LinearWeightDecay`: Moves every weight toward zero by a fixed amount per step, clamping weights that would cross zero. This is the default.
 
@@ -42,11 +46,3 @@ Finally, a `GoalFilter` decides which goals pass to the motor system given the m
 
 ## Telemetry
 `DefaultAttentionSystem` can be configured with an `AttentionSystemTelemetry` that records the proposed grid and the merged grid at every step. The recorded grids are included in Monty's state dictionary and reach the detailed loggers described in [Logging and Analysis](../how-to-use-monty/logging-and-analysis.md).
-
-# Attention System Classes Currently Implemented
-| List of all attention system classes | Description |
-| --- | --- |
-| **NoopAttentionSystem** | Passes every goal through unchanged and keeps no state. This is what Monty uses when no attention system is configured. |
-| **DefaultAttentionSystem** | Maintains a decaying voxel grid built from proposed attention regions and filters goals against it, using the configurable components described above. |
-
-To use the default attention system in an experiment, add `/monty/attention_system: default` to the experiment's defaults list. The compositional object experiments under `src/tbp/monty/conf/experiment/` do this.
