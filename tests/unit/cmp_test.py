@@ -92,7 +92,7 @@ class CMPAttributeValidationTest(unittest.TestCase):
             "process_features_in_lm": True,
         }
 
-    def test_message_missing_pose_vectors_reports_keys(self) -> None:
+    def test_message_missing_pose_vectors_raises_assertion_error(self) -> None:
         del self.message_args["morphological_features"]["pose_vectors"]
 
         with self.assertRaises(AssertionError) as raised:
@@ -104,7 +104,7 @@ class CMPAttributeValidationTest(unittest.TestCase):
             "dict_keys(['pose_fully_defined'])",
         )
 
-    def test_message_invalid_pose_vectors_reports_shape(self) -> None:
+    def test_message_invalid_pose_vectors_raises_assertion_error(self) -> None:
         self.message_args["morphological_features"]["pose_vectors"] = np.eye(2)
 
         with self.assertRaises(AssertionError) as raised:
@@ -116,7 +116,7 @@ class CMPAttributeValidationTest(unittest.TestCase):
             "shape is (2, 2)",
         )
 
-    def test_message_invalid_pose_fully_defined_reports_type(self) -> None:
+    def test_message_invalid_pose_fully_defined_raises_assertion_error(self) -> None:
         self.message_args["morphological_features"]["pose_fully_defined"] = 1
 
         with self.assertRaises(AssertionError) as raised:
@@ -127,7 +127,7 @@ class CMPAttributeValidationTest(unittest.TestCase):
             "pose_fully_defined must be a boolean but type is <class 'int'>",
         )
 
-    def test_goal_missing_pose_vectors_reports_keys(self) -> None:
+    def test_goal_missing_pose_vectors_raises_assertion_error(self) -> None:
         del self.message_args["morphological_features"]["pose_vectors"]
 
         with self.assertRaises(AssertionError) as raised:
@@ -139,7 +139,7 @@ class CMPAttributeValidationTest(unittest.TestCase):
             "dict_keys(['pose_fully_defined'])",
         )
 
-    def test_goal_invalid_pose_fully_defined_reports_type(self) -> None:
+    def test_goal_invalid_pose_fully_defined_raises_assertion_error(self) -> None:
         self.message_args["morphological_features"]["pose_fully_defined"] = 1
 
         with self.assertRaises(AssertionError) as raised:
