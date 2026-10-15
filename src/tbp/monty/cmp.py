@@ -194,19 +194,21 @@ class Message:
     def _check_all_attributes(self):
         assert "pose_vectors" in self.morphological_features, (
             "pose_vectors should be in morphological_features but keys are "
+            f"{self.morphological_features.keys()}"
         )
-        f"{self.morphological_features.keys()}"
         # TODO S: may want to test length and angle between vectors as well
         assert self.morphological_features["pose_vectors"].shape == (
             3,
             3,
-        ), "pose should be defined by three orthonormal unit vectors but pose_vectors "
-        f"shape is {self.morphological_features['pose_vectors'].shape}"
+        ), (
+            "pose should be defined by three orthonormal unit vectors but pose_vectors "
+            f"shape is {self.morphological_features['pose_vectors'].shape}"
+        )
         assert "pose_fully_defined" in self.morphological_features
         assert isinstance(self.morphological_features["pose_fully_defined"], bool), (
             "pose_fully_defined must be a boolean but type is "
+            f"{type(self.morphological_features['pose_fully_defined'])}"
         )
-        f"{type(self.morphological_features['pose_fully_defined'])}"
         if self.location is not None:
             assert self.location.shape == (3,), (
                 f"Location must be a 3D vector but shape is {self.location.shape}"
@@ -313,8 +315,8 @@ class Goal(Message):
         if self.morphological_features is not None:
             assert "pose_vectors" in self.morphological_features, (
                 "pose_vectors should be in morphological_features but keys are "
+                f"{self.morphological_features.keys()}"
             )
-            f"{self.morphological_features.keys()}"
             assert np.any(
                 np.isnan(self.morphological_features["pose_vectors"])
             ) or self.morphological_features["pose_vectors"].shape == (
@@ -330,8 +332,8 @@ class Goal(Message):
                 isinstance(self.morphological_features["pose_fully_defined"], bool)
             ) or self.morphological_features["pose_fully_defined"] is None, (
                 "pose_fully_defined must be a boolean or None but type is "
+                f"{type(self.morphological_features['pose_fully_defined'])}"
             )
-            f"{type(self.morphological_features['pose_fully_defined'])}"
         if self.location is not None:
             assert self.location.shape == (3,), (
                 f"Location must be a 3D vector but shape is {self.location.shape}"

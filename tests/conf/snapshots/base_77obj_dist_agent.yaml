@@ -86,7 +86,6 @@ experiment:
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          save_raw_obs: false
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
