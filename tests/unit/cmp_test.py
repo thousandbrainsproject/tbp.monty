@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import unittest
-from typing import Literal
+from typing import Literal, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -65,9 +65,20 @@ class CMPMessageTest(unittest.TestCase):
         self.assertIsNone(location_mean([_message("SM", None)]))
 
 
+class _MessageArgs(TypedDict):
+    location: npt.NDArray[np.float64] | None
+    morphological_features: dict[str, object]
+    non_morphological_features: dict[str, object]
+    confidence: float
+    pass_message: bool
+    sender_id: str
+    sender_type: Literal["SM", "LM"]
+    process_features_in_lm: bool
+
+
 class CMPAttributeValidationTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.message_args = {
+        self.message_args: _MessageArgs = {
             "location": None,
             "morphological_features": {
                 "pose_vectors": np.eye(3),
