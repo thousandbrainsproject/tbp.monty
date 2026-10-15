@@ -3,13 +3,13 @@ title: Attention System
 ---
 
 # Attention System
-When learning or inferring compositional objects or objects embedded in a larger scene, it is necessary to constrain observations to within the object of interest. A random walk or even salience-driven movements  generally does not keep Monty on an object long enough for it to be inferred. If learning, stray observations that span multiple objects would result in learned models that contain multiple objects within it. For these reasons, Monty can be configured with an attention system.
+When learning or inferring compositional objects or objects embedded in a larger scene, it is necessary to constrain observations to within the object of interest. A random walk or even salience-driven policy  generally does not keep Monty on an object long enough for it to be inferred. If learning, stray observations that span multiple objects would result in higher-level models rarely receiving information about inferred objects, preventing compositional representations. To address this, Monty can be configured with an attention system.
 
 In Monty, attention is defined by a region of space. Other components (e.g., sensor modules) may "propose" regions that they consider meaningful, and the attention system will fold those proposals into a persistent representation with which goals (which determine actions) may be filtered out.
 
 The attention system sits between the components that propose goals and the [motor system](motor-system.md) that acts on them. On every step, the Monty class collects goals and proposed regions from its sensor modules and learning modules and passes this data onto the attention system, returning a filtered set of goals.
 
-Monty can currently be configured with either the `NoopAttentionSystem` (which does not filter goals at all) or the `DefaultAttentionSystem`. The `DefaultAttentionSystem` maintains a sparse voxel grid in shared, body-centric 3D space. Since the `DefaultAttentionSystem` is the Monty's primary implementation, the remainder of this document refers explicitly to its implementation details.
+Monty can currently be configured with either the `NoopAttentionSystem` (which does not filter goals at all) or the `DefaultAttentionSystem`. The `DefaultAttentionSystem` maintains a sparse voxel grid in shared, body-centric 3D space. Since the `DefaultAttentionSystem` is Monty's primary implementation, the remainder of this document refers explicitly to its implementation details.
 
 At each step, the `DefaultAttentionSystem` proceeds as follows:
 
