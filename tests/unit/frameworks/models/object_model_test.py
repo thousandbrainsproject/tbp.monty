@@ -449,6 +449,12 @@ class GraphObjectModelGoldenTest(unittest.TestCase):
         )
         self.assertEqual(g.feature_mapping, self.golden_fm[prefix])
 
+    def _sort_edges(
+        self, edge_index: npt.NDArray[np.integer], edge_attr: npt.NDArray[np.float32]
+    ) -> tuple[npt.NDArray[np.integer], npt.NDArray[np.float32]]:
+        order = np.lexsort((edge_index[1], edge_index[0]))
+        return edge_index[:, order], edge_attr[order]
+
     def test_nodes_only(self) -> None:
         self._assert_nodes(
             self._build(
@@ -463,18 +469,26 @@ class GraphObjectModelGoldenTest(unittest.TestCase):
         )
         self._assert_nodes(g, "edge")
 
-        # edge_index first and exact - ordering drift corrupts edge_attr rows
-        np.testing.assert_array_equal(g.edge_index, self.golden["edge_edge_index"])
-        np.testing.assert_allclose(
-            g.edge_attr, self.golden["edge_edge_attr"], atol=1e-6, rtol=0
+        # Canonicalize both sides so sklearn tie-break order does not matter
+        actual_index, actual_attr = self._sort_edges(g.edge_index, g.edge_attr)
+        golden_index, golden_attr = self._sort_edges(
+            self.golden["edge_edge_index"],
+            self.golden["edge_edge_attr"],
         )
+        np.testing.assert_array_equal(actual_index, golden_index)
+        np.testing.assert_allclose(actual_attr, golden_attr, atol=1e-6, rtol=0)
 
     def test_ppf(self) -> None:
         g = self._build(
             self.ppf_locs, self.ppf_features, self.ppf_thresholds, k_n=2, ppf=True
         )
         self._assert_nodes(g, "ppf")
-        np.testing.assert_array_equal(g.edge_index, self.golden["ppf_edge_index"])
-        np.testing.assert_allclose(
-            g.edge_attr, self.golden["ppf_edge_attr"], atol=1e-6, rtol=0
+
+        actual_index, actual_attr = self._sort_edges(g.edge_index, g.edge_attr)
+        golden_index, golden_attr = self._sort_edges(
+            self.golden["ppf_edge_index"],
+            self.golden["ppf_edge_attr"],
         )
+
+        np.testing.assert_array_equal(actual_index, golden_index)
+        np.testing.assert_allclose(actual_attr, golden_attr, atol=1e-6, rtol=0)
