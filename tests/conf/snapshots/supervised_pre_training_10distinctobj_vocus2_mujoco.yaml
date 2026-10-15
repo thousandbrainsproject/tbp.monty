@@ -75,7 +75,6 @@ experiment:
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          save_raw_obs: false
           salience_strategy:
             _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2.from_config
             config:
