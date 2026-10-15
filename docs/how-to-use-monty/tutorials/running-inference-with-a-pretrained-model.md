@@ -144,7 +144,7 @@ learning_module_0:
     patch:
       # Weighting saturation and value less since these might change under different
       # lighting conditions.
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   # Most likely hypothesis needs to have 20% more evidence than the others to
   # be considered certain enough to trigger a terminal condition (match).
   x_percent_threshold: 20
@@ -182,6 +182,7 @@ defaults:
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /termination: any1_objectrecognition_t1000_e500_tot5000
   - /logging: basic_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
