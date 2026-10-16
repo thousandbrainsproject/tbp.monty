@@ -131,6 +131,40 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           anaconda --token $ANACONDA_TOKEN upload ${{ steps.expected_output_location.outputs.path }}
 
+  pypi_publish:
+    name: pypi-publish
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v7
+        with:
+          lfs: true
+          fetch-depth: 1
+          path: tbp.monty
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+      - name: Create uv environment
+        working-directory: tbp.monty
+        run: |
+          uv sync --locked --extra dev --extra simulator_mujoco
+          uv pip install build
+      - name: Build the package
+        working-directory: tbp.monty
+        run: |
+          uv run python -m build
+      - name: Publish the package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: tbp.monty/dist/
+          repository-url: https://test.pypi.org/legacy/
+
+
   tag_version_monty_publish:
     name: tag-version-monty-publish
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
