@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import unittest
-from typing import Literal
+from typing import Literal, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -63,6 +63,92 @@ class CMPMessageTest(unittest.TestCase):
     def test_location_mean_none_when_no_location(self):
         self.assertIsNone(location_mean([]))
         self.assertIsNone(location_mean([_message("SM", None)]))
+
+
+class _MessageArgs(TypedDict):
+    location: npt.NDArray[np.float64] | None
+    morphological_features: dict[str, object]
+    non_morphological_features: dict[str, object]
+    confidence: float
+    pass_message: bool
+    sender_id: str
+    sender_type: Literal["SM", "LM"]
+    process_features_in_lm: bool
+
+
+class CMPAttributeValidationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.message_args: _MessageArgs = {
+            "location": None,
+            "morphological_features": {
+                "pose_vectors": np.eye(3),
+                "pose_fully_defined": True,
+            },
+            "non_morphological_features": {},
+            "confidence": 1.0,
+            "pass_message": True,
+            "sender_id": "SM_0",
+            "sender_type": "SM",
+            "process_features_in_lm": True,
+        }
+
+    def test_message_missing_pose_vectors_raises_assertion_error(self) -> None:
+        del self.message_args["morphological_features"]["pose_vectors"]
+
+        with self.assertRaises(AssertionError) as raised:
+            Message(**self.message_args)
+
+        self.assertEqual(
+            str(raised.exception),
+            "pose_vectors should be in morphological_features but keys are "
+            "dict_keys(['pose_fully_defined'])",
+        )
+
+    def test_message_invalid_pose_vectors_raises_assertion_error(self) -> None:
+        self.message_args["morphological_features"]["pose_vectors"] = np.eye(2)
+
+        with self.assertRaises(AssertionError) as raised:
+            Message(**self.message_args)
+
+        self.assertEqual(
+            str(raised.exception),
+            "pose should be defined by three orthonormal unit vectors but pose_vectors "
+            "shape is (2, 2)",
+        )
+
+    def test_message_invalid_pose_fully_defined_raises_assertion_error(self) -> None:
+        self.message_args["morphological_features"]["pose_fully_defined"] = 1
+
+        with self.assertRaises(AssertionError) as raised:
+            Message(**self.message_args)
+
+        self.assertEqual(
+            str(raised.exception),
+            "pose_fully_defined must be a boolean but type is <class 'int'>",
+        )
+
+    def test_goal_missing_pose_vectors_raises_assertion_error(self) -> None:
+        del self.message_args["morphological_features"]["pose_vectors"]
+
+        with self.assertRaises(AssertionError) as raised:
+            Goal(goal_tolerances=None, **self.message_args)
+
+        self.assertEqual(
+            str(raised.exception),
+            "pose_vectors should be in morphological_features but keys are "
+            "dict_keys(['pose_fully_defined'])",
+        )
+
+    def test_goal_invalid_pose_fully_defined_raises_assertion_error(self) -> None:
+        self.message_args["morphological_features"]["pose_fully_defined"] = 1
+
+        with self.assertRaises(AssertionError) as raised:
+            Goal(goal_tolerances=None, **self.message_args)
+
+        self.assertEqual(
+            str(raised.exception),
+            "pose_fully_defined must be a boolean or None but type is <class 'int'>",
+        )
 
 
 class EncodeGoalTest(unittest.TestCase):

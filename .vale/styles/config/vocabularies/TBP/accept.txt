@@ -227,3 +227,6 @@
 \bLoughborough\b
 \bMaixsense\b
 \bUfactory\b
+\b[Ss]uperpixels?\b
+\bSLIC\b
+\b[Vv]oxeliz(e|ed|es|ing)\b
