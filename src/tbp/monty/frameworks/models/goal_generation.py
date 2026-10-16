@@ -20,6 +20,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     GoalGenerator,
 )
 from tbp.monty.frameworks.utils.communication_utils import get_percept_from_channel
+from tbp.monty.geometry import GazeDirection
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.graph_matching import GraphLM
@@ -807,12 +808,14 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             morphological_features={
                 # Note the hypothesis-testing policy does not specify the roll of the
                 # agent, because this is not relevant to the task
-                "pose_vectors": np.array(
-                    [
-                        (-1) * target_surface_normal_rotated,
-                        [np.nan, np.nan, np.nan],
-                        [np.nan, np.nan, np.nan],
-                    ]
+                "pose_vectors": GazeDirection(
+                    np.array(
+                        [
+                            (-1) * target_surface_normal_rotated,
+                            [np.nan, np.nan, np.nan],
+                            [np.nan, np.nan, np.nan],
+                        ]
+                    )
                 ),
                 "pose_fully_defined": None,
                 "on_object": 1,

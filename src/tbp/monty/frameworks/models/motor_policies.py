@@ -1627,7 +1627,7 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             degrees that the agent needs to turn
         """
-        original_surface_normal = percept.get_surface_normal()
+        original_surface_normal = percept.surface_normal()
 
         inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
@@ -1868,8 +1868,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # orientation
             # TODO: This value doesn't seem to be used anywhere
             z_defined_pc = (
-                percept.get_surface_normal(),
-                percept.get_curvature_directions(),
+                percept.surface_normal(),
+                percept.curvature_directions(),
             )
         else:
             z_defined_pc = None
@@ -1967,7 +1967,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.check_for_preference_change()
 
         pc_for_use = self.determine_pc_for_use(percept)
-        pc_dirs = percept.get_curvature_directions()
+        pc_dirs = percept.curvature_directions()
         # Select the PC directions for use
         selected_pc_dir = pc_dirs[pc_for_use]
 

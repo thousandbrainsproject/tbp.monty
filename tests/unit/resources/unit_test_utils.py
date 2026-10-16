@@ -21,7 +21,7 @@ from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
 from tbp.monty.context import RuntimeContext
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
 
 class BaseGraphTest(TestCase):
@@ -32,7 +32,9 @@ class BaseGraphTest(TestCase):
         default_percept_args = dict(
             location=np.array([0.0, 0.0, 0.0]),
             morphological_features={
-                "pose_vectors": np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]]),
+                "pose_vectors": SurfacePoseVectors(
+                    np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
+                ),
                 "pose_fully_defined": True,
                 "on_object": 1,
             },
@@ -146,7 +148,7 @@ class BaseGraphTest(TestCase):
             config_list.append(copy.deepcopy(fp_house))
             config_list[ii]["location"] = house_points[ii]
             config_list[ii]["morphological_features"]["pose_vectors"] = (
-                rotated_ref_frames[ii]
+                SurfacePoseVectors(rotated_ref_frames[ii])
             )
 
         self.fake_percept_house_trans = [Message(**obs_dic) for obs_dic in config_list]

@@ -199,7 +199,7 @@ class TwoDSensorModule(SensorModule):
         if observed_state.process_features_in_lm and observed_state.get_on_object():
             # pose_vectors are only present when the patch center is on the object.
             curvature_pose_vectors = observed_state.get_pose_vectors().copy()
-            true_surface_normal = observed_state.get_surface_normal().copy()
+            true_surface_normal = observed_state.surface_normal().copy()
 
             self._update_tangent_frame(true_surface_normal)
             if self._extract_edges:

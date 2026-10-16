@@ -26,7 +26,12 @@ from scipy.spatial.transform import Rotation as ScipyRotation
 from tbp.monty.cmp import Goal, encode_goal, location_mean
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
 from tbp.monty.frameworks.utils.dataclass_utils import is_dataclass_instance
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import (
+    GazeDirection,
+    OrientationMatrix,
+    Rotation,
+    SurfacePoseVectors,
+)
 
 if TYPE_CHECKING:
     from tbp.monty.cmp import Message
@@ -469,7 +474,9 @@ class FeatureAtLocationBuffer:
         """
         return np.where(self.on_object)[0]
 
-    def _add_attr_to_feature_buffer(self, input_channel, attr_name, attr_value):
+    def _add_attr_to_feature_buffer(
+        self, input_channel: str, attr_name: str, attr_value: Any
+    ) -> None:
         """Add attribute to feature buffer.
 
         Args:
@@ -484,6 +491,10 @@ class FeatureAtLocationBuffer:
                 # Store all features as flat list so we can easily concatenate them and
                 # perform matrix operations on them.
                 attr_value = attr_value.flatten()
+            elif isinstance(
+                attr_value, (SurfacePoseVectors, OrientationMatrix, GazeDirection)
+            ):
+                attr_value = attr_value.value.flatten()
             attr_shape = len(attr_value)
 
         if attr_name not in self.features[input_channel]:

@@ -29,6 +29,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
     project_onto_tangent_plane,
 )
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tbp.monty.observations import SensorObservation
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
@@ -51,7 +52,7 @@ class EdgeDetectorExpectedValues(NamedTuple):
     angle: float
     cam_to_world: np.ndarray
     surface_normal: np.ndarray
-    expected_pose_2d: np.ndarray
+    expected_pose_2d: SurfacePoseVectors
 
 
 CASES = [
@@ -60,12 +61,14 @@ CASES = [
         angle=np.pi / 2,
         cam_to_world=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [0.0, -1.0, 0.0],
-                [1.0, 0.0, 0.0],
-            ]
+        expected_pose_2d=SurfacePoseVectors(
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],
+                    [0.0, -1.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                ]
+            )
         ),
     ),
     EdgeDetectorExpectedValues(
@@ -73,12 +76,14 @@ CASES = [
         angle=np.pi / 4,
         cam_to_world=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-                [np.sqrt(0.5), np.sqrt(0.5), 0.0],
-            ]
+        expected_pose_2d=SurfacePoseVectors(
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],
+                    [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+                    [np.sqrt(0.5), np.sqrt(0.5), 0.0],
+                ]
+            )
         ),
     ),
     EdgeDetectorExpectedValues(
@@ -86,12 +91,14 @@ CASES = [
         angle=np.pi,
         cam_to_world=np.identity(4),
         surface_normal=np.array([0.0, 0.0, 1.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [-1.0, 0.0, 0.0],
-                [0.0, -1.0, 0.0],
-            ]
+        expected_pose_2d=SurfacePoseVectors(
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],
+                    [-1.0, 0.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                ]
+            )
         ),
     ),
     EdgeDetectorExpectedValues(
@@ -106,12 +113,14 @@ CASES = [
             ],
         ),
         surface_normal=np.array([1.0, 0.0, 0.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [0.0, -1.0, 0.0],
-                [1.0, 0.0, 0.0],
-            ]
+        expected_pose_2d=SurfacePoseVectors(
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],
+                    [0.0, -1.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                ]
+            )
         ),
     ),
     EdgeDetectorExpectedValues(
@@ -126,12 +135,14 @@ CASES = [
             ]
         ),
         surface_normal=np.array([0.0, 1.0, 0.0]),
-        expected_pose_2d=np.array(
-            [
-                [0.0, 0.0, 1.0],
-                [-np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-                [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
-            ]
+        expected_pose_2d=SurfacePoseVectors(
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],
+                    [-np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+                    [np.sqrt(0.5), -np.sqrt(0.5), 0.0],
+                ]
+            )
         ),
     ),
 ]
@@ -205,7 +216,7 @@ def compute_expected_pose_2d(
     cam_to_world: np.ndarray,
     surface_normal: np.ndarray,
     tangent_frame: TangentFrame,
-) -> np.ndarray:
+) -> SurfacePoseVectors:
     """Compute the expected local 2D edge pose from an image-space angle.
 
     Returns:
@@ -233,12 +244,14 @@ def compute_expected_pose_2d(
         )
     )
 
-    return np.array(
-        [
-            [0.0, 0.0, 1.0],
-            tangent_2d,
-            [-tangent_2d[1], tangent_2d[0], 0.0],
-        ]
+    return SurfacePoseVectors(
+        np.array(
+            [
+                [0.0, 0.0, 1.0],
+                tangent_2d,
+                [-tangent_2d[1], tangent_2d[0], 0.0],
+            ]
+        )
     )
 
 
@@ -462,8 +475,8 @@ class TestAngleTo2DPose(ParametrizedTestCase):
             tangent_frame=tangent_frame,
         )
         np.testing.assert_allclose(
-            pose_2d,
-            expected_pose_2d,
+            pose_2d.value,
+            expected_pose_2d.value,
             atol=DEFAULT_TOLERANCE,
             err_msg=f"{name} case failed.",
         )
@@ -490,12 +503,12 @@ class TestAngleTo2DPose(ParametrizedTestCase):
         )
 
         np.testing.assert_allclose(
-            pose_2d,
+            pose_2d.value,
             compute_expected_pose_2d(
                 angle,
                 cam_to_world,
                 surface_normal,
                 tangent_frame,
-            ),
+            ).value,
             atol=DEFAULT_TOLERANCE,
         )
