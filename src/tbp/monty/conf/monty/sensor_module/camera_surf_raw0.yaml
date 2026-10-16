@@ -1,8 +1,5 @@
 # @package experiment.config.monty_config.sensor_modules
 
-# Same as camera_surf but without saving raw observations. Saving raw
-# observations is memory-intensive and only required for detailed
-# logging/plotting.
 sensor_module_0:
   _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
   is_surface_sm: true

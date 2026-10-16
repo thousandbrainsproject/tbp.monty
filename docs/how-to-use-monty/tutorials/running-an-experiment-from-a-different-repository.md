@@ -111,6 +111,6 @@ or
 python run_parallel.py -cd src/project/conf experiment=example
 ```
 
-Configurations in your `conf` directory can still reference the configurations shipped with `tbp.monty` (for example, `- /monty: graph_exp1000_e3_t3` in the `defaults` list), as `tbp.monty` registers its own configuration directory in the Hydra search path.
+Configurations in your `conf` directory can still reference the configurations shipped with `tbp.monty` (for example, `- /monty: graph_exp1000_e3_t3` in the `defaults` list), since `tbp.monty`'s configuration directory is already on the Hydra search path.
 
 For a full working example, see the template repository: https://github.com/thousandbrainsproject/tbp.monty_project_template.
