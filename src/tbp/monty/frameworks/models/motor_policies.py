@@ -1869,7 +1869,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # TODO: This value doesn't seem to be used anywhere
             z_defined_pc = (
                 percept.surface_normal(),
-                percept.get_curvature_directions(),
+                percept.curvature_directions(),
             )
         else:
             z_defined_pc = None
@@ -1967,7 +1967,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.check_for_preference_change()
 
         pc_for_use = self.determine_pc_for_use(percept)
-        pc_dirs = percept.get_curvature_directions()
+        pc_dirs = percept.curvature_directions()
         # Select the PC directions for use
         selected_pc_dir = pc_dirs[pc_for_use]
 

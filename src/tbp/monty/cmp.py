@@ -145,27 +145,17 @@ class Message:
             raise ValueError(f"Feature {feature_name} not found in message.")
         return feature_val
 
-    def _nth_pose_vector(self, pose_vector_index):
-        """Return the nth pose vector.
-
-        When self.sender_type == "SM", the first pose vector is the surface normal and
-        the second and third are the curvature directions.
-        When self.sender_type == "LM", the pose vectors correspond to the rotation of
-        the object relative to the model learned of it.
-        """
-        return self.morphological_features["pose_vectors"][pose_vector_index]
-
     def surface_normal(self) -> npt.NDArray[np.float64]:
         """Return the SurfacePoseVectors surface normal vector.
 
         Raises:
             ValueError: If message does not have SurfacePoseVectors
         """
-        pose_vectors = getattr(self.morphological_features, "pose_vectors", None)
-        if pose_vectors is None:
+        if "pose_vectors" not in self.morphological_features:
             raise ValueError("Message does not have SurfacePoseVectors")
 
         # TODO: Replace with match statement
+        pose_vectors = self.morphological_features["pose_vectors"]
         if isinstance(pose_vectors, SurfacePoseVectors):
             return pose_vectors.surface_normal
 
@@ -175,16 +165,25 @@ class Message:
         """Return the pose vectors."""
         return self.morphological_features["pose_vectors"]
 
-    def get_curvature_directions(self):
+    def curvature_directions(
+        self,
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """Return the curvature direction vectors.
 
         Raises:
-            ValueError: If `self.sender_type` is not SM
+            ValueError: If message does not have SurfacePoseVectors
         """
-        if self.sender_type == "SM":
-            return self._nth_pose_vector(1), self._nth_pose_vector(2)
+        if "pose_vectors" not in self.morphological_features:
+            raise ValueError("Message does not have SurfacePoseVectors")
 
-        raise ValueError("Sender type must be SM to get curvature directions.")
+        # TODO: Replace with match statement
+        pose_vectors = self.morphological_features["pose_vectors"]
+        if isinstance(pose_vectors, SurfacePoseVectors):
+            return (
+                pose_vectors.principal_curvature_1,
+                pose_vectors.principal_curvature_2,
+            )
+        raise ValueError("Message does not have SurfacePoseVectors")
 
     def get_on_object(self):
         """Return whether we think we are on the object or not.
