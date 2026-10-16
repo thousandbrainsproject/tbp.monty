@@ -112,22 +112,22 @@ class HierarchyTest(unittest.TestCase):
         for model in ["new_object0", "new_object1"]:
             # Check that graph was extended when recognizing object.
             self.assertLess(
-                models["0"]["LM_0"][model]["patch_0"].num_nodes,
-                models["2"]["LM_0"][model]["patch_0"].num_nodes,
+                models["0"]["LM_0"][model]["patch_0"].x.shape[0],
+                models["2"]["LM_0"][model]["patch_0"].x.shape[0],
                 f"LM0 should have more points in the graph for {model} "
                 "after recognizing it and extending the graph.",
             )
             # Check LM0 has higher detail model of object thank LM1.
             self.assertGreater(
-                models["0"]["LM_0"][model]["patch_0"].num_nodes,
-                models["0"]["LM_1"][model]["patch_1"].num_nodes,
+                models["0"]["LM_0"][model]["patch_0"].x.shape[0],
+                models["0"]["LM_1"][model]["patch_1"].x.shape[0],
                 f"LM0 should have more points in the graph for {model} than LM1 "
                 "since it is receiving higher frequency input and has a smaller "
                 "voxel size.",
             )
         # Check that max_nodes_per_graph is applied correctly.
         for model in models["2"]["LM_0"]:
-            num_nodes = models["2"]["LM_0"][model]["patch_0"].num_nodes
+            num_nodes = models["2"]["LM_0"][model]["patch_0"].x.shape[0]
             self.assertLessEqual(
                 num_nodes,
                 50,

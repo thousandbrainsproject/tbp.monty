@@ -33,6 +33,10 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.utils.object_model_utils import (
+    NumpyGraph,
+    torch_graph_to_numpy,
+)
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
@@ -1309,7 +1313,9 @@ class GraphMemory(LMMemory):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _add_graph_to_memory(self, model, graph_id):
+    def _add_graph_to_memory(
+        self, model: dict[str, GraphObjectModel], graph_id: str
+    ) -> None:
         """Add pretrained graph to memory.
 
         Initializes GridObjectModel and calls set_model.
@@ -1321,6 +1327,9 @@ class GraphMemory(LMMemory):
         """
         print(f"loading graph {model} of type {type(model)}")
 
+        for channel_model in model.values():
+            if not isinstance(channel_model._graph, NumpyGraph):
+                channel_model._graph = torch_graph_to_numpy(channel_model._graph)
         self.models_in_memory[graph_id] = model
 
     def remove_graph_from_memory(self, graph_id):

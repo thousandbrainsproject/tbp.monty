@@ -14,13 +14,13 @@ from unittest import TestCase
 
 import numpy as np
 from pandas import DataFrame
-from torch_geometric.data import Data
 
 from tbp.monty.cmp import Message
 from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
 from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.utils.object_model_utils import NumpyGraph
 from tbp.monty.geometry import Rotation
 
 
@@ -279,16 +279,16 @@ class BaseGraphTest(TestCase):
                 "Rotation of cubeSolid not detected correctly.",
             )
 
-    def check_graphs_equal(self, g1: Data, g2: Data) -> None:
+    def check_graphs_equal(self, g1: NumpyGraph, g2: NumpyGraph) -> None:
         """Used for checking saving and loading.
 
-        `g1` and `g2` are torch_geometric.data.data.Data objects. Check if all
+        `g1` and `g2` are NumpyGraph objects. Check if all
         fields match.
         """
         print("...check if graphs are equal...")
         # Same xs
         num_x_same = (g1.x == g2.x).sum()
-        self.assertEqual(num_x_same, g1.x.size(0) * g1.x.size(1))
+        self.assertEqual(num_x_same, g1.x.shape[0] * g1.x.shape[1])
 
         # Same edges means same graph structure
         start_edge_same, end_edge_same = g1.edge_index == g2.edge_index
@@ -296,22 +296,22 @@ class BaseGraphTest(TestCase):
             start_edge_same.sum(),
             end_edge_same.sum(),
         )
-        self.assertEqual(n_start_edge_same, g1.edge_index.size(1))
-        self.assertEqual(n_end_edge_same, g1.edge_index.size(1))
+        self.assertEqual(n_start_edge_same, g1.edge_index.shape[1])
+        self.assertEqual(n_end_edge_same, g1.edge_index.shape[1])
 
         # Same edge data
         num_edge_attrs_same = (g1.edge_attr == g2.edge_attr).sum()
         self.assertEqual(
-            num_edge_attrs_same, g1.edge_attr.size(0) * g1.edge_attr.size(1)
+            num_edge_attrs_same, g1.edge_attr.shape[0] * g1.edge_attr.shape[1]
         )
 
         # Same positions in space
         num_pos_same = (g1.pos == g2.pos).sum()
-        self.assertEqual(num_pos_same, g1.pos.size(0) * g1.pos.size(1))
+        self.assertEqual(num_pos_same, g1.pos.shape[0] * g1.pos.shape[1])
 
         # Same normals
         num_norm_same = (g1.norm == g2.norm).sum()
-        self.assertEqual(num_norm_same, g1.norm.size(0) * g1.norm.size(1))
+        self.assertEqual(num_norm_same, g1.norm.shape[0] * g1.norm.shape[1])
 
     def check_eval_results(self, eval_stats: DataFrame, num_lms: int = 1) -> None:
         for lm_id in range(num_lms):
