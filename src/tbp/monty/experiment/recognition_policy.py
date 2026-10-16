@@ -113,7 +113,7 @@ class MinEvalSteps(RecognitionPolicy):
     The primary purpose of this policy is to _suppress_ episode termination
     until at least `min_eval_steps` have been taken. It is intended to be the
     top-level policy, possibly contains a composite `AnyPolicy`. It includes
-    a `step >= max_total_steps` check prevent run-away stepping when there
+    a `step >= max_total_steps` check to prevent run-away stepping when there
     are not enough `matching_steps`.
     """
 
