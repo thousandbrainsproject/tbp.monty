@@ -30,7 +30,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotate_pose_dependent_features,
 )
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
 __all__ = ["FeatureGraphLM", "FeatureGraphMemory"]
 
@@ -545,24 +545,28 @@ class FeatureGraphLM(GraphLM):
         Returns:
             Whether feature matches given self.tolerances
         """
-        vectors_to_check = 2
-        if not query_features["pose_fully_defined"]:
-            vectors_to_check = 1
-        node_pose_vecs = np.array(node_features["pose_vectors"]).reshape((3, 3))
-        for vec_id in range(vectors_to_check):
-            angle = get_angle(
-                query_features["pose_vectors"][vec_id],
-                node_pose_vecs[vec_id],
+        node_pose_vecs = SurfacePoseVectors(
+            node_features["pose_vectors"].reshape((3, 3))
+        )
+        sn_angle = get_angle(
+            query_features["pose_vectors"].surface_normal, node_pose_vecs.surface_normal
+        )
+        if query_features["pose_fully_defined"]:
+            pc1_angle = get_angle(
+                query_features["pose_vectors"].principal_curvature_1,
+                node_pose_vecs.principal_curvature_1,
             )
-            if vec_id > 0:
-                # account for the fact the curvature directions can be flipped
-                # by 180 degrees
-                # TODO H: what to do at higher level LMs?
-                angle = np.pi / 2 - np.abs(angle - np.pi / 2)
-            consistent = angle < self.tolerances[input_channel]["pose_vectors"][vec_id]
-            if not consistent:
+            # account for the fact the curvature directions can be flipped
+            # by 180 degrees
+            # TODO H: what to do at higher level LMs?
+            pc1_angle = np.pi / 2 - np.abs(pc1_angle - np.pi / 2)
+            consistent_pc1 = (
+                pc1_angle < self.tolerances[input_channel]["pose_vectors"][1]
+            )
+            if not consistent_pc1:
                 return False
-        return True
+
+        return sn_angle < self.tolerances[input_channel]["pose_vectors"][0]
 
     def _remove_object_from_matches(self, graph_id):
         """Remove object and its poses from possible matches."""

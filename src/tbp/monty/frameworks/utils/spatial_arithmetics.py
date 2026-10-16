@@ -17,7 +17,7 @@ import numpy as np
 import numpy.typing as npt
 from numpy.typing import ArrayLike
 
-from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
+from tbp.monty.geometry import GazeDirection, Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
