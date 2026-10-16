@@ -476,7 +476,7 @@ class TestAngleTo2DPose(ParametrizedTestCase):
         )
         np.testing.assert_allclose(
             pose_2d.value,
-            expected_pose_2d,
+            expected_pose_2d.value,
             atol=DEFAULT_TOLERANCE,
             err_msg=f"{name} case failed.",
         )
@@ -503,12 +503,12 @@ class TestAngleTo2DPose(ParametrizedTestCase):
         )
 
         np.testing.assert_allclose(
-            pose_2d,
+            pose_2d.value,
             compute_expected_pose_2d(
                 angle,
                 cam_to_world,
                 surface_normal,
                 tangent_frame,
-            ),
+            ).value,
             atol=DEFAULT_TOLERANCE,
         )
