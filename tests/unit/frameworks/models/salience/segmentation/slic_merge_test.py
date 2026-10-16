@@ -361,8 +361,23 @@ def adjacency_from_tile_spec(
 def color_within_threshold(
     draw: st.DrawFn, origin: npt.NDArray[np.float32], threshold: float
 ) -> npt.NDArray[np.float32]:
+    """Generate a color within a threshold **of each other** on multiple drawings.
+
+    We bound the ``scale`` to ``[-0.49, 0.49]`` so that repeated calls with the same
+    origin and threshold will generate colors within the specified threshold
+    **of each other**.
+
+    Args:
+        draw: The Hypothesis draw function used to generate values.
+        origin: The original color as a NumPy array of shape (3,).
+        threshold: The threshold value for generating colors within the specified range.
+
+    Returns:
+        A NumPy array of shape (3,) representing the generated color within the
+            threshold.
+    """
     axis = draw(st.integers(min_value=0, max_value=2))
-    scale = draw(st.floats(min_value=-0.9, max_value=0.9))
+    scale = draw(st.floats(min_value=-0.49, max_value=0.49))
     out = origin.copy()
     out[axis] += threshold * scale
     return out

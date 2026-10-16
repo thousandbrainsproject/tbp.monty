@@ -581,3 +581,49 @@ class ActionsTest(TestCase):
 
         assert agent_rot.approx_equal(Rotation.from_quat(IDENTITY_QUATERNION))
         np.testing.assert_allclose(ZERO_VECTOR, agent_state.position)
+
+    @given(
+        distance=st.floats(min_value=0.0, max_value=10.0),
+        theta=st.floats(min_value=-np.pi, max_value=np.pi),
+        agent_rotation=unit_quaternion(),
+    )
+    @settings(deadline=None)
+    @skip_on_missing_actuate()
+    @sim_reset
+    def test_move_tangentially_from_rotated_agent(
+        self: Self, /, distance: float, theta: float, agent_rotation: QuaternionWXYZ
+    ) -> None:
+        self.sim.step(
+            [
+                SetAgentPose(
+                    agent_id=AGENT_ID,
+                    location=ZERO_VECTOR,
+                    rotation_quat=agent_rotation,
+                )
+            ]
+        )
+        # MoveTangentially directions are in world coordinates. The surface policies
+        # rotate their agent-relative heading by the agent's rotation before
+        # creating the action, so we do the same here.
+        offset = np.pi / 2
+        heading = np.array([np.cos(theta - offset), np.sin(theta + offset), 0.0])
+        rotation = Rotation.from_quat(agent_rotation)
+        direction_vector = rotation.apply(heading)
+        action = MoveTangentially(
+            agent_id=AGENT_ID,
+            distance=distance,
+            direction=cast("VectorXYZ", tuple(direction_vector)),
+        )
+
+        self.sim.step([action])
+        agent_state = self.sim.states[AGENT_ID]
+        agent_rot = Rotation.from_quat(qt.as_float_array(agent_state.rotation))
+
+        expected_pos = direction_vector * distance
+
+        np.testing.assert_allclose(
+            agent_state.position, expected_pos, atol=DEFAULT_TOLERANCE
+        )
+
+        # Invariant: MoveTangentially should not rotate the agent's orientation.
+        assert agent_rot.approx_equal(rotation), "MoveTangentially rotated the agent."
