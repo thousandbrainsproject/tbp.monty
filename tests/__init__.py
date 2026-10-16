@@ -9,6 +9,8 @@
 # https://opensource.org/licenses/MIT.
 from pathlib import Path
 
+from hypothesis import settings
+
 from tbp.monty.hydra import register_resolvers
 
 # Initialize Hydra resolvers for test configs
@@ -16,3 +18,7 @@ register_resolvers()
 
 # Root directory for Hydra configs
 HYDRA_ROOT = Path(__file__).parents[1] / "src" / "tbp" / "monty" / "conf"
+
+# Have hypothesis print reproduction information on test failures
+settings.register_profile("helpful", print_blob=True)
+settings.load_profile("helpful")
