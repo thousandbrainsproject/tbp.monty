@@ -108,7 +108,14 @@ class MontyIsDone(RecognitionPolicy):
 
 
 class MinEvalSteps(RecognitionPolicy):
-    """**Prevent** termination while `matching_steps < min_eval_steps`."""
+    """_Suppress_ termination while `matching_steps < min_eval_steps`.
+
+    The primary purpose of this policy is to _suppress_ episode termination
+    until at least `min_eval_steps` have been taken. It is intended to be the
+    top-level policy, possibly contains a composite `AnyPolicy`. It includes
+    a `step >= max_total_steps` check prevent run-away stepping when there
+    are not enough `matching_steps`.
+    """
 
     _prior: RecognitionPolicy
     """The policy used to determine prior bias."""
