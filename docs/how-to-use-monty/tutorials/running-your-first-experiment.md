@@ -188,7 +188,7 @@ As mentioned previously, in `/monty: graph_exp1000_e3_t3`, notice that the model
 
 You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
 
-**In this particular experiment, `n_train_epochs` was set to 1, and the `/termination: any1_train_steps_3_20_tot6000` config limits each episode to at most 20 training steps (with a minimum of 3). This means a single epoch was run, with a short episode of at most 20 steps on the single object**. In the next section, we go up a level from the model step to understand episodes and epochs.
+**In this particular experiment, `n_train_epochs` was set to 1, and `/termination: any1_train_steps_3_20_tot6000` limits each episode to between 3 and 20 training steps. This means a single epoch was run, with one short episode on the single object**. In the next section, we go up a level from the model step to understand episodes and epochs.
 
 ## Environment Interface
 

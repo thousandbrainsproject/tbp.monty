@@ -102,7 +102,7 @@ run.py
 run_parallel.py
 ```
 
-Since the experiment configuration lives in your repository rather than in `tbp.monty`, you need to tell [Hydra](https://hydra.cc/) where to find it using the `--config-dir` (or `-cd`) option. With the above setup in place and a correct configuration present in `example.yaml`, you can now execute it via:
+You need to tell Hydra where to find your configuration using the `--config-dir` (or `-cd`) option. With the above setup in place and a correct configuration present in `example.yaml`, you can now execute it via:
 ```
 python run.py -cd src/project/conf experiment=example
 ```
@@ -110,7 +110,5 @@ or
 ```
 python run_parallel.py -cd src/project/conf experiment=example
 ```
-
-Configurations in your `conf` directory can still reference the configurations shipped with `tbp.monty` (for example, `- /monty: graph_exp1000_e3_t3` in the `defaults` list), since `tbp.monty`'s configuration directory is already on the Hydra search path.
 
 For a full working example, see the template repository: https://github.com/thousandbrainsproject/tbp.monty_project_template.
