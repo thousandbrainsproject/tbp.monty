@@ -17,7 +17,7 @@ import numpy as np
 import numpy.typing as npt
 from numpy.typing import ArrayLike
 
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
@@ -410,7 +410,9 @@ def non_singular_mat(a):
     return np.linalg.cond(a) < 1 / sys.float_info.epsilon
 
 
-def get_more_directions_in_plane(vecs, n_poses) -> list[np.ndarray]:
+def get_more_directions_in_plane(
+    vecs: npt.NDArray[np.float64], n_poses: int
+) -> list[npt.NDArray[np.float64]]:
     """Get a list of unit vectors, evenly spaced in a plane orthogonal to vecs[0].
 
     This is used to sample possible poses orthogonal to the surface normal when the
@@ -424,12 +426,11 @@ def get_more_directions_in_plane(vecs, n_poses) -> list[np.ndarray]:
         List of vectors evenly spaced in a plane orthogonal to vecs[0]
     """
     new_vecs = [vecs]
-    angles = np.linspace(0, 2 * np.pi, n_poses + 1)
-    # First and last angle are same as original vec (0 & 1)
-    for angle in angles[:-1]:
+    angles: npt.NDArray[np.float64] = np.linspace(0, 2 * np.pi, n_poses)
+    for angle in angles:
         new_vec = np.cos(angle) * vecs[1] + np.sin(angle) * vecs[2]
         new_vec2 = np.cross(vecs[0], new_vec)
-        new_vecs.append([vecs[0], new_vec, new_vec2])
+        new_vecs.append(np.asarray([vecs[0], new_vec, new_vec2]))
     return new_vecs[1:]
 
 
@@ -496,22 +497,28 @@ def rotate_pose_dependent_features(features, ref_frame_rots) -> dict:
         Original features but with the pose_vectors rotated. If multiple rotations
         were given, pose_vectors entry will now contain multiple entries of shape
         (N, 3, 3).
+
+    Raises:
+        TypeError: If the pose vectors represent GazeDirection.
     """
     pose_transformed_features = copy.deepcopy(features)
     old_pv = pose_transformed_features["pose_vectors"]
-    assert old_pv.shape == (
-        3,
-        3,
-    ), "pose_vectors in features need to be 3x3 matrices."
+    # TODO: Replace with match statement
+    if isinstance(old_pv, GazeDirection):
+        raise TypeError("GazeDirection type is not supported for rotation.")
+
+    pose_vector_kind = type(old_pv)
+
     if isinstance(ref_frame_rots, Rotation):
-        rotated_pv = ref_frame_rots.apply(old_pv)
+        rotated_pv = ref_frame_rots.apply(old_pv.value)
     else:
         # Transpose pose vectors so each vector is a column (otherwise .dot matmul
         # produces slightly different results)
-        rotated_pv = ref_frame_rots.dot(old_pv.T)
+        rotated_pv = ref_frame_rots.dot(old_pv.value.T)
         # Transpose last two axies so each pose vector is a row again
         rotated_pv = rotated_pv.transpose((0, 2, 1))
-    pose_transformed_features["pose_vectors"] = rotated_pv
+
+    pose_transformed_features["pose_vectors"] = pose_vector_kind(rotated_pv)
     return pose_transformed_features
 
 
