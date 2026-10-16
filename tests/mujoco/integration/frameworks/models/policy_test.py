@@ -745,7 +745,7 @@ class AdvancedPolicyTest(unittest.TestCase):
             ctx, motor_system_state, self.fake_percept_pc[4]
         )
         assert np.isclose(
-            np.dot(self.fake_percept_pc[4].get_surface_normal(), direction), 0
+            np.dot(self.fake_percept_pc[4].surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 1, (
             "Should have reset ignoring_pc_counter, and then incremented"
@@ -815,7 +815,7 @@ class AdvancedPolicyTest(unittest.TestCase):
             ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         assert np.isclose(
-            np.dot(self.fake_percept_advanced_pc[0].get_surface_normal(), direction), 0
+            np.dot(self.fake_percept_advanced_pc[0].surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.following_pc_counter == 0, (
             "Should not have followed PC and incremented counter"
@@ -895,7 +895,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.isclose(
-            np.dot(self.fake_percept_advanced_pc[0].get_surface_normal(), direction), 0
+            np.dot(self.fake_percept_advanced_pc[0].surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 0, (
             "Should have reset ignoring_pc_counter, and not incremented"

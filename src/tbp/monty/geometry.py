@@ -381,6 +381,18 @@ class SurfacePoseVectors:
     instances.
     """
 
+    @property
+    def surface_normal(self) -> npt.NDArray[np.float64]:
+        return self.value[0]
+
+    @property
+    def principal_curvature_1(self) -> npt.NDArray[np.float64]:
+        return self.value[1]
+
+    @property
+    def principal_curvature_2(self) -> npt.NDArray[np.float64]:
+        return self.value[2]
+
 
 # TODO: Replace with Rotation eventually.
 @dataclass
