@@ -231,7 +231,7 @@ class TwoDSensorModuleInitTest(unittest.TestCase):
         assert isinstance(msg.pass_message, bool)
 
         assert msg.location.shape == (3,)
-        assert msg.morphological_features["pose_vectors"].shape == (3, 3)
+        assert msg.morphological_features["pose_vectors"].value.shape == (3, 3)
         assert isinstance(msg.morphological_features["pose_fully_defined"], bool)
 
 
