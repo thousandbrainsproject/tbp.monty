@@ -31,9 +31,11 @@ defaults:
   - /monty/connectivity: 5lm_5sm
   - /environment: habitat_dist_agent_sensors5
   - /env_interface: tutorial_train_2obj_predefined
+  - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
   - /termination: any1_naivescan_fixed5_tot6000
   - /logging: silent_warning_train
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -47,7 +49,6 @@ experiment:
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       run_name: dist_agent_5lm_2obj_train
-      wandb_group: debugging
 
 ```
 
@@ -105,15 +106,17 @@ To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm
 
 defaults:
   - /monty: evidencegraph_exp1000_emin_t3
-  - /monty/motor_system_config: informed_5_goal1
+  - /monty/motor_system_config: distant_5
   - /monty/learning_module: tutorial_evidence_5lm
   - /monty/sensor_module: 5sm_camera
   - /monty/connectivity: 5lm_5sm
   - /environment: habitat_dist_agent_sensors5
   - /env_interface: tutorial_eval_2obj_predefined_r1
+  - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
   - /termination: any3_objectrecognition_t1000_e500_tot6000
   - /logging: basic_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -128,7 +131,6 @@ experiment:
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       run_name: dist_agent_5lm_2obj_eval
-      wandb_group: gm_eval_runs
 
 ```
 
@@ -156,7 +158,7 @@ Now we specify the learning module config. We define five learning modules with 
     patch_0:
       # Weighting saturation and value less since these might change under
       # different lighting conditions.
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   tolerances:
     patch_0:
       hsv: ${np.array:[0.1, 0.2, 0.2]}
