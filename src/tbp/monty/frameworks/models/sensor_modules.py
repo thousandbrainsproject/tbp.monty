@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Protocol
+from typing import Any, ClassVar, Protocol, cast
 
 import numpy as np
 import quaternion as qt
@@ -684,9 +684,11 @@ class FeatureChangeFilter(PerceptFilter):
                         return True
 
             elif feature == "pose_vectors":
+                last_pose_vectors = cast("SurfacePoseVectors", last_feat)
+                current_pose_vectors = cast("SurfacePoseVectors", current_feat)
                 angle_between = get_angle(
-                    last_feat[0],
-                    current_feat[0],
+                    last_pose_vectors.surface_normal,
+                    current_pose_vectors.surface_normal,
                 )
                 if angle_between >= self._delta_thresholds[feature][0]:
                     logger.debug(
