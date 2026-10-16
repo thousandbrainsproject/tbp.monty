@@ -56,6 +56,7 @@
   - [learning-module-outputs](how-monty-works/learning-module/learning-module-outputs.md)
   - [evidence-based-learning-module](how-monty-works/learning-module/evidence-based-learning-module.md)
 - [connecting-lms-into-a-heterarchy](how-monty-works/connecting-lms-into-a-heterarchy.md)
+- [attention-system](how-monty-works/attention-system.md)
 - [motor-system](how-monty-works/motor-system.md)
   - [policy](how-monty-works/motor-system/policy.md)
 - [faq-monty](how-monty-works/faq-monty.md)
