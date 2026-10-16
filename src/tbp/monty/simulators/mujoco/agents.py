@@ -556,19 +556,19 @@ class SurfaceAgent(Agent):
 
         This method ASSUMES a few things about the direction in the received action.
         - The direction is a unit vector with a magnitude of 1.
+        - The direction is in world coordinates. The surface policies already rotate
+          their heading by the agent's rotation, so it is not rotated again here.
         - The direction is a vector tangential to the direction the agent is facing.
 
-        If either of these assumptions is not true, this code will produce erroneous
+        If any of these assumptions is not true, this code will produce erroneous
         results.
         """
         if action.distance == 0.0:
             return
         direction = np.array(action.direction)
 
-        rotation = Rotation.from_quat(self._embodiment.rotation)
-        direction_rel_world = rotation.apply(direction)
         self._embodiment.position = (
-            np.array(self._embodiment.position) + direction_rel_world * action.distance
+            np.array(self._embodiment.position) + direction * action.distance
         )
 
     def actuate_set_agent_pose(self, action: SetAgentPose) -> None:
