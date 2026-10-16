@@ -105,6 +105,7 @@
   - [additional-methods-for-depth-perception](future-work/sensor-module-improvements/additional-methods-for-depth-perception.md)
   - [detect-local-and-global-flow](future-work/sensor-module-improvements/detect-local-and-global-flow.md)
   - [change-detecting-sm](future-work/sensor-module-improvements/change-detecting-sm.md)
+  - [explore-alternative-segmentation-strategies](future-work/sensor-module-improvements/explore-alternative-segmentation-strategies.md)
 - [learning-module-improvements](future-work/learning-module-improvements.md)
   - [explore-alternative-internal-representations-for-lms](future-work/learning-module-improvements/explore-alternative-internal-representations-for-lms.md)
   - [use-off-object-observations](future-work/learning-module-improvements/use-off-object-observations.md)
