@@ -320,7 +320,7 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         assert msg.morphological_features["pose_fully_defined"] is True
 
         np.testing.assert_allclose(
-            msg.morphological_features["pose_vectors"],
+            msg.morphological_features["pose_vectors"].value,
             np.array(
                 [
                     [0.0, 0.0, 1.0],
