@@ -1245,7 +1245,7 @@ class GraphMemory(LMMemory):
         return list(self.models_in_memory[graph_id].keys())
 
     def get_graph_node_ids(self, graph_id, input_channel):
-        num_nodes = self.models_in_memory[graph_id][input_channel].x.shape[0]
+        num_nodes = self.models_in_memory[graph_id][input_channel].num_nodes
         return np.linspace(0, num_nodes - 1, num_nodes, dtype=int)
 
     def get_num_nodes_in_graph(self, graph_id, input_channel=None):
@@ -1257,7 +1257,7 @@ class GraphMemory(LMMemory):
             Number of nodes in graph.
         """
         if input_channel is not None:
-            return self.models_in_memory[graph_id][input_channel].x.shape[0]
+            return self.models_in_memory[graph_id][input_channel].num_nodes
 
         return sum(
             self.get_num_nodes_in_graph(graph_id, input_channel)
@@ -1277,7 +1277,7 @@ class GraphMemory(LMMemory):
         Returns:
             Dict of features at this node.
 
-        TODO: look into getting node_id > graph.x.shape[0] (by 1)
+        TODO: look into getting node_id > graph.num_nodes (by 1)
         """
         if feature_keys is None:
             feature_keys = self.features_to_use[input_channel]

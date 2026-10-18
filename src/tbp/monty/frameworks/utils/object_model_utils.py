@@ -37,6 +37,14 @@ class NumpyGraph:
         for key in my_dict:
             setattr(self, key, my_dict[key])
 
+    @property
+    def num_nodes(self) -> int:
+        return self.x.shape[0]
+
+    @property
+    def num_features(self) -> int:
+        return self.x.shape[1]
+
 
 def torch_graph_to_numpy(torch_graph):
     """Turn a torch geometric data structure into a dict with numpy arrays.

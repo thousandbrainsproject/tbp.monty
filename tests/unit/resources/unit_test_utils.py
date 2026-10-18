@@ -288,7 +288,7 @@ class BaseGraphTest(TestCase):
         print("...check if graphs are equal...")
         # Same xs
         num_x_same = (g1.x == g2.x).sum()
-        self.assertEqual(num_x_same, g1.x.shape[0] * g1.x.shape[1])
+        self.assertEqual(num_x_same, g1.num_nodes * g1.num_features)
 
         # Same edges means same graph structure
         start_edge_same, end_edge_same = g1.edge_index == g2.edge_index

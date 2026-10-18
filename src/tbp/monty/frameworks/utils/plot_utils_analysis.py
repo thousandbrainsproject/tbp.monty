@@ -273,7 +273,7 @@ def plot_detection_animation(
     ax3 = fig.add_subplot(1, 4, 3, projection="3d")
 
     ax4 = fig.add_subplot(1, 4, 4, projection="3d")
-    num_points = model.x.shape[0]
+    num_points = model.num_nodes
     colors = np.zeros(num_points)
 
     num_steps = len(all_obs)

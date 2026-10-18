@@ -232,7 +232,7 @@ class EvidenceLMTest(BaseGraphTest):
         self.assertLessEqual(
             exp.model.learning_modules[0]
             .get_graph("new_object0", input_channel="first")
-            .x.shape[1],
+            .num_features,
             32,  # max_train_steps + exploratory_steps
             "No new points should be added to an existing graph after time out.",
         )
