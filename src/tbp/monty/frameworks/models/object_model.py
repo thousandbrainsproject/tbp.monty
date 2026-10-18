@@ -180,6 +180,10 @@ class GraphObjectModel(ObjectModel):
         return len(self._graph.pos)
 
     @property
+    def num_features(self) -> int:
+        return self._graph.num_features
+
+    @property
     def feature_ids_in_graph(self):
         if self._graph is not None:
             return self._graph.feature_mapping.keys()
