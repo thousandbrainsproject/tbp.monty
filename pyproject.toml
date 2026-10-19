@@ -7,10 +7,9 @@ authors = [
     { name = 'Thousand Brains Project' }
 ]
 classifiers = [
-    'Development Status :: 3 - Alpha', # Update to Beta when we start using semver
+    'Development Status :: 4 - Beta',
     'Environment :: Console',
     'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 3',
     'Topic :: Scientific/Engineering :: Artificial Intelligence'
@@ -130,7 +129,7 @@ print_version_tool = [
 [project.urls]
 Homepage = 'https://thousandbrainsproject.org'
 Documentation = 'https://docs.thousandbrains.org/docs'
-Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
+Repository = 'https://github.com/thousandbrainsproject/tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
 
 [tool.deptry]
