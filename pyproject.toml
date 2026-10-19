@@ -43,7 +43,8 @@ dependencies = [
     'torch-scatter>=2.0.9;python_version>="3.9"', # for uv environment
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
-    'wandb', # imported via conda (conda-forge::wandb)
+    'wandb==0.24.2;python_version>="3.8"',
+    'wandb;python_version>="3.10"',
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']
