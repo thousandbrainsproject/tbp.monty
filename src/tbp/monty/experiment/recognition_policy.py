@@ -117,8 +117,8 @@ class MinEvalSteps(RecognitionPolicy):
     are not enough `matching_steps`.
     """
 
-    _prior: RecognitionPolicy
-    """The policy used to determine prior bias."""
+    _before: RecognitionPolicy
+    """The policy evaluated _before_ this policy is applied."""
 
     _min_eval_steps: int
     """The minimum steps to take in matching mode."""
@@ -128,14 +128,14 @@ class MinEvalSteps(RecognitionPolicy):
 
     def __init__(
         self: Self,
-        prior: RecognitionPolicy,
+        before: RecognitionPolicy,
         min_eval_steps: int = 0,
         max_total_steps: int = 1,
     ) -> None:
         """Initialize the policy.
 
         Args:
-            prior: The policy used to determine prior bias.
+            before: The policy evaluated _before_ this policy is applied.
             min_eval_steps: The minimum steps to take in matching mode.
             max_total_steps: The maximum number of steps before forcing termination.
 
@@ -154,7 +154,7 @@ class MinEvalSteps(RecognitionPolicy):
                 "min_eval_steps must be less than or equal to max_total_steps"
             )
 
-        self._prior = prior
+        self._before = before
         self._min_eval_steps = min_eval_steps
         self._max_total_steps = max_total_steps
 
@@ -163,8 +163,8 @@ class MinEvalSteps(RecognitionPolicy):
         model: MontyBase,
         count: RecognitionCounter,
     ) -> RecognitionResult:
-        # Determine prior bias
-        result = self._prior(model, count)
+        # Evalaute _before_ policy.
+        result = self._before(model, count)
 
         # Prevent termination if `min_eval_steps` have not been taken.
         if (

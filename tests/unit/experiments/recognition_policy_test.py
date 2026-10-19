@@ -104,27 +104,27 @@ class MinEvalStepsTest(unittest.TestCase):
     def test_raises_value_error_if_min_eval_steps_is_negative(
         self, min_eval_steps: int
     ) -> None:
-        prior = MagicMock()
+        before = MagicMock()
         with self.assertRaises(ValueError):
-            MinEvalSteps(prior, min_eval_steps=min_eval_steps)
+            MinEvalSteps(before, min_eval_steps=min_eval_steps)
 
     @given(max_total_steps=st.integers(max_value=0))
     def test_raises_value_error_if_max_total_steps_is_not_positive(
         self, max_total_steps: int
     ) -> None:
-        prior = MagicMock()
+        before = MagicMock()
         with self.assertRaises(ValueError):
-            MinEvalSteps(prior, max_total_steps=max_total_steps)
+            MinEvalSteps(before, max_total_steps=max_total_steps)
 
     @given(steps_asc=ascending_ints(min_value=1))
     def test_raises_value_error_if_min_eval_steps_is_greater_than_max_total_steps(
         self, steps_asc: tuple[int, int]
     ) -> None:
         (max_total_steps, min_eval_steps) = steps_asc
-        prior = MagicMock()
+        before = MagicMock()
         with self.assertRaises(ValueError):
             MinEvalSteps(
-                prior,
+                before,
                 min_eval_steps=min_eval_steps,
                 max_total_steps=max_total_steps,
             )
@@ -139,12 +139,12 @@ class MinEvalStepsTest(unittest.TestCase):
         limit_asc: tuple[int, int],
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
-        prior = MagicMock(
+        before = MagicMock(
             RecognitionPolicy,
             return_value=RecognitionResult(is_done=True),
         )
         policy = MinEvalSteps(
-            prior,
+            before,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
         )
@@ -167,12 +167,12 @@ class MinEvalStepsTest(unittest.TestCase):
         step_asc: tuple[int, int],
     ) -> None:
         (max_total_steps, step) = step_asc
-        prior = MagicMock(
+        before = MagicMock(
             RecognitionPolicy,
             return_value=RecognitionResult(is_done=False, is_time_out=False),
         )
         policy = MinEvalSteps(
-            prior,
+            before,
             min_eval_steps=max_total_steps,
             max_total_steps=max_total_steps,
         )
@@ -197,12 +197,12 @@ class MinEvalStepsTest(unittest.TestCase):
         limit_asc: tuple[int, int],
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
-        prior = MagicMock(
+        before = MagicMock(
             RecognitionPolicy,
             return_value=RecognitionResult(is_done=True),
         )
         policy = MinEvalSteps(
-            prior,
+            before,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
         )
