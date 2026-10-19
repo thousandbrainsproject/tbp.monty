@@ -421,10 +421,10 @@ class ReadMe:
         Args:
             order: Position of the guide within its category or parent guide.
             category_id: URI of the ReadMe category containing the guide.
-            doc: Guide data including title, slug, body, and optional description and
-                hidden status.
-            parent_id: Optional URI of the parent guide. Only exists if it is a
-                nested resource.
+            doc: Guide data, including its title, slug, body, and optional
+                description and hidden status.
+            parent_id: Optional URI of the parent guide. Only exists if it
+                is a nested resource.
             file_path: Path to the source Markdown file, used when processing the
                 guide's content.
 
@@ -506,7 +506,6 @@ class ReadMe:
                 self._branch_url(f"/guides/{doc['slug']}"),
                 update_doc_request,
             )
-
             return existing_doc["uri"], False
 
         # The guide does not exist, so create it using the requested slug.
