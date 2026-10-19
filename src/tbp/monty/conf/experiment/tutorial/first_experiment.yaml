@@ -52,7 +52,7 @@ defaults:
   # /termination specifies when an episode ends. The match criterion decides
   # which learning modules must recognize the object, and the recognition
   # policy adds step limits.
-  - /termination: any1_min_e0_t0_exp3_max_t1_e1_tot5
+  - /termination: any1_min_e0_t0_exp3_max_e1_t1_tot5
 
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we
