@@ -172,7 +172,8 @@ experiment:
       output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
-        handlers: []
+        handlers:
+        - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
       run_name: base_config_10distinctobj_noop_agent_mujoco
     show_sensor_output: false
     n_train_epochs: 3
