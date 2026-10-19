@@ -51,10 +51,11 @@ Watch the video of the first demo:
 **Links:** [tbp.monty Fork](https://github.com/Zinxiee/tbp.monty) | [Maixsense A010 Python Package](https://github.com/Zinxiee/Maixsense-A010-Python-Package) | [3D Model Dataset](https://github.com/Zinxiee/tbp.monty/releases/tag/dataset_scans_(shining_3d)) | [Robotic Object Recognition For Thousand Brain Systems.pdf](https://github.com/user-attachments/files/30555412/Robotic.Object.Recognition.For.Thousand.Brain.Systems.pdf)  
 
 This community project expands upon the Thousand Brains Project by designing and constructing a system capable of multimodal sensing and movement. The core aim is to enable the learning and recognition of real-world objects in a human-like way (sensorimotor learning), helping to bridge the framework's sim-to-real gap. While Monty has primarily been validated in simulated environments, this dual-agent sensorimotor system tests how Monty performs on physical hardware in the real world.  
-<img width="3179" height="2245" alt="Robotic Object Recognition For Thousand Brain Systems" src="https://github.com/user-attachments/assets/2279aa2e-8cfd-4152-88cb-ac24afac2621" />
+
+![Robotic Object Recognition for Thousand-Brains Systems poster](../figures/community/zach-project-showcase-poster.png)
 
 **Dual-agent Sensorimotor Setup**  
-<img width="600" alt="20260424_2050061" src="https://github.com/user-attachments/assets/6a18945c-fa84-4bd1-8833-927b8c94a70e" />  
+![Robot arm with A010 ToF sensor and ZED 2i stereo camera](../figures/community/zach-project-robotic-arm.jpg)
 *The dual-agent sensorimotor setup featuring the Ufactory Lite 6 with mounted A010 ToF sensor and Zed 2i stereo camera, with the mc_fox object in view.*
 
 ### Key Features
