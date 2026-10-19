@@ -257,7 +257,7 @@ class DefaultHypothesesDisplacer:
         pose_transformed_features = rotate_pose_dependent_features(
             channel_features,
             channel_possible_poses,
-        )
+        )  # pose_transformed_features = (N, 3, 3)
         # Get up to max_nneighbors nearest nodes to search locations.
         channel_locations = self.graph_memory.get_locations_in_graph(
             graph_id, input_channel

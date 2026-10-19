@@ -510,12 +510,19 @@ class FeatureGraphLM(GraphLM):
                             closest_node_id,
                             feature_keys=["pose_vectors", "pose_fully_defined"],
                         )
-                        pose_transformed_features = rotate_pose_dependent_features(
-                            features[first_input_channel], pose
+                        pose_vectors = rotate_pose_dependent_features(
+                            features[first_input_channel]["pose_vectors"], pose
+                        )  # pose = singular pose and pose_transformed_features = singular
+                        pose_fully_defined = features[first_input_channel][
+                            "pose_fully_defined"
+                        ]
+                        node_pose_vectors = SurfacePoseVectors(
+                            new_pos_features["pose_vectors"].reshape((3, 3))
                         )
                         pose_features_match = self._match_pose_dependent_features(
-                            pose_transformed_features,
-                            new_pos_features,
+                            pose_vectors,
+                            pose_fully_defined,
+                            node_pose_vectors,
                             first_input_channel,
                         )
                         if pose_features_match:
@@ -529,8 +536,12 @@ class FeatureGraphLM(GraphLM):
         return new_possible_paths, new_possible_poses
 
     def _match_pose_dependent_features(
-        self, query_features, node_features, input_channel
-    ):
+        self,
+        query_pose_vectors: SurfacePoseVectors,
+        query_pose_fully_defined: bool,
+        node_pose_vectors: SurfacePoseVectors,
+        input_channel: str,
+    ) -> bool:
         """Determine whether pose features match.
 
         Compares the angle between observed and stored pose_vectors (from SM this
@@ -538,23 +549,22 @@ class FeatureGraphLM(GraphLM):
         below the specified tolerance.
 
         Args:
-            query_features: Observed features.
-            node_features: Features at node that is being tested.
-            input_channel: ?
+            query_pose_vectors: Observed pose vectors.
+            query_pose_fully_defined: Whether observed pose vectors have fully defined pose.
+            node_pose_vectors: Stored pose vectors in Object Model.
+            input_channel: Name of input, e.g., patch_0.
 
         Returns:
             Whether feature matches given self.tolerances
         """
-        node_pose_vecs = SurfacePoseVectors(
-            node_features["pose_vectors"].reshape((3, 3))
-        )
         sn_angle = get_angle(
-            query_features["pose_vectors"].surface_normal, node_pose_vecs.surface_normal
+            query_pose_vectors.surface_normal,
+            node_pose_vectors.surface_normal,
         )
-        if query_features["pose_fully_defined"]:
+        if query_pose_fully_defined:
             pc1_angle = get_angle(
-                query_features["pose_vectors"].principal_curvature_1,
-                node_pose_vecs.principal_curvature_1,
+                query_pose_vectors.principal_curvature_1,
+                node_pose_vectors.principal_curvature_1,
             )
             # account for the fact the curvature directions can be flipped
             # by 180 degrees

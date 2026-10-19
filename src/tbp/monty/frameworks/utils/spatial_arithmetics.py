@@ -17,7 +17,7 @@ import numpy as np
 import numpy.typing as npt
 from numpy.typing import ArrayLike
 
-from tbp.monty.geometry import GazeDirection, Rotation
+from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
@@ -482,7 +482,58 @@ def pose_is_new(all_poses, new_pose, similarity_th) -> bool:
     return True
 
 
-def rotate_pose_dependent_features(features, ref_frame_rots) -> dict:
+def batch_rotate_pose_dependent_features(
+    old_pv: SurfacePoseVectors, ref_frame_rots: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """Rotate pose_vectors given multiple Rotation matrices in (N, 3, 3) numpy array.
+
+    Args:
+        features: dict of features with pose vectors to rotate.
+            pose vectors have shape (3, 3)
+        ref_frame_rots: (N, 3, 3) numpy array.
+
+    Returns:
+        Original features but with the pose_vectors rotated.
+
+    Raises:
+        TypeError: If the pose vectors represent GazeDirection.
+    """
+    # TODO: Replace with match statement
+    if isinstance(old_pv, GazeDirection):
+        raise TypeError("GazeDirection type is not supported for rotation.")
+
+    # Transpose pose vectors so each vector is a column (otherwise .dot matmul
+    # produces slightly different results)
+    rotated_pv = ref_frame_rots.dot(old_pv.value.T)
+    # Transpose last two axies so each pose vector is a row again
+    rotated_pv = rotated_pv.transpose((0, 2, 1))
+    return rotated_pv
+
+
+def rotate_pose_dependent_features(
+    old_pv: SurfacePoseVectors, ref_frame_rots: Rotation
+) -> SurfacePoseVectors:
+    """Rotate pose_vectors given a SINGLE Rotation object.
+
+    Args:
+        features: dict of features with pose vectors to rotate.
+            pose vectors have shape (3, 3)
+        ref_frame_rots: Rotation matrix to rotate pose features by.
+
+    Returns:
+        Original features but with the pose_vectors rotated.
+
+    Raises:
+        TypeError: If the pose vectors represent GazeDirection.
+    """
+    # TODO: Replace with match statement
+    if isinstance(old_pv, GazeDirection):
+        raise TypeError("GazeDirection type is not supported for rotation.")
+
+    return SurfacePoseVectors(ref_frame_rots.apply(old_pv.value))
+
+
+def rotate_pose_dependent_features_old(features, ref_frame_rots) -> dict:
     """Rotate pose_vectors given a list of rotation matrices.
 
     Args:
