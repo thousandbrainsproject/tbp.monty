@@ -19,5 +19,6 @@ As of this writing, we have implemented one segmentation strategy -- `SlicMerge`
 Directions worth exploring:
 - Using three-dimensional surface continuity to inform merging.
 - Using texture-level statistics to inform merging.
+- Use top-down signals to influence the segmentation strategy as required. For example, biasing a particular region size or feature properties (such as low vs. high frequency/coarse vs. detailed features).
 - Eventually we will be working with moving items and/or a smoothly moving agent. In this case, we can explore using motion cues and/or parallax to separate objects that move relative to their surroundings.
 
