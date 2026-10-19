@@ -121,8 +121,12 @@ class Message:
         if translation is not None:
             self.location += translation
         if rotation is not None:
-            self.morphological_features["pose_vectors"] = np.dot(
-                rotation, self.morphological_features["pose_vectors"]
+            # TODO: Replace with match statement
+            pose_type = type(self.morphological_features["pose_vectors"])
+            if isinstance(pose_type, GazeDirection):
+                raise TypeError("Cannot transform GazeDirection")
+            self.morphological_features["pose_vectors"] = pose_type(
+                np.dot(rotation, self.morphological_features["pose_vectors"].value)
             )
 
     def set_displacement(self, displacement, ppf=None):
@@ -323,15 +327,13 @@ class Goal(Message):
                 "pose_vectors should be in morphological_features but keys are "
                 f"{self.morphological_features.keys()}"
             )
-            assert np.any(
-                np.isnan(self.morphological_features["pose_vectors"])
-            ) or self.morphological_features["pose_vectors"].shape == (
-                3,
-                3,
+            assert isinstance(
+                self.morphological_features["pose_vectors"],
+                (SurfacePoseVectors, OrientationMatrix, GazeDirection),
             ), (
-                "pose should be undefined, or defined by three orthonormal unit "
-                "vectors but pose_vectors shape is "
-                f"{self.morphological_features['pose_vectors'].shape}"
+                "pose_vectors must be an instance of SurfacePoseVectors, OrientationMatrix,"
+                " or GazeDirection but type is "
+                f"{type(self.morphological_features['pose_vectors'])}"
             )
             assert "pose_fully_defined" in self.morphological_features
             assert (

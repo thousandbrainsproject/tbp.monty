@@ -1005,7 +1005,7 @@ class PolicyTest(unittest.TestCase):
 
         return (
             motor_goal.location,
-            motor_goal.morphological_features["pose_vectors"][0],
+            motor_goal.morphological_features["pose_vectors"].direction,
             target_loc_hab,
             agent_direction_hab,
         )

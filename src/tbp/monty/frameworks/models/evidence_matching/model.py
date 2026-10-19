@@ -21,6 +21,7 @@ from tbp.monty.frameworks.models.graph_matching import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_orthonormal_vectors,
 )
+from tbp.monty.geometry import OrientationMatrix
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,9 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
 
         Returns:
             The combined votes.
+
+        Raises:
+            TypeError: If vote does not have OrientationMatrix for pose vector.
         """
         combined_votes = []
         for i in range(len(self.learning_modules)):
@@ -81,9 +85,17 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                 # transformed in different ways depending on the
                                 # receiving LMs' poses
                                 new_s = copy.deepcopy(s)
-                                rotated_displacement = new_s.get_pose_vectors().dot(
-                                    sensor_disp
-                                )
+                                new_s_pose_vectors = new_s.get_pose_vectors()
+                                # TODO: Replace with match statement
+                                if isinstance(new_s_pose_vectors, OrientationMatrix):
+                                    rotated_displacement = (
+                                        new_s.get_pose_vectors().value.dot(sensor_disp)
+                                    )
+                                else:
+                                    raise TypeError(
+                                        "Only OrientationMatrices can rotate sensor "
+                                        "displacements."
+                                    )
                                 new_s.transform_morphological_features(
                                     translation=rotated_displacement,
                                     rotation=sensor_rotation_disp,

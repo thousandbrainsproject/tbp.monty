@@ -854,7 +854,7 @@ class InformedPolicy(BasePolicy):
             A `SetAgentPose` action.
         """
         target_loc = goal.location
-        target_agent_vec = goal.morphological_features["pose_vectors"][0]
+        target_agent_vec = goal.morphological_features["pose_vectors"].direction
 
         yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
         pitch_angle = math.asin(target_agent_vec[1])
