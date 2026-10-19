@@ -585,7 +585,7 @@ class JumpToGoal(MotorPolicy):
         Returns:
             A `SetAgentPose` action.
         """
-        target_agent_vec = goal.morphological_features["pose_vectors"][0]
+        target_agent_vec = goal.morphological_features["pose_vectors"].direction
 
         yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
         pitch_angle = math.asin(target_agent_vec[1])
@@ -1831,7 +1831,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             )
             if "pose_vectors" in percept.morphological_features:
                 self.tangent_norms.append(
-                    percept.morphological_features["pose_vectors"][0]
+                    percept.morphological_features["pose_vectors"].surface_normal
                 )
             else:
                 self.tangent_norms.append(None)

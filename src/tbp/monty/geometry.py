@@ -414,3 +414,7 @@ class GazeDirection:
     """
     Matrix of shape (3, 3) representing [- surface_normal, NaN, NaN].
     """
+
+    @property
+    def direction(self) -> npt.NDArray[np.float64]:
+        return self.value[0]

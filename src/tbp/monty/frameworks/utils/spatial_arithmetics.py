@@ -508,6 +508,7 @@ def batch_rotate_pose_vectors(
     rotated_pv = rotated_pv.transpose((0, 2, 1))
     return cast("npt.NDArray[np.float64]", rotated_pv)
 
+
 def rotate_pose_vectors(
     pose_vectors: SurfacePoseVectors, rotation: Rotation
 ) -> SurfacePoseVectors:
