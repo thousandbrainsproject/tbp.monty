@@ -28,7 +28,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_orthonormal_vectors,
     get_angle,
     get_unique_rotations,
-    rotate_pose_dependent_features,
+    rotate_pose_vectors,
 )
 from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
@@ -510,7 +510,7 @@ class FeatureGraphLM(GraphLM):
                             closest_node_id,
                             feature_keys=["pose_vectors", "pose_fully_defined"],
                         )
-                        pose_vectors = rotate_pose_dependent_features(
+                        pose_vectors = rotate_pose_vectors(
                             features[first_input_channel]["pose_vectors"], pose
                         )  # pose = singular pose and pose_transformed_features = singular
                         pose_fully_defined = features[first_input_channel][
@@ -575,8 +575,7 @@ class FeatureGraphLM(GraphLM):
             )
             if not consistent_pc1:
                 return False
-
-        return sn_angle < self.tolerances[input_channel]["pose_vectors"][0]
+        return bool(sn_angle < self.tolerances[input_channel]["pose_vectors"][0])
 
     def _remove_object_from_matches(self, graph_id):
         """Remove object and its poses from possible matches."""

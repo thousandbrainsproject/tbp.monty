@@ -9,9 +9,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import copy
 import logging
 import sys
+from typing import cast
 
 import numpy as np
 import numpy.typing as npt
@@ -482,43 +482,40 @@ def pose_is_new(all_poses, new_pose, similarity_th) -> bool:
     return True
 
 
-def batch_rotate_pose_dependent_features(
-    old_pv: SurfacePoseVectors, ref_frame_rots: npt.NDArray[np.float64]
+def batch_rotate_pose_vectors(
+    pose_vectors: SurfacePoseVectors, rotations: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
-    """Rotate pose_vectors given multiple Rotation matrices in (N, 3, 3) numpy array.
+    """Rotate pose vectors given multiple rotation matrices in (N, 3, 3) numpy array.
 
     Args:
-        features: dict of features with pose vectors to rotate.
-            pose vectors have shape (3, 3)
-        ref_frame_rots: (N, 3, 3) numpy array.
+        pose_vectors: Pose vectors to rotate.
+        rotations: (N, 3, 3) numpy array of rotation matrices.
 
     Returns:
-        Original features but with the pose_vectors rotated.
+        (N, 3, 3) of original pose vectors rotated by every rotation.
 
     Raises:
         TypeError: If the pose vectors represent GazeDirection.
     """
     # TODO: Replace with match statement
-    if isinstance(old_pv, GazeDirection):
+    if isinstance(pose_vectors, GazeDirection):
         raise TypeError("GazeDirection type is not supported for rotation.")
 
     # Transpose pose vectors so each vector is a column (otherwise .dot matmul
     # produces slightly different results)
-    rotated_pv = ref_frame_rots.dot(old_pv.value.T)
+    rotated_pv = rotations.dot(pose_vectors.value.T)
     # Transpose last two axies so each pose vector is a row again
     rotated_pv = rotated_pv.transpose((0, 2, 1))
-    return rotated_pv
+    return cast("npt.NDArray[np.float64]", rotated_pv)
 
-
-def rotate_pose_dependent_features(
-    old_pv: SurfacePoseVectors, ref_frame_rots: Rotation
+def rotate_pose_vectors(
+    pose_vectors: SurfacePoseVectors, rotation: Rotation
 ) -> SurfacePoseVectors:
-    """Rotate pose_vectors given a SINGLE Rotation object.
+    """Rotate pose vectors given a Rotation object.
 
     Args:
-        features: dict of features with pose vectors to rotate.
-            pose vectors have shape (3, 3)
-        ref_frame_rots: Rotation matrix to rotate pose features by.
+        pose_vectors: Pose vectors to rotate.
+        rotation: Rotation matrix to rotate pose vectors by.
 
     Returns:
         Original features but with the pose_vectors rotated.
@@ -527,50 +524,10 @@ def rotate_pose_dependent_features(
         TypeError: If the pose vectors represent GazeDirection.
     """
     # TODO: Replace with match statement
-    if isinstance(old_pv, GazeDirection):
+    if isinstance(pose_vectors, GazeDirection):
         raise TypeError("GazeDirection type is not supported for rotation.")
 
-    return SurfacePoseVectors(ref_frame_rots.apply(old_pv.value))
-
-
-def rotate_pose_dependent_features_old(features, ref_frame_rots) -> dict:
-    """Rotate pose_vectors given a list of rotation matrices.
-
-    Args:
-        features: dict of features with pose vectors to rotate.
-            pose vectors have shape (3, 3)
-        ref_frame_rots: Rotation matrices to rotate pose features by. Can either be
-            - A single scipy rotation (as used in FeatureGraphLM)
-            - An array of rotation matrices of shape (N, 3, 3) or (3, 3) (as used in
-            EvidenceGraphLM).
-
-    Returns:
-        Original features but with the pose_vectors rotated. If multiple rotations
-        were given, pose_vectors entry will now contain multiple entries of shape
-        (N, 3, 3).
-
-    Raises:
-        TypeError: If the pose vectors represent GazeDirection.
-    """
-    pose_transformed_features = copy.deepcopy(features)
-    old_pv = pose_transformed_features["pose_vectors"]
-    # TODO: Replace with match statement
-    if isinstance(old_pv, GazeDirection):
-        raise TypeError("GazeDirection type is not supported for rotation.")
-
-    pose_vector_kind = type(old_pv)
-
-    if isinstance(ref_frame_rots, Rotation):
-        rotated_pv = ref_frame_rots.apply(old_pv.value)
-    else:
-        # Transpose pose vectors so each vector is a column (otherwise .dot matmul
-        # produces slightly different results)
-        rotated_pv = ref_frame_rots.dot(old_pv.value.T)
-        # Transpose last two axies so each pose vector is a row again
-        rotated_pv = rotated_pv.transpose((0, 2, 1))
-
-    pose_transformed_features["pose_vectors"] = pose_vector_kind(rotated_pv)
-    return pose_transformed_features
+    return SurfacePoseVectors(rotation.apply(pose_vectors.value))
 
 
 def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
