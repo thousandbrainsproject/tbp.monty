@@ -99,7 +99,7 @@ class MontyIsDoneTest(unittest.TestCase):
         self.assertEqual(result.is_done, is_done)
 
 
-class MinEvalStepsTest(unittest.TestCase):
+class MinEvalMaxTotalStepsTest(unittest.TestCase):
     @given(min_eval_steps=st.integers(max_value=-1))
     def test_raises_value_error_if_min_eval_steps_is_negative(
         self, min_eval_steps: int
