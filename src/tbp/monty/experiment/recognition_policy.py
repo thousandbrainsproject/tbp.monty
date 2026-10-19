@@ -24,7 +24,7 @@ __all__ = [
     "AnyPolicy",
     "MaxTotalSteps",
     "MaximumSteps",
-    "MinEvalSteps",
+    "MinEvalMaxTotalSteps",
     "MinimumLMs",
     "MontyIsDone",
     "NaiveScan",
@@ -107,14 +107,13 @@ class MontyIsDone(RecognitionPolicy):
         return RecognitionResult(is_done)
 
 
-class MinEvalSteps(RecognitionPolicy):
-    """_Suppress_ termination while `matching_steps < min_eval_steps`.
+class MinEvalMaxTotalSteps(RecognitionPolicy):
+    """Is not done while `matching_steps < min_eval_steps`.
 
-    The primary purpose of this policy is to _suppress_ episode termination
-    until at least `min_eval_steps` have been taken. It is intended to be the
-    top-level policy, possibly contains a composite `AnyPolicy`. It includes
-    a `step >= max_total_steps` check to prevent run-away stepping when there
-    are not enough `matching_steps`.
+    The primary purpose of this policy is to return `is_done = False`
+    until at least `min_eval_steps` have been taken. It includes
+    a `step >= max_total_steps` check to return `is_done = True` when
+    `matching_steps` fails to increment sufficiently over `max_total_steps` steps.
     """
 
     _before: RecognitionPolicy

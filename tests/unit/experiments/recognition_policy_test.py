@@ -18,7 +18,7 @@ from tbp.monty.experiment.recognition_policy import (
     AnyPolicy,
     MaximumSteps,
     MaxTotalSteps,
-    MinEvalSteps,
+    MinEvalMaxTotalSteps,
     MinimumLMs,
     MontyIsDone,
     NaiveScan,
@@ -106,7 +106,7 @@ class MinEvalStepsTest(unittest.TestCase):
     ) -> None:
         before = MagicMock()
         with self.assertRaises(ValueError):
-            MinEvalSteps(before, min_eval_steps=min_eval_steps)
+            MinEvalMaxTotalSteps(before, min_eval_steps=min_eval_steps)
 
     @given(max_total_steps=st.integers(max_value=0))
     def test_raises_value_error_if_max_total_steps_is_not_positive(
@@ -114,7 +114,7 @@ class MinEvalStepsTest(unittest.TestCase):
     ) -> None:
         before = MagicMock()
         with self.assertRaises(ValueError):
-            MinEvalSteps(before, max_total_steps=max_total_steps)
+            MinEvalMaxTotalSteps(before, max_total_steps=max_total_steps)
 
     @given(steps_asc=ascending_ints(min_value=1))
     def test_raises_value_error_if_min_eval_steps_is_greater_than_max_total_steps(
@@ -123,7 +123,7 @@ class MinEvalStepsTest(unittest.TestCase):
         (max_total_steps, min_eval_steps) = steps_asc
         before = MagicMock()
         with self.assertRaises(ValueError):
-            MinEvalSteps(
+            MinEvalMaxTotalSteps(
                 before,
                 min_eval_steps=min_eval_steps,
                 max_total_steps=max_total_steps,
@@ -143,7 +143,7 @@ class MinEvalStepsTest(unittest.TestCase):
             RecognitionPolicy,
             return_value=RecognitionResult(is_done=True),
         )
-        policy = MinEvalSteps(
+        policy = MinEvalMaxTotalSteps(
             before,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
@@ -171,7 +171,7 @@ class MinEvalStepsTest(unittest.TestCase):
             RecognitionPolicy,
             return_value=RecognitionResult(is_done=False, is_time_out=False),
         )
-        policy = MinEvalSteps(
+        policy = MinEvalMaxTotalSteps(
             before,
             min_eval_steps=max_total_steps,
             max_total_steps=max_total_steps,
@@ -201,7 +201,7 @@ class MinEvalStepsTest(unittest.TestCase):
             RecognitionPolicy,
             return_value=RecognitionResult(is_done=True),
         )
-        policy = MinEvalSteps(
+        policy = MinEvalMaxTotalSteps(
             before,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
