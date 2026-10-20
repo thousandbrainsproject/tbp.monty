@@ -531,18 +531,18 @@ def rotate_pose_vectors(
     return SurfacePoseVectors(rotation.apply(pose_vectors.value))
 
 
-def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
+def rotate_multiple_pose_vectors(
+    pose_vecs: npt.NDArray[np.float64], ref_frame_rot: Rotation
+) -> npt.NDArray[np.float64]:
     """Rotate surface normal and curve dirs given a rotation matrix.
 
     Args:
-        features: dict of features with pose vectors to rotate.
-            Pose vectors have shape (N, 9)
-        ref_frame_rot: scipy rotation to rotate pose vectors with.
+        pose_vecs: Pose vectors to rotate. Shape (N, 9)
+        ref_frame_rot: rotation to rotate pose vectors with.
 
     Returns:
-        Features with rotated pose vectors
+        Rotated pose vectors with shape (N, 9)
     """
-    pose_vecs = features["pose_vectors"]
     num_pose_vecs = pose_vecs.shape[0]
     assert pose_vecs.shape[-1] == 9, "pose_vectors in features should be flattened."
     # Reshape to (num_pose_vecs * 3, 3) to be able to rotate all vectors at once
@@ -550,9 +550,7 @@ def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
     # rotate all vectors by ref_frame_rot
     rotated_pose_vecs = ref_frame_rot.apply(pose_vecs)
     # shape back to original shape (num_pose_vecs, 9)
-    rotated_pose_vecs = rotated_pose_vecs.reshape((num_pose_vecs, 9))
-    features["pose_vectors"] = rotated_pose_vecs
-    return features
+    return rotated_pose_vecs.reshape((num_pose_vecs, 9))
 
 
 def apply_rf_transform_to_points(
@@ -600,5 +598,7 @@ def apply_rf_transform_to_points(
 
     # Undo the 0 centering and align the new points with the model's reference frame
     transformed_locations = rotated_locs + ref_point1
-    features = rotate_multiple_pose_dependent_features(features, object_rotation.inv())
+    features["pose_vectors"] = rotate_multiple_pose_vectors(
+        features["pose_vectors"], object_rotation.inv()
+    )
     return transformed_locations, features
