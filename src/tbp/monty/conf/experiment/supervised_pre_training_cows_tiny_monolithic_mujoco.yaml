@@ -40,5 +40,8 @@ experiment:
           gsg: null
           # 2.5 mm matching tolerance for the logo LM (1 mm is the model voxel size).
           max_match_distance: 0.0025
+          # Only pass the logo ID up once its evidence is well clear of the
+          # confusable regime (the wrong logo peaks around 15 on shared colours).
+          output_min_evidence: 20.0
         learning_module_2:
           gsg: null

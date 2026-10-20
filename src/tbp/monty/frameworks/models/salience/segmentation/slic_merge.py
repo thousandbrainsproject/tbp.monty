@@ -47,7 +47,7 @@ class SlicMerge(SegmentationStrategy):
         sigma: float = 1.0,
         min_size_factor: float = 0.5,
         max_size_factor: float = 3.0,
-        merge_threshold: float = 0.1,
+        merge_threshold: float = 0.039,
     ) -> None:
         """Initialize the SLIC superpixel segmentation with region merging strategy.
 
@@ -65,8 +65,11 @@ class SlicMerge(SegmentationStrategy):
                 fragments are merged into an adjacent superpixel.
             max_size_factor: Maximum superpixel size, as a fraction of the
                 nominal size. Larger connected regions are split.
-            merge_threshold: Color distance threshold for merging superpixels. Pertains
-                to the LAB 0-1 space.
+            merge_threshold: Color distance threshold for merging superpixels: the
+                CIE76 (Euclidean) distance between mean superpixel colors in LAB
+                space scaled to 0-1. The default of 0.039 corresponds to 10 on the
+                0-255 LAB scale, where distances of 2-10 are perceptible at a glance
+                and 10-50 mean the colors are more similar than opposite.
         """
         # slic parameters
         self._n_seeds = n_seeds
