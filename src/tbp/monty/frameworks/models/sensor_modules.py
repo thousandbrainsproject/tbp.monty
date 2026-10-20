@@ -35,7 +35,10 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_ordinary_least_squares,
     surface_normal_total_least_squares,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    get_angle,
+    rotate_pose_vectors,
+)
 from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tbp.monty.memento import Memento
 from tbp.monty.observations import SensorObservation
@@ -432,8 +435,8 @@ class DefaultMessageNoise(MessageNoise):
                         noise_rotation = Rotation.from_euler(
                             "xyz", noise_angles, degrees=True
                         )
-                        percept.morphological_features[key] = noise_rotation.apply(
-                            percept.morphological_features[key]
+                        percept.morphological_features[key] = rotate_pose_vectors(
+                            percept.morphological_features[key], noise_rotation
                         )
                     else:
                         percept.morphological_features[key] = (
