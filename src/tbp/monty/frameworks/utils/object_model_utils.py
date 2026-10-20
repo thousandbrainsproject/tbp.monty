@@ -37,6 +37,16 @@ class NumpyGraph:
         for key in my_dict:
             setattr(self, key, my_dict[key])
 
+    def __repr__(self) -> str:
+        """Return the graph's fields, summarizing arrays by dtype and shape."""
+        fields = ", ".join(
+            f"{key}={value.dtype}{list(value.shape)}"
+            if isinstance(value, np.ndarray)
+            else f"{key}={value!r}"
+            for key, value in vars(self).items()
+        )
+        return f"{type(self).__name__}({fields})"
+
     @property
     def num_nodes(self) -> int:
         return self.x.shape[0]
@@ -71,6 +81,24 @@ def torch_graph_to_numpy(torch_graph):
         else:
             numpy_graph[key] = torch_graph[key]
     return NumpyGraph(numpy_graph)
+
+
+def as_numpy_graph(graph):
+    """Return graph as a NumpyGraph, converting legacy torch_geometric graphs.
+
+    Models saved before the NumpyGraph refactor store a torch_geometric `Data`
+    graph. TODO: remove once existing .pt models have been migrated.
+
+    Args:
+        graph: NumpyGraph or legacy torch_geometric data structure.
+
+    Returns:
+        The graph as a NumpyGraph.
+    """
+    if isinstance(graph, NumpyGraph):
+        return graph
+    logger.debug(f"turning graph of type {type(graph)} into numpy graph")
+    return torch_graph_to_numpy(graph)
 
 
 def already_in_list(
