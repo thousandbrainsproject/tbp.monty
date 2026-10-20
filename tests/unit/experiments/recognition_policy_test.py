@@ -157,6 +157,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             mode=ExperimentMode.EVAL,
         )
         result = policy(model, count)
+        wrapped.assert_called_once_with(model, count)
         is_done = matching_steps >= min_eval_steps
         self.assertEqual(
             result, RecognitionResult(is_done, is_time_out, start_exploring)
@@ -192,6 +193,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             mode=ExperimentMode.EVAL,
         )
         result = policy(model, count)
+        wrapped.assert_called_once_with(model, count)
         is_done = step >= max_total_steps
         self.assertEqual(result, RecognitionResult(is_done, is_done, start_exploring))
 
@@ -226,6 +228,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             mode=ExperimentMode.EVAL,
         )
         result = policy(model, count)
+        wrapped.assert_called_once_with(model, count)
         self.assertEqual(
             result,
             RecognitionResult(
