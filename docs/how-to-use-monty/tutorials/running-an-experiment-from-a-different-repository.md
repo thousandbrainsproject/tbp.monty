@@ -11,7 +11,7 @@ If you have your own repository and want to run your own experiment or a benchma
 First, you will need to install `tbp.monty` as a dependency using `conda`. You will need to add `thousandbrainsproject` to your list of channels, as well as the specific `tbp.monty` dependency:
 
 ```yaml
-# environment.yaml
+# environment.yml
 
 # ...
 channels:
@@ -38,17 +38,17 @@ dependencies = [
 ]
 ```
 
-With the `enviroment.yaml` configured, create your environment:
+With the `environment.yml` configured, create your environment:
 
 ```
-conda env create -f environment.yaml
+conda env create -f environment.yml
 ```
 
 > [!NOTE]
 >
 > `tbp.monty` is only distributed for `x86_64` architecture, so if you are on Apple Silicon, your `conda` environment needs to be created using `--subdir=osx64` option:
 > ```
-> conda env create -f environment.yaml --subdir=osx-64
+> conda env create -f environment.yml --subdir=osx-64
 > ```
 
 Once your `conda` environment is configured, the general setup is:
@@ -96,19 +96,19 @@ src
    `- conf
       `- experiment
          `- example.yaml
-environment.yaml
+environment.yml
 pyproject.toml
 run.py
 run_parallel.py
 ```
 
-With the above setup in place and a correct configuration present in `example.yaml`, you can now execute it via:
+You need to tell Hydra where to find your configuration using the `--config-dir` (or `-cd`) option. With the above setup in place and a correct configuration present in `example.yaml`, you can now execute it via:
 ```
-python run.py experiment=example
+python run.py -cd src/project/conf experiment=example
 ```
 or
 ```
-python run_parallel.py experiment=example
+python run_parallel.py -cd src/project/conf experiment=example
 ```
 
 For a full working example, see the template repository: https://github.com/thousandbrainsproject/tbp.monty_project_template.
