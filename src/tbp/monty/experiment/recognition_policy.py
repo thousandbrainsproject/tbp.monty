@@ -184,7 +184,8 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
         # Report reason for termination.
         if result.is_done:
             logger.info(
-                "MinEvalSteps is done, with model.is_done=%s step=%d matching_steps=%d",
+                "MinEvalMaxTotalSteps is done, "
+                "with model.is_done=%s step=%d matching_steps=%d",
                 model.is_done,
                 count.step,
                 count.matching_steps,
