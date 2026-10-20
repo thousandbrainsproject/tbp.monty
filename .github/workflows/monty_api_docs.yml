@@ -32,7 +32,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       # We want to deploy the docs using the same criteria for deciding if Monty code changed.
       - name: Should Run Monty API Docs

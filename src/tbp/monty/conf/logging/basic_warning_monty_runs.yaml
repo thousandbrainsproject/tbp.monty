@@ -7,4 +7,5 @@ output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
 
 monty_data_logger:
   _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
-  handlers: []
+  handlers:
+    - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
