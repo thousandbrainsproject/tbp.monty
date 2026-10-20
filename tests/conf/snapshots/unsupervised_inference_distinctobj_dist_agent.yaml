@@ -194,7 +194,7 @@ experiment:
       _target_: tbp.monty.experiment.recognition_policy.MinEvalMaxTotalSteps
       min_eval_steps: 100
       max_total_steps: 6000
-      before:
+      wrapped:
         _target_: tbp.monty.experiment.recognition_policy.StepLimit
         min_train_steps: 3
         num_exploring_steps: 1000

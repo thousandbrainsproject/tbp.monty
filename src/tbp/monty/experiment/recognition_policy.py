@@ -63,6 +63,8 @@ class RecognitionResult:
     is_done: bool = False
     """A terminal condition has been reached."""
 
+    # TODO: this is a request, not a condition.
+    #       rename and document accordingly.
     is_time_out: bool = False
     """A time-out condition has been reached."""
 
@@ -116,8 +118,8 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
     `matching_steps` fails to increment sufficiently over `max_total_steps` steps.
     """
 
-    _before: RecognitionPolicy
-    """The policy evaluated _before_ this policy is applied."""
+    _wrapped: RecognitionPolicy
+    """The policy _wrapped_ and possibly overridden by this policy."""
 
     _min_eval_steps: int
     """The minimum steps to take in matching mode."""
@@ -127,14 +129,14 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
 
     def __init__(
         self: Self,
-        before: RecognitionPolicy,
+        wrapped: RecognitionPolicy,
         min_eval_steps: int = 0,
         max_total_steps: int = 1,
     ) -> None:
         """Initialize the policy.
 
         Args:
-            before: The policy evaluated _before_ this policy is applied.
+            wrapped: The policy _wrapped_ and possibly overridden by this policy.
             min_eval_steps: The minimum steps to take in matching mode.
             max_total_steps: The maximum number of steps before forcing termination.
 
@@ -153,7 +155,7 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
                 "min_eval_steps must be less than or equal to max_total_steps"
             )
 
-        self._before = before
+        self._wrapped = wrapped
         self._min_eval_steps = min_eval_steps
         self._max_total_steps = max_total_steps
 
@@ -162,26 +164,31 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
         model: MontyBase,
         count: RecognitionCounter,
     ) -> RecognitionResult:
-        # Evalaute _before_ policy.
-        result = self._before(model, count)
-
-        # Prevent termination if `min_eval_steps` have not been taken.
-        if (
+        wrapped = self._wrapped(model, count)
+        if model.is_done:
+            result = RecognitionResult(
+                is_done=True,
+                is_time_out=wrapped.is_time_out,
+                start_exploring=wrapped.start_exploring,
+            )
+        elif count.step >= self._max_total_steps:
+            result = RecognitionResult(
+                is_done=True,
+                is_time_out=True,
+                start_exploring=wrapped.start_exploring,
+            )
+        elif (
             count.mode is ExperimentMode.EVAL
             and count.matching_steps < self._min_eval_steps
         ):
-            result.is_done = False
+            result = RecognitionResult(
+                is_done=False,
+                is_time_out=wrapped.is_time_out,
+                start_exploring=wrapped.start_exploring,
+            )
+        else:
+            result = wrapped
 
-        # Force termination if `max_total_steps` is reached.
-        if count.step >= self._max_total_steps:
-            result.is_done = True
-            result.is_time_out = True
-
-        # Force termination if the model says it is done.
-        if model.is_done:
-            result.is_done = True
-
-        # Report reason for termination.
         if result.is_done:
             logger.info(
                 "MinEvalMaxTotalSteps is done, "

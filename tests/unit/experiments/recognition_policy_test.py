@@ -105,14 +105,14 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         self, min_eval_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            MinEvalMaxTotalSteps(before=MagicMock(), min_eval_steps=min_eval_steps)
+            MinEvalMaxTotalSteps(wrapped=MagicMock(), min_eval_steps=min_eval_steps)
 
     @given(max_total_steps=st.integers(max_value=0))
     def test_raises_value_error_if_max_total_steps_is_not_positive(
         self, max_total_steps: int
     ) -> None:
         with self.assertRaises(ValueError):
-            MinEvalMaxTotalSteps(before=MagicMock(), max_total_steps=max_total_steps)
+            MinEvalMaxTotalSteps(wrapped=MagicMock(), max_total_steps=max_total_steps)
 
     @given(steps_asc=ascending_ints(min_value=1))
     def test_raises_value_error_if_min_eval_steps_is_greater_than_max_total_steps(
@@ -121,7 +121,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         (max_total_steps, min_eval_steps) = steps_asc
         with self.assertRaises(ValueError):
             MinEvalMaxTotalSteps(
-                before=MagicMock(),
+                wrapped=MagicMock(),
                 min_eval_steps=min_eval_steps,
                 max_total_steps=max_total_steps,
             )
@@ -132,7 +132,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         is_time_out=st.booleans(),
         start_exploring=st.booleans(),
     )
-    def test_prevents_termination_until_min_eval_steps(
+    def test_result_is_not_done_until_min_eval_steps(
         self,
         matching_steps: int,
         limit_asc: tuple[int, int],
@@ -140,14 +140,14 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         start_exploring: bool,
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
-        before = MagicMock(
+        wrapped = MagicMock(
             RecognitionPolicy,
             return_value=RecognitionResult(
                 is_done=True, is_time_out=is_time_out, start_exploring=start_exploring
             ),
         )
         policy = MinEvalMaxTotalSteps(
-            before,
+            wrapped,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
         )
@@ -167,21 +167,21 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         step_asc=ascending_ints(min_value=1),
         start_exploring=st.booleans(),
     )
-    def test_force_time_out_at_max_total_steps(
+    def test_result_is_done_and_time_out_at_max_total_steps(
         self,
         matching_steps: int,
         step_asc: tuple[int, int],
         start_exploring: bool,
     ) -> None:
         (max_total_steps, step) = step_asc
-        before = MagicMock(
+        wrapped = MagicMock(
             RecognitionPolicy,
             return_value=RecognitionResult(
                 is_done=False, is_time_out=False, start_exploring=start_exploring
             ),
         )
         policy = MinEvalMaxTotalSteps(
-            before,
+            wrapped,
             min_eval_steps=max_total_steps,
             max_total_steps=max_total_steps,
         )
@@ -202,7 +202,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         is_time_out=st.booleans(),
         start_exploring=st.booleans(),
     )
-    def test_force_termination_if_model_is_done(
+    def test_result_is_done_if_model_is_done(
         self,
         matching_steps: int,
         limit_asc: tuple[int, int],
@@ -211,12 +211,12 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         start_exploring: bool,
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
-        before = MagicMock(
+        wrapped = MagicMock(
             RecognitionPolicy,
             return_value=RecognitionResult(is_done, is_time_out, start_exploring),
         )
         policy = MinEvalMaxTotalSteps(
-            before,
+            wrapped,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
         )
