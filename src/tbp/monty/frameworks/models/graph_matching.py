@@ -1140,79 +1140,70 @@ class GraphMemory(LMMemory):
         """Determine how to update memory and call corresponding function."""
         if graph_id is None:
             logger.info("no match found in time, not updating memory")
-        else:
-            # Determine this before the loop: channels added by this call must not
-            # make the object look like it was already in memory (and thus has a
-            # reference frame to transform into) for channels later in the loop.
-            graph_was_in_memory = graph_id in self.get_memory_ids()
-            for input_channel in features:
-                (
-                    input_channel_features,
+            return
+
+        # Determine this before the loop: channels added by this call must not
+        # make the object look like it was already in memory (and thus has a
+        # reference frame to transform into) for channels later in the loop.
+        graph_was_in_memory = graph_id in self.get_memory_ids()
+        for input_channel in features:
+            (
+                input_channel_features,
+                input_channel_locations,
+            ) = self._extract_entries_with_content(features[input_channel], locations)
+
+            if graph_was_in_memory and input_channel in (
+                self.get_input_channels_in_graph(graph_id)
+            ):
+                logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
+                self._extend_graph(
                     input_channel_locations,
-                ) = self._extract_entries_with_content(
-                    features[input_channel], locations
+                    input_channel_features,
+                    graph_id,
+                    input_channel,
+                    object_location_rel_body,
+                    location_rel_model,
+                    object_rotation,
                 )
-                # Update graph
-                if (
-                    graph_id in self.get_memory_ids()
-                    and input_channel in self.get_input_channels_in_graph(graph_id)
-                ):
-                    logger.info(
-                        f"{graph_id} already in memory ({self.get_memory_ids()})"
-                    )
-                    self._extend_graph(
-                        input_channel_locations,
-                        input_channel_features,
-                        graph_id,
-                        input_channel,
-                        object_location_rel_body,
-                        location_rel_model,
-                        object_rotation,
-                    )
-                elif graph_was_in_memory:
-                    # The object is already in memory but this input channel is
-                    # not (e.g. a child LM whose output only converged in a later
-                    # episode). The object's pose in the current episode may differ
-                    # from the pose that defined the model's reference frame, so
-                    # the new channel's points need the same transform that
-                    # _extend_graph applies before they are stored alongside the
-                    # existing channels.
-                    logger.info(
-                        f"{graph_id} in memory but {input_channel} is a new input "
-                        "channel. Transforming points into the model's reference "
-                        "frame."
-                    )
-                    if object_rotation is None:
-                        logger.warning(
-                            f"No object rotation detected for {graph_id}. Adding "
-                            f"{input_channel} without transforming its points; the "
-                            "new channel may be misaligned with existing channels."
-                        )
-                    else:
-                        (
-                            input_channel_locations,
-                            input_channel_features,
-                        ) = apply_rf_transform_to_points(
-                            locations=input_channel_locations,
-                            features=input_channel_features,
-                            location_rel_model=location_rel_model,
-                            object_location_rel_body=object_location_rel_body,
-                            object_rotation=object_rotation,
-                        )
-                    self._build_graph(
-                        input_channel_locations,
-                        input_channel_features,
-                        graph_id,
-                        input_channel,
+                continue
+
+            if graph_was_in_memory:
+                # The object is already in memory but this input channel is not
+                # (e.g. a child LM whose output only converged in a later episode).
+                # The object's pose in the current episode may differ from the pose
+                # that defined the model's reference frame, so the new channel's
+                # points need the same transform that _extend_graph applies before
+                # they are stored alongside the existing channels.
+                logger.info(
+                    f"{graph_id} in memory but {input_channel} is a new input "
+                    "channel. Transforming points into the model's reference frame."
+                )
+                if object_rotation is None:
+                    logger.warning(
+                        f"No object rotation detected for {graph_id}. Adding "
+                        f"{input_channel} without transforming its points; the new "
+                        "channel may be misaligned with existing channels."
                     )
                 else:
-                    logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
-                    self._build_graph(
+                    (
                         input_channel_locations,
                         input_channel_features,
-                        graph_id,
-                        input_channel,
+                    ) = apply_rf_transform_to_points(
+                        locations=input_channel_locations,
+                        features=input_channel_features,
+                        location_rel_model=location_rel_model,
+                        object_location_rel_body=object_location_rel_body,
+                        object_rotation=object_rotation,
                     )
+            else:
+                logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
+
+            self._build_graph(
+                input_channel_locations,
+                input_channel_features,
+                graph_id,
+                input_channel,
+            )
 
     def initialize_feature_arrays(self):
         for graph_id in self.get_memory_ids():
