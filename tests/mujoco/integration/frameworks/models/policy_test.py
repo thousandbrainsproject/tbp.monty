@@ -67,7 +67,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.models.sensor_modules import CameraSM
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
 from tbp.monty.hydra import instantiate_experiment
 from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco.agents import DistantAgent
@@ -173,7 +173,9 @@ class AdvancedPolicyTest(unittest.TestCase):
         default_percept_args: MutableMapping[str, Any] = dict(
             location=np.array([0, 0, 0]),
             morphological_features={
-                "pose_vectors": np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]]),
+                "pose_vectors": SurfacePoseVectors(
+                    np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]])
+                ),
                 "pose_fully_defined": True,
                 "on_object": 1,
             },
@@ -964,7 +966,9 @@ class AdvancedPolicyTest(unittest.TestCase):
         fake_percept_config: MutableMapping[str, Any] = dict(
             location=np.array([0, 1.5, 0.1]),
             morphological_features={
-                "pose_vectors": np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]]),
+                "pose_vectors": SurfacePoseVectors(
+                    np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]])
+                ),
                 "pose_fully_defined": True,
                 "on_object": 1,
             },
@@ -1238,7 +1242,13 @@ class JumpToGoalTest(ParametrizedTestCase):
         policy = JumpToGoal(JUMP_AGENT_ID, JUMP_SENSOR_ID)
         goal = Mock(
             location=np.array(JUMP_OBJECT_POSITION),
-            morphological_features={"pose_vectors": np.eye(3)},
+            morphological_features={
+                "pose_vectors": GazeDirection(
+                    np.array(
+                        [[1, 0, 0], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]
+                    )
+                )
+            },
         )
         jump_result = policy(
             ctx=Mock(),

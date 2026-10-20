@@ -14,6 +14,7 @@ from typing import Literal
 import numpy as np
 
 from tbp.monty.cmp import Message
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.runtime import is_location_only_step
 
 
@@ -24,7 +25,7 @@ def _message(
     return Message(
         location=np.zeros(3),
         morphological_features={
-            "pose_vectors": np.eye(3),
+            "pose_vectors": SurfacePoseVectors(np.eye(3)),
             "pose_fully_defined": True,
         },
         non_morphological_features={},

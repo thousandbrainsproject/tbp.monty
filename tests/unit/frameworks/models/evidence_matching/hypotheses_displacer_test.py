@@ -21,6 +21,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
+from tbp.monty.geometry import SurfacePoseVectors
 
 
 class DefaultHypothesesDisplacerTest(TestCase):
@@ -82,7 +83,7 @@ class DefaultHypothesesDisplacerTest(TestCase):
             search_locations=np.zeros((1, 3)),
             channel_possible_poses=np.eye(3).reshape(1, 3, 3),
             channel_features={
-                "pose_vectors": np.eye(3),
+                "pose_vectors": SurfacePoseVectors(np.eye(3)),
                 "pose_fully_defined": True,
             },
         )

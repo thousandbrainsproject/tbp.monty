@@ -21,7 +21,11 @@ from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.models.two_d_sensor_module import TwoDSensorModule
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.frameworks.utils.edge_detection import DEFAULT_POSE_2D, EdgeFeatures
+from tbp.monty.frameworks.utils.edge_detection import (
+    DEFAULT_SURFACE_POSE_VECTORS_2D,
+    EdgeFeatures,
+)
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tbp.monty.observations import SensorObservation
 from tests.unit.frameworks.utils.edge_detection_test import (
@@ -37,7 +41,7 @@ DEFAULT_FEATURES = [
     "coherence",
 ]
 SURFACE_NORMAL_3D = np.array([0.0, 0.0, 1.0])
-FLAT_SURFACE_POSE = DEFAULT_POSE_2D
+FLAT_SURFACE_POSE_VECTORS = DEFAULT_SURFACE_POSE_VECTORS_2D
 
 
 def make_message(
@@ -45,7 +49,7 @@ def make_message(
     on_object: bool = True,
     pass_message: bool = True,
     process_features_in_lm: bool = True,
-    pose_vectors: np.ndarray | None = None,
+    pose_vectors: SurfacePoseVectors | None = None,
     pose_fully_defined: bool = False,
     principal_curvatures: np.ndarray | None = None,
     non_morphological_features: dict | None = None,
@@ -55,7 +59,7 @@ def make_message(
     if location is None:
         location = np.array([0.0, 0.0, 0.0])
     if pose_vectors is None:
-        pose_vectors = np.identity(3)
+        pose_vectors = DEFAULT_SURFACE_POSE_VECTORS_2D
     if principal_curvatures is None:
         principal_curvatures = np.zeros(2)
 
@@ -246,7 +250,7 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
             location=np.array([1.0, 2.0, 3.0]),
             on_object=True,
             pass_message=True,
-            pose_vectors=np.identity(3),
+            pose_vectors=SurfacePoseVectors(np.identity(3)),
             pose_fully_defined=False,
             sender_id="test",
         )
@@ -279,7 +283,7 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
             location=np.array([1.0, 2.0, 3.0]),
             on_object=True,
             pass_message=True,
-            pose_vectors=FLAT_SURFACE_POSE,
+            pose_vectors=FLAT_SURFACE_POSE_VECTORS,
             pose_fully_defined=False,
             sender_id="test",
         )
@@ -392,19 +396,23 @@ class TwoDSensorModuleTangentFrameTest(unittest.TestCase):
         first_normal = np.array([0.0, 0.0, 1.0])
         second_normal = np.array([0.0, np.sqrt(0.5), np.sqrt(0.5)])
 
-        first_pose = np.array(
-            [
-                first_normal,
-                [1.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0],
-            ]
+        first_pose = SurfacePoseVectors(
+            np.array(
+                [
+                    first_normal,
+                    [1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                ]
+            )
         )
-        second_pose = np.array(
-            [
-                second_normal,
-                [1.0, 0.0, 0.0],
-                [0.0, np.sqrt(0.5), -np.sqrt(0.5)],
-            ]
+        second_pose = SurfacePoseVectors(
+            np.array(
+                [
+                    second_normal,
+                    [1.0, 0.0, 0.0],
+                    [0.0, np.sqrt(0.5), -np.sqrt(0.5)],
+                ]
+            )
         )
 
         two_d_sm._observation_processor.process = Mock(
@@ -459,7 +467,7 @@ class TwoDSensorModuleTangentFrameTest(unittest.TestCase):
                 location=location.copy(),
                 on_object=True,
                 pass_message=True,
-                pose_vectors=FLAT_SURFACE_POSE,
+                pose_vectors=FLAT_SURFACE_POSE_VECTORS,
             )
             for location in locations
         ]

@@ -26,7 +26,9 @@ from tbp.monty.observations import SensorObservation
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_POSE_2D = np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+DEFAULT_SURFACE_POSE_VECTORS_2D = SurfacePoseVectors(
+    np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+)
 
 
 def _gradient_to_tangent_angle(gradient_angle: float) -> float:
