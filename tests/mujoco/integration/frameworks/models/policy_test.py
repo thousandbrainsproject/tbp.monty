@@ -215,8 +215,8 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # PC direction "flipped", pointing back to a location we've already been at
         fp_1_backtrack_pc = copy.deepcopy(fp_1)
-        fp_1_backtrack_pc["morphological_features"]["pose_vectors"] = np.array(
-            [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]
+        fp_1_backtrack_pc["morphological_features"]["pose_vectors"] = (
+            SurfacePoseVectors(np.array([[0, 0, -1], [-1, 0, 0], [0, 1, 0]]))
         )
 
         # PC direction is defined in z direction; here, as the sensor/agent is not
@@ -225,8 +225,8 @@ class AdvancedPolicyTest(unittest.TestCase):
         # reference frame of the sensor/agent can happen if the surface agent has failed
         # to orient such that it is looking down at the surface normal
         fp_2_corrupt_z = copy.deepcopy(fp_2)
-        fp_2_corrupt_z["morphological_features"]["pose_vectors"] = np.array(
-            [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+        fp_2_corrupt_z["morphological_features"]["pose_vectors"] = SurfacePoseVectors(
+            np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
         )
 
         self.fake_percept_advanced_pc = [
@@ -1013,7 +1013,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         assert motor_goal.location is not None
         return (
             motor_goal.location,
-            motor_goal.morphological_features["pose_vectors"][0],
+            motor_goal.morphological_features["pose_vectors"].direction,
             target_loc,
             agent_direction,
         )

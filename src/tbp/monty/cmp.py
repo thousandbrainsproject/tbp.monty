@@ -90,6 +90,7 @@ class Message:
                 if isinstance(feat_val, np.ndarray):
                     feat_val = np.round(feat_val, 3)
                 if feature == "pose_vectors":
+                    feat_val = np.round(feat_val.value, 3)
                     repr_string += f"       {feature}: \n"
                     for vector in feat_val:
                         repr_string += f"           {vector}\n"

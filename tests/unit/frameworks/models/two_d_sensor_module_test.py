@@ -349,13 +349,13 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         two_d_sm = make_2d_sm(edge_detector=edge_detector)
         two_d_sm._update_tangent_frame(surface_normal_3d=SURFACE_NORMAL_3D)
         percept = make_message()
-        original_pose = percept.morphological_features["pose_vectors"].copy()
+        original_pose = percept.morphological_features["pose_vectors"].value.copy()
 
         msg = two_d_sm._extract_2d_edge(percept, observation, SURFACE_NORMAL_3D)
 
         assert msg.morphological_features["pose_fully_defined"] is False
         np.testing.assert_allclose(
-            msg.morphological_features["pose_vectors"], original_pose
+            msg.morphological_features["pose_vectors"].value, original_pose
         )
         assert msg.non_morphological_features["edge_strength"] == 0.0
         assert msg.non_morphological_features["coherence"] == 0.0
@@ -377,13 +377,13 @@ class TwoDSensorModuleEdgeTest(unittest.TestCase):
         two_d_sm = make_2d_sm(edge_detector=edge_detector)
         two_d_sm._update_tangent_frame(surface_normal_3d=SURFACE_NORMAL_3D)
         percept = make_message()
-        original_pose = percept.morphological_features["pose_vectors"].copy()
+        original_pose = percept.morphological_features["pose_vectors"].value.copy()
 
         msg = two_d_sm._extract_2d_edge(percept, observation, SURFACE_NORMAL_3D)
 
         assert msg.morphological_features["pose_fully_defined"] is False
         np.testing.assert_allclose(
-            msg.morphological_features["pose_vectors"], original_pose
+            msg.morphological_features["pose_vectors"].value, original_pose
         )
 
         assert msg.non_morphological_features["edge_strength"] == 0.0
