@@ -365,7 +365,6 @@ class Rotation:
         object.__setattr__(self, "_rot", state)
 
 
-# TODO: Turn into SurfacePoseVectors(Rotation) eventually.
 @dataclass
 class SurfacePoseVectors:
     """Surface normal, and two principal curvature vectors."""
@@ -394,7 +393,6 @@ class SurfacePoseVectors:
         return self.value[2]
 
 
-# TODO: Replace with Rotation eventually.
 @dataclass
 class OrientationMatrix:
     """Rotation matrix representing object orientation."""
