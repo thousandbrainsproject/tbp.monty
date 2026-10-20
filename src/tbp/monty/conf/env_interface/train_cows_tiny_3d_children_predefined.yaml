@@ -1,0 +1,11 @@
+# @package experiment.config
+
+do_train: true
+train_env_interface_args:
+  object_names:
+  - 001_cube
+  - 011_cylinder
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations: ${constants.rotations_all}
+train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
