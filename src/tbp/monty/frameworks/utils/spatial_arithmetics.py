@@ -286,8 +286,8 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
 
 def get_angle_between(
     v1: npt.NDArray[np.float64], v2: npt.NDArray[np.float64]
-) -> float:
-    """Get the angle between two 3D vectors.
+) -> npt.NDArray[np.float64] | float:
+    """Get the angle between 3D vectors, broadcasting over leading dimensions.
 
     Uses the atan2 formulation. Unlike ``get_angle``, this does
     not assume the inputs are unit vectors: the vectors' magnitudes
@@ -297,24 +297,23 @@ def get_angle_between(
     See get_angle_beefed_up for the guarded variant.
 
     Args:
-        v1: Vector 1 (3D)
-        v2: Vector 2 (3D)
+        v1: Vectors of shape (..., 3).
+        v2: Vectors of shape (..., 3), broadcastable against ``v1``.
 
     Returns:
-        angle in radians
+        Angles in radians, with the broadcast shape of the inputs minus the last
+        axis. A scalar for a single pair of vectors.
 
-    TODO: Consolidate angle helpers around the NumPy atan2 supporting
-      (..., 3) inputs with broadcasting and reductions over axis=-1. In
+    TODO: Consolidate the other angle helpers around this function. In
       the near term, get_angle_between can replace get_angle without
       further changes. This function can merge with get_angle_beefed_up
       by adding handling for zero-length vectors and None. For
-      get_angles_for_all_hypotheses, add support for broadcasting, e.g.
-      get_angle_between(hyp_f, query_f[:, None, :]) and adding axis=-1
-      for reduction. Note that when broadcasting is added, it might
-      make sense to make a separate get_angles_beetween function to support
-      typing.
+      get_angles_for_all_hypotheses, use broadcasting, e.g.
+      get_angle_between(hyp_f, query_f[:, None, :]).
     """
-    return float(np.arctan2(np.linalg.norm(np.cross(v1, v2)), np.dot(v1, v2)))
+    return np.arctan2(
+        np.linalg.norm(np.cross(v1, v2), axis=-1), np.sum(v1 * v2, axis=-1)
+    )
 
 
 def check_orthonormal(matrix):

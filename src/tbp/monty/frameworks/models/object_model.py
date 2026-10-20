@@ -26,6 +26,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import ObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.frameworks.utils.object_model_utils import (
     NumpyGraph,
+    as_numpy_graph,
     build_point_cloud_graph,
     circular_mean,
     expand_index_dims,
@@ -36,11 +37,10 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     pose_vector_mean,
     pose_vector_merge,
     remove_close_points,
-    torch_graph_to_numpy,
 )
+from tbp.monty.frameworks.utils.sensor_processing import point_pair_features
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     apply_rf_transform_to_points,
-    get_angle_between,
 )
 
 logger = logging.getLogger(__name__)
@@ -113,18 +113,10 @@ class GraphObjectModel(ObjectModel):
     def add_ppf_to_graph(self) -> None:
         """Add point pair features to graph edges."""
         g = self._graph
-        row, col = g.edge_index[0], g.edge_index[1]
-        pseudo = g.pos[col] - g.pos[row]
-        n_i, n_j = g.norm[row], g.norm[col]
-        g.edge_attr = np.stack(
-            [
-                np.linalg.norm(pseudo, axis=1),
-                [get_angle_between(a, b) for a, b in zip(n_i, pseudo)],
-                [get_angle_between(a, b) for a, b in zip(n_j, pseudo)],
-                [get_angle_between(a, b) for a, b in zip(n_i, n_j)],
-            ],
-            axis=1,
-        ).astype(np.float32)
+        row, col = g.edge_index
+        g.edge_attr = point_pair_features(
+            g.pos[row], g.pos[col], g.norm[row], g.norm[col]
+        )
         self.has_ppf = True
 
     def edge_index_between(self, previous_node: int, new_node: int) -> int | None:
@@ -188,9 +180,16 @@ class GraphObjectModel(ObjectModel):
         if self._graph is not None:
             return self._graph.feature_mapping.keys()
 
+    def __setstate__(self, state: dict) -> None:
+        """Restore a pickled model, converting legacy torch_geometric graphs."""
+        # TODO: remove once existing .pt models have been migrated to NumpyGraph.
+        self.__dict__.update(state)
+        if self._graph is not None:
+            self._graph = as_numpy_graph(self._graph)
+
     def set_graph(self, graph):
         """Set self._graph property with given graph (i.e. from pretraining)."""
-        self._graph = graph
+        self._graph = as_numpy_graph(graph)
 
     def get_values_for_feature(self, feature):
         featue_idx = self.feature_mapping[feature]
@@ -513,10 +512,7 @@ class GridObjectModel(GraphObjectModel):
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):
         """Set self._graph property and convert input graph to right format."""
-        if type(graph) is not NumpyGraph:
-            # could also check if is type torch_geometric.data.data.Data
-            logger.debug(f"turning graph of type {type(graph)} into numpy graph")
-            graph = torch_graph_to_numpy(graph)
+        graph = as_numpy_graph(graph)
         if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
             self._graph = graph
