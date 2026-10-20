@@ -141,7 +141,6 @@ jobs:
       - name: Checkout tbp.monty
         uses: actions/checkout@v7
         with:
-          lfs: true
           fetch-depth: 2
           path: tbp.monty
       - name: Version updated
