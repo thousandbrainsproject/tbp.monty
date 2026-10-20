@@ -172,7 +172,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: tbp.monty/dist/
-          repository-url: https://test.pypi.org/legacy/
 
 
   tag_version_monty_publish:
