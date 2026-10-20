@@ -72,7 +72,7 @@ def main():
 
     render_preview_parser = subparsers.add_parser(
         "render-preview",
-        help=("Render docs into a JSON preview bundle without ReadMe credentials"),
+        help="Render docs into a JSON preview bundle without ReadMe credentials",
     )
     render_preview_parser.add_argument(
         "folder",
@@ -108,7 +108,7 @@ def main():
 
     publish_preview_parser = subparsers.add_parser(
         "publish-preview",
-        help=("Publish a validated, pre-rendered preview JSON bundle"),
+        help="Publish a validated, pre-rendered preview JSON bundle",
     )
     publish_preview_parser.add_argument(
         "bundle_file",

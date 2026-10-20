@@ -141,7 +141,7 @@ def publish_preview(
     """Publish a pre-rendered preview bundle to ReadMe.
 
     Requires a non-stable preview version, loads the bundle, and uploads only
-    the pre-rendered documentation hierarchy. Validiation work using these
+    the pre-rendered documentation hierarchy. Validation work using these
     metadata fields will be added in the next PR.
 
     Args:
