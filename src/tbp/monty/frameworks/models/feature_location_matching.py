@@ -512,7 +512,7 @@ class FeatureGraphLM(GraphLM):
                         )
                         pose_vectors = rotate_pose_vectors(
                             features[first_input_channel]["pose_vectors"], pose
-                        )  # pose = singular pose and pose_transformed_features = singular
+                        )
                         pose_fully_defined = features[first_input_channel][
                             "pose_fully_defined"
                         ]
@@ -550,7 +550,8 @@ class FeatureGraphLM(GraphLM):
 
         Args:
             query_pose_vectors: Observed pose vectors.
-            query_pose_fully_defined: Whether observed pose vectors have fully defined pose.
+            query_pose_fully_defined: Whether observed pose vectors have fully defined
+            pose.
             node_pose_vectors: Stored pose vectors in Object Model.
             input_channel: Name of input, e.g., patch_0.
 

@@ -117,7 +117,11 @@ class Message:
         return self.sender_type == "SM"
 
     def transform_morphological_features(self, translation=None, rotation=None):
-        """Apply translation and/or rotation to morphological features."""
+        """Apply translation and/or rotation to morphological features.
+
+        Raises:
+            TypeError: If pose_type is not a SurfacePoseVectors or OrientationMatrix.
+        """
         if translation is not None:
             self.location += translation
         if rotation is not None:
@@ -331,8 +335,8 @@ class Goal(Message):
                 self.morphological_features["pose_vectors"],
                 (SurfacePoseVectors, OrientationMatrix, GazeDirection),
             ), (
-                "pose_vectors must be an instance of SurfacePoseVectors, OrientationMatrix,"
-                " or GazeDirection but type is "
+                "pose_vectors must be an instance of SurfacePoseVectors, "
+                "OrientationMatrix, or GazeDirection but type is "
                 f"{type(self.morphological_features['pose_vectors'])}"
             )
             assert "pose_fully_defined" in self.morphological_features
