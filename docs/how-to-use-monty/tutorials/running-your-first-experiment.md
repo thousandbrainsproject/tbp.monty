@@ -32,7 +32,7 @@ Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf
 # specify.
 defaults:
   # /monty defines what Monty we will use and how many exploration, evaluation,
-  # and training steps to configure it with.
+  # training, and total steps to configure it with.
   - /monty: graph_exp1000_e3_t3
 
   # /monty/motor_system_config specifies what motor system and motor policy to
@@ -73,14 +73,18 @@ defaults:
 
   # /termination specifies when an episode ends. The match criterion decides
   # which learning modules must recognize the object, and the recognition
-  # policy adds step limits. We stop once any one learning module has matched
-  # or after 6000 steps.
-  - /termination: any1_maxtotalsteps_6000
+  # policy adds step limits. We stop once any one learning module has matched,
+  # or after 20 steps exploring, or 6000 total steps.
+  - /termination: any1_train_steps_3_20_tot6000
 
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we
   # output the data logs and python logs where training models are saved.
   - /logging: silent_warning_train
+
+  # /telemetry specifies the telemetry configuration to use. Here, we tell Monty
+  # to use the INFO log level.
+  - /telemetry: info
 
 experiment:
   # The top-level _target_ is what kind of experiment we want to run.
@@ -184,7 +188,7 @@ As mentioned previously, in `/monty: graph_exp1000_e3_t3`, notice that the model
 
 You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
 
-**In this particular experiment, `n_train_epochs` was set to 1, and `max_train_steps` was set to 1. This means a single epoch was run, with one matching step per episode**. In the next section, we go up a level from the model step to understand episodes and epochs.
+**In this particular experiment, `n_train_epochs` was set to 1, and `/termination: any1_train_steps_3_20_tot6000` limits each episode to between 3 and 20 training steps. This means a single epoch was run, with one short episode on the single object**. In the next section, we go up a level from the model step to understand episodes and epochs.
 
 ## Environment Interface
 
@@ -207,9 +211,9 @@ That was a lot of text, so let's review what all went into this experiment.
 - We ran a `MontyExperiment` using `run.py`
 - We went through the `train` procedure with one epoch
 - The epoch looped over a list of objects of length 1 - so a single episode was run
-- The max steps was set to 1, so all told, we took one single step on one single object
+- The termination config limited the episode to at most 20 steps, so all told, we took a handful of steps on one single object
 - Our model had a single agent with a single RGBD camera attached to it
-- During `model.step`, `matching_step` was called and one SM received one observation from the environment
+- During each `model.step`, `matching_step` was called and one SM received one observation from the environment
 - The model selected the next action
 - We saved our model at the end of the epoch
 

@@ -54,6 +54,7 @@ To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2ob
 defaults:
   # ...
   - /logging: silent_warning_train
+  - /telemetry: warning
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -135,9 +136,10 @@ defaults:
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   # The termination configuration decides when an episode ends.
-  - /termination: any1_maxtotalsteps_6000
+  - /termination: any1_train_steps_3_500_tot6000
   # The logging configuration.
   - /logging: silent_warning_train
+  - /telemetry: warning
 
 experiment:
   # The MontySupervisedObjectPretrainingExperiment will provide the model with the
