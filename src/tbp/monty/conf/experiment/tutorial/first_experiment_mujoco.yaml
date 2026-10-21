@@ -24,7 +24,7 @@ defaults:
 
   # /monty/sensor_module is Monty's sensor module configuration. We use a sensor
   # module that handles input from a camera.
-  - /monty/sensor_module: camera_dist
+  - /monty/sensor_module: camera_dist_raw0
 
   # /monty/connectivity is the connectivity between the learning modules and
   # the sensor modules. We connect one sensor module with one learning module.

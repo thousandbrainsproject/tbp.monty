@@ -4,7 +4,7 @@ defaults:
   - /monty: graph_exp10_e3_t3
   - /monty/motor_system_config: informed_random_walk_5
   - /monty/learning_module: test_feature_1lm_mmdnone
-  - /monty/sensor_module: camera_dist
+  - /monty/sensor_module: camera_dist_raw0
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_dist_agent
   - /env_interface: test_train_2obj_predefined_r2
