@@ -18,6 +18,7 @@ from tbp.monty.experiment.recognition_policy import (
     AnyPolicy,
     MaximumSteps,
     MaxTotalSteps,
+    MinEvalMaxTotalSteps,
     MinimumLMs,
     MontyIsDone,
     NaiveScan,
@@ -96,6 +97,144 @@ class MontyIsDoneTest(unittest.TestCase):
         count = RecognitionCounter(step)
         result = policy(model, count)
         self.assertEqual(result.is_done, is_done)
+
+
+class MinEvalMaxTotalStepsTest(unittest.TestCase):
+    @given(min_eval_steps=st.integers(max_value=-1))
+    def test_raises_value_error_if_min_eval_steps_is_negative(
+        self, min_eval_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MinEvalMaxTotalSteps(wrapped=MagicMock(), min_eval_steps=min_eval_steps)
+
+    @given(max_total_steps=st.integers(max_value=0))
+    def test_raises_value_error_if_max_total_steps_is_not_positive(
+        self, max_total_steps: int
+    ) -> None:
+        with self.assertRaises(ValueError):
+            MinEvalMaxTotalSteps(wrapped=MagicMock(), max_total_steps=max_total_steps)
+
+    @given(steps_asc=ascending_ints(min_value=1))
+    def test_raises_value_error_if_min_eval_steps_is_greater_than_max_total_steps(
+        self, steps_asc: tuple[int, int]
+    ) -> None:
+        (max_total_steps, min_eval_steps) = steps_asc
+        with self.assertRaises(ValueError):
+            MinEvalMaxTotalSteps(
+                wrapped=MagicMock(),
+                min_eval_steps=min_eval_steps,
+                max_total_steps=max_total_steps,
+            )
+
+    @given(
+        matching_steps=st.integers(min_value=0),
+        limit_asc=ascending_ints(min_value=0),
+        is_time_out=st.booleans(),
+        start_exploring=st.booleans(),
+    )
+    def test_result_is_not_done_until_min_eval_steps(
+        self,
+        matching_steps: int,
+        limit_asc: tuple[int, int],
+        is_time_out: bool,
+        start_exploring: bool,
+    ) -> None:
+        (min_eval_steps, max_total_steps) = limit_asc
+        wrapped = MagicMock(
+            RecognitionPolicy,
+            return_value=RecognitionResult(
+                is_done=True, is_time_out=is_time_out, start_exploring=start_exploring
+            ),
+        )
+        policy = MinEvalMaxTotalSteps(
+            wrapped,
+            min_eval_steps=min_eval_steps,
+            max_total_steps=max_total_steps,
+        )
+        model = _model_is_done(is_done=False)
+        count = RecognitionCounter(
+            matching_steps=matching_steps,
+            mode=ExperimentMode.EVAL,
+        )
+        result = policy(model, count)
+        wrapped.assert_called_once_with(model, count)
+        is_done = matching_steps >= min_eval_steps
+        self.assertEqual(
+            result, RecognitionResult(is_done, is_time_out, start_exploring)
+        )
+
+    @given(
+        matching_steps=st.integers(min_value=0),
+        step_asc=ascending_ints(min_value=1),
+        start_exploring=st.booleans(),
+    )
+    def test_result_is_done_and_time_out_at_max_total_steps(
+        self,
+        matching_steps: int,
+        step_asc: tuple[int, int],
+        start_exploring: bool,
+    ) -> None:
+        (max_total_steps, step) = step_asc
+        wrapped = MagicMock(
+            RecognitionPolicy,
+            return_value=RecognitionResult(
+                is_done=False, is_time_out=False, start_exploring=start_exploring
+            ),
+        )
+        policy = MinEvalMaxTotalSteps(
+            wrapped,
+            min_eval_steps=max_total_steps,
+            max_total_steps=max_total_steps,
+        )
+        model = _model_is_done(is_done=False)
+        count = RecognitionCounter(
+            step=step,
+            matching_steps=matching_steps,
+            mode=ExperimentMode.EVAL,
+        )
+        result = policy(model, count)
+        wrapped.assert_called_once_with(model, count)
+        is_done = step >= max_total_steps
+        self.assertEqual(result, RecognitionResult(is_done, is_done, start_exploring))
+
+    @given(
+        matching_steps=st.integers(min_value=0),
+        limit_asc=ascending_ints(min_value=0),
+        is_done=st.booleans(),
+        is_time_out=st.booleans(),
+        start_exploring=st.booleans(),
+    )
+    def test_result_is_done_if_model_is_done(
+        self,
+        matching_steps: int,
+        limit_asc: tuple[int, int],
+        is_done: bool,
+        is_time_out: bool,
+        start_exploring: bool,
+    ) -> None:
+        (min_eval_steps, max_total_steps) = limit_asc
+        wrapped = MagicMock(
+            RecognitionPolicy,
+            return_value=RecognitionResult(is_done, is_time_out, start_exploring),
+        )
+        policy = MinEvalMaxTotalSteps(
+            wrapped,
+            min_eval_steps=min_eval_steps,
+            max_total_steps=max_total_steps,
+        )
+        model = _model_is_done(is_done=True)
+        count = RecognitionCounter(
+            matching_steps=matching_steps,
+            mode=ExperimentMode.EVAL,
+        )
+        result = policy(model, count)
+        wrapped.assert_called_once_with(model, count)
+        self.assertEqual(
+            result,
+            RecognitionResult(
+                is_done=True, is_time_out=is_time_out, start_exploring=start_exploring
+            ),
+        )
 
 
 class MaxTotalStepsTest(unittest.TestCase):

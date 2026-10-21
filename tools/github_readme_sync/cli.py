@@ -29,7 +29,10 @@ from tools.github_readme_sync.hierarchy import (  # noqa: E402
     create_hierarchy_file,
 )
 from tools.github_readme_sync.index import generate_index  # noqa: E402
-from tools.github_readme_sync.preview import render_preview  # noqa: E402
+from tools.github_readme_sync.preview import (  # noqa: E402
+    publish_preview,
+    render_preview,
+)
 from tools.github_readme_sync.readme import ReadMe  # noqa: E402
 from tools.github_readme_sync.upload import upload  # noqa: E402
 
@@ -69,7 +72,7 @@ def main():
 
     render_preview_parser = subparsers.add_parser(
         "render-preview",
-        help=("Render docs into a JSON preview bundle without ReadMe credentials"),
+        help="Render docs into a JSON preview bundle without ReadMe credentials",
     )
     render_preview_parser.add_argument(
         "folder",
@@ -101,6 +104,41 @@ def main():
         "--base-ref",
         required=True,
         help="Base branch for the pull request",
+    )
+
+    publish_preview_parser = subparsers.add_parser(
+        "publish-preview",
+        help="Publish a validated, pre-rendered preview JSON bundle",
+    )
+    publish_preview_parser.add_argument(
+        "bundle_file",
+        type=Path,
+        help="Path to the rendered preview JSON bundle",
+    )
+    publish_preview_parser.add_argument(
+        "version",
+        help="ReadMe version to publish the preview under",
+    )
+    publish_preview_parser.add_argument(
+        "--expected-repository",
+        required=True,
+        help="Expected repository in owner/name format",
+    )
+    publish_preview_parser.add_argument(
+        "--expected-pr-number",
+        required=True,
+        type=int,
+        help="Expected pull request number for the preview",
+    )
+    publish_preview_parser.add_argument(
+        "--expected-head-sha",
+        required=True,
+        help="Expected head commit SHA for the pull request",
+    )
+    publish_preview_parser.add_argument(
+        "--expected-base-ref",
+        required=True,
+        help="Expected base branch for the pull request",
     )
 
     # Check external links command
@@ -165,6 +203,18 @@ def main():
             pr_number=args.pr_number,
             head_sha=args.head_sha,
             base_ref=args.base_ref,
+        )
+
+    elif args.command == "publish-preview":
+        check_readme_api_key()
+
+        publish_preview(
+            bundle_file=args.bundle_file,
+            rdme=ReadMe(args.version),
+            expected_repository=args.expected_repository,
+            expected_pr_number=args.expected_pr_number,
+            expected_head_sha=args.expected_head_sha,
+            expected_base_ref=args.expected_base_ref,
         )
 
     elif args.command == "check-external":
