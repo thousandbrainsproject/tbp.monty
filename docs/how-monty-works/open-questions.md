@@ -37,7 +37,7 @@ For in depth discussions of many of these questions, see the brainstorming video
 ## Routing
 
 - What is the routing mechanism? 
-- How does attention come into play here?
+- How does attention come into play here? (See the [attention system](attention-system.md) for our current implementation.)
 
 ## Voting
 - Can we assume that models of the same object in different LMs were learned using the same reference frame/in the same orientation?

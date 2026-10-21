@@ -14,12 +14,12 @@ import logging
 import logging.config
 import pprint
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import hydra
 import numpy as np
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
@@ -30,19 +30,22 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.experiment.recognition_policy import (
+    MontyIsDone,
+    RecognitionCounter,
+    RecognitionPolicy,
+)
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.environments.positioning_procedures import (
+    ObjectNotVisibleError,
+)
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
-from tbp.monty.frameworks.loggers.exp_logger import (
-    BaseMontyLogger,
-    LoggingCallbackHandler,
-)
+from tbp.monty.frameworks.loggers.exp_logger import LoggingCallbackHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.utils.dataclass_utils import (
-    get_subset_of_args,
-)
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 from tbp.monty.memento import Memento
 
@@ -61,12 +64,15 @@ class MontyExperiment:
 
     model: MontyBase
     env_interface: Interface | None
+    show_sensor_output: bool
+    live_plotter: LivePlotter
 
     _match_criterion: MatchCriterion
     _recreation_mode: bool
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
     _step_hook: StepHook
+    _recognition_policy: RecognitionPolicy
 
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
@@ -78,6 +84,7 @@ class MontyExperiment:
 
         # Feature flag for "recreation" episode/epoch strategy.
         self._recreation_mode = False
+        logger.warning(f"_recreation_mode = {self._recreation_mode}")
         self._monty_cfg = None
         self._monty_memo = {}
 
@@ -86,11 +93,11 @@ class MontyExperiment:
         self.do_train = config["do_train"]
         self.do_eval = config["do_eval"]
         self.experiment_mode = ExperimentMode.TRAIN
-        self.max_eval_steps = config["max_eval_steps"]
-        self.max_train_steps = config["max_train_steps"]
-        self.max_total_steps = config["max_total_steps"]
         self.n_eval_epochs = config["n_eval_epochs"]
         self.n_train_epochs = config["n_train_epochs"]
+        self.skip_on_object_not_visible = config.get(
+            "skip_on_object_not_visible", False
+        )
         if config["model_name_or_path"]:
             self.model_path = Path(config["model_name_or_path"])
         else:
@@ -112,6 +119,7 @@ class MontyExperiment:
         self._rng_seed_history: list[int] = []
 
         self._step_hook = config.pop("step_hook", NoOpStepHook())
+        self._recognition_policy = config.pop("recognition_policy", MontyIsDone())
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -135,7 +143,7 @@ class MontyExperiment:
         Args:
             config: config specifying variables of the experiment.
         """
-        self.init_loggers(self.config["logging"])
+        self.init_loggers(self.config["logging"], self.config.get("telemetry", {}))
         logger.info(self.config)
 
         self._create_monty()
@@ -250,19 +258,27 @@ class MontyExperiment:
         # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
         if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
             target = self.env_interface.primary_target
-            if target is not None:
-                target.update(
-                    consistent_child_objects=self.env_interface.consistent_child_objects
-                )
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: dict[str, Any]) -> None:
-        """Initialize logger with specified log level.
+    def init_loggers(
+        self, logging_config: dict[str, Any], telemetry_config: dict[str, Any]
+    ) -> None:
+        """Initialize logger and telemeter with specified log level.
 
         Args:
             logging_config: Logging configuration.
+            telemetry_config: Telemetry configuration.
         """
+        if telemetry_config:
+            telemetry_config["version"] = 1
+            telemetry_config["disable_existing_loggers"] = False
+            logging.config.dictConfig(
+                cast("dict", OmegaConf.to_container(telemetry_config, resolve=True))
+                if OmegaConf.is_config(telemetry_config)
+                else telemetry_config
+            )
+
         # Unpack individual logging arguments
         self.python_log_level = logging_config["python_log_level"]
         self.log_to_file = logging_config["python_log_to_file"]
@@ -320,46 +336,18 @@ class MontyExperiment:
         Args:
             logging_config: Logging configuration.
         """
-        self.monty_log_level = logging_config["monty_log_level"]
-        self.monty_handlers = logging_config["monty_handlers"]
-        self.wandb_handlers = logging_config["wandb_handlers"]
-
-        # Configure Monty logging
-        monty_handlers = []
+        self.monty_logger = logging_config["monty_data_logger"]
+        self.logs_to_wandb = False
         has_detailed_logger = False
-        for handler in self.monty_handlers:
-            if handler.log_level() == "DETAILED":
+        for handler in self.monty_logger.handlers:
+            if isinstance(handler, WandbWrapper):
+                self.logs_to_wandb = True
+                handler.wandb_init(run_name=self.run_name, config=self.config)
+                for wandb_handler in handler.wandb_handlers:
+                    if wandb_handler.log_level() == "DETAILED":
+                        has_detailed_logger = True
+            elif handler.log_level() == "DETAILED":
                 has_detailed_logger = True
-            handler_args = get_subset_of_args(logging_config, handler.__init__)
-            monty_handler = handler(**handler_args)
-            monty_handlers.append(monty_handler)
-
-        # Configure wandb logging
-        if len(self.wandb_handlers) > 0:
-            wandb_args = get_subset_of_args(logging_config, WandbWrapper.__init__)
-            wandb_args.update(
-                config=dict(self.config),
-                run_name=wandb_args["run_name"] + "_" + wandb_args["wandb_id"],
-            )
-            monty_handlers.append(WandbWrapper(**wandb_args))
-            for handler in self.wandb_handlers:
-                if handler.log_level() == "DETAILED":
-                    has_detailed_logger = True
-
-        if has_detailed_logger and self.monty_log_level != "DETAILED":
-            logger.warning(
-                f"Log level is set to {self.monty_log_level} but you "
-                "specified a detailed logging handler. Setting log level "
-                "to detailed."
-            )
-            self.monty_log_level = "DETAILED"
-
-        if self.monty_log_level == "DETAILED" and not has_detailed_logger:
-            logger.warning(
-                "You are setting the monty logging level to DETAILED, but all your "
-                "handlers are BASIC. Consider setting the level to BASIC, or adding a "
-                "DETAILED handler"
-            )
 
         for lm in self.model.learning_modules:
             lm.has_detailed_logger = has_detailed_logger
@@ -373,20 +361,6 @@ class MontyExperiment:
                         "Consider setting 'save_raw_obs' to True to log and visualize "
                         "the SM RGB raw values."
                     )
-
-        # monty_log_level determines if we used Basic or Detailed logger
-        # TODO: only defined for MontyForGraphMatching right now, need to add TM later
-        # NOTE: later, more levels that Basic or Detailed could be added
-
-        if self.monty_log_level in self.model.LOGGING_REGISTRY:
-            logger_class = self.model.LOGGING_REGISTRY[self.monty_log_level]
-            self.monty_logger = logger_class(handlers=monty_handlers)
-        else:
-            logger.warning(
-                "Unable to match monty logger to log level. "
-                "An empty logger will be used as a placeholder"
-            )
-            self.monty_logger = BaseMontyLogger(handlers=[])
 
         if "log_parallel_wandb" in logging_config:
             self.monty_logger.use_parallel_wandb_logging = logging_config[
@@ -426,6 +400,8 @@ class MontyExperiment:
         learning_modules = instantiate(config.pop("learning_modules"))
         for lm_id, lm in learning_modules.items():
             lm.learning_module_id = lm_id
+            if self._recreation_mode:
+                lm.init_from_ltm()  # TODO: init should have already done everything
 
         sensor_modules = instantiate(config.pop("sensor_modules"))
         motor_system = instantiate(config.pop("motor_system_config"))
@@ -435,6 +411,12 @@ class MontyExperiment:
         lm_to_lm_matrix = instantiate(config.pop("lm_to_lm_matrix"))
         lm_to_lm_vote_matrix = instantiate(config.pop("lm_to_lm_vote_matrix"))
         sm_to_agent_dict = instantiate(config.pop("sm_to_agent_dict"))
+
+        attention_system_config = config.pop("attention_system", None)
+        if attention_system_config is not None:
+            attention_system = instantiate(attention_system_config)
+        else:
+            attention_system = None
 
         # Create monty model
         monty_args = config.pop("monty_args", {})
@@ -447,20 +429,12 @@ class MontyExperiment:
             sm_to_lm_matrix=sm_to_lm_matrix,
             lm_to_lm_matrix=lm_to_lm_matrix,
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
+            attention_system=attention_system,
+            # Pass any leftover configuration parameters downstream to monty_class
             **config,
             **monty_args,
         )
         model._match_criterion = self._match_criterion
-
-        if monty_args["num_exploratory_steps"] > self.max_total_steps:
-            new_max_steps = monty_args["num_exploratory_steps"] + self.max_train_steps
-            logger.warning(
-                "max_total_steps is set < num_exploratory_steps + max_train_steps."
-                f" Resetting it to {new_max_steps}"
-            )
-            self.max_total_steps = new_max_steps
-
         self.model = model
 
     def _snapshot_monty(self) -> None:
@@ -470,59 +444,14 @@ class MontyExperiment:
     def _restore_monty(self) -> None:
         """Recreate episodic state of Monty model."""
         if self._recreation_mode:
-            self._create_monty()
+            # TODO: we _should_ be able to create Monty _outside_ this condition
             if self._monty_memo:
+                self._create_monty()
                 self.model.restore(self._monty_memo)
             self.logger_handler.model = self.model
         else:
             self.model.reset()
         self.model.set_experiment_mode(self.experiment_mode)
-
-    def pre_step(self, _step, _observation) -> None:
-        """Hook for anything you want to do before a step."""
-        self.logger_handler.pre_step(self.logger_args)
-
-    def post_step(self, _step, _observation) -> None:
-        """Hook for anything you want to do after a step."""
-        self.logger_handler.post_step(self.logger_args)
-
-    def run_episode(self) -> None:
-        """Run one episode until model.is_done."""
-        self.pre_episode()
-        step = 0
-        ctx = RuntimeContext(rng=self.rng)
-        actions: list[Action] = []
-        while True:
-            observations, proprioceptive_state = self.env_interface.step(actions)
-
-            self.pre_step(step, observations)
-            try:
-                actions = self.model.step(ctx, observations, proprioceptive_state)
-                actions = self._step_hook(
-                    ctx,
-                    self.model,
-                    self.supervised_lm_ids if self.supervised_lm_ids else [],
-                    step,
-                    observations,
-                    actions,
-                )
-            except StopIteration:
-                # TODO: StopIteration is being thrown by NaiveScanPolicy to signal
-                #       episode termination. This is a holdover from when we used
-                #       iterators. However, this also abdicates control of the
-                #       experiment to the policy. We should find a better way to handle
-                #       this, so that the experiment can control the episode termination
-                #       fully. For example, we know how many steps the policy will take,
-                #       so the experiment can set max steps based on that knowledge
-                #       alone.
-                break
-            finally:
-                self.post_step(step, observations)
-            if self.model.is_done or step >= self.max_steps:
-                break
-            step += 1
-
-        self.post_episode(step)
 
     def pre_episode(self) -> None:
         """Call pre_episode on elements in experiment and set mode."""
@@ -543,14 +472,128 @@ class MontyExperiment:
 
         self.env_interface.pre_episode(self.rng)
 
-        self.max_steps = self.max_train_steps
-        if self.experiment_mode is not ExperimentMode.TRAIN:
-            self.max_steps = self.max_eval_steps
-
         self.logger_handler.pre_episode(self.logger_args)
 
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
+
+    def run_episode(self):
+        """Run an episode, optionally skipping invisible training targets at setup.
+
+        Raises:
+            ObjectNotVisibleError: If positioning sees no target and skipping is
+                disabled, or the episode is an evaluation episode.
+        """
+        try:
+            self.pre_episode()
+        except ObjectNotVisibleError as error:
+            if (
+                not self.skip_on_object_not_visible
+                or self.experiment_mode is not ExperimentMode.TRAIN
+            ):
+                raise
+            target = self.env_interface.primary_target
+            logger.warning(
+                "Skipping training pose: object=%s position=%s rotation=%s reason=%s",
+                target["object"],
+                target["position"],
+                target["euler_rotation"],
+                error,
+            )
+            self.train_episodes += 1
+            self.env_interface.post_episode()
+            return
+        last_step = self.run_episode_steps()
+        self.post_episode(last_step)
+
+    def run_episode_steps(self) -> int:
+        """Runs the steps of an episode.
+
+        At each step, observations are collected from the env_interface and either
+        passed to the model or sent directly to the motor system. We also check if a
+        terminal condition was reached at each step and increment step counters.
+
+        Returns:
+            The number of total steps taken in the episode.
+        """
+        count = RecognitionCounter(mode=self.experiment_mode)
+        ctx = RuntimeContext(rng=self.rng)
+        actions: list[Action] = []
+        while not self._recognition_complete(count):
+            actions = self.run_step(ctx, count.step, actions)
+            count.step += 1
+            if self._check_if_any_lms_updated():
+                if self.model.is_exploring:
+                    count.exploring_steps += 1
+                else:
+                    count.matching_steps += 1
+        if count.step < 3:
+            logger.warning("Episode only ran %d steps!", count.step)
+        else:
+            logger.info("Episode ran %d steps.", count.step)
+        return count.step
+
+    def _recognition_complete(self, count: RecognitionCounter) -> bool:
+        result = self._recognition_policy(self.model, count)
+        if result.start_exploring:
+            self.model.switch_to_exploratory_step()
+        if result.is_time_out:
+            self.model.deal_with_time_out()
+        return result.is_done
+
+    def _check_if_any_lms_updated(self: Self) -> bool:
+        # TODO: Find a better way to determine this condition.
+        #       The `check_if_any_lms_updated` method is defined in
+        #       `MontyForGraphMatching` rather than `MontyBase`,
+        #       so the distinction between `step` and `matching_steps`
+        #       (or `exploring_steps`) only applies to `MontyForGraphMatching`
+        #       and its subclasses.
+        try:
+            return self.model.check_if_any_lms_updated()
+        except AttributeError:
+            return False
+
+    def run_step(
+        self, ctx: RuntimeContext, step: int, actions: list[Action]
+    ) -> list[Action]:
+        """Runs a single step.
+
+        Args:
+            ctx: The runtime context.
+            step: The index of the step within the episode.
+            actions: The actions to take in the environment before observing.
+
+        Returns:
+            The actions to take in the environment at the next step.
+        """
+        observations, proprioceptive_state = self.env_interface.step(actions)
+
+        self._fixme_generate_live_plot_frame(observations, step)
+
+        actions = self.model.step(ctx, observations, proprioceptive_state)
+        return self._step_hook(
+            ctx,
+            self.model,
+            self.supervised_lm_ids if self.supervised_lm_ids else [],
+            step,
+            observations,
+            actions,
+        )
+
+    def _fixme_generate_live_plot_frame(
+        self, observations: Observations, step: int
+    ) -> None:
+        if not self.show_sensor_output:
+            return
+
+        is_saccade_on_image_data_loader = isinstance(
+            self.env_interface, SaccadeOnImageInterface
+        )
+        self.live_plotter.show_observations(
+            *self.live_plotter.hardcoded_assumptions(observations, self.model),
+            step,
+            is_saccade_on_image_data_loader,
+        )
 
     def post_episode(self, steps) -> None:
         """Call post_episode on elements in experiment and increment counters.

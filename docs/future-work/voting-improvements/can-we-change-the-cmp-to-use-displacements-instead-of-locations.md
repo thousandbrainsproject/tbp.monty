@@ -11,7 +11,7 @@ status: open
 ---
 
 > [!NOTE]
-> Although, there is reasonable evidence that the brain may be using movements instead of locations, it is unclear whether there are any computational benefits to doing this. Since we haven't identified concrete benefits, the `improved-metric` field is left open. A first step to tackling this task would be to think through any functional implications of this change.
+> Although there is reasonable evidence that the brain may be using movements instead of locations, it is unclear whether there are any computational benefits to doing this. As such, the `improved-metric` field is left open. A first step to tackling this task would be to think through any functional implications of this change. In the meantime, we include this task because choosing the right assumptions about a system is key to developing long-term, successful solutions. Using displacements rather than locations affects how both voting and motor actions can be implemented. Continuing to use locations, and diverging from a more brain-like approach, may therefore lead us into a "local minimum" style solution for some elements in Monty.
 
 Movement is core to how LMs process and model the world. Currently, an LM receives an observation encoded with a body-centric location, and then infers a displacement in object-centric coordinates. Similarly, goals are specified as a target location in body-centric coordinates, which are then acted upon.
 

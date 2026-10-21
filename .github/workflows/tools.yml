@@ -25,10 +25,9 @@ jobs:
       should_run_tools: ${{ steps.should_run_tools.outputs.should_run_tools }}
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Should Run Tools
         id: should_run_tools
@@ -48,10 +47,9 @@ jobs:
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Set up ~/tbp
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
@@ -60,7 +58,7 @@ jobs:
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
       - name: Set up Python 3.8
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.8"
       - name: Install miniconda

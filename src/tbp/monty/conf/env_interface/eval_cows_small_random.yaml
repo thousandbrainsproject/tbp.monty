@@ -1,0 +1,27 @@
+# @package experiment.config
+
+do_eval: true
+eval_env_interface_args:
+  object_names:
+  - 001_cube
+  - 006_disk
+  - 002_cube_tbp
+  - 004_cube_numenta
+  - 007_disk_tbp
+  - 009_disk_numenta
+  - 011_cylinder
+  - 016_sphere
+  - 023_mug
+  - 012_cylinder_tbp_horz
+  - 014_cylinder_numenta_horz
+  - 017_sphere_tbp
+  - 019_sphere_numenta
+  - 024_mug_tbp_horz
+  - 026_mug_numenta_horz
+  - 013_cylinder_tbp_vert
+  - 015_cylinder_numenta_vert
+  - 025_mug_tbp_vert
+  - 027_mug_numenta_vert
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
+eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

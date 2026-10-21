@@ -41,12 +41,6 @@ class LoggingCallbackHandler:
     def logger_list(self):
         return "\n".join(logger.__class__.__name__ for logger in self.loggers)
 
-    def pre_step(self, logger_args):
-        self.call_event("pre_step", logger_args)
-
-    def post_step(self, logger_args):
-        self.call_event("post_step", logger_args)
-
     def pre_episode(self, logger_args):
         self.call_event("pre_episode", logger_args)
 
@@ -89,12 +83,6 @@ class BaseMontyLogger:
         self.use_parallel_wandb_logging = False
 
     def flush(self):
-        pass
-
-    def pre_step(self, logger_args, output_dir, model):
-        pass
-
-    def post_step(self, logger_args, output_dir, model):
         pass
 
     def pre_episode(self, logger_args, output_dir, model):

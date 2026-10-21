@@ -24,10 +24,9 @@ jobs:
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: lint-docs
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
@@ -52,7 +51,7 @@ jobs:
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
       - name: Set up Python 3.8
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.8"
       - name: Restore cache
@@ -108,10 +107,9 @@ jobs:
       should_run_docs: ${{ steps.should_run_docs.outputs.should_run_docs }}
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Should Run Docs
         id: should_run_docs

@@ -12,6 +12,7 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import numpy as np
+from scipy.spatial import KDTree
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
     DefaultFeatureEvidenceScorer,
@@ -55,6 +56,48 @@ class DefaultHypothesesDisplacerTest(TestCase):
             present_weight=1,
         )
 
+    def test_clamps_neighbors_to_channel_node_count(self) -> None:
+        channel_locations = np.zeros((1, 3))
+        location_tree = KDTree(channel_locations)
+        graph = Mock()
+        graph.find_nearest_neighbors = Mock(
+            side_effect=lambda search_locations, num_neighbors: location_tree.query(
+                search_locations,
+                k=num_neighbors,
+            )[1]
+        )
+        self.mock_graph_memory.get_graph.return_value = graph
+        self.mock_graph_memory.get_locations_in_graph.return_value = channel_locations
+        self.mock_graph_memory.get_feature_array.return_value = {
+            "channel_a": np.empty((1, 0))
+        }
+        self.mock_graph_memory.get_features_at_node.return_value = {
+            "pose_vectors": np.eye(3).reshape(1, 1, 9),
+            "pose_fully_defined": np.ones((1, 1, 1)),
+        }
+
+        evidence = self.displacer._calculate_evidence_for_new_locations(
+            graph_id="test_object",
+            input_channel="channel_a",
+            search_locations=np.zeros((1, 3)),
+            channel_possible_poses=np.eye(3).reshape(1, 3, 3),
+            channel_features={
+                "pose_vectors": np.eye(3),
+                "pose_fully_defined": True,
+            },
+        )
+
+        self.assertEqual(
+            graph.find_nearest_neighbors.call_args.kwargs["num_neighbors"],
+            1,
+            "a one-node graph[channel] should request for one nearest neighbor",
+        )
+        self.assertEqual(
+            evidence.shape,
+            (1,),
+            "a single search location should produce exactly one evidence value",
+        )
+
     def test_multi_channel_evidence_sums(self) -> None:
         """Test that evidence from two channels is summed and added to hypotheses.
 
@@ -80,17 +123,18 @@ class DefaultHypothesesDisplacerTest(TestCase):
             "_calculate_evidence_for_new_locations",
             side_effect=lambda **kw: evidence_by_channel[kw["input_channel"]],
         ):
-            result, _telemetry = (
-                self.displacer.displace_hypotheses_and_compute_evidence(
-                    displacement=np.zeros(3),
-                    features={
-                        "channel_a": {"pose_fully_defined": True},
-                        "channel_b": {"pose_fully_defined": True},
-                    },
-                    evidence_update_threshold=-np.inf,
-                    graph_id="test_object",
-                    possible_hypotheses=hypotheses,
-                )
+            displaced = self.displacer.displace_hypotheses(
+                displacement=np.zeros(3),
+                hypotheses=hypotheses,
+            )
+            result, _telemetry = self.displacer.compute_evidence(
+                features={
+                    "channel_a": {"pose_fully_defined": True},
+                    "channel_b": {"pose_fully_defined": True},
+                },
+                evidence_update_threshold=-np.inf,
+                graph_id="test_object",
+                hypotheses=displaced,
             )
 
         # Expected: past_weight * old_evidence + present_weight * summed_new
@@ -117,15 +161,18 @@ class DefaultHypothesesDisplacerTest(TestCase):
             "_calculate_evidence_for_new_locations",
             side_effect=lambda **kw: evidence_by_channel[kw["input_channel"]],
         ):
-            _, telemetry = self.displacer.displace_hypotheses_and_compute_evidence(
+            displaced = self.displacer.displace_hypotheses(
                 displacement=np.zeros(3),
+                hypotheses=hypotheses,
+            )
+            _, telemetry = self.displacer.compute_evidence(
                 features={
                     "channel_a": {"pose_fully_defined": True},
                     "channel_b": {"pose_fully_defined": True},
                 },
                 evidence_update_threshold=-np.inf,
                 graph_id="test_object",
-                possible_hypotheses=hypotheses,
+                hypotheses=displaced,
             )
 
         # MLH is index 0 (evidence 5.0), summed evidence at MLH = 1.5 + 0.5 = 2.0

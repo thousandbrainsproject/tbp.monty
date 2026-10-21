@@ -33,7 +33,7 @@ Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf
 defaults:
   # /monty defines what Monty we will use and how many exploration, evaluation,
   # training, and total steps to configure it with.
-  - /monty: graph_exp1000_e3_t3_tot2500
+  - /monty: graph_exp1000_e3_t3
 
   # /monty/motor_system_config specifies what motor system and motor policy to
   # use within Monty. We use a motor system with an InformedPolicyRandomWalk where
@@ -71,10 +71,20 @@ defaults:
   # environment observations before sending them to Monty.
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
 
+  # /termination specifies when an episode ends. The match criterion decides
+  # which learning modules must recognize the object, and the recognition
+  # policy adds step limits. We stop once any one learning module has matched,
+  # or after 20 steps exploring, or 6000 total steps.
+  - /termination: any1_train_steps_3_20_tot6000
+
   # /logging specifies the logging configuration to use. We tell Monty to use
   # the SILENT data logging mode, Python to use the WARNING log level, and we
   # output the data logs and python logs where training models are saved.
   - /logging: silent_warning_train
+
+  # /telemetry specifies the telemetry configuration to use. Here, we tell Monty
+  # to use the INFO log level.
+  - /telemetry: info
 
 experiment:
   # The top-level _target_ is what kind of experiment we want to run.
@@ -83,21 +93,12 @@ experiment:
   config:
     # `show_sensor_output: true` will display a live plot of the sensor output.
     show_sensor_output: false
-    # The maximum number of steps to train for.
-    max_train_steps: 1
-    # The maximum number of steps to evaluate for.
-    max_eval_steps: 500
-    # The maximum number of steps to run for.
-    max_total_steps: 6000
     # The number of epochs to train for.
     n_train_epochs: 1
     # The number of epochs to evaluate for.
     n_eval_epochs: 3
     # The path to the model to load, if any.
     model_name_or_path: ""
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     # The random seed for the experiment.
     seed: 42
     # The list of learning module IDs to supervise, or "all" to supervise all
@@ -157,7 +158,7 @@ and **this is exactly the procedure that was executed when you ran** `python run
 
 ## Model
 
-The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3_tot2500` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, 3 minimum train steps, and 2 500 maximum total steps.
+The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3` model, which in a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, and 3 minimum train steps.
 
 ```yaml
 # @package experiment.config.monty_config
@@ -167,7 +168,6 @@ monty_args:
   num_exploratory_steps: 1000
   min_eval_steps: 3
   min_train_steps: 3
-  max_total_steps: 2500
 ```
 
 The model requires additional configuration in form of the motor system, learning modules, sensor modules, and the overall connectivity. These are specified respectively in the `/monty/motor_system_config`, `/monty/learning_module`, `/monty/sensor_module`, and `/monty/connectivity` sections of `defaults`. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
@@ -184,11 +184,11 @@ The environment is specified in the `/environment` section of `defaults`. In thi
 
 By now, we know that an experiment starts with the `run` method calling `train` and `evaluate` methods, that each of these runs one or more `epochs`, which consists of one or more `episodes`, and finally each `episode` repeatedly calls `model.step`. Now we will start unpacking each of these levels, starting with the innermost loop over `steps`.
 
-As mentioned previously, in `/monty: graph_exp1000_e3_t3_tot2500`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
+As mentioned previously, in `/monty: graph_exp1000_e3_t3`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
 
 You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
 
-**In this particular experiment, `n_train_epochs` was set to 1, and `max_train_steps` was set to 1. This means a single epoch was run, with one matching step per episode**. In the next section, we go up a level from the model step to understand episodes and epochs.
+**In this particular experiment, `n_train_epochs` was set to 1, and `/termination: any1_train_steps_3_20_tot6000` limits each episode to between 3 and 20 training steps. This means a single epoch was run, with one short episode on the single object**. In the next section, we go up a level from the model step to understand episodes and epochs.
 
 ## Environment Interface
 
@@ -211,9 +211,9 @@ That was a lot of text, so let's review what all went into this experiment.
 - We ran a `MontyExperiment` using `run.py`
 - We went through the `train` procedure with one epoch
 - The epoch looped over a list of objects of length 1 - so a single episode was run
-- The max steps was set to 1, so all told, we took one single step on one single object
+- The termination config limited the episode to at most 20 steps, so all told, we took a handful of steps on one single object
 - Our model had a single agent with a single RGBD camera attached to it
-- During `model.step`, `matching_step` was called and one SM received one observation from the environment
+- During each `model.step`, `matching_step` was called and one SM received one observation from the environment
 - The model selected the next action
 - We saved our model at the end of the epoch
 

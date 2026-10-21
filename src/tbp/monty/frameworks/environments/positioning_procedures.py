@@ -31,6 +31,7 @@ __all__ = [
     "GOOD_VIEW_PERCENTAGE_DEFAULT",
     "GetGoodView",
     "GetGoodViewFactory",
+    "ObjectNotVisibleError",
     "PositioningProcedure",
     "PositioningProcedureFactory",
     "PositioningProcedureResult",
@@ -40,6 +41,10 @@ logger = logging.getLogger(__name__)
 
 GOOD_VIEW_PERCENTAGE_DEFAULT = 0.5
 GOOD_VIEW_DISTANCE_DEFAULT = 0.03
+
+
+class ObjectNotVisibleError(ValueError):
+    """Positioning found no visible target pixels in its sensor's view."""
 
 
 @dataclass
@@ -332,7 +337,7 @@ class GetGoodView(PositioningProcedure):
             object.
 
         Raises:
-            ValueError: If the object is not visible.
+            ObjectNotVisibleError: If the object is not visible.
         """
         # Reconstruct 2D semantic map.
         depth_image = observation[self._agent_id][self._sensor_id]["depth"]
@@ -357,7 +362,7 @@ class GetGoodView(PositioningProcedure):
                 "closest target object point: " + str(closest_point_on_target_obj)
             )
         else:
-            raise ValueError(
+            raise ObjectNotVisibleError(
                 "May be initializing experiment with no visible target object"
             )
 

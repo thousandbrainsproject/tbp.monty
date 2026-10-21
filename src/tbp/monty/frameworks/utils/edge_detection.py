@@ -15,13 +15,13 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservation
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     TangentFrame,
     normalize,
     project_onto_tangent_plane,
 )
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tbp.monty.observations import SensorObservation
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ class StructureTensor:
         lambda_diff = lambda_max - lambda_min
         if lambda_diff < DEFAULT_TOLERANCE:
             return 0.0
-        return lambda_diff / (lambda_max + lambda_min)
+        return np.clip(lambda_diff / (lambda_max + lambda_min), 0.0, 1.0)
 
     @property
     def edge_angle(self) -> float:

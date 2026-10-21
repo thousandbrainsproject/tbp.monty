@@ -160,9 +160,10 @@ class LookAtGoalTest(unittest.TestCase):
             morphological_features=None,
             non_morphological_features=None,
             confidence=1.0,
-            use_state=True,
+            pass_message=True,
             sender_id="view_finder",
             sender_type="SM",
+            process_features_in_lm=False,
             goal_tolerances=None,
             info=None,
         )

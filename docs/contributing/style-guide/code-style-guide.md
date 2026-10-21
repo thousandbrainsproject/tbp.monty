@@ -16,7 +16,53 @@ A convenient way to ensure your code is formatted correctly is using the [ruff f
 
 ## Code Docstrings
 
-We adopted the Google Style for docstrings. For more details, see the [Google Python Style Guide - 3.8 Comments and Docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
+We adopted the Google Style for docstrings, with modifications. For more details on the Google Style docstrings, see the [Google Python Style Guide - 3.8 Comments and Docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
+
+### Class Attribute, Instance Property, and Constant Docstrings
+
+Diverging from the Google Style docstring convention, we place docstrings for class attributes, instance properties, and constants after their declarations.
+
+```python
+"""This is a module docstring."""
+
+MY_CONSTANT = 17
+"""This is a constant docstring."""
+
+def my_func():
+	"""This is a function docstring."""
+	pass
+
+class MyClass:
+	"""This is a class docstring."""
+
+	my_attribute: ClassVar[str]
+	"""This is a class attribute docstring."""
+
+	my_property: str
+	"""This is a instance property docstring."""
+
+	_my_private_ish_property: str
+	"""This is a "private" instance property docstring."""
+
+	def __init__(self, my_property: str):
+		"""This is a method docstring.
+
+		Args:
+			my_property: This is a method argument description.
+		"""
+		self.my_property = my_property
+		self._my_private_ish_property = "shhh"
+```
+
+Using a docstring right after the attribute, property, or constant definition puts the documentation as close as possible to what is being documented. Having to put `Attributes: ` in a class docstring some distance from the attributes/properties (as per the Google Style convention) makes it more likely that they won't be updated when names change.
+
+Note that while docstrings after a class, module, or function are stored on the `__doc__` attribute of the object, docstrings placed after attribute, property, or constant definitions are not.
+
+[PEP-257 - Docstring Conventions](https://peps.python.org/pep-0257/) states:
+
+> String literals occurring elsewhere in Python code may also act as documentation. They are not recognized by the Python bytecode compiler and are not accessible as runtime object attributes (i.e. not assigned to `__doc__`), but two types of extra docstrings may be extracted by software tools:
+> - String literals occurring immediately after a simple assignment at the top level of a module, class, or `__init__` method are called “attribute docstrings”.
+> - String literals occurring immediately after another docstring are called “additional docstrings”.
 
 ## Libraries
 

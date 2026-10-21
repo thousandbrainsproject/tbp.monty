@@ -26,10 +26,9 @@ jobs:
       conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
     steps:
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Install Monty
         id: install_monty
@@ -51,17 +50,15 @@ jobs:
             ~/miniconda
           key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
       - name: Checkout tbp.monty
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-          lfs: true
           path: pr_code
       - name: Install Monty
         if: steps.restore_cache.outputs.cache-hit != 'true'
@@ -116,4 +113,3 @@ jobs:
             echo "Build failed"
             exit 1
           fi
-

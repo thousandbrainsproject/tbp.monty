@@ -24,7 +24,13 @@ from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.utils.dataclass_utils import (
     create_dataclass_args,
 )
-from tbp.monty.math import QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import (
+    IDENTITY_QUATERNION,
+    ONES_VECTOR,
+    ZERO_VECTOR,
+    QuaternionWXYZ,
+    VectorXYZ,
+)
 from tbp.monty.simulators.habitat import (
     HabitatAgent,
     HabitatSim,
@@ -129,9 +135,9 @@ class HabitatEnvironment(SimulatedObjectEnvironment):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = ZERO_VECTOR,
+        rotation: QuaternionWXYZ = IDENTITY_QUATERNION,
+        scale: VectorXYZ = ONES_VECTOR,
         semantic_id: SemanticID | None = None,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:

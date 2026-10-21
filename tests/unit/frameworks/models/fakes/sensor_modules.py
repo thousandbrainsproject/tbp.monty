@@ -15,10 +15,10 @@ from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
-    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.memento import Memento
+from tbp.monty.observations import SensorObservation
 
 __all__ = ["FakeSensorModule"]
 
@@ -54,7 +54,8 @@ class FakeSensorModule(SensorModule):
             },
             non_morphological_features=observation,
             confidence=1,
-            use_state=True,
+            pass_message=True,
+            process_features_in_lm=True,
             sender_id=self.sensor_module_id,
             sender_type="SM",
         )

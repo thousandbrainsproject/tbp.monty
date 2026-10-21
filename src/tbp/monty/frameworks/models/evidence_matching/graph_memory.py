@@ -147,7 +147,7 @@ class EvidenceGraphMemory(GraphMemory):
             logger.info(f"Added new graph with id {graph_id} to memory.")
             logger.info(model)
         except GridTooSmallError:
-            logger.info(
+            logger.warning(
                 "Grid too small for given locations. Not building a model "
                 f"for {graph_id}"
             )

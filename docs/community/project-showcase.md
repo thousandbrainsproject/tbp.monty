@@ -43,3 +43,61 @@ See the [ultrasound_perception repository](https://github.com/thousandbrainsproj
 Watch the video of the first demo:
 
 [2025-05 Ultrasound Presentation and Demo](https://www.youtube.com/watch?v=-zrq0oTJudo)
+
+# Undergraduate Dissertation Community Project
+## Robotic Object Recognition for Thousand-Brains Systems
+
+**Author:** Zachary Danzig from Loughborough University  
+**Links:** [tbp.monty Fork](https://github.com/Zinxiee/tbp.monty) | [Maixsense A010 Python Package](https://github.com/Zinxiee/Maixsense-A010-Python-Package) | [3D Model Dataset](https://github.com/Zinxiee/tbp.monty/releases/tag/dataset_scans_(shining_3d)) | [Robotic Object Recognition For Thousand Brain Systems.pdf](https://github.com/user-attachments/files/30555412/Robotic.Object.Recognition.For.Thousand.Brain.Systems.pdf)  
+
+This community project expands upon the Thousand Brains Project by designing and constructing a system capable of multimodal sensing and movement. The core aim is to enable the learning and recognition of real-world objects in a human-like way (sensorimotor learning), helping to bridge the framework's sim-to-real gap. While Monty has primarily been validated in simulated environments, this dual-agent sensorimotor system tests how Monty performs on physical hardware in the real world.  
+
+![Robotic Object Recognition for Thousand-Brains Systems poster](../figures/community/zach-project-showcase-poster.png)
+
+**Dual-agent Sensorimotor Setup**  
+![Robot arm with A010 ToF sensor and ZED 2i stereo camera](../figures/community/zach-project-robotic-arm.jpg)
+*The dual-agent sensorimotor setup featuring the Ufactory Lite 6 with mounted A010 ToF sensor and Zed 2i stereo camera, with the mc_fox object in view.*
+
+### Key Features
+* **Distant Agent Implementation:** Developed around the Zed 2i stereo camera to extend the existing [Monty Meets World](https://docs.thousandbrains.org/docs/project-showcase#monty-for-object-detection-with-the-ipad-camera) pipeline.
+* **RGBD Scene Indexing:** Supports continual capture and indexing of RGBD scenes.
+* **Surface Agent Implementation:** Built using a Maixsense A010 ToF sensor mounted to a Ufactory Lite 6 robot arm.
+* **Custom Integration:** Integrated with Monty through a custom environment, environment interface, and motor-policy.
+* **Hardware Tooling:** Includes a reverse-engineered Python package that exposes programmatic control of the Maixsense A010 sensor.
+* **Object Dataset:** Evaluated the system against a structured eight-object dataset with defined orientations suitable for evaluating recognition accuracy, continual learning, and rotation invariance. As an extension to the project, a 3D Model Dataset was scanned in and made available to the community.
+
+Note that this project does not integrate the different modalities at the same time. Each agent is run independently. 
+
+### Results and Findings
+* The Distant Agent demonstrated reliable supervised recognition with sub-degree rotation errors. 
+* The Surface Agent exposed critical hardware limitations regarding Time-of-Flight (ToF) scattering on non-flat geometries which heavily restricted Surface Agent experiments. 
+* This work provides a real-world starting point for testing the framework's physical deployment and constraints.
+
+[Surface Agent Demo with TBP Mug](https://youtube.com/shorts/E8tcEsyo7-U)  
+
+### Monty Meets World Proof of Concept
+At the start of this project a proof of concept was demonstrated by reproducing the Monty Meets World Experiment above. For information on how this was done, see the following links: [Explanation](https://forum.thousandbrains.org/t/design-of-final-year-undergraduate-project-with-the-inclusion-of-the-tbp/417/30?u=zachary_danzig) | [Experiment YAML](https://github.com/Zinxiee/tbp.monty/blob/main/src/tbp/monty/conf/experiment/zachs_examples/zachs_monty_meets_world.yaml) | [Demo](https://youtu.be/a9u1Y3Amlxc).  
+
+For more about this project, visit the links above or see the [Discourse community topic](https://forum.thousandbrains.org/t/design-of-final-year-undergraduate-project-with-the-inclusion-of-the-tbp/417).
+
+Watch the presentation:
+
+[07/2026 - Robotic Object Recognition for Thousand Brains Systems](https://www.youtube.com/watch?v=3wgHNqkRekM)
+
+# ARC-AGI-3
+
+During the August 2026 Rome Focus Week, we connected Monty to [ARC-AGI-3](https://arcprize.org/arc-agi/3), an interactive reasoning benchmark of turn-based grid games that come with no instructions. The goal was to build a platform for exploring these games with Monty. It is Monty's first simulator where actions change the world instead of only moving a sensor: some actions move a sensor patch across the game frame, while others advance the game. Each game step is stored along an extra spatial axis, so Monty learns a temporal model of how a game evolves.
+
+![](../figures/community/arc_agi_3_temporal_model.png)
+*A temporal model of a game learned by Monty. Each layer along the vertical axis is a game step, so you can see the red piece move from the past (bottom) to the future (top).*
+
+The team also used the game engine to build simple custom maze games, learned compositional models of game maps from 304 sprites, and prototyped a sensor module that directs attention to areas that visually changed after an action.
+
+![](../figures/community/arc_agi_3_compositional_maps.png)
+*Ground truth game maps (top) and the compositional maps Monty learned from them (bottom), labeled by the recognized child sprites.*
+
+ARC-AGI-3 [is a rich testbed for many open problems on our roadmap](https://www.youtube.com/watch?v=qqPxhMXePpk), including unsupervised object discovery, occlusion, scale, object behavior, and causality. It would make a great community project! See the [feat.arc_agi_3 repository](https://github.com/thousandbrainsproject/feat.arc_agi_3) to try it out.
+
+Watch the presentation:
+
+[2026/08 - Rome Focus Week: Team Mighty Mouse (ARC-AGI-3)](https://www.youtube.com/watch?v=QsTJY-83EUg&t=168s)

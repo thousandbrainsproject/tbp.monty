@@ -257,17 +257,3 @@ def is_dataclass_instance(obj: Any) -> bool:
         True if obj is an instance of a dataclass, False otherwise.
     """
     return dataclasses.is_dataclass(obj) and not isinstance(obj, type)
-
-
-def get_subset_of_args(arguments, function):
-    # Converting DictConfig to dict so config_to_dict works.
-    # This works only on dict or dataclass instances.
-    dict_args = config_to_dict(dict(arguments))
-    _fields = extract_fields(function)
-    common_fields = {}
-    for field in _fields:
-        field_name = field[0]
-        if field_name in dict_args:
-            common_fields[field_name] = dict_args[field_name]
-
-    return common_fields

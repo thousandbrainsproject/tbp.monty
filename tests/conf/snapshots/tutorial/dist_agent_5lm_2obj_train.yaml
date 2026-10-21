@@ -8,7 +8,6 @@ experiment:
         num_exploratory_steps: 500
         min_eval_steps: 3
         min_train_steps: 3
-        max_total_steps: 2500
       motor_system_config:
         policy_selector:
           policy:
@@ -123,9 +122,10 @@ experiment:
           sensor_module_id: patch_4
           save_raw_obs: false
         sensor_module_5:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: false
+          sensor_id: view_finder
+          transforms: []
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0
@@ -297,7 +297,6 @@ experiment:
         get_all_points: true
         use_semantic_sensor: false
     train_env_interface_args:
-      parent_to_child_mapping: null
       object_names:
       - mug
       - banana
@@ -314,28 +313,44 @@ experiment:
         allow_translation: false
         max_orientation_attempts: 3
     train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
+    match_criterion:
+      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+      count: 1
+    recognition_policy:
+      _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
+      policies:
+      - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
+      - _target_: tbp.monty.experiment.recognition_policy.NaiveScan
+        fixed_amount: 5
+      - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
+        max_total_steps: 6000
     logging:
-      monty_log_level: SILENT
-      monty_handlers: []
-      wandb_handlers: []
       python_log_level: WARNING
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      resume_wandb_run: false
-      wandb_id:
-        _target_: wandb.util.generate_id
-      wandb_group: debugging
+      monty_data_logger:
+        _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
+        handlers: []
       run_name: dist_agent_5lm_2obj_train
-    max_train_steps: 1000
-    max_eval_steps: 500
-    max_total_steps: 6000
+    telemetry:
+      formatters:
+        telemetry_formatter:
+          class: tbp.monty.telemetry.formatters.JsonFormatter
+      handlers:
+        telemetry_console:
+          class: logging.StreamHandler
+          formatter: telemetry_formatter
+          level: INFO
+          stream: ext://sys.stdout
+      loggers:
+        telemetry.tbp.monty:
+          handlers:
+          - telemetry_console
+          level: INFO
     n_train_epochs: ${constants.rotations_all_count}
     n_eval_epochs: 3
     model_name_or_path: ''
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     seed: 42
     show_sensor_output: false
     supervised_lm_ids: all
@@ -360,7 +375,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v4}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v7}
   rotations_all_count: 14
   rotations_all:
   - - 0
@@ -404,6 +419,26 @@ constants:
     - 0
   - - 325
     - 225
+    - 0
+  rotations_cube_faces_count: 6
+  rotations_cube_faces:
+  - - 0
+    - 0
+    - 0
+  - - 0
+    - 90
+    - 0
+  - - 0
+    - 180
+    - 0
+  - - 0
+    - 270
+    - 0
+  - - 90
+    - 0
+    - 0
+  - - 90
+    - 180
     - 0
   rotations_3_count: 3
   rotations_3:

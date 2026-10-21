@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -9,11 +9,11 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from tools.github_readme_sync.upload import (
+    ReadMeItem,
     get_all_categories_docs,
-    process_children,
     set_do_not_delete,
     upload,
 )
@@ -22,65 +22,123 @@ from tools.github_readme_sync.upload import (
 class TestUpload(unittest.TestCase):
     @patch("tools.github_readme_sync.upload.get_all_categories_docs")
     @patch("tools.github_readme_sync.upload.process_children")
-    def test_upload(self, mock_process_children, mock_get_all_categories_docs):
-        mock_rdme_instance = MagicMock()
-        mock_get_all_categories_docs.return_value = [{"slug": "test", "type": "doc"}]
-
-        new_hierarchy = [{"slug": "cat1", "title": "Category 1", "children": []}]
-        file_path = "/path/to/files"
-
-        mock_rdme_instance.create_category_if_not_exists.return_value = ("cat_id", True)
-
-        upload(new_hierarchy, file_path, mock_rdme_instance)
-
-        mock_rdme_instance.create_version_if_not_exists.assert_called_once()
-        mock_rdme_instance.create_category_if_not_exists.assert_called_once_with(
-            "Category 1"
+    def test_upload_cleans_up_before_making_version_stable(
+        self,
+        mock_process_children,
+        mock_get_all_categories_docs,
+    ):
+        rdme = MagicMock()
+        rdme.create_category_if_not_exists.return_value = (
+            "/branches/0.40/categories/guides/Category%201",
+            True,
         )
-        mock_process_children.assert_called_once()
 
-    @patch("tools.github_readme_sync.upload.load_doc")
-    def test_process_children(self, mock_load_doc):
-        mock_rdme_instance = MagicMock()
-        mock_load_doc.return_value = {"title": "Document", "slug": "doc1"}
+        # The inventory is category-first. upload() reverses it so pages are
+        # deleted before their categories, then makes the version stable.
+        mock_get_all_categories_docs.return_value = [
+            ReadMeItem(id="Old Category", type="category"),
+            ReadMeItem(id="old-doc", type="doc"),
+        ]
 
-        # Mock create_or_update_doc to return a tuple
-        mock_rdme_instance.create_or_update_doc.return_value = ("doc_id", True)
+        hierarchy = [
+            {
+                "slug": "category-1",
+                "title": "Category 1",
+                "children": [],
+            }
+        ]
 
-        parent = {"slug": "parent", "children": [{"slug": "child1", "children": []}]}
-        to_be_deleted = []
+        upload(hierarchy, "/path/to/files", rdme)
 
-        process_children(
-            parent=parent,
-            cat_id="cat_id",
+        rdme.create_version_if_not_exists.assert_called_once_with()
+        rdme.create_category_if_not_exists.assert_called_once_with("Category 1")
+        mock_process_children.assert_called_once_with(
+            parent=hierarchy[0],
+            cat_id="/branches/0.40/categories/guides/Category%201",
             file_path="/path/to/files",
-            rdme=mock_rdme_instance,
-            to_be_deleted=to_be_deleted,
+            rdme=rdme,
+            to_be_deleted=[
+                ReadMeItem(id="Old Category", type="category"),
+                ReadMeItem(id="old-doc", type="doc"),
+            ],
         )
 
-        mock_load_doc.assert_called_once()
-        mock_rdme_instance.create_or_update_doc.assert_called_once()
+        # This call order protects the newly stable version from partial cleanup.
+        self.assertLess(
+            rdme.method_calls.index(call.delete_doc("old-doc")),
+            rdme.method_calls.index(call.delete_category("Old Category")),
+        )
+        self.assertLess(
+            rdme.method_calls.index(call.delete_category("Old Category")),
+            rdme.method_calls.index(call.make_version_stable()),
+        )
 
-    def test_set_do_not_delete(self):
+        mock_get_all_categories_docs.assert_called_once_with(rdme)
+
+    def test_set_do_not_delete_removes_document_by_id(self):
         to_be_deleted = [
-            {"slug": "test-doc", "type": "doc"},
-            {"slug": "test-cat", "type": "category"},
+            ReadMeItem(id="test-doc", type="doc"),
+            ReadMeItem(id="Test Category", type="category"),
         ]
+
         set_do_not_delete(to_be_deleted, "test-doc")
-        self.assertEqual(len(to_be_deleted), 1)
-        self.assertEqual(to_be_deleted[0]["slug"], "test-cat")
 
-    def test_get_all_categories_docs(self):
-        mock_rdme_instance = MagicMock()
-        mock_rdme_instance.get_categories.return_value = [{"slug": "cat1"}]
-        mock_rdme_instance.get_category_docs.return_value = [
-            {"slug": "doc1", "children": []}
+        self.assertEqual(
+            to_be_deleted,
+            [ReadMeItem(id="Test Category", type="category")],
+        )
+
+    def test_set_do_not_delete_removes_category_by_id(self):
+        to_be_deleted = [
+            ReadMeItem(id="test-doc", type="doc"),
+            ReadMeItem(id="Test Category", type="category"),
         ]
 
-        result = get_all_categories_docs(mock_rdme_instance)
-        expected = [
-            {"slug": "cat1", "type": "category"},
-            {"slug": "doc1", "type": "doc"},
+        set_do_not_delete(to_be_deleted, "Test Category")
+
+        self.assertEqual(
+            to_be_deleted,
+            [ReadMeItem(id="test-doc", type="doc")],
+        )
+
+    def test_get_all_categories_docs_uses_flat_v2_page_collection(self):
+        rdme = MagicMock()
+        rdme.get_categories.return_value = [
+            {"title": "Category 1"},
+            {"title": "Category 2"},
+        ]
+        rdme.get_category_docs.side_effect = [
+            [
+                {
+                    "slug": "parent-doc",
+                    "uri": "/branches/0.40/guides/parent-doc",
+                    "parent": None,
+                },
+                {
+                    "slug": "child-doc",
+                    "uri": "/branches/0.40/guides/child-doc",
+                    "parent": {"uri": "/branches/0.40/guides/parent-doc"},
+                },
+            ],
+            [{"slug": "other-doc"}],
         ]
 
-        self.assertEqual(result, expected)
+        result = get_all_categories_docs(rdme)
+
+        self.assertEqual(
+            result,
+            [
+                ReadMeItem(id="Category 1", type="category"),
+                ReadMeItem(id="parent-doc", type="doc"),
+                ReadMeItem(id="child-doc", type="doc"),
+                ReadMeItem(id="Category 2", type="category"),
+                ReadMeItem(id="other-doc", type="doc"),
+            ],
+        )
+        self.assertEqual(
+            rdme.get_category_docs.call_args_list,
+            [
+                call({"title": "Category 1"}),
+                call({"title": "Category 2"}),
+            ],
+        )

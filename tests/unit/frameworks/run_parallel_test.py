@@ -10,7 +10,56 @@
 
 import unittest
 
-from tbp.monty.frameworks.run_parallel import parse_episode_spec
+import pandas as pd
+
+from tbp.monty.frameworks.run_parallel import (
+    parse_episode_spec,
+    per_lm_stats,
+)
+
+
+class PerLMStatsTest(unittest.TestCase):
+    def test_reconstructs_named_metrics(self):
+        eval_stats = pd.DataFrame(
+            [
+                (0, "LM_0", "correct", 10.0, 0.0),
+                (0, "LM_1", "confused_mlh", None, 0.25),
+                (1, "LM_0", "correct_mlh", 20.0, 0.25),
+                (1, "LM_1", "confused", None, 0.5),
+                (2, "LM_0", "no_match", None, 0.5),
+                (2, "LM_1", "no_match", None, 0.75),
+                (3, "LM_0", "confused", None, 0.75),
+                (3, "LM_1", "correct", 30.0, 1.0),
+            ],
+            columns=[
+                "episode",
+                "lm_id",
+                "primary_performance",
+                "rotation_error",
+                "episode_avg_prediction_error",
+            ],
+        )
+
+        stats = per_lm_stats(eval_stats)
+
+        self.assertEqual(
+            {key: value for key, value in stats.items() if key.startswith("LM_0/")},
+            {
+                "LM_0/overall/percent_correct": 50.0,
+                "LM_0/overall/percent_used_mlh_after_timeout": 25.0,
+                "LM_0/overall/avg_rotation_error": 15.0,
+                "LM_0/overall/avg_prediction_error": 0.375,
+            },
+        )
+        self.assertEqual(
+            {key: value for key, value in stats.items() if key.startswith("LM_1/")},
+            {
+                "LM_1/overall/percent_correct": 25.0,
+                "LM_1/overall/percent_used_mlh_after_timeout": 25.0,
+                "LM_1/overall/avg_rotation_error": 30.0,
+                "LM_1/overall/avg_prediction_error": 0.625,
+            },
+        )
 
 
 class ParseEpisodeSpecTest(unittest.TestCase):

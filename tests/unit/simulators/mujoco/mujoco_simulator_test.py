@@ -145,10 +145,68 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
                 mesh.refquat, [np.sin(np.pi / 4), np.cos(np.pi / 4), 0.0, 0.0]
             )
 
+    def test_custom_object_scaling_in_call(self):
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("valid_object", scale=(2.0, 2.0, 2.0))
+
+            geom = sim.spec.geom("valid_object_0")
+            assert geom.type == mjtGeom.mjGEOM_MESH
+            assert geom.meshname == "valid_object_2.0_2.0_2.0_mesh"
+
+            mesh = sim.spec.mesh(geom.meshname)
+            assert np.allclose(mesh.scale, [2.0, 2.0, 2.0])
+
+    def test_custom_object_scaling_from_metadata(self) -> None:
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("scaled_object")
+
+            geom = sim.spec.geom("scaled_object_0")
+            assert geom.type == mjtGeom.mjGEOM_MESH
+            # The mesh name scale values are relative to the requested scale
+            # not the actual scale value used.
+            assert geom.meshname == "scaled_object_1.0_1.0_1.0_mesh"
+
+            mesh = sim.spec.mesh(geom.meshname)
+            assert np.allclose(mesh.scale, [3.0, 3.0, 3.0])
+
+    @given(
+        scale_x=st.floats(min_value=0.0001, max_value=2.0),
+        scale_y=st.floats(min_value=0.0001, max_value=2.0),
+        scale_z=st.floats(min_value=0.0001, max_value=2.0),
+    )
+    def test_custom_object_scaling_with_both(
+        self, scale_x: float, scale_y: float, scale_z: float
+    ) -> None:
+        """Test scaling a custom object when a scale is defined in both places.
+
+        We want to make sure that we use the scale argument to scale an object based
+        on its default scale, so if that default scale isn't 1.0 then we need to make
+        sure we scale that instead of just replacing it with the argument scale.
+        """
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("scaled_object", scale=(scale_x, scale_y, scale_z))
+
+            geom = sim.spec.geom("scaled_object_0")
+            assert geom.type == mjtGeom.mjGEOM_MESH
+            # The mesh name scale values are relative to the requested scale
+            # not the actual scale value used.
+            assert geom.meshname == f"scaled_object_{scale_x}_{scale_y}_{scale_z}_mesh"
+
+            mesh = sim.spec.mesh(geom.meshname)
+            assert np.allclose(
+                mesh.scale,
+                [
+                    # 3.0 is the default scale of this object set in the metadata
+                    scale_x * 3.0,
+                    scale_y * 3.0,
+                    scale_z * 3.0,
+                ],
+            )
+
     def test_duplicate_custom_objects_share_meshes(self) -> None:
         """Test adding multiple custom objects that share the same mesh.
 
-        MuJoCo won't allow adding the same meshes, materials, or textures
+        MuJoCoSimulator won't allow adding the same meshes, materials, or textures
         more than once. This test confirms that we can successfully add multiple
         objects that use the same mesh without trying to re-add the mesh, material,
         and texture.
@@ -165,7 +223,28 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
             mesh0 = sim.spec.mesh(geom0.meshname)
             mesh1 = sim.spec.mesh(geom1.meshname)
-            assert mesh0 == mesh1
+            assert mesh0 is mesh1
+
+    def test_duplicate_custom_objects_different_scales(self) -> None:
+        """Test adding multiple custom objects from the same source at two scale.
+
+        Since MuJoCo stores scale in the mesh and not the geom, we need to have
+        different meshes when the scale doesn't match. Thus, we can check that the
+        two geoms have different meshes.
+        """
+        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim:
+            sim.add_object("valid_object")
+            sim.add_object("valid_object", scale=(2.0, 2.0, 2.0))
+
+            geom0 = sim.spec.geom("valid_object_0")
+            assert geom0.type == mjtGeom.mjGEOM_MESH
+
+            geom1 = sim.spec.geom("valid_object_1")
+            assert geom1.type == mjtGeom.mjGEOM_MESH
+
+            mesh0 = sim.spec.mesh(geom0.meshname)
+            mesh1 = sim.spec.mesh(geom1.meshname)
+            assert mesh0 is not mesh1
 
     def test_adding_custom_objects_after_removing_all(self):
         """Test adding a custom object after removing all objects.
@@ -190,12 +269,6 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             geom0 = sim.spec.geom("valid_object_0")
             assert geom0.type == mjtGeom.mjGEOM_MESH
             assert sim.spec.mesh(geom0.meshname) is not None
-
-    def test_custom_object_with_scale(self):
-        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
-            NotImplementedError
-        ):
-            sim.add_object("valid_object", scale=(2.0, 2.0, 2.0))
 
     def test_custom_object_with_no_data_path(self):
         with MuJoCoSimulator(data_path=None) as sim, pytest.raises(

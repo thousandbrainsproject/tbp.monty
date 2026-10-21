@@ -32,12 +32,12 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentObservations,
-    SensorObservation,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState, SensorState
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.observations import SensorObservation
 
 if TYPE_CHECKING:
     from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
@@ -556,19 +556,19 @@ class SurfaceAgent(Agent):
 
         This method ASSUMES a few things about the direction in the received action.
         - The direction is a unit vector with a magnitude of 1.
+        - The direction is in world coordinates. The surface policies already rotate
+          their heading by the agent's rotation, so it is not rotated again here.
         - The direction is a vector tangential to the direction the agent is facing.
 
-        If either of these assumptions is not true, this code will produce erroneous
+        If any of these assumptions is not true, this code will produce erroneous
         results.
         """
         if action.distance == 0.0:
             return
         direction = np.array(action.direction)
 
-        rotation = Rotation.from_quat(self._embodiment.rotation)
-        direction_rel_world = rotation.apply(direction)
         self._embodiment.position = (
-            np.array(self._embodiment.position) + direction_rel_world * action.distance
+            np.array(self._embodiment.position) + direction * action.distance
         )
 
     def actuate_set_agent_pose(self, action: SetAgentPose) -> None:

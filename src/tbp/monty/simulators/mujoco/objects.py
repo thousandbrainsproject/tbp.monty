@@ -11,7 +11,13 @@ from dataclasses import dataclass, fields
 from json import JSONDecodeError
 from pathlib import Path
 
-from tbp.monty.math import IDENTITY_QUATERNION, ZERO_VECTOR, QuaternionWXYZ, VectorXYZ
+from tbp.monty.math import (
+    IDENTITY_QUATERNION,
+    ONES_VECTOR,
+    ZERO_VECTOR,
+    QuaternionWXYZ,
+    VectorXYZ,
+)
 
 
 class InvalidObjectMetadata(Exception):
@@ -32,6 +38,9 @@ class ObjectMetadata:
     normals. The model compiler normalizes the quaternion automatically.
     """
 
+    scale: VectorXYZ = ONES_VECTOR
+    """Scaling factor for the model in each direction."""
+
 
 class ObjectMetadataDecoder(json.JSONDecoder):
     """Decodes custom object metadata from JSON.
@@ -40,6 +49,7 @@ class ObjectMetadataDecoder(json.JSONDecoder):
     {
       "refpos": [0.0, 0.0, 0.0],
       "refquat": [1.0, 0.0, 0.0, 0.0],
+      "scale": [1.0, 1.0, 1.0],
     }
     """
 
@@ -55,20 +65,13 @@ class ObjectMetadataDecoder(json.JSONDecoder):
                 f"Couldn't decode '{self.object_type}' metadata."
             ) from e
 
-        # Check for extra or missing fields in the metadata
+        # Check for extra keys in the metadata JSON
         fields_set = set(decoded.keys())
         expected_fields = {f.name for f in fields(ObjectMetadata)}
-        missing_fields = expected_fields - fields_set
         extra_fields = fields_set - expected_fields
-        errors = []
-        if missing_fields:
-            errors.append(f"missing fields: {missing_fields}")
         if extra_fields:
-            errors.append(f"extra fields: {extra_fields}")
-        if errors:
-            errors_str = " and ".join(errors)
             raise InvalidObjectMetadata(
-                f"Object '{self.object_type}' metadata has {errors_str}"
+                f"Object '{self.object_type}' metadata has extra fields: {extra_fields}"
             )
 
         return ObjectMetadata(**decoded)

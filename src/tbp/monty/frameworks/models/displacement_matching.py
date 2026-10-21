@@ -14,13 +14,13 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
-import torch
 
 from tbp.monty.memento import Memento
 
 if TYPE_CHECKING:
     from tbp.monty.cmp import Message
 
+from tbp.monty.cmp import location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
@@ -132,9 +132,7 @@ class DisplacementGraphLM(GraphLM):
                 lm_episode_stats = {
                     "detected_path": detected_path,
                     "detected_location_on_model": current_model_loc,
-                    "detected_location_rel_body": self.buffer.get_current_location(
-                        input_channel=first_channel
-                    ),
+                    "detected_location_rel_body": self.buffer.current_location(),
                     "detected_rotation": r_euler,
                     "detected_rotation_quat": r.as_quat(),
                     "detected_scale": scale,
@@ -410,27 +408,24 @@ class DisplacementGraphLM(GraphLM):
         displacement = np.zeros(3)
         ppf = np.zeros(4)
         # TODO S: calculate displacements for each separately (mostly for rotation disp)
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
         percept_to_use = sm_percepts[0]
 
         if len(self.buffer) > 0:
-            # TODO S: Make sure result of get_current_location() and get_current_pose()
+            # TODO S: Make sure result of current_location() and get_current_pose()
             # is on object (should always be atm).
-            current_location = np.mean([p.location for p in sm_percepts], axis=0)
+            current_location = location_mean(sm_percepts)
+            assert current_location is not None, (
+                "Should have at least one sensor module percept with location"
+            )
             displacement = current_location - self.buffer.last_location
 
-            pos1 = torch.tensor(self.buffer.last_location)
-            pos2 = torch.tensor(current_location)
-            norm1 = torch.tensor(
-                # element 0 of current pose is location, element 1 is surface normal
+            ppf = point_pair_features(
+                self.buffer.last_location,
+                current_location,
                 self.buffer.get_current_pose(input_channel=percept_to_use.sender_id)[1],
-                dtype=torch.float64,
-            )
-            norm2 = torch.tensor(
                 percept_to_use.get_nth_pose_vector(pose_vector_index=0),
-                dtype=torch.float64,
             )
-            ppf = point_pair_features(pos1, pos2, norm1, norm2)
         for p in percepts:
             p.set_displacement(displacement=displacement, ppf=ppf)
         return percepts

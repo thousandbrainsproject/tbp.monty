@@ -9,11 +9,13 @@
 from __future__ import annotations
 
 import copy
-from typing import Any
+import logging
+from typing import Any, Sequence
 
 import numpy as np
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import Message, location_mean
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
@@ -28,8 +30,11 @@ from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
 from tbp.monty.memento import Memento
+from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["MontyForNoResetEvidenceGraphMatching", "NoResetEvidenceGraphLM"]
+
+logger = logging.getLogger(__name__)
 
 
 class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
@@ -116,13 +121,28 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         for lm in self.learning_modules:
             lm.set_individual_ts(None)
 
-    def _reset_modules_buffers(self):
-        """Resets buffers for LMs and SMs."""
+    def _reset_modules_buffers(self) -> None:
+        """Resets buffers for LMs and SMs.
+
+        TODO: Reconsider what to do here. There is a distinction between resetting
+              the modules, which may have impact on their processing, vs clearing
+              buffers that will not be returned to. The intent of this method is
+              a performance optimization to clear the buffers, so a generic
+              lm.reset() or sm.reset() will not work as intended, but reaching into
+              assumed methods and clearing them individually won't work in the long
+              term either.
+        """
         for lm in self.learning_modules:
             lm.buffer.reset()
         for sm in self.sensor_modules:
             sm.processed_obs = []
-            sm._snapshot_telemetry.reset()
+            # The below code reproduces previous behavior of resetting
+            # snapshot telemetry, but does so conditionally, so it
+            # does not fail on sensor modules that lack this attribute.
+            if hasattr(sm, "_snapshot_telemetry"):
+                snapshot_telemetry = sm._snapshot_telemetry
+                if hasattr(snapshot_telemetry, "reset"):
+                    snapshot_telemetry.reset()
 
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
@@ -166,7 +186,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         # update any internal state based on the contents of memory.
         self.init_from_ltm()
 
-    def _add_displacements(self, percepts: list[Message]) -> list[Message]:
+    def _add_displacements(self, percepts: Sequence[Message]) -> Sequence[Message]:
         """Add displacements to the current percept.
 
         Computes the displacement vector by subtracting the current location from the
@@ -181,8 +201,11 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         Returns:
             The list of percepts, each updated with a displacement vector.
         """
-        sm_percepts = [p for p in percepts if p.sender_type == "SM"]
-        current_location = np.mean([p.location for p in sm_percepts], axis=0)
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
         if self.last_location is not None:
             displacement = current_location - self.last_location
         else:
@@ -191,7 +214,82 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         for p in percepts:
             p.set_displacement(displacement)
         self.last_location = current_location.copy()
+        self.buffer.last_location = current_location.copy()
         return percepts
+
+    def _displace_hypotheses(self, percepts: Sequence[Message]) -> None:
+        """Displace all hypotheses by the movement since the last location.
+
+        Evidence is not changed, so the MLH identity is invariant under displacement.
+        Updates `self.last_location` to the current location.
+
+        Args:
+            percepts: Percepts for the current location-only step.
+        """
+        if self.last_location is None:
+            return
+
+        sm_percepts = [p for p in percepts if p.is_from_sm()]
+        current_location = location_mean(sm_percepts)
+        assert current_location is not None, (
+            "Should have at least one sensor module percept with location"
+        )
+        displacement = current_location - self.last_location
+        for graph_id, hypotheses in self._hypotheses.items():
+            self._hypotheses[graph_id] = self.hypotheses_updater.displace_hypotheses(
+                hypotheses, displacement, graph_id
+            )
+        self.last_location = current_location.copy()
+        self.buffer.last_location = current_location.copy()
+
+    def matching_step(
+        self,
+        ctx: RuntimeContext,
+        percepts: Sequence[Message],
+    ) -> None:
+        """Update the possible matches given an observation."""
+        if is_location_only_step(percepts):
+            self._displace_hypotheses(percepts)
+            return
+
+        first_movement_detected = self._agent_moved_since_reset()
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
+
+        if first_movement_detected:
+            logger.debug("performing matching step.")
+        else:
+            logger.debug("we have not moved yet.")
+
+        feature_percepts = [p for p in percepts if p.process_features_in_lm]
+
+        self._compute_possible_matches(
+            ctx, feature_percepts, first_movement_detected=first_movement_detected
+        )
+
+        if len(self.get_possible_matches()) == 0:
+            self.set_individual_ts(terminal_state="no_match")
+
+        if self.gsg is not None:
+            self.gsg.step(ctx, feature_percepts)
+
+        stats = self.collect_stats_to_save()
+        self.buffer.update_stats(stats, append=self.has_detailed_logger)
+
+    def exploratory_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+        percepts: Sequence[Message],
+    ) -> None:
+        """Step without trying to recognize object (updating possible matches)."""
+        if is_location_only_step(percepts):
+            self._displace_hypotheses(percepts)
+            return
+
+        buffer_data = self._add_displacements(percepts)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_percepts(percepts)
 
     def _agent_moved_since_reset(self):
         """Overwrites the logic of whether the agent has moved since the last reset.

@@ -121,7 +121,7 @@ class ProfileExperimentMixin:
 
     def close(self) -> None:
         # If wandb is in use, send tables to wandb
-        if len(self.wandb_handlers) > 0:
+        if self.logs_to_wandb:
             profile_path = Path(self.profile_dir)
             for csv in profile_path.glob("*.csv"):
                 df = pd.read_csv(csv)
