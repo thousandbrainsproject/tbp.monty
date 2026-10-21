@@ -426,7 +426,7 @@ def get_more_directions_in_plane(
         List of vectors evenly spaced in a plane orthogonal to vecs[0]
     """
     new_vecs = [vecs]
-    angles: npt.NDArray[np.float64] = np.linspace(0, 2 * np.pi, n_poses)
+    angles: npt.NDArray[np.float64] = np.linspace(0, 2 * np.pi, n_poses, endpoint=False)
     for angle in angles:
         new_vec = np.cos(angle) * vecs[1] + np.sin(angle) * vecs[2]
         new_vec2 = np.cross(vecs[0], new_vec)
