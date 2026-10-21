@@ -67,6 +67,7 @@ DEFAULT_GAZE_DIRECTION = GazeDirection(
     np.array([[1.0, 0.0, 0.0], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]])
 )
 
+
 class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
     def setUp(self) -> None:
         self.agent_id = AGENT_ID
