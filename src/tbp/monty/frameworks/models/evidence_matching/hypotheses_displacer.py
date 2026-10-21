@@ -437,18 +437,24 @@ class DefaultHypothesesDisplacer:
         )
         return pose_evidence_weighted
 
+    @staticmethod
     def _object_pose_evidence(
-        self,
         query_pose_vectors: npt.NDArray[np.float64],
         node_features: dict[str, Any],
     ) -> npt.NDArray[np.float64]:
         """Calculate evidence from sensed and stored object orientations.
 
-        Object orientations are full, signed rotations. We compare them by the angle of
-        the relative rotation between the hypothesis-rotated sensed pose
-        (query_pose_vectors) and the pose stored at each node
-        (node_features["pose_vectors"]). Evidence falls linearly from 1 at 0 degrees to
-        -1 at 180 degrees.
+        Object orientations are signed rotation matrices.
+
+        We first calculate the relative rotation matrices between the hypothesis-rotated
+        sensed poses (query_pose_vectors) and the stored poses
+        (node_features["pose_vectors"]). Once we have these rotation matrices, then we
+        use the trace method to calculate the angle of these relative rotations using
+        a theorem where the trace of a rotation matrix is related to the rotation angle
+        by trace = 1 + 2 * cos(theta), with theta being the rotation angle. The trace
+        method uses fewer multiplications than alternatives and skips building
+        ``Rotation`` objects. Lastly, the angle is scaled linearly into the evidence
+        range [-1, 1], where 0 degrees maps to 1 and 180 degrees maps to -1.
 
         Args:
             query_pose_vectors: Observed object orientations rotated by each hypothesis,
