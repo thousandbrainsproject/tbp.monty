@@ -127,7 +127,7 @@ experiment:
             - 2
             - 2
             distance: 0.01
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
           sensor_module_id: patch_1
@@ -186,13 +186,12 @@ experiment:
             - 4
             - 4
             distance: 0.05
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_3:
           _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
           sensor_id: view_finder
-          transforms:
-          - _target_: tbp.monty.experiment.sensor_modules.telemetry.Snapshot
+          transforms: []
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0

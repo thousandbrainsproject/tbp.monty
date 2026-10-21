@@ -19,10 +19,9 @@ sensor_module_0:
   - mean_curvature
   - gaussian_curvature_sc
   - mean_curvature_sc
-  save_raw_obs: true
+  save_raw_obs: false
 sensor_module_1:
   _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
   sensor_module_id: view_finder
   sensor_id: view_finder
-  transforms:
-    - _target_: tbp.monty.experiment.sensor_modules.telemetry.Snapshot
+  transforms: []
