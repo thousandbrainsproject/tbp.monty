@@ -127,10 +127,10 @@ class Message:
             self.location += translation
         if rotation is not None:
             # TODO: Replace with match statement
-            pose_type = type(self.morphological_features["pose_vectors"])
-            if isinstance(pose_type, GazeDirection):
+            pose_vectors = self.morphological_features["pose_vectors"]
+            if isinstance(pose_vectors, GazeDirection):
                 raise TypeError("Cannot transform GazeDirection")
-            self.morphological_features["pose_vectors"] = pose_type(
+            self.morphological_features["pose_vectors"] = type(pose_vectors)(
                 np.dot(rotation, self.morphological_features["pose_vectors"].value)
             )
 
