@@ -129,14 +129,14 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
     @given(
         matching_steps=st.integers(min_value=0),
         limit_asc=ascending_ints(min_value=0),
-        handle_time_out=st.booleans(),
+        time_out_lms=st.booleans(),
         start_exploring=st.booleans(),
     )
     def test_result_is_not_done_until_min_eval_steps(
         self,
         matching_steps: int,
         limit_asc: tuple[int, int],
-        handle_time_out: bool,
+        time_out_lms: bool,
         start_exploring: bool,
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
@@ -144,7 +144,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             RecognitionPolicy,
             return_value=RecognitionResult(
                 is_done=True,
-                handle_time_out=handle_time_out,
+                time_out_lms=time_out_lms,
                 start_exploring=start_exploring,
             ),
         )
@@ -162,7 +162,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         wrapped.assert_called_once_with(model, count)
         is_done = matching_steps >= min_eval_steps
         self.assertEqual(
-            result, RecognitionResult(is_done, handle_time_out, start_exploring)
+            result, RecognitionResult(is_done, time_out_lms, start_exploring)
         )
 
     @given(
@@ -180,7 +180,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         wrapped = MagicMock(
             RecognitionPolicy,
             return_value=RecognitionResult(
-                is_done=False, handle_time_out=False, start_exploring=start_exploring
+                is_done=False, time_out_lms=False, start_exploring=start_exploring
             ),
         )
         policy = MinEvalMaxTotalSteps(
@@ -203,7 +203,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         matching_steps=st.integers(min_value=0),
         limit_asc=ascending_ints(min_value=0),
         is_done=st.booleans(),
-        handle_time_out=st.booleans(),
+        time_out_lms=st.booleans(),
         start_exploring=st.booleans(),
     )
     def test_result_is_done_if_model_is_done(
@@ -211,13 +211,13 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
         matching_steps: int,
         limit_asc: tuple[int, int],
         is_done: bool,
-        handle_time_out: bool,
+        time_out_lms: bool,
         start_exploring: bool,
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
         wrapped = MagicMock(
             RecognitionPolicy,
-            return_value=RecognitionResult(is_done, handle_time_out, start_exploring),
+            return_value=RecognitionResult(is_done, time_out_lms, start_exploring),
         )
         policy = MinEvalMaxTotalSteps(
             wrapped,
@@ -235,7 +235,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             result,
             RecognitionResult(
                 is_done=True,
-                handle_time_out=handle_time_out,
+                time_out_lms=time_out_lms,
                 start_exploring=start_exploring,
             ),
         )
@@ -390,7 +390,7 @@ class StepLimitTest(unittest.TestCase):
         result = policy(model, count)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
-        self.assertEqual(result.handle_time_out, is_done)
+        self.assertEqual(result.time_out_lms, is_done)
 
     @given(
         mode=st.sampled_from(ExperimentMode),
@@ -415,7 +415,7 @@ class StepLimitTest(unittest.TestCase):
         result = policy(model, count)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
-        self.assertEqual(result.handle_time_out, is_done)
+        self.assertEqual(result.time_out_lms, is_done)
 
     @given(
         exploring_steps=st.integers(min_value=0),
@@ -434,7 +434,7 @@ class StepLimitTest(unittest.TestCase):
         result = policy(model, count)
         is_done = exploring_steps >= num_exploring_steps
         self.assertEqual(result.is_done, is_done)
-        self.assertEqual(result.handle_time_out, is_done)
+        self.assertEqual(result.time_out_lms, is_done)
 
     @given(
         match_asc=ascending_ints(min_value=1),
@@ -459,7 +459,7 @@ class StepLimitTest(unittest.TestCase):
         self.assertTrue(result.start_exploring)
         is_done = matching_steps >= max_train_steps
         self.assertEqual(result.is_done, is_done)
-        self.assertEqual(result.handle_time_out, is_done)
+        self.assertEqual(result.time_out_lms, is_done)
 
 
 class MinimumLMsTest(unittest.TestCase):
@@ -668,15 +668,15 @@ class AnyPolicyTest(unittest.TestCase):
         is_done_result = MagicMock(
             RecognitionPolicy, return_value=RecognitionResult(is_done=True)
         )
-        handle_time_out_result = MagicMock(
-            RecognitionPolicy, return_value=RecognitionResult(handle_time_out=True)
+        time_out_lms_result = MagicMock(
+            RecognitionPolicy, return_value=RecognitionResult(time_out_lms=True)
         )
         start_exploring_result = MagicMock(
             RecognitionPolicy, return_value=RecognitionResult(start_exploring=True)
         )
-        is_done_handle_time_out_result = MagicMock(
+        is_done_time_out_lms_result = MagicMock(
             RecognitionPolicy,
-            return_value=RecognitionResult(is_done=True, handle_time_out=True),
+            return_value=RecognitionResult(is_done=True, time_out_lms=True),
         )
 
         model = MagicMock()
@@ -685,31 +685,31 @@ class AnyPolicyTest(unittest.TestCase):
         policy = AnyPolicy([default_result])
         result = policy(model, count)
         self.assertFalse(result.is_done)
-        self.assertFalse(result.handle_time_out)
+        self.assertFalse(result.time_out_lms)
         self.assertFalse(result.start_exploring)
 
         policy = AnyPolicy(
             [
                 start_exploring_result,
                 is_done_result,
-                handle_time_out_result,
+                time_out_lms_result,
                 default_result,
             ]
         )
         result = policy(model, count)
         self.assertTrue(result.is_done)
-        self.assertFalse(result.handle_time_out)
+        self.assertFalse(result.time_out_lms)
         self.assertTrue(result.start_exploring)
 
         policy = AnyPolicy(
             [
                 default_result,
-                handle_time_out_result,
+                time_out_lms_result,
                 start_exploring_result,
-                is_done_handle_time_out_result,
+                is_done_time_out_lms_result,
             ]
         )
         result = policy(model, count)
         self.assertTrue(result.is_done)
-        self.assertTrue(result.handle_time_out)
+        self.assertTrue(result.time_out_lms)
         self.assertTrue(result.start_exploring)
