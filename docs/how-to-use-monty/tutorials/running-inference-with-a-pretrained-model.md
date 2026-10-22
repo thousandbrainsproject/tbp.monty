@@ -114,9 +114,10 @@ sensor_module_0:
       pose_fully_defined: 0.01 # flip bool in 1% of cases
     location: 0.002 # add gaussian noise with 0.002 std (0.2cm)
 sensor_module_1:
-  _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+  _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
   sensor_module_id: view_finder
-  save_raw_obs: false
+  sensor_id: view_finder
+  transforms: []
 ```
 
 There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using `delta_threshold` parameters to only send an observation to the learning module if the features have changed significantly. Note that `CameraSM` can be used as either a surface or distant agent, for which `is_surface_sm` should be appropriately set.
@@ -143,7 +144,7 @@ learning_module_0:
     patch:
       # Weighting saturation and value less since these might change under different
       # lighting conditions.
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   # Most likely hypothesis needs to have 20% more evidence than the others to
   # be considered certain enough to trigger a terminal condition (match).
   x_percent_threshold: 20
@@ -181,6 +182,7 @@ defaults:
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /termination: any1_objectrecognition_t1000_e500_tot5000
   - /logging: basic_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

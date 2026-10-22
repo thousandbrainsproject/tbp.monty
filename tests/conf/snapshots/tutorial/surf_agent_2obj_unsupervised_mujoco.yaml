@@ -73,11 +73,12 @@ experiment:
           - mean_curvature
           - gaussian_curvature_sc
           - mean_curvature_sc
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: true
+          sensor_id: view_finder
+          transforms: []
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -162,11 +163,11 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: surf_agent_2obj_unsupervised_mujoco
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
+      run_name: surf_agent_2obj_unsupervised_mujoco
     telemetry:
       formatters:
         telemetry_formatter:

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 import numpy as np
 import numpy.typing as npt
@@ -31,8 +31,8 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_relevant_curvature,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    batch_rotate_pose_vectors,
     get_angles_for_all_hypotheses,
-    rotate_pose_dependent_features,
 )
 
 logger = logging.getLogger(__name__)
@@ -254,8 +254,8 @@ class DefaultHypothesesDisplacer:
             f"Calculating evidence for {graph_id} using input from {input_channel}"
         )
 
-        pose_transformed_features = rotate_pose_dependent_features(
-            channel_features,
+        rotated_pose_vectors = batch_rotate_pose_vectors(
+            channel_features["pose_vectors"],
             channel_possible_poses,
         )
         # Get up to max_nneighbors nearest nodes to search locations.
@@ -277,7 +277,7 @@ class DefaultHypothesesDisplacer:
         custom_nearest_node_dists = get_custom_distances(
             nearest_node_locs,
             search_locations,
-            pose_transformed_features["pose_vectors"][:, 0],
+            rotated_pose_vectors[:, 0, :],
             max_abs_curvature,
         )
         # shape=(H, K)
@@ -296,7 +296,8 @@ class DefaultHypothesesDisplacer:
         # Calculate the pose error for each hypothesis
         # shape=(H, K)
         radius_evidence = self._get_pose_evidence_matrix(
-            pose_transformed_features,
+            rotated_pose_vectors,
+            channel_features["pose_fully_defined"],
             new_pos_features,
             input_channel,
             node_distance_weights,
@@ -342,15 +343,18 @@ class DefaultHypothesesDisplacer:
 
     def _get_pose_evidence_matrix(
         self,
-        query_features,
-        node_features,
-        input_channel,
-        node_distance_weights,
+        query_pose_vectors: npt.NDArray[np.float64],
+        query_pose_fully_defined: bool,
+        node_features: dict[str, Any],
+        input_channel: str,
+        node_distance_weights: npt.NDArray[np.float64],
     ):
         """Get angle mismatch error of the three pose features for multiple points.
 
         Args:
-            query_features: Observed features.
+            query_pose_vectors: Observed pose vectors.
+            query_pose_fully_defined: Whether the observed pose vectors are fully
+                defined.
             node_features: Features at nodes that are being tested.
             input_channel: Input channel for which we want to calculate the
                 pose evidence. These are all input channels that are received at the
@@ -371,7 +375,7 @@ class DefaultHypothesesDisplacer:
         surface_normal_error = get_angles_for_all_hypotheses(
             # shape of node_features[input_channel]["pose_vectors"]: (nH, knn, 9)
             node_features["pose_vectors"][:, :, :3],
-            query_features["pose_vectors"][:, 0],  # shape (nH, 3)
+            query_pose_vectors[:, 0],  # shape (nH, 3)
         )
         # Divide error by 2 so it is in range [0, pi/2]
         # Apply sin -> [0, 1]. Subtract 0.5 -> [-0.5, 0.5]
@@ -380,7 +384,7 @@ class DefaultHypothesesDisplacer:
         surface_normal_weight = self.feature_weights[input_channel]["pose_vectors"][0]
         # If curvatures are same the directions are meaningless
         #  -> set curvature angle error to zero.
-        if not query_features["pose_fully_defined"]:
+        if not query_pose_fully_defined:
             cd1_weight = 0
             # Only calculate curv dir angle if sensed curv dirs are meaningful
             cd1_evidence = np.zeros(surface_normal_error.shape)
@@ -397,7 +401,7 @@ class DefaultHypothesesDisplacer:
             )
             cd1_angle = get_angles_for_all_hypotheses(
                 node_features["pose_vectors"][:, :, 3:6],
-                query_features["pose_vectors"][:, 1],
+                query_pose_vectors[:, 1],
             )
             # Since curvature directions could be rotated 180 degrees we define the
             # error to be largest when the angle is pi/2 (90 deg) and angles 0 and

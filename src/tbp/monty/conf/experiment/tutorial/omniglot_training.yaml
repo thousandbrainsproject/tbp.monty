@@ -9,7 +9,7 @@ defaults:
   - /environment: two_d_data_omniglot
   - /env_interface: train_omniglot
   - /env_interface/transform: depthto3d_sensor1
-  - /termination: any1_maxtotalsteps_6000
+  - /termination: any1_train_steps_3_1000_tot6000
   - /logging: silent_warning_train
   - /telemetry: warning
 

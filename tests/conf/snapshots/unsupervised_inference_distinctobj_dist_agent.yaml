@@ -81,9 +81,10 @@ experiment:
               pose_fully_defined: 0.01
             location: 0.002
         sensor_module_1:
-          _target_: tbp.monty.frameworks.models.sensor_modules.Probe
+          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
           sensor_module_id: view_finder
-          save_raw_obs: false
+          sensor_id: view_finder
+          transforms: []
       sm_to_agent_dict:
         patch: agent_id_0
         view_finder: agent_id_0
@@ -190,10 +191,15 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
-      max_train_steps: 1000
-      max_eval_steps: 100
+      _target_: tbp.monty.experiment.recognition_policy.MinEvalMaxTotalSteps
+      min_eval_steps: 100
       max_total_steps: 6000
+      wrapped:
+        _target_: tbp.monty.experiment.recognition_policy.StepLimit
+        min_train_steps: 3
+        num_exploring_steps: 1000
+        max_train_steps: 1000
+        max_eval_steps: 100
     logging:
       python_log_level: WARNING
       python_log_to_file: true

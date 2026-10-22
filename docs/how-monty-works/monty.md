@@ -29,6 +29,8 @@ Below are the arguments associated with the Monty classes.
 
 - a **motor system** responsible for moving the agent
 
+- an optional **attention system** that decides which proposed goals reach the motor system (see [here](attention-system.md))
+
 - the **Monty class** used (`monty_class`) and its **arguments** (`monty_args`)
 
 Using the above arguments we can specify the structure underlying our modeling system. For instance, if we have five sensors in the environment we would specify five sensor modules, each corresponding to one sensor (often we use an additional sensor module connected to a view finder sensor which does not connect to a learning module). Each sensor module would be connected to one learning module and the connection between the learning modules is specified in the lm_to_lm_matrix. The modeling in this Monty instance could then look as shown in the figure below.

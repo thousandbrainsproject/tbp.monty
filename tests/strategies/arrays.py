@@ -90,3 +90,27 @@ def float_array_n_by_3(draw: st.DrawFn) -> npt.NDArray[np.float64]:
             fill=st.just(0.0),
         )
     )
+
+
+@st.composite
+def bool_array(draw: st.DrawFn, shape: tuple[int, ...]) -> npt.NDArray[np.bool_]:
+    """Returns a boolean mask with the given image shape."""
+    return draw(
+        arrays(
+            dtype=np.bool_,
+            shape=shape,
+            elements=st.booleans(),
+        )
+    )
+
+
+@st.composite
+def uint8_array(draw: st.DrawFn, shape: tuple[int, ...]) -> npt.NDArray[np.uint8]:
+    """Returns a uint8 array with the given image shape."""
+    return draw(
+        arrays(
+            dtype=np.uint8,
+            shape=shape,
+            elements=st.integers(min_value=0, max_value=255),
+        )
+    )

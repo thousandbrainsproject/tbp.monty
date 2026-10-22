@@ -51,10 +51,11 @@ Watch the video of the first demo:
 **Links:** [tbp.monty Fork](https://github.com/Zinxiee/tbp.monty) | [Maixsense A010 Python Package](https://github.com/Zinxiee/Maixsense-A010-Python-Package) | [3D Model Dataset](https://github.com/Zinxiee/tbp.monty/releases/tag/dataset_scans_(shining_3d)) | [Robotic Object Recognition For Thousand Brain Systems.pdf](https://github.com/user-attachments/files/30555412/Robotic.Object.Recognition.For.Thousand.Brain.Systems.pdf)  
 
 This community project expands upon the Thousand Brains Project by designing and constructing a system capable of multimodal sensing and movement. The core aim is to enable the learning and recognition of real-world objects in a human-like way (sensorimotor learning), helping to bridge the framework's sim-to-real gap. While Monty has primarily been validated in simulated environments, this dual-agent sensorimotor system tests how Monty performs on physical hardware in the real world.  
-<img width="3179" height="2245" alt="Robotic Object Recognition For Thousand Brain Systems" src="https://github.com/user-attachments/assets/2279aa2e-8cfd-4152-88cb-ac24afac2621" />
+
+![Robotic Object Recognition for Thousand-Brains Systems poster](../figures/community/zach-project-showcase-poster.png)
 
 **Dual-agent Sensorimotor Setup**  
-<img width="600" alt="20260424_2050061" src="https://github.com/user-attachments/assets/6a18945c-fa84-4bd1-8833-927b8c94a70e" />  
+![Robot arm with A010 ToF sensor and ZED 2i stereo camera](../figures/community/zach-project-robotic-arm.jpg)
 *The dual-agent sensorimotor setup featuring the Ufactory Lite 6 with mounted A010 ToF sensor and Zed 2i stereo camera, with the mc_fox object in view.*
 
 ### Key Features
@@ -82,3 +83,21 @@ For more about this project, visit the links above or see the [Discourse communi
 Watch the presentation:
 
 [07/2026 - Robotic Object Recognition for Thousand Brains Systems](https://www.youtube.com/watch?v=3wgHNqkRekM)
+
+# ARC-AGI-3
+
+During the August 2026 Rome Focus Week, we connected Monty to [ARC-AGI-3](https://arcprize.org/arc-agi/3), an interactive reasoning benchmark of turn-based grid games that come with no instructions. The goal was to build a platform for exploring these games with Monty. It is Monty's first simulator where actions change the world instead of only moving a sensor: some actions move a sensor patch across the game frame, while others advance the game. Each game step is stored along an extra spatial axis, so Monty learns a temporal model of how a game evolves.
+
+![](../figures/community/arc_agi_3_temporal_model.png)
+*A temporal model of a game learned by Monty. Each layer along the vertical axis is a game step, so you can see the red piece move from the past (bottom) to the future (top).*
+
+The team also used the game engine to build simple custom maze games, learned compositional models of game maps from 304 sprites, and prototyped a sensor module that directs attention to areas that visually changed after an action.
+
+![](../figures/community/arc_agi_3_compositional_maps.png)
+*Ground truth game maps (top) and the compositional maps Monty learned from them (bottom), labeled by the recognized child sprites.*
+
+ARC-AGI-3 [is a rich testbed for many open problems on our roadmap](https://www.youtube.com/watch?v=qqPxhMXePpk), including unsupervised object discovery, occlusion, scale, object behavior, and causality. It would make a great community project! See the [feat.arc_agi_3 repository](https://github.com/thousandbrainsproject/feat.arc_agi_3) to try it out.
+
+Watch the presentation:
+
+[2026/08 - Rome Focus Week: Team Mighty Mouse (ARC-AGI-3)](https://www.youtube.com/watch?v=QsTJY-83EUg&t=168s)

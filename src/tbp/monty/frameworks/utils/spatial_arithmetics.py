@@ -9,15 +9,15 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import copy
 import logging
 import sys
+from typing import cast
 
 import numpy as np
 import numpy.typing as npt
 from numpy.typing import ArrayLike
 
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 
 logger = logging.getLogger(__name__)
@@ -410,7 +410,9 @@ def non_singular_mat(a):
     return np.linalg.cond(a) < 1 / sys.float_info.epsilon
 
 
-def get_more_directions_in_plane(vecs, n_poses) -> list[np.ndarray]:
+def get_more_directions_in_plane(
+    vecs: npt.NDArray[np.float64], n_poses: int
+) -> list[npt.NDArray[np.float64]]:
     """Get a list of unit vectors, evenly spaced in a plane orthogonal to vecs[0].
 
     This is used to sample possible poses orthogonal to the surface normal when the
@@ -424,12 +426,11 @@ def get_more_directions_in_plane(vecs, n_poses) -> list[np.ndarray]:
         List of vectors evenly spaced in a plane orthogonal to vecs[0]
     """
     new_vecs = [vecs]
-    angles = np.linspace(0, 2 * np.pi, n_poses + 1)
-    # First and last angle are same as original vec (0 & 1)
-    for angle in angles[:-1]:
+    angles: npt.NDArray[np.float64] = np.linspace(0, 2 * np.pi, n_poses, endpoint=False)
+    for angle in angles:
         new_vec = np.cos(angle) * vecs[1] + np.sin(angle) * vecs[2]
         new_vec2 = np.cross(vecs[0], new_vec)
-        new_vecs.append([vecs[0], new_vec, new_vec2])
+        new_vecs.append(np.asarray([vecs[0], new_vec, new_vec2]))
     return new_vecs[1:]
 
 
@@ -481,52 +482,67 @@ def pose_is_new(all_poses, new_pose, similarity_th) -> bool:
     return True
 
 
-def rotate_pose_dependent_features(features, ref_frame_rots) -> dict:
-    """Rotate pose_vectors given a list of rotation matrices.
+def batch_rotate_pose_vectors(
+    pose_vectors: SurfacePoseVectors, rotations: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """Rotate pose vectors given multiple rotation matrices in (N, 3, 3) numpy array.
 
     Args:
-        features: dict of features with pose vectors to rotate.
-            pose vectors have shape (3, 3)
-        ref_frame_rots: Rotation matrices to rotate pose features by. Can either be
-            - A single scipy rotation (as used in FeatureGraphLM)
-            - An array of rotation matrices of shape (N, 3, 3) or (3, 3) (as used in
-            EvidenceGraphLM).
+        pose_vectors: Pose vectors to rotate.
+        rotations: (N, 3, 3) numpy array of rotation matrices.
 
     Returns:
-        Original features but with the pose_vectors rotated. If multiple rotations
-        were given, pose_vectors entry will now contain multiple entries of shape
-        (N, 3, 3).
+        (N, 3, 3) of original pose vectors rotated by every rotation.
+
+    Raises:
+        TypeError: If the pose vectors represent GazeDirection.
     """
-    pose_transformed_features = copy.deepcopy(features)
-    old_pv = pose_transformed_features["pose_vectors"]
-    assert old_pv.shape == (
-        3,
-        3,
-    ), "pose_vectors in features need to be 3x3 matrices."
-    if isinstance(ref_frame_rots, Rotation):
-        rotated_pv = ref_frame_rots.apply(old_pv)
-    else:
-        # Transpose pose vectors so each vector is a column (otherwise .dot matmul
-        # produces slightly different results)
-        rotated_pv = ref_frame_rots.dot(old_pv.T)
-        # Transpose last two axies so each pose vector is a row again
-        rotated_pv = rotated_pv.transpose((0, 2, 1))
-    pose_transformed_features["pose_vectors"] = rotated_pv
-    return pose_transformed_features
+    # TODO: Replace with match statement
+    if isinstance(pose_vectors, GazeDirection):
+        raise TypeError("GazeDirection type is not supported for rotation.")
+
+    # Transpose pose vectors so each vector is a column (otherwise .dot matmul
+    # produces slightly different results)
+    rotated_pv = rotations.dot(pose_vectors.value.T)
+    # Transpose last two axies so each pose vector is a row again
+    rotated_pv = rotated_pv.transpose((0, 2, 1))
+    return cast("npt.NDArray[np.float64]", rotated_pv)
 
 
-def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
+def rotate_pose_vectors(
+    pose_vectors: SurfacePoseVectors, rotation: Rotation
+) -> SurfacePoseVectors:
+    """Rotate pose vectors given a Rotation object.
+
+    Args:
+        pose_vectors: Pose vectors to rotate.
+        rotation: Rotation matrix to rotate pose vectors by.
+
+    Returns:
+        Original features but with the pose_vectors rotated.
+
+    Raises:
+        TypeError: If the pose vectors represent GazeDirection.
+    """
+    # TODO: Replace with match statement
+    if isinstance(pose_vectors, GazeDirection):
+        raise TypeError("GazeDirection type is not supported for rotation.")
+
+    return SurfacePoseVectors(rotation.apply(pose_vectors.value))
+
+
+def rotate_multiple_pose_vectors(
+    pose_vecs: npt.NDArray[np.float64], ref_frame_rot: Rotation
+) -> npt.NDArray[np.float64]:
     """Rotate surface normal and curve dirs given a rotation matrix.
 
     Args:
-        features: dict of features with pose vectors to rotate.
-            Pose vectors have shape (N, 9)
-        ref_frame_rot: scipy rotation to rotate pose vectors with.
+        pose_vecs: Pose vectors to rotate. Shape (N, 9)
+        ref_frame_rot: rotation to rotate pose vectors with.
 
     Returns:
-        Features with rotated pose vectors
+        Rotated pose vectors with shape (N, 9)
     """
-    pose_vecs = features["pose_vectors"]
     num_pose_vecs = pose_vecs.shape[0]
     assert pose_vecs.shape[-1] == 9, "pose_vectors in features should be flattened."
     # Reshape to (num_pose_vecs * 3, 3) to be able to rotate all vectors at once
@@ -534,9 +550,7 @@ def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
     # rotate all vectors by ref_frame_rot
     rotated_pose_vecs = ref_frame_rot.apply(pose_vecs)
     # shape back to original shape (num_pose_vecs, 9)
-    rotated_pose_vecs = rotated_pose_vecs.reshape((num_pose_vecs, 9))
-    features["pose_vectors"] = rotated_pose_vecs
-    return features
+    return rotated_pose_vecs.reshape((num_pose_vecs, 9))
 
 
 def apply_rf_transform_to_points(
@@ -584,5 +598,7 @@ def apply_rf_transform_to_points(
 
     # Undo the 0 centering and align the new points with the model's reference frame
     transformed_locations = rotated_locs + ref_point1
-    features = rotate_multiple_pose_dependent_features(features, object_rotation.inv())
+    features["pose_vectors"] = rotate_multiple_pose_vectors(
+        features["pose_vectors"], object_rotation.inv()
+    )
     return transformed_locations, features

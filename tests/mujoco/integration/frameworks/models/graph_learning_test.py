@@ -31,6 +31,7 @@ from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.utils.logging_utils import (
     load_stats,
 )
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 from tests.unit.resources.unit_test_utils import BaseGraphTest
@@ -850,8 +851,8 @@ class GraphLearningTest(BaseGraphTest):
     def test_different_pose_features_not_recognized(self) -> None:
         """Test that the object is not recognized if pose features don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
-        fake_obs_test[0].morphological_features["pose_vectors"] = np.array(
-            [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        fake_obs_test[0].morphological_features["pose_vectors"] = SurfacePoseVectors(
+            np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         )
 
         graph_lm = self.get_gm_with_fake_object()
