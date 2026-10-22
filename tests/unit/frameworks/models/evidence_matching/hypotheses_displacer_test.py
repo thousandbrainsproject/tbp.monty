@@ -13,7 +13,8 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import numpy.typing as npt
-from hypothesis import given
+from hypothesis import example, given
+from hypothesis import strategies as st
 from scipy.spatial import KDTree
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
@@ -188,25 +189,29 @@ class DefaultHypothesesDisplacerTest(TestCase):
 
 
 class ObjectPoseEvidenceTest(TestCase):
+
     @given(
         query_poses=rotation_matrices(),
         axis_of_rotation=unit_vectors,
+        rotation_angle=st.floats(min_value=0, max_value=np.pi),
     )
-    def test_object_orientations_180deg_apart_give_min_evidence(
+    def test_object_orientations_map_0_to_pi_onto_1_to_neg1_interval_respectively(
         self,
         query_poses: npt.NDArray[np.float64],
         axis_of_rotation: npt.NDArray[np.float32],
+        rotation_angle: float,
     ) -> None:
-        rotvec_180deg = np.pi * axis_of_rotation / np.linalg.norm(axis_of_rotation)
-        rotation_180deg = Rotation.from_rotvec(rotvec_180deg).as_matrix()
-        rotated_by_180deg = np.matmul(query_poses, rotation_180deg)
-        rotated_by_180deg = rotated_by_180deg.reshape(rotated_by_180deg.shape[0], 1, 9)
+        rotvec = rotation_angle * axis_of_rotation / np.linalg.norm(axis_of_rotation)
+        rotation = Rotation.from_rotvec(rotvec).as_matrix()
+        rotated_by_angle = np.matmul(query_poses, rotation)
+        rotated_by_angle = rotated_by_angle.reshape(rotated_by_angle.shape[0], 1, 9)
 
         result = DefaultHypothesesDisplacer._object_pose_evidence(
             query_pose_vectors=query_poses,
-            node_features={"pose_vectors": rotated_by_180deg},
+            node_features={"pose_vectors": rotated_by_angle},
         )
 
+        expected_evidence = 1 - 2 * rotation_angle / np.pi
         np.testing.assert_allclose(
-            result, -1.0, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE
+            result, expected_evidence, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE
         )
