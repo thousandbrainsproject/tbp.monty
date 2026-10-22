@@ -73,20 +73,11 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 ### Explanation of Some of the Results
 
-- **Why is the distant agent worse when using distant-agent-trained models compared with when it uses surface-agent-trained models?**
-  As you can see in the figures above, the models learned with distant agent have several blind spots and unevenly sampled areas. This is more a result of the distant agent's motor policy during training than the distant agent's sensor modality. For example, the models used by `randrot_noise_10distinctobj_dist_on_distm` for inference were learned using the NaiveScanPolicy which scans over the object with a fixed step size. The grid-like point cloud can be too coarse to pick up on smaller protrusions, such as the end of a spoon. Additionally, the maximum number of steps taken during each training episode constrains the spatial extent that the agent will explore, which means areas far from the center of the object may not be seen.
-  
-  In general, the surface agent's policies sample all parts of an object more densely and evenly than the distant agent does, at least when using the NaiveScanPolicy. Note, however, that these models tend to be larger and more dense than distant agent models. To make the distant-agent comparable to the surface agent in terms of inference performance, one could decrease the NaiveScanPolicy's step size and/or increase the number of steps taken during training. Better yet,one could write a smarter policy for distant agent exploration. For example, `randrot_noise_10distinctobj_vocus_on_vocsm` used a [SalienceSM](https://docs.thousandbrains.org/docs/salience-sm#saliencestrategy) configuration for training and inference. Its learned models tend to be sparser and cover an object's surface more completely than the distant agent is able to when using the NaiveScanPolicy during learning.
-
-
 - **Why is the accuracy on distinct objects higher than on similar objects?**
   Since we need to be able to deal with noise, it can happen that objects that are similar to each other get confused. In particular, objects that only differ in some specific locations (like the fork and the spoon) can be difficult to distinguish if the policy doesn't efficiently move to the distinguishable features and if there is noise.
 
 - **Why is raw sensor noise so much worse than the standard noise condition?**
   This is not related to the capabilities of the learning module but to the sensor module. Currently, our surface normal and principal curvature estimates are not implemented to be very robust to sensor noise such that noise in the depth image can distort the surface normal by more than 70 degrees. We don't want our learning module to be robust to this much noise in the surface normals but instead want the sensor module to communicate better features. We already added some improvements on our surface normal estimates which helped a lot on the raw noise experiment.
-
-- **Why do the distant agent experiments take longer and have more episodes where the most likely hypothesis is used?**
-  Since the distant agent policy is less efficient in how it explores a given view (random walk of tilting the camera), we take more steps to converge with the distant agent or sometimes do not resolve the object at all (this is when we reach a time-out and use the MLH). If we have to take more steps for each episode, the runtime also increases.
 
 - **Why is the run time for 77 objects longer than for 10?**
   For one, we run more episodes per epoch (77 instead of 10) so each epoch will take longer. However, in the current benchmark, we test with fewer rotations (only 3 epochs instead of 14 or 10 epochs in the shorter experiments). Therefore the main factor here is that the number of evidence updates we need to perform at each step scales linearly with the number of objects an LM has in its memory (going down over time as we remove objects from our hypothesis space). Additionally, we need to take more steps to distinguish 77 objects than to distinguish 10 (especially if the 10 objects are distinct).
