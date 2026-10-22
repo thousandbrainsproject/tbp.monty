@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import numpy.typing as npt
-from hypothesis import example, given
+from hypothesis import given
 from hypothesis import strategies as st
 from scipy.spatial import KDTree
 
