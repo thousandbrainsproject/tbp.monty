@@ -2,29 +2,49 @@
 
 defaults:
   - /monty: evidencegraph_exp1000_e3_t3
-  - /monty/motor_system_config: naive_scan_5
+  - /monty/motor_system_config: distant_5
   - /monty/learning_module: evidence_3lm_heterarchy
-  - /monty/sensor_module: 3sm_2d3d_dist
+  - /monty/sensor_module: 3sm_2d3d_dist_slic
   - /monty/connectivity: 3lm_3sm_heterarchy
-  - /environment: mujoco_dist_agent_sensors3
+  - /monty/attention_system: voxel5mm
+  - /environment: mujoco_dist_agent_sensors3_256
   - /env_interface: train_cows_small_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
-  - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
-  - /termination: any3_naivescan_fixed5_tot6000
+  - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4_256
+  - /termination: any3_objectrecognition_t250_e500_tot500
   - /logging: silent_info_train
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
   config:
     show_sensor_output: false
-    n_train_epochs: ${constants.rotations_all_count}
+    n_train_epochs: ${constants.rotations_cube_faces_count}
     n_eval_epochs: 3
     model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_cows_small_2d_children/pretrained/
     seed: 42
     supervised_lm_ids:
       - learning_module_2
+    train_env_interface_args:
+      object_init_sampler:
+        rotations: ${constants.rotations_cube_faces}
     environment:
       env_init_args:
         data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
     logging:
       run_name: supervised_pre_training_cows_small_compositional
+    monty_config:
+      learning_modules:
+        learning_module_0:
+          # Only LM_0 generates goals during training; give it time to settle
+          # after each goal before proposing another.
+          gsg:
+            min_post_goal_success_steps: 100
+        learning_module_1:
+          gsg: null
+          # 2.5 mm matching tolerance for the logo LM (1 mm is the model voxel size).
+          max_match_distance: 0.0025
+          # Only pass the logo ID up once its evidence is well clear of the
+          # confusable regime (the wrong logo peaks around 15 on shared colours).
+          output_min_evidence: 20.0
+        learning_module_2:
+          gsg: null
