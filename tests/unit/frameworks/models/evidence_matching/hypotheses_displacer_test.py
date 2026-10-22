@@ -259,7 +259,6 @@ class DefaultHypothesesDisplacerTest(TestCase):
 
 
 class ObjectPoseEvidenceTest(TestCase):
-
     @given(
         query_poses=rotation_matrices(),
         axis_of_rotation=unit_vectors,
