@@ -298,6 +298,7 @@ class DefaultHypothesesDisplacer:
         )
         # Calculate the pose error for each hypothesis
         # shape=(H, K)
+        # TODO: Replace with match statement
         if isinstance(channel_features["pose_vectors"], SurfacePoseVectors):
             radius_evidence = self._sensory_pose_evidence(
                 rotated_pose_vectors,
