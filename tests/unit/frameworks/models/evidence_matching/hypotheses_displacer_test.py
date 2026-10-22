@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import numpy.typing as npt
@@ -24,7 +24,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
-from tbp.monty.geometry import Rotation, SurfacePoseVectors
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tests.strategies.geometry import rotation_matrices
 from tests.unit.frameworks.utils.spatial_arithmetics_test import unit_vectors
@@ -186,6 +186,76 @@ class DefaultHypothesesDisplacerTest(TestCase):
         # With 2 channels (C=2), range is [-C, 2C] = [-2, 4], mapped to [0, 1]:
         # prediction_error = (-2.0 + 2*2) / (3*2) = 1/3
         self.assertAlmostEqual(telemetry.mlh_prediction_error, 1 / 3)
+
+    @given(
+        rotated_pose_vectors=rotation_matrices(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.DefaultHypothesesDisplacer._object_pose_evidence"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.batch_rotate_pose_vectors"
+    )
+    def test_calculate_evidence_for_new_locations_invokes_object_pose_evidence_for_orientation_matrix_pose_vectors(  # noqa: E501
+        self,
+        batch_rotate_pose_vectors_mock: MagicMock,
+        object_pose_evidence_mock: MagicMock,
+        rotated_pose_vectors: npt.NDArray[np.float64],
+    ) -> None:
+        batch_rotate_pose_vectors_mock.return_value = rotated_pose_vectors
+        radius_evidence_mock = MagicMock()
+        object_pose_evidence_mock.return_value = radius_evidence_mock
+        channel_locations = np.zeros((1, 3))
+        location_tree = KDTree(channel_locations)
+        graph = Mock()
+        graph.find_nearest_neighbors = Mock(
+            side_effect=lambda search_locations, num_neighbors: location_tree.query(
+                search_locations,
+                k=num_neighbors,
+            )[1]
+        )
+        self.mock_graph_memory.get_graph.return_value = graph
+        self.mock_graph_memory.get_locations_in_graph.return_value = channel_locations
+        self.mock_graph_memory.get_feature_array.return_value = {
+            "channel_a": np.empty((1, 0))
+        }
+        get_features_at_node_return_value = {
+            "pose_vectors": np.eye(3).reshape(1, 1, 9),
+            "pose_fully_defined": np.ones((1, 1, 1)),
+        }
+        self.mock_graph_memory.get_features_at_node.return_value = (
+            get_features_at_node_return_value
+        )
+        feature_evidence_scorer_mock = MagicMock()
+        displacer = DefaultHypothesesDisplacer(
+            feature_weights=self.feature_weights,
+            graph_memory=self.mock_graph_memory,
+            max_match_distance=0.01,
+            feature_evidence_scorer=feature_evidence_scorer_mock,
+            past_weight=1,
+            present_weight=1,
+        )
+        sensor_pose_evidence_mock = MagicMock()
+        displacer._sensory_pose_evidence = sensor_pose_evidence_mock  # type: ignore[method-assign]
+
+        displacer._calculate_evidence_for_new_locations(
+            graph_id="test_object",
+            input_channel="channel_a",
+            search_locations=np.zeros((1, 3)),
+            channel_possible_poses=np.eye(3).reshape(1, 3, 3),
+            channel_features={
+                "pose_vectors": OrientationMatrix(np.eye(3)),
+                "pose_fully_defined": True,
+            },
+        )
+
+        object_pose_evidence_mock.assert_called_once_with(
+            rotated_pose_vectors,
+            get_features_at_node_return_value,
+        )
+        sensor_pose_evidence_mock.assert_not_called()
+        # Not the best way, but compromising due to complexity of the method
+        radius_evidence_mock.__setitem__.assert_called()
 
 
 class ObjectPoseEvidenceTest(TestCase):
