@@ -12,6 +12,8 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import numpy as np
+import numpy.typing as npt
+from hypothesis import given
 from scipy.spatial import KDTree
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.scorer import (
@@ -21,7 +23,10 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
-from tbp.monty.geometry import SurfacePoseVectors
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
+from tbp.monty.math import DEFAULT_TOLERANCE
+from tests.strategies.geometry import rotation_matrices
+from tests.unit.frameworks.utils.spatial_arithmetics_test import unit_vectors
 
 
 class DefaultHypothesesDisplacerTest(TestCase):
@@ -181,6 +186,27 @@ class DefaultHypothesesDisplacerTest(TestCase):
         # prediction_error = (-2.0 + 2*2) / (3*2) = 1/3
         self.assertAlmostEqual(telemetry.mlh_prediction_error, 1 / 3)
 
+
 class ObjectPoseEvidenceTest(TestCase):
-    def test_something(self) -> None:
-        pass
+    @given(
+        query_poses=rotation_matrices(),
+        axis_of_rotation=unit_vectors,
+    )
+    def test_object_orientations_180deg_apart_give_min_evidence(
+        self,
+        query_poses: npt.NDArray[np.float64],
+        axis_of_rotation: npt.NDArray[np.float32],
+    ) -> None:
+        rotvec_180deg = np.pi * axis_of_rotation / np.linalg.norm(axis_of_rotation)
+        rotation_180deg = Rotation.from_rotvec(rotvec_180deg).as_matrix()
+        rotated_by_180deg = np.matmul(query_poses, rotation_180deg)
+        rotated_by_180deg = rotated_by_180deg.reshape(rotated_by_180deg.shape[0], 1, 9)
+
+        result = DefaultHypothesesDisplacer._object_pose_evidence(
+            query_pose_vectors=query_poses,
+            node_features={"pose_vectors": rotated_by_180deg},
+        )
+
+        np.testing.assert_allclose(
+            result, -1.0, atol=DEFAULT_TOLERANCE, rtol=DEFAULT_TOLERANCE
+        )
