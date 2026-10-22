@@ -409,11 +409,11 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: dist_agent_5lm_2obj_eval
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
+      run_name: dist_agent_5lm_2obj_eval
     telemetry:
       formatters:
         telemetry_formatter:

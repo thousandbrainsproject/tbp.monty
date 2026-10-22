@@ -40,7 +40,6 @@ dependencies:
   - conda-forge::scipy>=1.10.1
   - conda-forge::sympy
   - conda-forge::tqdm
-  - conda-forge::wandb
   - conda-forge::wget
   - pyg::pyg=2.1.0
   - pyg::pytorch-scatter=2.0.9

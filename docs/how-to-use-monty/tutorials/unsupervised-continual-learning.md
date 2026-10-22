@@ -28,13 +28,14 @@ defaults:
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
   # We will use the default surface sensor modules (one habitat surface patch, one logging view finder)
-  - /monty/sensor_module: camera_surf
+  - /monty/sensor_module: camera_surf_raw0
   - /monty/connectivity: 1lm_1sm
   - /environment: habitat_ycb_surf_agent
   - /env_interface: tutorial_train_2obj_random
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
   - /termination: any1_objectrecognition_t2000_e500_tot5000
   - /logging: basic_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -71,7 +72,7 @@ learning_module_0:
     patch:
       # Weighting saturation and value less since these might change under different
       # lighting conditions.
-      hsv: ${np.array:[1, 0.5, 0.5]}
+      hsv: ${np.array:[2, 0.5, 0.5]}
   x_percent_threshold: 20
   # Thresholds to use for when two points are considered different enough to
   # both be stored in memory.
@@ -134,7 +135,7 @@ Once complete, you can inspect the simulation results and visualize the learned 
 
 ![](../../figures/how-to-use-monty/unsupervised_stats.png)
 
-During epoch 0, Monty saw the mug and bowl objects for the first time. Since the observations collected during these episodes do not match any objects stored in memory, Monty reports that `no_match` has been found in the **primary_performance_column**. When no match has been found, Monty creates a new object ID for the unrecognized object and stores the learned model in memory. In the **result** column, we see that the new IDs for the mug and bowl are `new_object_0` and `new_object_1`, respectively. The objects don't have meaningful names, since no labels are provided.
+During epoch 0, Monty saw the mug and bowl objects for the first time. Since the observations collected during these episodes do not match any objects stored in memory, Monty reports that `no_match` has been found in the **primary_performance_column**. When no match has been found, Monty creates a new object ID for the unrecognized object and stores the learned model in memory. In the **result** column, we see that the new IDs for the mug and bowl are `new_object0` and `new_object1`, respectively. The objects don't have meaningful names, since no labels are provided.
 
 In all subsequent episodes, Monty correctly identified the objects as indicated by `correct` in the **primary_performance** column. When Monty finds a match for an object in its memory, it does not simply terminate the episode. Instead, it continues to explore the object for `num_exploratory_steps` steps and then updates the object model with the new information collected during the episode.
 

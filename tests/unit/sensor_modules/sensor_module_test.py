@@ -343,6 +343,9 @@ class SensorModulePrivateTest(unittest.TestCase):
         self.assertIs(sensor_module._agent_state, agent_state)
 
     @given(agent_state=agent_state_with_sensor(sensor_id=SensorID("test")))
+    # CI tests report slow generation, but test takes under 5 seconds locally
+    # Suppressing for now.
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     def test_update_state_stores_sensor_state_in_global_reference_frame(
         self, agent_state: AgentState
     ) -> None:

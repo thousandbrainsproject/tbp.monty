@@ -28,7 +28,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Install Monty
         id: install_monty
@@ -53,7 +52,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Install Monty
         if: steps.restore_cache.outputs.cache-hit != 'true'

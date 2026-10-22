@@ -197,11 +197,11 @@ experiment:
       python_log_to_file: true
       python_log_to_stderr: true
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: surf_agent_2obj_eval
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
         handlers:
         - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
+      run_name: surf_agent_2obj_eval
       wandb_group: gm_eval_runs
     telemetry:
       formatters:
