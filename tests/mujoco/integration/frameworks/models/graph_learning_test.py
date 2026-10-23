@@ -534,7 +534,7 @@ class GraphLearningTest(BaseGraphTest):
             )
         self.assertEqual(
             len(detailed_stats["1"]["SM_0"]["processed_observations"]),
-            73,
+            200,
             "sensor module observations should contain all observations,"
             "even those off the object.",
         )

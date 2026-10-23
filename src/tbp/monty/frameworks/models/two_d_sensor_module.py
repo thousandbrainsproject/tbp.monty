@@ -138,7 +138,6 @@ class TwoDSensorModule(SensorModule):
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
         self.edge_detector = edge_detector
-        self.is_exploring = False
         self.state: SensorState | None = None
 
         self._previous_3d_location: np.ndarray | None = None
@@ -148,7 +147,6 @@ class TwoDSensorModule(SensorModule):
     def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self._percept_filter.reset()
-        self.is_exploring = False
         self.processed_obs = []
         self._previous_3d_location = None
         self._previous_2d_location = np.zeros(2)
@@ -185,7 +183,7 @@ class TwoDSensorModule(SensorModule):
             Message with features and morphological features. Noise may be added.
             The `pass_message` and `process_features_in_lm` flags may be set.
         """
-        if self.state and self.save_raw_obs and not self.is_exploring:
+        if self.state and self.save_raw_obs:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
@@ -221,8 +219,7 @@ class TwoDSensorModule(SensorModule):
 
         observed_state = self._percept_filter(observed_state)
 
-        if not self.is_exploring:
-            self.processed_obs.append(observed_state.__dict__)
+        self.processed_obs.append(observed_state.__dict__)
 
         return observed_state
 
