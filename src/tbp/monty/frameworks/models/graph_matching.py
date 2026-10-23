@@ -499,6 +499,8 @@ class MontyForGraphMatching(MontyBase):
 class GraphLM(LearningModule):
     """General Learning Module that contains a graph memory."""
 
+    _goals: list[Goal]
+    """Cache of goals for ``propose_region`` to reference."""
     possible_paths: dict[str, Any]
     detected_rotation_r: Rotation | None
 
@@ -539,6 +541,7 @@ class GraphLM(LearningModule):
         self._init_GraphLM()
 
     def _init_GraphLM(self) -> None:  # noqa: N802
+        self._goals = []
         self.terminal_state = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
@@ -692,6 +695,7 @@ class GraphLM(LearningModule):
         return self._goals
 
     def propose_region(self) -> AttentionRegion:
+        """Returns attention region that ensures proposed goals can be attended to."""
         if self._goals:
             return AttentionRegion.uniform(
                 locations=np.array([goal.location for goal in self._goals]), weight=1.0
