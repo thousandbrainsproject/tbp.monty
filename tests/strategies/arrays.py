@@ -103,6 +103,7 @@ def bool_array(draw: st.DrawFn, shape: tuple[int, ...]) -> npt.NDArray[np.bool_]
         )
     )
 
+
 @st.composite
 def float64_array(draw: st.DrawFn, shape: tuple[int, ...]) -> npt.NDArray[np.float64]:
     """Returns a float64 array with the given shape."""
