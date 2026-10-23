@@ -696,7 +696,8 @@ class GraphLM(LearningModule):
         """Returns attention region that ensures proposed goals can be attended to."""
         if self._goals:
             return AttentionRegion.uniform(
-                locations=np.array([goal.location for goal in self._goals]), weight=1.0
+                locations=np.array([goal.location for goal in self._goals]),
+                weight=AttentionRegion.MAX_WEIGHT,
             )
         return AttentionRegion.empty()
 
