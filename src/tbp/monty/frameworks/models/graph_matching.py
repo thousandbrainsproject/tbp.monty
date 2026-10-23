@@ -412,8 +412,6 @@ class MontyForGraphMatching(MontyBase):
 
                     if self.experiment_mode is ExperimentMode.TRAIN:
                         self.switch_to_exploratory_step()
-                        for sm in self.sensor_modules:
-                            sm.is_exploring = True
 
                     elif (
                         self.experiment_mode is ExperimentMode.EVAL
