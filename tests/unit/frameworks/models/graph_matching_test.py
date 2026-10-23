@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import MagicMock, sentinel
 
 import numpy as np
 from hypothesis import given
@@ -21,10 +22,33 @@ from tests.strategies.cmp import goals
 
 class GraphLMProposeGoalsTest(unittest.TestCase):
     def test_returns_gsg_goals_when_last_obs_processed(self):
-        pass
+        lm = GraphLM()
+        buffer_mock = MagicMock()
+        buffer_mock.get_last_obs_processed.return_value = True
+        gsg_mock = MagicMock()
+        gsg_mock.output_goals.return_value = sentinel.goals
+        lm.buffer = buffer_mock
+        lm.gsg = gsg_mock
+
+        proposed_goals = lm.propose_goals()
+
+        buffer_mock.get_last_obs_processed.assert_called_once()
+        gsg_mock.output_goals.assert_called_once()
+        self.assertEqual(proposed_goals, sentinel.goals)
 
     def test_returns_no_goals_when_last_obs_not_processed(self):
-        pass
+        lm = GraphLM()
+        buffer_mock = MagicMock()
+        buffer_mock.get_last_obs_processed.return_value = False
+        gsg_mock = MagicMock()
+        lm.buffer = buffer_mock
+        lm.gsg = gsg_mock
+
+        proposed_goals = lm.propose_goals()
+
+        buffer_mock.get_last_obs_processed.assert_called_once()
+        gsg_mock.output_goals.assert_not_called()
+        self.assertEqual(proposed_goals, [])
 
 
 class GraphLMProposeRegionTest(unittest.TestCase):
