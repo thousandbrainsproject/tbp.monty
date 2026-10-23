@@ -14,6 +14,9 @@ experiment:
 episodes: all
 # How many episodes to run in parallel
 num_parallel: 16
+# How many intra-op threads each parallel process may use. More than one per
+# process oversubscribes the machine when running many episodes in parallel.
+threads_per_process: 1
 # Don't run an experiment; just print out the config for visual inspection
 # TODO: Replace with validate or similar
 print_cfg: false
