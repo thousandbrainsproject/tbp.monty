@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from tbp.monty import telemetry
-from tbp.monty.cmp import Goal, Message, location_mean
+from tbp.monty.cmp import AttentionRegion, Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.recognition_status import (
@@ -685,9 +685,18 @@ class GraphLM(LearningModule):
         Only returned if the LM/GSG was stepped, otherwise returns empty list.
         """
         if self.buffer.get_last_obs_processed() and self.gsg is not None:
-            return self.gsg.output_goals()
+            self._goals = self.gsg.output_goals()
+        else:
+            self._goals = []
 
-        return []
+        return self._goals
+
+    def propose_region(self) -> AttentionRegion:
+        if self._goals:
+            return AttentionRegion.uniform(
+                locations=np.array([goal.location for goal in self._goals]), weight=1.0
+            )
+        return AttentionRegion.empty()
 
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
