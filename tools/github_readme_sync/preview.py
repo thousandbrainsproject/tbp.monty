@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from tools.github_readme_sync.hierarchy import check_hierarchy_file
 from tools.github_readme_sync.readme import ReadMe
-from tools.github_readme_sync.upload import load_doc
+from tools.github_readme_sync.upload import load_doc, upload_rendered
 
 SCHEMA_VERSION = 1
 """Current schema version for documentation preview bundles."""
@@ -127,3 +128,62 @@ def _render_children(
         rendered_children.append(rendered_doc)
 
     return rendered_children
+
+
+def publish_preview(
+    bundle_file: Path,
+    rdme: ReadMe,
+    expected_repository: str,  # noqa: ARG001
+    expected_pr_number: int,  # noqa: ARG001
+    expected_head_sha: str,  # noqa: ARG001
+    expected_base_ref: str,  # noqa: ARG001
+) -> None:
+    """Publish a pre-rendered preview bundle to ReadMe.
+
+    Requires a non-stable preview version, loads the bundle, and uploads only
+    the pre-rendered documentation hierarchy. Validation work using these
+    metadata fields will be added in the next PR.
+
+    Args:
+        bundle_file: Path to the rendered preview JSON bundle.
+        rdme: ReadMe client configured for the target preview version.
+        expected_repository: Repository name expected in the bundle.
+        expected_pr_number: Pull request number expected in the bundle.
+        expected_head_sha: Pull request head SHA expected in the bundle.
+        expected_base_ref: Base branch expected in the bundle.
+
+    Raises:
+        ValueError: If the target is not a preview version.
+    """
+    if not rdme.version_has_suffix():
+        raise ValueError("publish-preview requires a non-stable preview version")
+
+    bundle = load_preview_bundle(bundle_file)
+
+    upload_rendered(bundle["documents"], rdme)
+
+
+def load_preview_bundle(bundle_file: Path) -> dict[str, Any]:
+    """Load a preview bundle.
+
+    Args:
+        bundle_file: Path to the preview bundle JSON file.
+
+    Returns:
+        The parsed preview bundle as a dictionary.
+
+    Raises:
+        ValueError: If the bundle is not valid JSON.
+        TypeError: If the top-level JSON value is not an object.
+    """
+    path = Path(bundle_file)
+
+    try:
+        bundle = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError("Preview bundle is not valid JSON") from exc
+
+    if not isinstance(bundle, dict):
+        raise TypeError("Preview bundle must be a JSON object")
+
+    return bundle

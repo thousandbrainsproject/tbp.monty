@@ -67,7 +67,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.models.sensor_modules import CameraSM
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
 from tbp.monty.hydra import instantiate_experiment
 from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco.agents import DistantAgent
@@ -173,7 +173,9 @@ class AdvancedPolicyTest(unittest.TestCase):
         default_percept_args: MutableMapping[str, Any] = dict(
             location=np.array([0, 0, 0]),
             morphological_features={
-                "pose_vectors": np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]]),
+                "pose_vectors": SurfacePoseVectors(
+                    np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]])
+                ),
                 "pose_fully_defined": True,
                 "on_object": 1,
             },
@@ -213,8 +215,8 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # PC direction "flipped", pointing back to a location we've already been at
         fp_1_backtrack_pc = copy.deepcopy(fp_1)
-        fp_1_backtrack_pc["morphological_features"]["pose_vectors"] = np.array(
-            [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]
+        fp_1_backtrack_pc["morphological_features"]["pose_vectors"] = (
+            SurfacePoseVectors(np.array([[0, 0, -1], [-1, 0, 0], [0, 1, 0]]))
         )
 
         # PC direction is defined in z direction; here, as the sensor/agent is not
@@ -223,8 +225,8 @@ class AdvancedPolicyTest(unittest.TestCase):
         # reference frame of the sensor/agent can happen if the surface agent has failed
         # to orient such that it is looking down at the surface normal
         fp_2_corrupt_z = copy.deepcopy(fp_2)
-        fp_2_corrupt_z["morphological_features"]["pose_vectors"] = np.array(
-            [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+        fp_2_corrupt_z["morphological_features"]["pose_vectors"] = SurfacePoseVectors(
+            np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
         )
 
         self.fake_percept_advanced_pc = [
@@ -745,7 +747,7 @@ class AdvancedPolicyTest(unittest.TestCase):
             ctx, motor_system_state, self.fake_percept_pc[4]
         )
         assert np.isclose(
-            np.dot(self.fake_percept_pc[4].get_surface_normal(), direction), 0
+            np.dot(self.fake_percept_pc[4].surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 1, (
             "Should have reset ignoring_pc_counter, and then incremented"
@@ -815,7 +817,7 @@ class AdvancedPolicyTest(unittest.TestCase):
             ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         assert np.isclose(
-            np.dot(self.fake_percept_advanced_pc[0].get_surface_normal(), direction), 0
+            np.dot(self.fake_percept_advanced_pc[0].surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.following_pc_counter == 0, (
             "Should not have followed PC and incremented counter"
@@ -895,7 +897,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.isclose(
-            np.dot(self.fake_percept_advanced_pc[0].get_surface_normal(), direction), 0
+            np.dot(self.fake_percept_advanced_pc[0].surface_normal(), direction), 0
         ), "Direction should be orthogonal to tangent (surface) plane"
         assert policy.ignoring_pc_counter == 0, (
             "Should have reset ignoring_pc_counter, and not incremented"
@@ -964,7 +966,9 @@ class AdvancedPolicyTest(unittest.TestCase):
         fake_percept_config: MutableMapping[str, Any] = dict(
             location=np.array([0, 1.5, 0.1]),
             morphological_features={
-                "pose_vectors": np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]]),
+                "pose_vectors": SurfacePoseVectors(
+                    np.array([[0, 0, -1], [1, 0, 0], [0, 1, 0]])
+                ),
                 "pose_fully_defined": True,
                 "on_object": 1,
             },
@@ -1009,7 +1013,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         assert motor_goal.location is not None
         return (
             motor_goal.location,
-            motor_goal.morphological_features["pose_vectors"][0],
+            motor_goal.morphological_features["pose_vectors"].direction,
             target_loc,
             agent_direction,
         )
@@ -1238,7 +1242,13 @@ class JumpToGoalTest(ParametrizedTestCase):
         policy = JumpToGoal(JUMP_AGENT_ID, JUMP_SENSOR_ID)
         goal = Mock(
             location=np.array(JUMP_OBJECT_POSITION),
-            morphological_features={"pose_vectors": np.eye(3)},
+            morphological_features={
+                "pose_vectors": GazeDirection(
+                    np.array(
+                        [[1, 0, 0], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]
+                    )
+                )
+            },
         )
         jump_result = policy(
             ctx=Mock(),

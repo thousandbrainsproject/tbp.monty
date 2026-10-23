@@ -28,14 +28,12 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Checkout PR branch
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-          lfs: true
           path: pr_docs
       - name: Create initial PR comment
         uses: ./tbp.monty/.github/actions/pin_comment

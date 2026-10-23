@@ -424,7 +424,7 @@ class DisplacementGraphLM(GraphLM):
                 self.buffer.last_location,
                 current_location,
                 self.buffer.get_current_pose(input_channel=percept_to_use.sender_id)[1],
-                percept_to_use.get_nth_pose_vector(pose_vector_index=0),
+                percept_to_use.surface_normal(),
             )
         for p in percepts:
             p.set_displacement(displacement=displacement, ppf=ppf)

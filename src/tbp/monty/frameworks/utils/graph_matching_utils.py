@@ -15,9 +15,10 @@ import math
 from itertools import permutations
 
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_more_directions_in_plane
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
 logger = logging.getLogger(__name__)
 
@@ -473,8 +474,8 @@ def find_step_on_new_object(
 
 
 def possible_sensed_directions(
-    sensed_directions: np.ndarray, num_hyps_per_node: int
-) -> list[np.ndarray]:
+    sensed_directions: SurfacePoseVectors, num_hyps_per_node: int
+) -> list[npt.NDArray[np.float64]]:
     """Return the possible sensed directions for all nodes.
 
     This function determines the possible sensed directions for a given set of sensed
@@ -496,12 +497,12 @@ def possible_sensed_directions(
     """
     if num_hyps_per_node == 2:
         possible_s_d = [
-            sensed_directions.copy(),
-            sensed_directions.copy(),
+            sensed_directions.value.copy(),
+            sensed_directions.value.copy(),
         ]
         possible_s_d[1][1:] = possible_s_d[1][1:] * -1
     else:
         possible_s_d = get_more_directions_in_plane(
-            sensed_directions, num_hyps_per_node
+            sensed_directions.value, num_hyps_per_node
         )
     return possible_s_d

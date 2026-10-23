@@ -137,8 +137,9 @@ defaults:
   - /environment: two_d_data_omniglot
   - /env_interface: train_omniglot
   - /env_interface/transform: depthto3d_sensor1
-  - /termination: any1_maxtotalsteps_6000
+  - /termination: any1_train_steps_3_1000_tot6000
   - /logging: silent_warning_train
+  - /telemetry: warning
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -203,6 +204,7 @@ defaults:
   - /env_interface/transform: depthto3d_sensor1
   - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: tutorial_detailed_info_monty_runs
+  - /telemetry: info
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -210,7 +212,7 @@ experiment:
     show_sensor_output: false
     n_train_epochs: 3
     n_eval_epochs: 1
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot/omniglot_training/pretrained/}
+    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/omniglot_training/pretrained/}
     seed: 42
     supervised_lm_ids: []
     logging:
@@ -277,6 +279,7 @@ defaults:
   - /env_interface/transform: none
   - /termination: any1_objectrecognition_t1000_e500_tot6000
   - /logging: basic_warning_wandb_evidence_eval_runs
+  - /telemetry: warning
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment

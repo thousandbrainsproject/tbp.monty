@@ -15,6 +15,8 @@ from typing import Any, ClassVar, Iterable, Literal, Sequence
 import numpy as np
 import numpy.typing as npt
 
+from tbp.monty.geometry import GazeDirection, OrientationMatrix, SurfacePoseVectors
+
 
 class Message:
     """Message class used as message packages passed in Monty using CMP.
@@ -88,6 +90,7 @@ class Message:
                 if isinstance(feat_val, np.ndarray):
                     feat_val = np.round(feat_val, 3)
                 if feature == "pose_vectors":
+                    feat_val = np.round(feat_val.value, 3)
                     repr_string += f"       {feature}: \n"
                     for vector in feat_val:
                         repr_string += f"           {vector}\n"
@@ -115,12 +118,20 @@ class Message:
         return self.sender_type == "SM"
 
     def transform_morphological_features(self, translation=None, rotation=None):
-        """Apply translation and/or rotation to morphological features."""
+        """Apply translation and/or rotation to morphological features.
+
+        Raises:
+            TypeError: If pose_type is not a SurfacePoseVectors or OrientationMatrix.
+        """
         if translation is not None:
             self.location += translation
         if rotation is not None:
-            self.morphological_features["pose_vectors"] = np.dot(
-                rotation, self.morphological_features["pose_vectors"]
+            # TODO: Replace with match statement
+            pose_vectors = self.morphological_features["pose_vectors"]
+            if isinstance(pose_vectors, GazeDirection):
+                raise TypeError("Cannot transform GazeDirection")
+            self.morphological_features["pose_vectors"] = type(pose_vectors)(
+                np.dot(rotation, self.morphological_features["pose_vectors"].value)
             )
 
     def set_displacement(self, displacement, ppf=None):
@@ -143,41 +154,45 @@ class Message:
             raise ValueError(f"Feature {feature_name} not found in message.")
         return feature_val
 
-    def get_nth_pose_vector(self, pose_vector_index):
-        """Return the nth pose vector.
-
-        When self.sender_type == "SM", the first pose vector is the surface normal and
-        the second and third are the curvature directions.
-        When self.sender_type == "LM", the pose vectors correspond to the rotation of
-        the object relative to the model learned of it.
-        """
-        return self.morphological_features["pose_vectors"][pose_vector_index]
-
-    def get_surface_normal(self):
-        """Return the surface normal vector.
+    def surface_normal(self) -> npt.NDArray[np.float64]:
+        """Return the SurfacePoseVectors surface normal vector.
 
         Raises:
-            ValueError: If `self.sender_type` is not SM
+            ValueError: If message does not have SurfacePoseVectors
         """
-        if self.sender_type == "SM":
-            return self.get_nth_pose_vector(0)
+        if "pose_vectors" not in self.morphological_features:
+            raise ValueError("Message does not have SurfacePoseVectors")
 
-        raise ValueError("Sender type must be SM to get surface normal.")
+        # TODO: Replace with match statement
+        pose_vectors = self.morphological_features["pose_vectors"]
+        if isinstance(pose_vectors, SurfacePoseVectors):
+            return pose_vectors.surface_normal
+
+        raise ValueError("Message does not have SurfacePoseVectors")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""
         return self.morphological_features["pose_vectors"]
 
-    def get_curvature_directions(self):
+    def curvature_directions(
+        self,
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """Return the curvature direction vectors.
 
         Raises:
-            ValueError: If `self.sender_type` is not SM
+            ValueError: If message does not have SurfacePoseVectors
         """
-        if self.sender_type == "SM":
-            return self.get_nth_pose_vector(1), self.get_nth_pose_vector(2)
+        if "pose_vectors" not in self.morphological_features:
+            raise ValueError("Message does not have SurfacePoseVectors")
 
-        raise ValueError("Sender type must be SM to get curvature directions.")
+        # TODO: Replace with match statement
+        pose_vectors = self.morphological_features["pose_vectors"]
+        if isinstance(pose_vectors, SurfacePoseVectors):
+            return (
+                pose_vectors.principal_curvature_1,
+                pose_vectors.principal_curvature_2,
+            )
+        raise ValueError("Message does not have SurfacePoseVectors")
 
     def get_on_object(self):
         """Return whether we think we are on the object or not.
@@ -196,13 +211,13 @@ class Message:
             "pose_vectors should be in morphological_features but keys are "
             f"{self.morphological_features.keys()}"
         )
-        # TODO S: may want to test length and angle between vectors as well
-        assert self.morphological_features["pose_vectors"].shape == (
-            3,
-            3,
+        assert isinstance(
+            self.morphological_features["pose_vectors"],
+            (SurfacePoseVectors, OrientationMatrix, GazeDirection),
         ), (
-            "pose should be defined by three orthonormal unit vectors but pose_vectors "
-            f"shape is {self.morphological_features['pose_vectors'].shape}"
+            "pose_vectors must be an instance of SurfacePoseVectors, OrientationMatrix,"
+            " or GazeDirection but type is "
+            f"{type(self.morphological_features['pose_vectors'])}"
         )
         assert "pose_fully_defined" in self.morphological_features
         assert isinstance(self.morphological_features["pose_fully_defined"], bool), (
@@ -317,15 +332,13 @@ class Goal(Message):
                 "pose_vectors should be in morphological_features but keys are "
                 f"{self.morphological_features.keys()}"
             )
-            assert np.any(
-                np.isnan(self.morphological_features["pose_vectors"])
-            ) or self.morphological_features["pose_vectors"].shape == (
-                3,
-                3,
+            assert isinstance(
+                self.morphological_features["pose_vectors"],
+                (SurfacePoseVectors, OrientationMatrix, GazeDirection),
             ), (
-                "pose should be undefined, or defined by three orthonormal unit "
-                "vectors but pose_vectors shape is "
-                f"{self.morphological_features['pose_vectors'].shape}"
+                "pose_vectors must be an instance of SurfacePoseVectors, "
+                "OrientationMatrix, or GazeDirection but type is "
+                f"{type(self.morphological_features['pose_vectors'])}"
             )
             assert "pose_fully_defined" in self.morphological_features
             assert (

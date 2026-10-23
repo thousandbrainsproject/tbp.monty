@@ -47,6 +47,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
     project_onto_tangent_plane,
 )
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tbp.monty.memento import Memento
 from tbp.monty.observations import SensorObservation
@@ -198,8 +199,8 @@ class TwoDSensorModule(SensorModule):
         true_surface_normal = None
         if observed_state.process_features_in_lm and observed_state.get_on_object():
             # pose_vectors are only present when the patch center is on the object.
-            curvature_pose_vectors = observed_state.get_pose_vectors().copy()
-            true_surface_normal = observed_state.get_surface_normal().copy()
+            curvature_pose_vectors = observed_state.get_pose_vectors()
+            true_surface_normal = observed_state.surface_normal().copy()
 
             self._update_tangent_frame(true_surface_normal)
             if self._extract_edges:
@@ -294,7 +295,7 @@ class TwoDSensorModule(SensorModule):
     def _update_2d_position_and_displacement(
         self,
         observed_state: Message,
-        pose_3d: np.ndarray | None,
+        pose_3d: SurfacePoseVectors | None,
         surface_normal_3d: np.ndarray | None,
     ) -> Message:
         """Project the 3D step onto the tangent plane to get a 2D displacement.

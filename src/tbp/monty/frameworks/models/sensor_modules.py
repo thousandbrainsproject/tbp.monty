@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Protocol
+from typing import Any, ClassVar, Protocol, cast
 
 import numpy as np
 import quaternion as qt
@@ -35,8 +35,11 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_ordinary_least_squares,
     surface_normal_total_least_squares,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
-from tbp.monty.geometry import Rotation
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    get_angle,
+    rotate_pose_vectors,
+)
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tbp.monty.memento import Memento
 from tbp.monty.observations import SensorObservation
 
@@ -292,12 +295,14 @@ class ObservationProcessor:
             pose_fully_defined = True
 
         morphological_features: dict[str, Any] = {
-            "pose_vectors": np.vstack(
-                [
-                    surface_normal,
-                    dir1,
-                    dir2,
-                ]
+            "pose_vectors": SurfacePoseVectors(
+                np.vstack(
+                    [
+                        surface_normal,
+                        dir1,
+                        dir2,
+                    ]
+                )
             ),
             "pose_fully_defined": pose_fully_defined,
         }
@@ -430,8 +435,8 @@ class DefaultMessageNoise(MessageNoise):
                         noise_rotation = Rotation.from_euler(
                             "xyz", noise_angles, degrees=True
                         )
-                        percept.morphological_features[key] = noise_rotation.apply(
-                            percept.morphological_features[key]
+                        percept.morphological_features[key] = rotate_pose_vectors(
+                            percept.morphological_features[key], noise_rotation
                         )
                     else:
                         percept.morphological_features[key] = (
@@ -682,9 +687,11 @@ class FeatureChangeFilter(PerceptFilter):
                         return True
 
             elif feature == "pose_vectors":
+                last_pose_vectors = cast("SurfacePoseVectors", last_feat)
+                current_pose_vectors = cast("SurfacePoseVectors", current_feat)
                 angle_between = get_angle(
-                    last_feat[0],
-                    current_feat[0],
+                    last_pose_vectors.surface_normal,
+                    current_pose_vectors.surface_normal,
                 )
                 if angle_between >= self._delta_thresholds[feature][0]:
                     logger.debug(

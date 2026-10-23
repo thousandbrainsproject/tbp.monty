@@ -4,7 +4,7 @@ defaults:
   - /monty: graph_exp500_e3_t3
   - /monty/motor_system_config: naive_scan_5
   - /monty/learning_module: displacement_delta_d0001
-  - /monty/sensor_module: camera_dist
+  - /monty/sensor_module: camera_dist_raw0
   - /monty/connectivity: 1lm_1sm
   - /environment: mujoco_ycb_dist_agent
   - /env_interface: train_distinctobj_predefined
