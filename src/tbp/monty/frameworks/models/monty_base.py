@@ -330,6 +330,7 @@ class MontyBase(Monty):
             self._goals.extend(goals)
 
         regions = [sm.propose_region() for sm in self.sensor_modules]
+        regions.extend([lm.propose_region() for lm in self.learning_modules])
 
         self._goals = self._attention_system.step(self._goals, regions)
 

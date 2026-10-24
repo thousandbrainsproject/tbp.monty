@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Protocol
+from typing import Any, ClassVar, Protocol, cast
 
 import numpy as np
 import quaternion as qt
@@ -35,8 +35,11 @@ from tbp.monty.frameworks.utils.sensor_processing import (
     surface_normal_ordinary_least_squares,
     surface_normal_total_least_squares,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
-from tbp.monty.geometry import Rotation
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    get_angle,
+    rotate_pose_vectors,
+)
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tbp.monty.memento import Memento
 from tbp.monty.observations import SensorObservation
 
@@ -292,12 +295,14 @@ class ObservationProcessor:
             pose_fully_defined = True
 
         morphological_features: dict[str, Any] = {
-            "pose_vectors": np.vstack(
-                [
-                    surface_normal,
-                    dir1,
-                    dir2,
-                ]
+            "pose_vectors": SurfacePoseVectors(
+                np.vstack(
+                    [
+                        surface_normal,
+                        dir1,
+                        dir2,
+                    ]
+                )
             ),
             "pose_fully_defined": pose_fully_defined,
         }
@@ -430,8 +435,8 @@ class DefaultMessageNoise(MessageNoise):
                         noise_rotation = Rotation.from_euler(
                             "xyz", noise_angles, degrees=True
                         )
-                        percept.morphological_features[key] = noise_rotation.apply(
-                            percept.morphological_features[key]
+                        percept.morphological_features[key] = rotate_pose_vectors(
+                            percept.morphological_features[key], noise_rotation
                         )
                     else:
                         percept.morphological_features[key] = (
@@ -545,7 +550,6 @@ class CameraSM(SensorModule):
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
-        self.is_exploring = False
         self.processed_obs: list[dict[str, Any]] = []
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
@@ -554,7 +558,6 @@ class CameraSM(SensorModule):
     def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self._percept_filter.reset()
-        self.is_exploring = False
         self.processed_obs = []
 
     def update_state(self, agent: AgentState) -> None:
@@ -587,7 +590,7 @@ class CameraSM(SensorModule):
             Percept with features and morphological features. Noise may be
             added. The `pass_message` and `process_features_in_lm` flags may be set.
         """
-        if self.save_raw_obs and not self.is_exploring:
+        if self.save_raw_obs:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
@@ -600,8 +603,7 @@ class CameraSM(SensorModule):
 
         percept = self._percept_filter(percept)
 
-        if not self.is_exploring:
-            self.processed_obs.append(percept.__dict__)
+        self.processed_obs.append(percept.__dict__)
 
         return percept
 
@@ -631,7 +633,6 @@ class FeatureChangeFilter(PerceptFilter):
         self._last_sent_n_steps_ago = 0
 
     def reset(self):
-        """Reset buffer and is_exploring flag."""
         self._last_percept = None
 
     def _feature_changes_are_significant(self, percept: Message) -> bool:
@@ -682,9 +683,11 @@ class FeatureChangeFilter(PerceptFilter):
                         return True
 
             elif feature == "pose_vectors":
+                last_pose_vectors = cast("SurfacePoseVectors", last_feat)
+                current_pose_vectors = cast("SurfacePoseVectors", current_feat)
                 angle_between = get_angle(
-                    last_feat[0],
-                    current_feat[0],
+                    last_pose_vectors.surface_normal,
+                    current_pose_vectors.surface_normal,
                 )
                 if angle_between >= self._delta_thresholds[feature][0]:
                     logger.debug(

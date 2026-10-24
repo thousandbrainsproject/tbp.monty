@@ -4,7 +4,7 @@ defaults:
   - /monty: graph_exp10_e3_t3
   - /monty/motor_system_config: test_predefined
   - /monty/learning_module: displacement_1lm
-  - /monty/sensor_module: camera_dist
+  - /monty/sensor_module: camera_dist_raw0
   - /monty/connectivity: 1lm_1sm
   - /environment: test_habitat_dist_transforms
   - /env_interface: test_train_2obj_predefined_r3

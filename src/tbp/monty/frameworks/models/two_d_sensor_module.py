@@ -47,6 +47,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     normalize,
     project_onto_tangent_plane,
 )
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tbp.monty.memento import Memento
 from tbp.monty.observations import SensorObservation
@@ -137,7 +138,6 @@ class TwoDSensorModule(SensorModule):
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
         self.edge_detector = edge_detector
-        self.is_exploring = False
         self.state: SensorState | None = None
 
         self._previous_3d_location: np.ndarray | None = None
@@ -147,7 +147,6 @@ class TwoDSensorModule(SensorModule):
     def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self._percept_filter.reset()
-        self.is_exploring = False
         self.processed_obs = []
         self._previous_3d_location = None
         self._previous_2d_location = np.zeros(2)
@@ -184,7 +183,7 @@ class TwoDSensorModule(SensorModule):
             Message with features and morphological features. Noise may be added.
             The `pass_message` and `process_features_in_lm` flags may be set.
         """
-        if self.state and self.save_raw_obs and not self.is_exploring:
+        if self.state and self.save_raw_obs:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
@@ -198,8 +197,8 @@ class TwoDSensorModule(SensorModule):
         true_surface_normal = None
         if observed_state.process_features_in_lm and observed_state.get_on_object():
             # pose_vectors are only present when the patch center is on the object.
-            curvature_pose_vectors = observed_state.get_pose_vectors().copy()
-            true_surface_normal = observed_state.get_surface_normal().copy()
+            curvature_pose_vectors = observed_state.get_pose_vectors()
+            true_surface_normal = observed_state.surface_normal().copy()
 
             self._update_tangent_frame(true_surface_normal)
             if self._extract_edges:
@@ -220,8 +219,7 @@ class TwoDSensorModule(SensorModule):
 
         observed_state = self._percept_filter(observed_state)
 
-        if not self.is_exploring:
-            self.processed_obs.append(observed_state.__dict__)
+        self.processed_obs.append(observed_state.__dict__)
 
         return observed_state
 
@@ -294,7 +292,7 @@ class TwoDSensorModule(SensorModule):
     def _update_2d_position_and_displacement(
         self,
         observed_state: Message,
-        pose_3d: np.ndarray | None,
+        pose_3d: SurfacePoseVectors | None,
         surface_normal_3d: np.ndarray | None,
     ) -> Message:
         """Project the 3D step onto the tangent plane to get a 2D displacement.

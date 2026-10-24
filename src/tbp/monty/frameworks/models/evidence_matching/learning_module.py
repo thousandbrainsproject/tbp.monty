@@ -40,7 +40,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
 )
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import OrientationMatrix, Rotation
 from tbp.monty.runtime import is_location_only_step
 
 __all__ = ["EvidenceGraphLM", "InvalidEvidenceThresholdConfig"]
@@ -507,8 +507,9 @@ class EvidenceGraphLM(GraphLM):
                         vote = Message(
                             location=graph_hyps.locations[hyp_id],  # location rel. body
                             morphological_features={
-                                # Pose vectors are columns of the rotation matrix
-                                "pose_vectors": graph_hyps.poses[hyp_id].T,
+                                "pose_vectors": OrientationMatrix(
+                                    graph_hyps.poses[hyp_id].T
+                                ),
                                 "pose_fully_defined": True,
                             },
                             non_morphological_features=None,
@@ -1155,20 +1156,19 @@ class EvidenceGraphLM(GraphLM):
                 hyp.possible[:] = False
         return super().update_terminal_condition()
 
-    def _object_pose_to_features(self, pose):
-        """Turn object rotation into pose feature like vectors.
+    def _object_pose_to_features(self, pose: Rotation | None) -> OrientationMatrix:
+        """Turn object orientation in Rotation into an OrientationMatrix.
 
-        pose is a rotation matrix. We multiply rf spanning unit vectors with rotation.
+        Args:
+            pose: The object's orientation as a Rotation.
 
         Returns:
-            The pose features.
+            The pose as an OrientationMatrix.
         """
         if pose is None:
-            return np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+            return OrientationMatrix(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
-        # Equivalent to applying the pose rotation to the rf spanning unit vectors
-        # -> pose.as_matrix().dot(pose_vectors.T).T
-        return pose.as_matrix().T
+        return OrientationMatrix(pose.as_matrix().T)
 
     def _object_id_to_features(self, object_id):
         """Convert an object ID to a stable categorical feature.

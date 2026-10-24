@@ -53,7 +53,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 from tests.unit.frameworks.models.fakes.cmp import FakeMessage
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
@@ -63,6 +63,9 @@ from tests.unit.frameworks.utils.spatial_arithmetics_test import (
 )
 
 AGENT_ID = AgentID("agent_id_0")
+DEFAULT_GAZE_DIRECTION = GazeDirection(
+    np.array([[1.0, 0.0, 0.0], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]])
+)
 
 
 class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
@@ -83,8 +86,8 @@ class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
         self.percept = Message(
             location=self.location,
             morphological_features={
-                "pose_vectors": np.array(
-                    [self.tangent_norm.tolist(), [1, 0, 0], [0, 0, -1]]
+                "pose_vectors": SurfacePoseVectors(
+                    np.array([self.tangent_norm.tolist(), [1, 0, 0], [0, 0, -1]])
                 ),
                 "pose_fully_defined": True,
                 "on_object": 1,
@@ -257,14 +260,14 @@ class JumpToGoalTest(ParametrizedTestCase):
         goal_direction: np.ndarray,
         policy: JumpToGoal,
     ) -> None:
-        pose_vectors = np.zeros((3, 3))
+        pose_vectors = np.full((3, 3), np.nan)
         goal_direction = normalize(goal_direction)
         pose_vectors[0] = goal_direction
 
         goal = Goal(
             location=goal_location,
             morphological_features={
-                "pose_vectors": pose_vectors,
+                "pose_vectors": GazeDirection(pose_vectors),
                 "pose_fully_defined": True,
             },
             non_morphological_features=None,
@@ -345,7 +348,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         goal = Mock(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": np.eye(3),
+                "pose_vectors": DEFAULT_GAZE_DIRECTION,
             },
         )
         policy = JumpToGoal(self.agent_id, SensorID("view_finder"))
@@ -361,7 +364,7 @@ class JumpToGoalTest(ParametrizedTestCase):
             Mock(
                 location=np.zeros(3),
                 morphological_features={
-                    "pose_vectors": np.eye(3),
+                    "pose_vectors": DEFAULT_GAZE_DIRECTION,
                 },
             )
             if has_post_jump_goal
@@ -416,20 +419,20 @@ class JumpToGoalTest(ParametrizedTestCase):
         goal_direction: np.ndarray,
         policy: JumpToGoal,
     ) -> None:
-        pose_vectors = np.zeros((3, 3))
+        pose_vectors = np.full((3, 3), np.nan)
         goal_direction = normalize(goal_direction)
         pose_vectors[0] = goal_direction
 
         first_goal = Mock(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": np.eye(3),
+                "pose_vectors": DEFAULT_GAZE_DIRECTION,
             },
         )
         second_goal = Mock(
             location=goal_location,
             morphological_features={
-                "pose_vectors": pose_vectors,
+                "pose_vectors": GazeDirection(pose_vectors),
             },
         )
 
@@ -488,7 +491,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         goal = Mock(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": np.eye(3),
+                "pose_vectors": DEFAULT_GAZE_DIRECTION,
             },
         )
 

@@ -27,7 +27,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: lint-docs
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
@@ -111,7 +110,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          lfs: true
           path: tbp.monty
       - name: Should Run Docs
         id: should_run_docs
