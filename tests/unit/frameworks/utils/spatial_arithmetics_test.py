@@ -85,7 +85,7 @@ def quaternions(draw: st.DrawFn):
 
 
 rotation_objs = quaternions().map(lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]))
-rotation_matrices = quaternions().map(
+rotation_matrix = quaternions().map(
     lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
 )
 
