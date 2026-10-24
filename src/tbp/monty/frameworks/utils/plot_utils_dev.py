@@ -22,13 +22,13 @@ import numpy as np
 from matplotlib import animation
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.axes3d import Axes3D
-from torch_geometric.data import Data
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import find_step_on_new_object
+from tbp.monty.frameworks.utils.object_model_utils import NumpyGraph
 from tbp.monty.frameworks.utils.plot_utils import (
     add_patch_outline_to_view_finder,
 )
@@ -37,7 +37,7 @@ from tbp.monty.geometry import Rotation
 
 
 def plot_graph(
-    graph: Data | GraphObjectModel,
+    graph: NumpyGraph | GraphObjectModel,
     show_nodes: bool = True,
     show_edges: bool = False,
     show_trisurf: bool = False,
@@ -355,9 +355,9 @@ def show_one_step(
     model_id = get_model_id(epoch, stats[str(episode)][lm_id]["mode"])
     if object_name is None:
         object_name = object_to_inspect
-    model_pos = lm_models[model_id][lm_num][object_to_inspect].pos.numpy()
-    model_features = lm_models[model_id][lm_num][object_to_inspect].x.numpy()
-    model_normals = lm_models[model_id][lm_num][object_to_inspect].norm.numpy()
+    model_pos = lm_models[model_id][lm_num][object_to_inspect].pos
+    model_features = lm_models[model_id][lm_num][object_to_inspect].x
+    model_normals = lm_models[model_id][lm_num][object_to_inspect].norm
     model_f_mapping = lm_models[model_id][lm_num][object_to_inspect].feature_mapping
     first_input_channel = next(iter(model_f_mapping.keys()))
 

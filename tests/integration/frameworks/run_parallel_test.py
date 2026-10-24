@@ -95,10 +95,10 @@ class RunParallelTest(unittest.TestCase):
         self.assertEqual(
             parallel_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
                 "patch"
-            ].x.size(1),
+            ].num_features,
             serial_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
                 "patch"
-            ].x.size(1),
+            ].num_features,
         )
 
         # Same number of data points

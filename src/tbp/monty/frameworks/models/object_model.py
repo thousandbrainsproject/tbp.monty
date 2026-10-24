@@ -11,19 +11,22 @@ from __future__ import annotations
 
 import copy
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 import numpy as np
+import numpy.typing as npt
 import torch
-import torch_geometric
-import torch_geometric.transforms as T
 from scipy.spatial import KDTree
 from sklearn.neighbors import kneighbors_graph
-from torch_geometric.data import Data
 
 from tbp.monty.frameworks.models.abstract_monty_classes import ObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.frameworks.utils.object_model_utils import (
     NumpyGraph,
+    as_numpy_graph,
     build_point_cloud_graph,
     circular_mean,
     expand_index_dims,
@@ -34,9 +37,11 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     pose_vector_mean,
     pose_vector_merge,
     remove_close_points,
-    torch_graph_to_numpy,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import apply_rf_transform_to_points
+from tbp.monty.frameworks.utils.sensor_processing import point_pair_features
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    apply_rf_transform_to_points,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -105,9 +110,13 @@ class GraphObjectModel(ObjectModel):
         if self.has_ppf:
             self.add_ppf_to_graph()
 
-    def add_ppf_to_graph(self):
+    def add_ppf_to_graph(self) -> None:
         """Add point pair features to graph edges."""
-        self._graph = T.PointPairFeatures(cat=False)(self._graph)
+        g = self._graph
+        row, col = g.edge_index
+        g.edge_attr = point_pair_features(
+            g.pos[row], g.pos[col], g.norm[row], g.norm[col]
+        )
         self.has_ppf = True
 
     def edge_index_between(self, previous_node: int, new_node: int) -> int | None:
@@ -122,7 +131,7 @@ class GraphObjectModel(ObjectModel):
         """
         mask = (self.edge_index[0] == previous_node) & (self.edge_index[1] == new_node)
         if mask.any():
-            return mask.nonzero().view(-1)[0].item()
+            return int(np.flatnonzero(mask)[0])
         return None
 
     # ------------------ Getters & Setters ---------------------
@@ -150,42 +159,37 @@ class GraphObjectModel(ObjectModel):
 
     @property
     def edge_index(self):
-        if self._graph is not None:
-            # Newer versions of torch_geometric change `keys` from a
-            # property to a function.
-            # TODO: remove check and use keys function once upgraded to Python 3.10
-            if callable(self._graph.keys):
-                keys = self._graph.keys()
-            else:
-                keys = self._graph.keys
-            if "edge_index" in keys:
-                return self._graph.edge_index
+        if self._graph is not None and hasattr(self._graph, "edge_index"):
+            return self._graph.edge_index
 
     @property
     def edge_attr(self):
-        if self._graph is not None:
-            # Newer versions of torch_geometric change `keys` from a
-            # property to a function.
-            # TODO: remove check and use keys function once upgraded to Python 3.10
-            if callable(self._graph.keys):
-                keys = self._graph.keys()
-            else:
-                keys = self._graph.keys
-            if "edge_attr" in keys:
-                return self._graph.edge_attr
+        if self._graph is not None and hasattr(self._graph, "edge_attr"):
+            return self._graph.edge_attr
 
     @property
     def num_nodes(self):
         return len(self._graph.pos)
 
     @property
+    def num_features(self) -> int:
+        return self._graph.num_features
+
+    @property
     def feature_ids_in_graph(self):
         if self._graph is not None:
             return self._graph.feature_mapping.keys()
 
+    def __setstate__(self, state: dict) -> None:
+        """Restore a pickled model, converting legacy torch_geometric graphs."""
+        # TODO: remove once existing .pt models have been migrated to NumpyGraph.
+        self.__dict__.update(state)
+        if self._graph is not None:
+            self._graph = as_numpy_graph(self._graph)
+
     def set_graph(self, graph):
         """Set self._graph property with given graph (i.e. from pretraining)."""
-        self._graph = graph
+        self._graph = as_numpy_graph(graph)
 
     def get_values_for_feature(self, feature):
         featue_idx = self.feature_mapping[feature]
@@ -263,8 +267,13 @@ class GraphObjectModel(ObjectModel):
         return all_locations, all_features
 
     def _build_adjacency_graph(
-        self, locations, features, k_n, graph_delta_thresholds, old_graph_index
-    ):
+        self,
+        locations: npt.NDArray[np.float64],
+        features: Mapping[str, npt.NDArray],
+        k_n: int | None,
+        graph_delta_thresholds,
+        old_graph_index: int,
+    ) -> NumpyGraph:
         """Build graph from observations with nodes linking to the n nearest neighbors.
 
         if k_n == None, this function will just return a graph without edges.
@@ -285,7 +294,7 @@ class GraphObjectModel(ObjectModel):
 
 
         Returns:
-            A torch_geometric.data graph containing the observed features at
+            A NumpyGraph graph containing the observed features at
             locations, with edges between the k_n nearest neighbors.
         """
         locations_reduced, clean_ids = remove_close_points(
@@ -310,16 +319,18 @@ class GraphObjectModel(ObjectModel):
             node_features = np.column_stack((node_features, feats))
 
             if feature_id == "pose_vectors":
-                norm = torch.tensor(feats[:, :3], dtype=torch.float)
+                norm = np.asarray(feats[:, :3], dtype=np.float32)
 
         assert np.all(
             locations[:old_graph_index] == locations_reduced[:old_graph_index]
         ), "Old graph points shouldn't change"
 
-        x = torch.tensor(node_features, dtype=torch.float)
-        pos = torch.tensor(locations_reduced, dtype=torch.float)
+        x = np.asarray(node_features, dtype=np.float32)
+        pos = np.asarray(locations_reduced, dtype=np.float32)
 
-        graph = Data(x=x, pos=pos, norm=norm, feature_mapping=feature_mapping)
+        graph = NumpyGraph(
+            dict(x=x, pos=pos, norm=norm, feature_mapping=feature_mapping)
+        )
 
         if k_n is not None:
             k_n = get_correct_k_n(k_n, num_nodes)
@@ -328,8 +339,8 @@ class GraphObjectModel(ObjectModel):
                 locations_reduced, n_neighbors=k_n, include_self=False
             )
 
-            scipygraph = torch_geometric.utils.from_scipy_sparse_matrix(scipy_graph)
-            edge_index = scipygraph[0]
+            coo = scipy_graph.tocoo()
+            edge_index = np.vstack([coo.row, coo.col])
 
             displacements = []
             for e, edge_start in enumerate(edge_index[0]):
@@ -338,7 +349,7 @@ class GraphObjectModel(ObjectModel):
                     locations_reduced[edge_end] - locations_reduced[edge_start]
                 )
 
-            edge_attr = torch.tensor(np.array(displacements), dtype=torch.float)
+            edge_attr = np.asarray(displacements, dtype=np.float32)
 
             graph.edge_index = edge_index
             graph.edge_attr = edge_attr
@@ -501,10 +512,7 @@ class GridObjectModel(GraphObjectModel):
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):
         """Set self._graph property and convert input graph to right format."""
-        if type(graph) is not NumpyGraph:
-            # could also check if is type torch_geometric.data.data.Data
-            logger.debug(f"turning graph of type {type(graph)} into numpy graph")
-            graph = torch_graph_to_numpy(graph)
+        graph = as_numpy_graph(graph)
         if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
             self._graph = graph
