@@ -384,6 +384,30 @@ class StepLimit(RecognitionPolicy):
         return result
 
 
+class MatchCriteria(RecognitionPolicy):
+    """The `match_criteria` has been met."""
+
+    def __init__(self: Self) -> None:
+        """Initialize the policy."""
+        pass
+
+    def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,  # noqa: ARG002
+    ) -> RecognitionResult:
+        terminal_states: dict[str, str | None] = {
+            lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
+        }
+        is_done = model._match_criterion(terminal_states)
+        if is_done:
+            logger.info(
+                "MatchCriteria is done, with terminal_states=%s",
+                terminal_states,
+            )
+        return RecognitionResult(is_done)
+
+
 class MinimumLMs(RecognitionPolicy):
     """`min_lms` have reached a conclusion."""
 
