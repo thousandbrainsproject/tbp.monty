@@ -270,7 +270,7 @@ class TestPublishPreview(unittest.TestCase):
 
         with self.assertRaises(ValueError) as error:
             publish_preview(
-                bundle_file="bundle.json",
+                bundle_file=self.bundle_file,
                 rdme=self.rdme,
                 expected_repository=REPOSITORY,
                 expected_pr_number=PR_NUMBER,
@@ -280,7 +280,7 @@ class TestPublishPreview(unittest.TestCase):
 
         self.assertEqual(str(error.exception), "invalid preview bundle")
         self.rdme.version_has_suffix.assert_called_once_with()
-        mock_load_preview_bundle.assert_called_once_with("bundle.json")
+        mock_load_preview_bundle.assert_called_once_with(self.bundle_file)
         mock_validate_preview_bundle.assert_called_once_with(
             bundle=self.bundle,
             expected_repository=REPOSITORY,
@@ -331,18 +331,15 @@ class TestLoadPreviewBundle(unittest.TestCase):
 
 
 class TestValidatePreviewBundle(unittest.TestCase):
-    def validate(self, bundle):
-        return validate_preview_bundle(
-            bundle=bundle,
-            expected_repository=REPOSITORY,
-            expected_pr_number=PR_NUMBER,
-            expected_head_sha=HEAD_SHA,
-            expected_base_ref=BASE_REF,
-        )
-
     def assert_invalid(self, bundle, error_type, expected_message):
         with self.assertRaises(error_type) as error:
-            self.validate(bundle)
+            validate_preview_bundle(
+                bundle=bundle,
+                expected_repository=REPOSITORY,
+                expected_pr_number=PR_NUMBER,
+                expected_head_sha=HEAD_SHA,
+                expected_base_ref=BASE_REF,
+            )
 
         self.assertEqual(str(error.exception), expected_message)
 
