@@ -26,7 +26,8 @@ min_eval_steps: 20
 # v11 : v10 trained on standard TBP benchmark infrastructure as of Nov 2025
 # v12 : v11 with resampling experiment renamed to burst sampling
 # v13 : Added supervised_pretraining_10distinctobj_vocus2
-pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
+# v14 : First models trained on MuJoCo
+pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v14}
 
 # v1 : Trained on version 1.0 of the compositional objects dataset (logos had transparent backgrounds)
 # v2 : Trained on version 1.1 of the compositional objects dataset (logos on white "stickers")
@@ -35,7 +36,8 @@ pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v13}
 # v5 : Updated pretrained models for compositional_objects_1.2 (symmetrically ambiguous objects removed), and fix to monolithic supervised IDs
 # v6 : Uses 3LM architecture (with TwoDSensorModule + burst sampling) trained on compositional_objects_1.2
 # v7 : Trained on compositional_objects_1.4 (darker marble background + expanded dataset)
-compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v7}
+# v8 : First models trained on MuJoCo
+compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v8}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
