@@ -27,7 +27,8 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.utils.graph_matching_utils import (
-    get_custom_distances,
+    custom_distances,
+    euclidean_distances,
     get_relevant_curvature,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
@@ -276,17 +277,27 @@ class DefaultHypothesesDisplacer:
             nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
         nearest_node_locs = channel_locations[nearest_node_ids]
-        max_abs_curvature = get_relevant_curvature(channel_features)
-        custom_nearest_node_dists = get_custom_distances(
-            nearest_node_locs,
-            search_locations,
-            rotated_pose_vectors[:, 0, :],
-            max_abs_curvature,
-        )
+        # TODO: Replace with match statement
+        if isinstance(channel_features["pose_vectors"], OrientationMatrix):
+            nearest_node_dists = euclidean_distances(
+                predicted_locations=search_locations,
+                nearest_node_locations=nearest_node_locs,
+            )
+        elif isinstance(channel_features["pose_vectors"], SurfacePoseVectors):
+            nearest_node_dists = custom_distances(
+                predicted_locations=search_locations,
+                nearest_node_locations=nearest_node_locs,
+                surface_normals=rotated_pose_vectors[:, 0, :],
+                curvature=get_relevant_curvature(channel_features),
+            )
+        else:
+            raise TypeError(
+                "Can't calculate evidence for pose type "
+                f"{type(channel_features['pose_vectors'])}"
+            )
+
         # shape=(H, K)
-        node_distance_weights = self._get_node_distance_weights(
-            custom_nearest_node_dists
-        )
+        node_distance_weights = self._get_node_distance_weights(nearest_node_dists)
         # Get IDs where custom_nearest_node_dists > max_match_distance
         mask = node_distance_weights <= 0
 
