@@ -217,6 +217,10 @@ class EvidenceGraphLM(GraphLM):
             LM.
         hypotheses_updater_args: Dictionary of configuration parameters for the
             hypotheses updater.
+        output_max_model_distance: How far (in meters) the most likely hypothesis
+            may lie from the nearest stored point of its object for the LM to
+            still send its output to higher-level LMs. Keeps a recognized object
+            from being reported once the sensor has moved off the learned model.
 
     Debugging Attributes:
         use_multithreading: Whether to calculate evidence updates for different
@@ -258,6 +262,7 @@ class EvidenceGraphLM(GraphLM):
         gsg: EvidenceGoalGenerator | None = None,
         hypotheses_updater_class: type[HypothesesUpdater] = DefaultHypothesesUpdater,
         hypotheses_updater_args: dict | None = None,
+        output_max_model_distance: float = 0.01,
         *args,
         **kwargs,
     ) -> None:
@@ -273,6 +278,9 @@ class EvidenceGraphLM(GraphLM):
         self.gsg = gsg
         if self.gsg:
             self.gsg.parent_lm = self
+
+        # --- Output gating ---
+        self.output_max_model_distance = output_max_model_distance
 
         # --- Matching Params ---
         self.max_match_distance = max_match_distance
@@ -534,13 +542,19 @@ class EvidenceGraphLM(GraphLM):
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the LM has not reached a "match" terminal state, pass_message == False.
+        pass_message is False unless the LM has reached a "match" terminal state,
+        its sensor is on the object, and the most likely hypothesis lies within
+        output_max_model_distance of the recognized object's stored points. The
+        evidence requirement is the one "match" already imposes through
+        object_evidence_threshold.
         """
         mlh = self._get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
         object_id_features = self._object_id_to_features(mlh["graph_id"])
         pass_message = bool(
-            self.buffer.get_currently_on_object() and self.terminal_state == "match"
+            self.buffer.get_currently_on_object()
+            and self.terminal_state == "match"
+            and self._mlh_on_model(mlh)
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
@@ -1169,6 +1183,32 @@ class EvidenceGraphLM(GraphLM):
             return OrientationMatrix(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
         return OrientationMatrix(pose.as_matrix().T)
+
+    def _mlh_on_model(self, mlh) -> bool:
+        """Whether the MLH location lies near the stored points of its object.
+
+        Args:
+            mlh: The most likely hypothesis, with ``graph_id`` and ``location``
+                in the object's reference frame.
+
+        Returns:
+            True if the location is within output_max_model_distance of the
+            nearest stored point in any of the object's input channels; False
+            when the object is unknown or the hypothesis has no location.
+        """
+        graph_id, location = mlh["graph_id"], mlh["location"]
+        if location is None or graph_id not in self.get_all_known_object_ids():
+            return False
+        query = np.asarray(location, dtype=float).reshape(1, 3)
+        distances = [
+            float(
+                self.graph_memory.get_graph(graph_id, channel).find_nearest_neighbors(
+                    query, num_neighbors=1, return_distance=True
+                )[0]
+            )
+            for channel in self.get_input_channels_in_graph(graph_id)
+        ]
+        return min(distances) <= self.output_max_model_distance
 
     def _object_id_to_features(self, object_id):
         """Convert an object ID to a stable categorical feature.
