@@ -585,7 +585,7 @@ class JumpToGoal(MotorPolicy):
         Returns:
             A `SetAgentPose` action.
         """
-        target_agent_vec = goal.morphological_features["pose_vectors"][0]
+        target_agent_vec = goal.morphological_features["pose_vectors"].direction
 
         yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
         pitch_angle = math.asin(target_agent_vec[1])
@@ -854,7 +854,7 @@ class InformedPolicy(BasePolicy):
             A `SetAgentPose` action.
         """
         target_loc = goal.location
-        target_agent_vec = goal.morphological_features["pose_vectors"][0]
+        target_agent_vec = goal.morphological_features["pose_vectors"].direction
 
         yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
         pitch_angle = math.asin(target_agent_vec[1])
@@ -1627,7 +1627,7 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             degrees that the agent needs to turn
         """
-        original_surface_normal = percept.get_surface_normal()
+        original_surface_normal = percept.surface_normal()
 
         inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
@@ -1831,7 +1831,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             )
             if "pose_vectors" in percept.morphological_features:
                 self.tangent_norms.append(
-                    percept.morphological_features["pose_vectors"][0]
+                    percept.morphological_features["pose_vectors"].surface_normal
                 )
             else:
                 self.tangent_norms.append(None)
@@ -1868,8 +1868,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # orientation
             # TODO: This value doesn't seem to be used anywhere
             z_defined_pc = (
-                percept.get_surface_normal(),
-                percept.get_curvature_directions(),
+                percept.surface_normal(),
+                percept.curvature_directions(),
             )
         else:
             z_defined_pc = None
@@ -1967,7 +1967,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.check_for_preference_change()
 
         pc_for_use = self.determine_pc_for_use(percept)
-        pc_dirs = percept.get_curvature_directions()
+        pc_dirs = percept.curvature_directions()
         # Select the PC directions for use
         selected_pc_dir = pc_dirs[pc_for_use]
 

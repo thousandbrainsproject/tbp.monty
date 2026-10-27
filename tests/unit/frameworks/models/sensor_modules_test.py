@@ -19,6 +19,7 @@ from tbp.monty.cmp import Message
 from tbp.monty.frameworks.models.sensor_modules import (
     FeatureChangeFilter,
 )
+from tbp.monty.geometry import SurfacePoseVectors
 
 
 def create_percept(
@@ -40,7 +41,7 @@ def create_percept(
     return Message(
         location=location,
         morphological_features={
-            "pose_vectors": np.eye(3),
+            "pose_vectors": SurfacePoseVectors(np.eye(3)),
             "pose_fully_defined": True,
             "on_object": on_object,
         },

@@ -121,7 +121,7 @@ experiment:
             - 2
             - 2
             distance: 0.01
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
           sensor_module_id: patch_1
@@ -180,7 +180,7 @@ experiment:
             - 4
             - 4
             distance: 0.05
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_3:
           _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder

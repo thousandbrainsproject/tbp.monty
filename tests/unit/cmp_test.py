@@ -20,7 +20,7 @@ from hypothesis.extra.numpy import arrays
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import GazeDirection, Rotation
 from tests.strategies.arrays import (
     float_array_n_by_3,
     float_array_not_1d,
@@ -81,7 +81,15 @@ class CMPAttributeValidationTest(unittest.TestCase):
         self.message_args: _MessageArgs = {
             "location": None,
             "morphological_features": {
-                "pose_vectors": np.eye(3),
+                "pose_vectors": GazeDirection(
+                    np.array(
+                        [
+                            [1.0, 0.0, 0.0],
+                            [np.nan, np.nan, np.nan],
+                            [np.nan, np.nan, np.nan],
+                        ]
+                    )
+                ),
                 "pose_fully_defined": True,
             },
             "non_morphological_features": {},
@@ -112,8 +120,9 @@ class CMPAttributeValidationTest(unittest.TestCase):
 
         self.assertEqual(
             str(raised.exception),
-            "pose should be defined by three orthonormal unit vectors but pose_vectors "
-            "shape is (2, 2)",
+            "pose_vectors must be an instance of SurfacePoseVectors, "
+            "OrientationMatrix, or GazeDirection but type is "
+            f"{type(self.message_args['morphological_features']['pose_vectors'])}",
         )
 
     def test_message_invalid_pose_fully_defined_raises_assertion_error(self) -> None:
@@ -156,12 +165,14 @@ class EncodeGoalTest(unittest.TestCase):
         self.goal_dict = {
             "location": np.array([0, 1.5, 0]),
             "morphological_features": {
-                "pose_vectors": np.array(
-                    [
-                        -np.ones(3),
-                        [np.nan, np.nan, np.nan],
-                        [np.nan, np.nan, np.nan],
-                    ]
+                "pose_vectors": GazeDirection(
+                    np.array(
+                        [
+                            -np.ones(3),
+                            [np.nan, np.nan, np.nan],
+                            [np.nan, np.nan, np.nan],
+                        ]
+                    )
                 ),
                 "pose_fully_defined": None,
                 "on_object": 1,

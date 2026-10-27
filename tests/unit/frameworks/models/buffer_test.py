@@ -30,7 +30,7 @@ from tbp.monty.frameworks.actions.actions import (
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.buffer import BufferEncoder, FeatureAtLocationBuffer
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tests.unit.frameworks.models.fakes.encoder_classes import (
     FakeClass,
     FakeDataclass1,
@@ -56,7 +56,7 @@ def create_mock_message(
     sender_type: str,
     location: npt.NDArray[np.float64],
     on_object: bool,
-    pose_vectors: npt.NDArray[np.float64] | None = None,
+    pose_vectors: SurfacePoseVectors | None = None,
     process_features_in_lm: bool = True,
 ) -> Message:
     """Create a mock Message for testing the buffer.
@@ -66,7 +66,7 @@ def create_mock_message(
         sender_type: Type of sender ("SM" or "LM").
         location: 3D location array.
         on_object: Whether the observation is on the object.
-        pose_vectors: Optional pose vectors (3x3 array). Defaults to identity.
+        pose_vectors: Optional surface pose vectors.
         process_features_in_lm: Whether the message carries features for processing by
             the learning module.
 
@@ -74,7 +74,7 @@ def create_mock_message(
         A mock Message compatible with FeatureAtLocationBuffer.append().
     """
     if pose_vectors is None:
-        pose_vectors = np.eye(3)
+        pose_vectors = SurfacePoseVectors(np.eye(3))
 
     msg = Mock()
     msg.sender_id = sender_id
@@ -83,7 +83,7 @@ def create_mock_message(
     msg.location = location
     msg.process_features_in_lm = process_features_in_lm
     msg.morphological_features = {
-        "pose_vectors": pose_vectors.flatten(),
+        "pose_vectors": pose_vectors,
         "pose_fully_defined": True,
     }
     msg.non_morphological_features = {}

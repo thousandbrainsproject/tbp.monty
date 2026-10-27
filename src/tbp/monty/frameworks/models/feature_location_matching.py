@@ -28,9 +28,9 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_orthonormal_vectors,
     get_angle,
     get_unique_rotations,
-    rotate_pose_dependent_features,
+    rotate_pose_vectors,
 )
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
 __all__ = ["FeatureGraphLM", "FeatureGraphMemory"]
 
@@ -510,12 +510,19 @@ class FeatureGraphLM(GraphLM):
                             closest_node_id,
                             feature_keys=["pose_vectors", "pose_fully_defined"],
                         )
-                        pose_transformed_features = rotate_pose_dependent_features(
-                            features[first_input_channel], pose
+                        pose_vectors = rotate_pose_vectors(
+                            features[first_input_channel]["pose_vectors"], pose
+                        )
+                        pose_fully_defined = features[first_input_channel][
+                            "pose_fully_defined"
+                        ]
+                        node_pose_vectors = SurfacePoseVectors(
+                            new_pos_features["pose_vectors"].reshape((3, 3))
                         )
                         pose_features_match = self._match_pose_dependent_features(
-                            pose_transformed_features,
-                            new_pos_features,
+                            pose_vectors,
+                            pose_fully_defined,
+                            node_pose_vectors,
                             first_input_channel,
                         )
                         if pose_features_match:
@@ -529,8 +536,12 @@ class FeatureGraphLM(GraphLM):
         return new_possible_paths, new_possible_poses
 
     def _match_pose_dependent_features(
-        self, query_features, node_features, input_channel
-    ):
+        self,
+        query_pose_vectors: SurfacePoseVectors,
+        query_pose_fully_defined: bool,
+        node_pose_vectors: SurfacePoseVectors,
+        input_channel: str,
+    ) -> bool:
         """Determine whether pose features match.
 
         Compares the angle between observed and stored pose_vectors (from SM this
@@ -538,31 +549,34 @@ class FeatureGraphLM(GraphLM):
         below the specified tolerance.
 
         Args:
-            query_features: Observed features.
-            node_features: Features at node that is being tested.
-            input_channel: ?
+            query_pose_vectors: Observed pose vectors.
+            query_pose_fully_defined: Whether observed pose vectors have fully defined
+            pose.
+            node_pose_vectors: Stored pose vectors in Object Model.
+            input_channel: Name of input, e.g., patch_0.
 
         Returns:
             Whether feature matches given self.tolerances
         """
-        vectors_to_check = 2
-        if not query_features["pose_fully_defined"]:
-            vectors_to_check = 1
-        node_pose_vecs = np.array(node_features["pose_vectors"]).reshape((3, 3))
-        for vec_id in range(vectors_to_check):
-            angle = get_angle(
-                query_features["pose_vectors"][vec_id],
-                node_pose_vecs[vec_id],
+        sn_angle = get_angle(
+            query_pose_vectors.surface_normal,
+            node_pose_vectors.surface_normal,
+        )
+        if query_pose_fully_defined:
+            pc1_angle = get_angle(
+                query_pose_vectors.principal_curvature_1,
+                node_pose_vectors.principal_curvature_1,
             )
-            if vec_id > 0:
-                # account for the fact the curvature directions can be flipped
-                # by 180 degrees
-                # TODO H: what to do at higher level LMs?
-                angle = np.pi / 2 - np.abs(angle - np.pi / 2)
-            consistent = angle < self.tolerances[input_channel]["pose_vectors"][vec_id]
-            if not consistent:
+            # account for the fact the curvature directions can be flipped
+            # by 180 degrees
+            # TODO H: what to do at higher level LMs?
+            pc1_angle = np.pi / 2 - np.abs(pc1_angle - np.pi / 2)
+            consistent_pc1 = (
+                pc1_angle < self.tolerances[input_channel]["pose_vectors"][1]
+            )
+            if not consistent_pc1:
                 return False
-        return True
+        return bool(sn_angle < self.tolerances[input_channel]["pose_vectors"][0])
 
     def _remove_object_from_matches(self, graph_id):
         """Remove object and its poses from possible matches."""

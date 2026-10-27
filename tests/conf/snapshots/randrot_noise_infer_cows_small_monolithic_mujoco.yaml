@@ -111,7 +111,7 @@ experiment:
           delta_thresholds:
             on_object: 0
             distance: 0.01
-          save_raw_obs: true
+          save_raw_obs: false
           noise_params: ${constants.default_all_noise_params}
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
@@ -154,7 +154,7 @@ experiment:
           delta_thresholds:
             on_object: 0
             distance: 0.05
-          save_raw_obs: true
+          save_raw_obs: false
           noise_params: ${constants.default_all_noise_params}
         sensor_module_3:
           _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
