@@ -1,7 +1,5 @@
 # @package _global_
 
-# Stage 2 of the COWS Tiny chain: LM_1 learns the two logos (TBP, Numenta) on top
-# of the stage-1 3D children.
 defaults:
   - /monty: evidencegraph_exp1000_e3_t3
   - /monty/motor_system_config: naive_scan_1

@@ -1,8 +1,5 @@
 # @package _global_
 
-# Stage 3 of the COWS Tiny chain: LM_2 learns the four logo x {cube, cylinder}
-# composites as compositional models from the object IDs that the stage-1 (LM_0,
-# 3D parents) and stage-2 (LM_1, logos) children pass up.
 defaults:
   - /monty: evidencegraph_exp1000_e3_t3
   - /monty/motor_system_config: distant_5
@@ -32,16 +29,11 @@ experiment:
     monty_config:
       learning_modules:
         learning_module_0:
-          # Only LM_0 generates goals during training; give it time to settle
-          # after each goal before proposing another.
           gsg:
             min_post_goal_success_steps: 100
         learning_module_1:
           gsg: null
-          # 2.5 mm matching tolerance for the logo LM (1 mm is the model voxel size).
           max_match_distance: 0.0025
-          # Only pass the logo ID up once its evidence is well clear of the
-          # confusable regime (the wrong logo peaks around 15 on shared colours).
           output_min_evidence: 20.0
         learning_module_2:
           gsg: null

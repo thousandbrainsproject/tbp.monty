@@ -1,8 +1,5 @@
 # @package experiment.config.monty_config.sensor_modules
 
-# Same as 3sm_2d3d_dist_noise, but the view finder is a SalienceSM that proposes
-# goals from Vocus2 salience and attention regions from SLIC segmentation.
-
 sensor_module_0:
   _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
   sensor_module_id: patch_0
@@ -66,10 +63,6 @@ sensor_module_3:
   _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
   sensor_module_id: view_finder
   salience_strategy:
-    # Built directly rather than via Vocus2.from_config so the colour channel
-    # can opt out of the safe operating limits: the sigmas below are closer
-    # together than the limits allow at 256 px. With depth and orientation
-    # off, this is exactly what from_config would construct.
     _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2
     color:
       _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience

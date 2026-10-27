@@ -1,6 +1,5 @@
 # @package _global_
 
-# Stage 1 of the COWS Tiny chain: LM_0 learns the two 3D parents (cube, cylinder).
 defaults:
   - /monty: evidencegraph_exp1000_e3_t3
   - /monty/motor_system_config: naive_scan_5

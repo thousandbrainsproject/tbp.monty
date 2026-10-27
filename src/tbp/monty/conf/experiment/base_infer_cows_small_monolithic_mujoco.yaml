@@ -31,13 +31,11 @@ experiment:
       run_name: base_infer_cows_small_monolithic_mujoco
     monty_config:
       learning_modules:
-        # During inference only the parent LM (LM_2) generates goals.
         learning_module_0:
           gsg: null
         learning_module_1:
           gsg: null
           max_match_distance: 0.0025
-          # Lower floor than in training so logo IDs reach LM_2 sooner.
           output_min_evidence: 5.0
         learning_module_2:
           gsg:

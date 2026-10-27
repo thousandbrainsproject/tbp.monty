@@ -1,7 +1,5 @@
 # @package experiment.config.environment
 
-# Same as mujoco_dist_agent_sensors3 but with a 256x256 view finder, which the
-# salience sensor module needs to resolve the logos on the compositional objects.
 env_init_args:
   data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/compositional_objects}
   agents:

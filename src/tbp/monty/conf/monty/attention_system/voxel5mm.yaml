@@ -1,8 +1,5 @@
 # @package experiment.config.monty_config
 
-# Attention system with 5 mm voxels (the default is 5 cm): regions proposed by
-# the salience sensor module are accumulated with union, decay linearly by 0.1
-# per step, and goals outside positively weighted voxels are filtered out.
 attention_system:
   _target_: tbp.monty.attention.attention_system.DefaultAttentionSystem
   voxel_size: 0.005

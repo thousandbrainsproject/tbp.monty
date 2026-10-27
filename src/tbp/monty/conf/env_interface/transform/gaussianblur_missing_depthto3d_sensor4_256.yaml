@@ -1,6 +1,5 @@
 # @package experiment.config.environment
 
-# Same as gaussianblur_missing_depthto3d_sensor4 but for a 256x256 view finder.
 transform:
 - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
   agent_id: agent_id_0
