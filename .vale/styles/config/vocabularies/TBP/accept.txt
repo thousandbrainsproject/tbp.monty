@@ -199,7 +199,7 @@
 \buntrusted\b
 \bURL\b
 \bUsrey\b
-\buv\b
+\buv|UV\b
 \butils\b
 \bViviane\b
 \bvivo\b
