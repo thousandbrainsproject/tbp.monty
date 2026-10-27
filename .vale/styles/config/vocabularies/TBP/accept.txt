@@ -6,6 +6,7 @@
 \b[aA]llocentric\b
 \b[aA]rXiv\b
 \bArtem\b
+\bAstral('s)?\b
 \bKirsanov\b
 \b[aA]gentic\b
 \b[Cc]allouts\b
@@ -197,6 +198,7 @@
 \buntrusted\b
 \bURL\b
 \bUsrey\b
+\buv\b
 \butils\b
 \bViviane\b
 \bvivo\b
