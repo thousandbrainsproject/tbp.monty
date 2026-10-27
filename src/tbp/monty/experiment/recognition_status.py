@@ -31,4 +31,3 @@ class RecognitionStatus:
     """Recognition Status from each Learning Module."""
 
     conclusion: RecognitionConclusion | None = None
-    telemetry: dict[str, Any] = field(default_factory=dict)

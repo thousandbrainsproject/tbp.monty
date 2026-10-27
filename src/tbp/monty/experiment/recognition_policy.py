@@ -195,12 +195,17 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
                 count.step,
                 count.matching_steps,
             )
+            lms = {
+                str(lm.learning_module_id): lm.recognition_status
+                for lm in model.learning_modules
+            }
             telemeter.info(
                 TelemetryEvent(
                     kind="TerminalCondition",
                     model=dict(
                         is_done=model.is_done,
                         is_exploring=model.is_exploring,
+                        lms=lms,
                     ),
                     count=count,
                     result=result,
