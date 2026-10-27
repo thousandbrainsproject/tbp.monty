@@ -18,9 +18,6 @@ description: How to get the code running.
 >
 > If you run into problems, please let us know by [opening a GitHub issue](https://github.com/thousandbrainsproject/tbp.monty/issues/new/choose) or [posting in the Monty Code section of our forum](https://forum.thousandbrains.org/c/monty-code/6).
 
-> [!WARNING]
-> While the repository contains a `uv.lock` file, this is currently experimental and not supported. In the future this will change, but for now, avoid trying to use `uv` with this project.
-
 # 1. Get [the Code](https://github.com/thousandbrainsproject/tbp.monty)
 
 ## 1.1 Fork the Repository
@@ -48,66 +45,62 @@ To make sure your fork is up to date with our repository you need to click on `S
 ![](../figures/how-to-use-monty/update_branch.png)
 
 
-You can also update your code using the terminal by calling `git fetch upstream; git merge upstream/main`. If you have not linked the upstream repository yet, you may first need to call `git remote add upstream upstream_repository_path.git`
+You can also update your code using the terminal by running `git pull upstream main`. If you have not linked the upstream repository yet, you may first need to call `git remote add upstream https://github.com/thousandbrainsproject/tbp.monty.git`
+
+> [!TIP]
+> In certain situations you might get the following error after running `git pull upstream main`:
+> ```
+>   hint: Diverging branches can't be fast-forwarded, you need to either:
+>   hint:
+>   hint:   git merge --no-ff
+>   hint:
+>   hint: or:
+>   hint:
+>   hint:   git rebase
+>   hint:
+>   hint: Disable this message with "git config set advice.diverging false"
+>   fatal: Not possible to fast-forward, aborting.
+> ```
+> This is usually caused by your `main` branch containing commits that aren't in the upstream `main` branch. The quickest way to resolve this is to reset your `main` branch to point to the same commit as the upstream `main` branch:
+> ```
+> git reset upstream/main
+> ```
+> This will make the two branches point to the same commit while keeping any changes in the local branch on disk. Then you can make a new branch and commit those changes. 
+> 
+> If you don't want to keep those changes, you can add `--hard` to this command to have Git reset the on disk files to match the upstream branch.
 
 # 2. Set up Your Environment
 
-## 2.1 Install Conda
-Monty requires Conda to install its dependencies. For instructions on how to install Conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
+## 2.1 Install uv
+Monty requires Astral's uv to install its dependencies. For instructions on how to install uv on your machine see <https://docs.astral.sh/uv/getting-started/installation/>
 
 > [!NOTE]
-> It is recommended to install Conda outside the `tbp.monty` repository (for example at `~/miniconda3`).
+> While Astral suggests using `curl ... | sh`, we would recommend using your system's package manager or a tool like Homebrew to install it. See the instructions further down their Getting Started page for details.
 
-## 2.2 Setup Monty
-To setup Monty, **use the conda commands below**.
+## 2.2 Set up Monty
+To set up Monty, **use the uv commands below**.
 
 **Make sure to `cd` into the `tbp.monty` directory before running these commands.**
-> [!NOTE]
-> The commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture,
-> and whether you are using the zsh shell or another shell.
 
-> [!NOTE]
-> On Apple Silicon we rely on Rosetta to run Intel binaries on ARM64 and include the `softwareupdate --install-rosetta` command in the commands below.
+You can create and activate the environment with the following commands:
 
-You can create the environment with the following commands:
-
-```shell Intel (zsh shell)
-conda env create
-conda init zsh
-conda activate tbp.monty
-```
-```shell Intel (other shells)
-conda env create
-conda init
-conda activate tbp.monty
-```
-```shell ARM64 (Apple Silicon) (zsh shell)
-softwareupdate --install-rosetta
-conda env create -f environment_arm64.yml --subdir=osx-64
-conda init zsh
-conda activate tbp.monty
-conda config --env --set subdir osx-64
-```
-```shell ARM64 (Apple Silicon) (other shells)
-softwareupdate --install-rosetta
-conda env create -f environment_arm64.yml --subdir=osx-64
-conda init
-conda activate tbp.monty
-conda config --env --set subdir osx-64
+```shell
+uv sync --extra=dev --extra=simulator_mujoco
 ```
 
 > [!NOTE]
-> By default, Conda will activate the base environment when you open a new terminal. If you do not want Conda to change your global shell when you open a new terminal, run:
-> ```shell
-> conda config --set auto_activate_base false
-> ```
+> If you'd prefer to not have to prefix Python commands with `uv run`, you can activate the environment using the activation scripts that are provided in the virtual environment.
+> 
+> For example, under bash or zsh run `source .venv/bin/activate`. There are versions for other shells available in that directory, e.g. fish, nushell, etc.
+>
+> **The instructions below will show the commands with `uv run`**, so be sure to remove that if you activated the environment.
 
 # 3. Run the Code 🎉
 
 The best way to see whether everything works is to **run the unit tests** using this command:
 
 ```shell
-pytest
+uv run pytest
 ```
 
 Running the tests might take a little while (depending on what hardware you are running on), but in the end, you should see something like this:
@@ -123,18 +116,31 @@ In your usual interaction with this code base, you will most likely run experime
 
 ## 4.1 Download the YCB Dataset
 
-A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run
+A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in MuJoCo. To download the dataset, run
 
+```shell tgz
+mkdir -p ~/tbp/data/mujoco/objects/ycb
+
+cd ~/tbp/data/mujoco/objects/ycb
+
+curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/ycb_objects_1.0.tgz | tar -xvf -
 ```
-python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
+```shell zip
+mkdir -p ~/tbp/data/mujoco/objects/ycb
+
+cd ~/tbp/data/mujoco/objects/ycb
+
+curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/ycb_objects_1.0.zip
+
+unzip ycb_objects_1.0.zip
 ```
 
 ## 4.2 Download Pretrained Models
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_13 | tgz |  [pretrained_ycb_v13.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.tgz) |
-| pretrained_ycb_v13 | zip |  [pretrained_ycb_v13.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.zip) |
+| pretrained_ycb_v14 | tgz |  [pretrained_ycb_v14.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.tgz) |
+| pretrained_ycb_v14 | zip |  [pretrained_ycb_v14.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
@@ -143,16 +149,16 @@ mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.tgz | tar -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.tgz | tar -xzf -
 ```
 ```plaintext zip
 mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v13.zip
+curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.zip
 
-unzip pretrained_ycb_v13.zip
+unzip pretrained_ycb_v14.zip
 ```
 
 
@@ -160,14 +166,14 @@ The folder should then have the following structure:
 
 ```
 ~/tbp/results/monty/pretrained_models/
-|-- pretrained_ycb_v13/
+|-- pretrained_ycb_v14/
 |   |-- supervised_pre_training_5lms
 |   |-- supervised_pre_training_5lms_all_objects
 |   |-- ...
 ```
 
 > [!NOTE]
-> To unpack an archive you should be able to double click on it.
+> To unpack an archive you should be able to double-click on it.
 >
 > To unpack via the command line, copy the archive into the `~/tbp/results/monty/pretrained_models/` folder and inside that folder run:
 > - for a `tgz` archive, `tar -xzf pretrained_ycb_v13.tgz`.
@@ -183,7 +189,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v13` folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v14` folders.
 
 
 ### MONTY_DATA
@@ -217,7 +223,7 @@ export WANDB_DIR=${MONTY_LOGS}/wandb
 Now you can finally run an experiment! To do this, simply use this command:
 
 ```shell
-python run.py experiment=my_experiment
+uv run python run.py experiment=my_experiment
 ```
 
 Replace `my_experiment` with the name of one of the experiment configs in `src/tbp/monty/conf/experiment`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
@@ -225,7 +231,7 @@ Replace `my_experiment` with the name of one of the experiment configs in `src/t
 If you want to run an experiment with parallel processing to make use of multiple CPUs, simply use the `run_parallel.py` script instead of the `run.py` script like this:
 
 ```shell
-python run_parallel.py experiment=my_experiment
+uv run python run_parallel.py experiment=my_experiment
 ```
 
 # 5. What Next?

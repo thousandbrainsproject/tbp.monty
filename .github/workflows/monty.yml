@@ -26,37 +26,26 @@ jobs:
       - check_license_monty # Don't run if license check fails
       - check_style_monty # Don't run if style check fails
       - check_types_monty # Don't run if type check fails
-      - install_monty
       - should_run_monty
     steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
         with:
-          working_directory: tbp.monty
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Build API docs
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          pip install -e .[generate_api_docs_tool]
           cd tools/generate_api_docs
-          make apidoc html
+          uv run --frozen --extra dev --extra generate_api_docs_tool make apidoc html
       - name: Store API docs artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v7
@@ -64,85 +53,31 @@ jobs:
           name: sphinx-html-${{ github.sha }}
           path: tbp.monty/tools/generate_api_docs/build/html
 
-  build_wheel_monty:
-    name: build-wheel-monty
-    runs-on:
-      group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-2core
-    needs:
-      - install_monty
-      - should_run_monty
-      - test_monty
-    steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
-        with:
-          working_directory: tbp.monty
-      - name: Build wheel
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          pip install -e .[build]
-          python -m build
-      - name: Store wheel
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: tbp.monty/dist
-
   check_dependencies_monty:
     name: check-dependencies-monty
     runs-on:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-2core
     needs:
-      - install_monty
       - should_run_monty
     steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
         with:
-          working_directory: tbp.monty
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Check dependencies
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          deptry src tests
+          uv run --frozen --extra dev deptry src tests
 
   check_license_monty:
     name: check-license-monty
@@ -171,37 +106,27 @@ jobs:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-2core
     needs:
-      - install_monty
       - should_run_monty
     steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
         with:
-          working_directory: tbp.monty
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Check style
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
           mkdir -p test_results/ruff
-          ruff check src tests run.py run_parallel.py
-          ruff format --check src tests run.py run_parallel.py
+          uv run --frozen --extra dev ruff check src tests run.py run_parallel.py
+          uv run --frozen --extra dev ruff format --check src tests run.py run_parallel.py
       - name: Changed files for a pull request
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && github.event_name == 'pull_request' }}
         working-directory: tbp.monty
@@ -221,10 +146,8 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
           cat changed_files.txt | grep -E '^src/|^tests/|^run.py$|^run_parallel.py$' | grep '\.py$' > changed_files_filtered.txt || exit 0
-          if ! cat changed_files_filtered.txt | xargs ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
+          if ! cat changed_files_filtered.txt | xargs uv run --frozen --extra dev ruff check --select CPY001 --config lint.flake8-copyright.notice-rgx='"Copyright\\s+.*2026"' -v
           then
             echo "One or more modified files did not update the copyright date range to include the current year."
             echo "See https://docs.thousandbrains.org/docs/code-style-guide#source-code-copyright-and-license-header for details."
@@ -237,61 +160,27 @@ jobs:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-2core
     needs:
-      - install_monty
       - should_run_monty
     steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
         with:
-          working_directory: tbp.monty
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Check types
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         continue-on-error: true # Accept type errors for now
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
           mkdir -p test_results/mypy
-          mypy src tests
-
-  install_monty:
-    name: install-monty
-    runs-on:
-      group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-4core
-    needs:
-      - check_license_monty # Don't run if license check fails
-      - should_run_monty
-    outputs:
-      conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
-    steps:
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          path: tbp.monty
-      - name: Install Monty
-        id: install_monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true'}}
-        uses: ./tbp.monty/.github/actions/install_monty
-        with:
-          working_directory: tbp.monty
+          uv run --frozen --extra dev mypy src tests
 
   should_run_monty:
     name: should-run-monty
@@ -318,180 +207,11 @@ jobs:
     name: test-integration-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu-nvidia-4core-t4gpu
-    timeout-minutes: 120
-    needs:
-      - install_monty
-      - should_run_monty
-      - test_monty
-    steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
-      - name: Install dependencies
-        # Installing before checkout because GitLFS is missing from the image
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        run: |
-          sudo apt update -y
-          sudo apt install -y --no-install-recommends xvfb libegl1-mesa-dev
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
-        with:
-          working_directory: tbp.monty
-      - name: Test integration
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          set -e
-          mkdir -p test_results/pytest
-          xvfb-run pytest tests/integration --junitxml=test_results/pytest/results.xml --verbose -n 1
-
-  test_monty:
-    name: test-monty
-    runs-on:
-      group: tbp.monty
-      labels: tbp-linux-x64-ubuntu-nvidia-4core-t4gpu
-    timeout-minutes: 120
-    needs:
-      - check_dependencies_monty # Don't run if dependency check fails
-      - check_style_monty # Don't run if style check fails
-      - check_types_monty # Don't run if type check fails
-      - install_monty
-      - should_run_monty
-    steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
-      - name: Install dependencies
-        # Installing before checkout because GitLFS is missing from the image
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        run: |
-          sudo apt update -y
-          sudo apt install -y --no-install-recommends xvfb libegl1-mesa-dev
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
-        with:
-          working_directory: tbp.monty
-      - name: Run configuration and unit tests
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          set -e
-          mkdir -p test_results/pytest
-          xvfb-run pytest --cov --cov-context=test --cov-report html --cov-report term \
-            --junitxml=test_results/pytest/results.xml --verbose --doctest-modules \
-            --doctest-continue-on-failure
-      - name: Store test results
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: test_results
-          path: tbp.monty/test_results/pytest
-      - name: Store coverage
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: test_coverage
-          path: tbp.monty/htmlcov
-
-  test_tutorials_monty:
-    name: test-tutorials-monty
-    runs-on:
-      group: tbp.monty
-      labels: tbp-linux-x64-ubuntu-nvidia-4core-t4gpu
-    timeout-minutes: 120
-    needs:
-      - install_monty
-      - should_run_monty
-      - test_monty
-    steps:
-      - name: Restore cache
-        id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
-      - name: Install dependencies
-        # Installing before checkout because GitLFS is missing from the image
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        run: |
-          sudo apt update -y
-          sudo apt install -y --no-install-recommends xvfb libegl1-mesa-dev
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          path: tbp.monty
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
-        with:
-          working_directory: tbp.monty
-      - name: Download data for tutorials
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          set -e
-          python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
-          git clone --depth 1 https://github.com/brendenlake/omniglot.git ~/tbp/data/omniglot
-          unzip -qq ~/tbp/data/omniglot/python/images_background.zip -d ~/tbp/data/omniglot/python
-          unzip -qq ~/tbp/data/omniglot/python/strokes_background.zip -d ~/tbp/data/omniglot/python
-          mkdir -p ~/tbp/data/worldimages
-          curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf - -C ~/tbp/data
-          mkdir -p ~/tbp/results/monty/pretrained_models/pretrained_ycb_v14
-          curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.tgz | tar -xzf - -C ~/tbp/results/monty/pretrained_models
-      - name: Test tutorials
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          set -e
-          mkdir -p test_results/pytest
-          xvfb-run pytest tests/tutorials --junitxml=test_results/pytest/results.xml --verbose -n 1
-
-  test_uv_integration_monty:
-    name: test-uv-integration-monty
-    runs-on:
-      group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-8core
     timeout-minutes: 120
     needs:
       - should_run_monty
-      - test_uv_monty
+      - test_monty
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -539,8 +259,8 @@ jobs:
           path: tbp.monty/htmlcov
 
 
-  test_uv_monty:
-    name: test-uv-monty
+  test_monty:
+    name: test-monty
     runs-on:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-8core
@@ -600,15 +320,15 @@ jobs:
           name: test_coverage_uv
           path: tbp.monty/htmlcov
 
-  test_uv_tutorials_monty:
-    name: test-uv-tutorials-monty
+  test_tutorials_monty:
+    name: test-tutorials-monty
     runs-on:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-8core
     timeout-minutes: 120
     needs:
       - should_run_monty
-      - test_uv_monty
+      - test_monty
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
