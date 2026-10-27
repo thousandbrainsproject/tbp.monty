@@ -140,6 +140,7 @@
 \bNum\b
 \bNumenta\b
 \bNumPy|Numpy\b
+\b[Nn]ushell\b
 \bO'Keefe\b
 \boverconstrained\b
 \bparallelization\b
