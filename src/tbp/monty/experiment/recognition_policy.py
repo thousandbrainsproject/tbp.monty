@@ -385,7 +385,7 @@ class StepLimit(RecognitionPolicy):
 
 
 class MatchCriteria(RecognitionPolicy):
-    """The `match_criteria` has been met."""
+    """The `model.learning_modules` meet the configured `match_criteria`."""
 
     def __init__(self: Self) -> None:
         """Initialize the policy."""
@@ -399,6 +399,8 @@ class MatchCriteria(RecognitionPolicy):
         terminal_states: dict[str, str | None] = {
             lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
         }
+        # TODO: Either configure the `match_criterion` on the policy itself,
+        #       or provide configurable policies for each criterion.
         is_done = model._match_criterion(terminal_states)
         if is_done:
             logger.info(
