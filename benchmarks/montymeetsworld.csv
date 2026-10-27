@@ -2,6 +2,6 @@ Experiment,Correct (%)|align right,Used MLH (%)|align right,Num Match Steps|alig
 randrot_noise_sim_on_scan_monty_world,91.67,88.33,456,25,169,120
 world_image_on_scanned_model,70.83,62.50,387,9,10,48
 dark_world_image_on_scanned_model,31.25,18.75,241,8,9,48
-bright_world_image_on_scanned_model,37.50,64.58,413,11,12,48
+bright_world_image_on_scanned_model,37.50,64.58,413,11,13,48
 hand_intrusion_world_image_on_scanned_model,47.92,20.83,277,10,11,48
 multi_object_world_image_on_scanned_model,25.00,0.00,154,5,6,48
