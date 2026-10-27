@@ -17,6 +17,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
 )
 from tbp.monty.frameworks.models.motor_system_state import AgentState
+from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.memento import Memento
 from tbp.monty.observations import SensorObservation
 
@@ -49,7 +50,7 @@ class FakeSensorModule(SensorModule):
         return Message(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": np.eye(3),
+                "pose_vectors": SurfacePoseVectors(np.eye(3)),
                 "pose_fully_defined": True,
             },
             non_morphological_features=observation,

@@ -94,6 +94,7 @@ def goals(
     process_features_in_lm_strategy: st.SearchStrategy[bool] | None = None,
     goal_tolerances_strategy: st.SearchStrategy[dict[str, Any] | None] | None = None,
     info_strategy: st.SearchStrategy[dict[str, Any] | None] | None = None,
+    min_goals: int = 0,
 ) -> list[Goal]:
     return draw(
         st.lists(
@@ -108,7 +109,8 @@ def goals(
                 process_features_in_lm_strategy=process_features_in_lm_strategy,
                 goal_tolerances_strategy=goal_tolerances_strategy,
                 info_strategy=info_strategy,
-            )
+            ),
+            min_size=min_goals,
         )
     )
 

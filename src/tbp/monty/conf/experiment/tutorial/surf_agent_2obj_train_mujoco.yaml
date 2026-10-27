@@ -11,7 +11,7 @@ defaults:
   #
   # One surface patch for training and one view-finder probe for initializing each
   # episode and logging.
-  - /monty/sensor_module: camera_surf_rgba_raw0
+  - /monty/sensor_module: camera_surf_rgba
   # The Monty connectivity configuration.
   - /monty/connectivity: 1lm_1sm
   # The environment configuration.

@@ -15,13 +15,16 @@ from typing import Protocol, Sequence
 
 from typing_extensions import Self
 
+from tbp.monty import telemetry
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.monty_base import MontyBase
+from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = [
     "AnyPolicy",
     "MaxTotalSteps",
     "MaximumSteps",
+    "MinEvalMaxTotalSteps",
     "MinimumLMs",
     "MontyIsDone",
     "NaiveScan",
@@ -33,6 +36,7 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+telemeter = telemetry.getTelemeter(__name__)
 
 
 @dataclass
@@ -59,11 +63,11 @@ class RecognitionResult:
     is_done: bool = False
     """A terminal condition has been reached."""
 
-    is_time_out: bool = False
-    """A time-out condition has been reached."""
+    time_out_lms: bool = False
+    """Request to time-out LMs that are not done yet."""
 
     start_exploring: bool = False
-    """A transition to 'exploring' mode is requested."""
+    """Request for transition to 'exploring' mode."""
 
 
 class RecognitionPolicy(Protocol):
@@ -103,6 +107,109 @@ class MontyIsDone(RecognitionPolicy):
         return RecognitionResult(is_done)
 
 
+class MinEvalMaxTotalSteps(RecognitionPolicy):
+    """Is not done while `matching_steps < min_eval_steps`.
+
+    The primary purpose of this policy is to return `is_done = False`
+    until at least `min_eval_steps` have been taken. It includes
+    a `step >= max_total_steps` check to return `is_done = True` when
+    `matching_steps` fails to increment sufficiently over `max_total_steps` steps.
+    """
+
+    _wrapped: RecognitionPolicy
+    """The policy _wrapped_ and possibly overridden by this policy."""
+
+    _min_eval_steps: int
+    """The minimum steps to take in matching mode."""
+
+    _max_total_steps: int
+    """The maximum number of steps before forcing termination."""
+
+    def __init__(
+        self: Self,
+        wrapped: RecognitionPolicy,
+        min_eval_steps: int = 0,
+        max_total_steps: int = 1,
+    ) -> None:
+        """Initialize the policy.
+
+        Args:
+            wrapped: The policy _wrapped_ and possibly overridden by this policy.
+            min_eval_steps: The minimum steps to take in matching mode.
+            max_total_steps: The maximum number of steps before forcing termination.
+
+        Raises:
+            ValueError:
+                - If `min_eval_steps` is negative.
+                - If `max_total_steps` is not positive.
+                - If `min_eval_steps > max_total_steps`.
+        """
+        if min_eval_steps < 0:
+            raise ValueError("min_eval_steps must be non-negative")
+        if max_total_steps <= 0:
+            raise ValueError("max_total_steps must be positive")
+        if min_eval_steps > max_total_steps:
+            raise ValueError(
+                "min_eval_steps must be less than or equal to max_total_steps"
+            )
+
+        self._wrapped = wrapped
+        self._min_eval_steps = min_eval_steps
+        self._max_total_steps = max_total_steps
+
+    def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,
+    ) -> RecognitionResult:
+        wrapped = self._wrapped(model, count)
+        if model.is_done:
+            result = RecognitionResult(
+                is_done=True,
+                time_out_lms=wrapped.time_out_lms,
+                start_exploring=wrapped.start_exploring,
+            )
+        elif count.step >= self._max_total_steps:
+            result = RecognitionResult(
+                is_done=True,
+                time_out_lms=True,
+                start_exploring=wrapped.start_exploring,
+            )
+        elif (
+            count.mode is ExperimentMode.EVAL
+            and count.matching_steps < self._min_eval_steps
+        ):
+            result = RecognitionResult(
+                is_done=False,
+                time_out_lms=wrapped.time_out_lms,
+                start_exploring=wrapped.start_exploring,
+            )
+        else:
+            result = wrapped
+
+        if result.is_done:
+            logger.info(
+                "MinEvalMaxTotalSteps is done, "
+                "with model.is_done=%s step=%d matching_steps=%d",
+                model.is_done,
+                count.step,
+                count.matching_steps,
+            )
+            telemeter.info(
+                TelemetryEvent(
+                    kind="TerminalCondition",
+                    model=dict(
+                        is_done=model.is_done,
+                        is_exploring=model.is_exploring,
+                    ),
+                    count=count,
+                    result=result,
+                )
+            )
+
+        return result
+
+
 class MaxTotalSteps(RecognitionPolicy):
     """`step >= max_total_steps`."""
 
@@ -130,7 +237,7 @@ class MaxTotalSteps(RecognitionPolicy):
         is_done = count.step >= self._max_total_steps
         if is_done:
             logger.info("MaxTotalSteps is done, with step=%d", count.step)
-        return RecognitionResult(is_done)
+        return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
 class MaximumSteps(RecognitionPolicy):
@@ -174,7 +281,7 @@ class MaximumSteps(RecognitionPolicy):
         is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
         result = RecognitionResult(
             is_done=is_done,
-            is_time_out=is_done,
+            time_out_lms=is_done,
         )
         if result.is_done:
             logger.info(
@@ -249,20 +356,20 @@ class StepLimit(RecognitionPolicy):
             is_done = count.exploring_steps >= self._num_exploring_steps
             result = RecognitionResult(
                 is_done=is_done,
-                is_time_out=is_done,
+                time_out_lms=is_done,
             )
         elif count.mode is ExperimentMode.TRAIN:
             is_done = count.matching_steps >= self._max_train_steps
             result = RecognitionResult(
                 is_done=is_done,
-                is_time_out=is_done,
+                time_out_lms=is_done,
                 start_exploring=(count.matching_steps >= self._min_train_steps),
             )
         elif count.mode is ExperimentMode.EVAL:
             is_done = count.matching_steps >= self._max_eval_steps
             result = RecognitionResult(
                 is_done=is_done,
-                is_time_out=is_done,
+                time_out_lms=is_done,
             )
         else:
             result = RecognitionResult()
@@ -404,7 +511,7 @@ class ObjectRecognition(RecognitionPolicy):
             else self._max_eval_steps
         )
         if (not model.is_exploring) and (model.matching_steps >= max_steps):
-            result = RecognitionResult(is_done=True, is_time_out=True)
+            result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info(
                 "ObjectRecognition is done, "
                 "with model.is_exploring=%s model.matching_steps=%d",
@@ -412,7 +519,7 @@ class ObjectRecognition(RecognitionPolicy):
                 model.matching_steps,
             )
         elif count.step >= self._max_total_steps:
-            result = RecognitionResult(is_done=True, is_time_out=True)
+            result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info("ObjectRecognition is done, with step=%d", count.step)
         elif model.is_done:
             result = RecognitionResult(is_done=True)
@@ -453,7 +560,7 @@ class AnyPolicy(RecognitionPolicy):
             rr = policy(model, count)
             result = RecognitionResult(
                 is_done=result.is_done or rr.is_done,
-                is_time_out=result.is_time_out or rr.is_time_out,
+                time_out_lms=result.time_out_lms or rr.time_out_lms,
                 start_exploring=result.start_exploring or rr.start_exploring,
             )
             if result.is_done:
