@@ -5,8 +5,8 @@ description: How to get the code running using Windows Subsystem for Linux and V
 > [!NOTE]
 > This guide is based off the main [Getting Started](../getting-started.md) guide for macOS and Linux, which you may refer to as needed.
 
-> [!WARNING]
-> While the repository contains a `uv.lock` file, this is currently experimental and not supported. In the future this will change, but for now, avoid trying to use `uv` with this project.
+> [!CAUTION]
+> This guide is still based on instructions for Conda and the Habitat simulator. Primary development on Monty is now done on the MuJoCo simulator using `uv`. See the main [Getting Started](../getting-started.md) guide for instructions for setting up the `uv` environment. Any updates to this guide would be greatly appreciated, as we lack reliable access to Windows for testing.
 
 
 # 1. Install WSL and Ubuntu
