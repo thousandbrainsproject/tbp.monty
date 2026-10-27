@@ -105,7 +105,7 @@ uv run pytest
 
 Running the tests might take a little while (depending on what hardware you are running on), but in the end, you should see something like this:
 
-![](../../figures/how-to-use-monty/tests.png)
+![](../figures/how-to-use-monty/tests.png)
 
 
 Note that by the time you read that, there may be more or less unit tests in the code base, so the exact numbers you see will not match with this screenshot. The important thing is that all tests either pass or are skipped and **none of the tests fail**.
