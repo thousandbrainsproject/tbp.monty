@@ -405,7 +405,7 @@ class MatchCriteria(RecognitionPolicy):
                 "MatchCriteria is done, with terminal_states=%s",
                 terminal_states,
             )
-        return RecognitionResult(is_done)
+        return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
 class MinimumLMs(RecognitionPolicy):

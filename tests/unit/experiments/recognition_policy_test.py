@@ -476,6 +476,7 @@ class MatchCriteriaTest(unittest.TestCase):
         result = policy(model, count)
         model._match_criterion.assert_called_once()
         self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.time_out_lms, is_done)
 
 
 class MinimumLMsTest(unittest.TestCase):
