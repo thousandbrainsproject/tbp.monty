@@ -196,12 +196,17 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
                 count.step,
                 count.matching_steps,
             )
+            lms = {
+                str(lm.learning_module_id): lm.recognition_status
+                for lm in model.learning_modules
+            }
             telemeter.info(
                 TelemetryEvent(
                     kind="TerminalCondition",
                     model=dict(
                         is_done=model.is_done,
                         is_exploring=model.is_exploring,
+                        lms=lms,
                     ),
                     count=count,
                     result=result,
@@ -383,6 +388,32 @@ class StepLimit(RecognitionPolicy):
             )
 
         return result
+
+
+class MatchCriteria(RecognitionPolicy):
+    """The `model.learning_modules` meet the configured `match_criteria`."""
+
+    def __init__(self: Self) -> None:
+        """Initialize the policy."""
+        pass
+
+    def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,  # noqa: ARG002
+    ) -> RecognitionResult:
+        terminal_states: dict[str, str | None] = {
+            lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
+        }
+        # TODO: Either configure the `match_criterion` on the policy itself,
+        #       or provide configurable policies for each criterion.
+        is_done = model._match_criterion(terminal_states)
+        if is_done:
+            logger.info(
+                "MatchCriteria is done, with terminal_states=%s",
+                terminal_states,
+            )
+        return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
 class MinimumLMs(RecognitionPolicy):

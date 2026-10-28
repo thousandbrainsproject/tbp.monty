@@ -8,9 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any
 
 __all__ = [
     "RecognitionConclusion",
@@ -31,4 +30,3 @@ class RecognitionStatus:
     """Recognition Status from each Learning Module."""
 
     conclusion: RecognitionConclusion | None = None
-    telemetry: dict[str, Any] = field(default_factory=dict)

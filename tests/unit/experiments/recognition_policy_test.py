@@ -17,6 +17,7 @@ from hypothesis import strategies as st
 from tbp.monty.experiment.recognition_policy import (
     AllLMsNoMatch,
     AnyPolicy,
+    MatchCriteria,
     MaximumSteps,
     MaxTotalSteps,
     MinEvalMaxTotalSteps,
@@ -459,6 +460,22 @@ class StepLimitTest(unittest.TestCase):
         result = policy(model, count)
         self.assertTrue(result.start_exploring)
         is_done = matching_steps >= max_train_steps
+        self.assertEqual(result.is_done, is_done)
+        self.assertEqual(result.time_out_lms, is_done)
+
+
+class MatchCriteriaTest(unittest.TestCase):
+    @given(
+        is_done=st.booleans(),
+    )
+    def test_done_iff_match_criterion_has_been_met(self, is_done: bool) -> None:
+        model = MagicMock()
+        model._match_criterion = MagicMock(return_value=is_done)
+        model.learning_modules = []
+        policy = MatchCriteria()
+        count = RecognitionCounter()
+        result = policy(model, count)
+        model._match_criterion.assert_called_once()
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
 
