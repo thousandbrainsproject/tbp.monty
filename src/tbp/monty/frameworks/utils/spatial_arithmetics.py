@@ -497,16 +497,16 @@ def batch_rotate_pose_vectors(
     Raises:
         TypeError: If the pose vectors represent GazeDirection.
     """
-    match pose_vectors:
-        case GazeDirection():
-            raise TypeError("GazeDirection type is not supported for rotation.")
-        case _:
-            # Transpose pose vectors so each vector is a column (otherwise .dot matmul
-            # produces slightly different results)
-            rotated_pv = rotations.dot(pose_vectors.value.T)
-            # Transpose last two axies so each pose vector is a row again
-            rotated_pv = rotated_pv.transpose((0, 2, 1))
-            return cast("npt.NDArray[np.float64]", rotated_pv)
+    # TODO: Replace with match statement
+    if isinstance(pose_vectors, GazeDirection):
+        raise TypeError("GazeDirection type is not supported for rotation.")
+
+    # Transpose pose vectors so each vector is a column (otherwise .dot matmul
+    # produces slightly different results)
+    rotated_pv = rotations.dot(pose_vectors.value.T)
+    # Transpose last two axies so each pose vector is a row again
+    rotated_pv = rotated_pv.transpose((0, 2, 1))
+    return cast("npt.NDArray[np.float64]", rotated_pv)
 
 
 def rotate_pose_vectors(
@@ -524,11 +524,11 @@ def rotate_pose_vectors(
     Raises:
         TypeError: If the pose vectors represent GazeDirection.
     """
-    match pose_vectors:
-        case GazeDirection():
-            raise TypeError("GazeDirection type is not supported for rotation.")
-        case _:
-            return SurfacePoseVectors(rotation.apply(pose_vectors.value))
+    # TODO: Replace with match statement
+    if isinstance(pose_vectors, GazeDirection):
+        raise TypeError("GazeDirection type is not supported for rotation.")
+
+    return SurfacePoseVectors(rotation.apply(pose_vectors.value))
 
 
 def rotate_multiple_pose_vectors(
