@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from unittest import TestCase
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch, sentinel
 
 import numpy as np
 import numpy.typing as npt
@@ -186,6 +186,50 @@ class DefaultHypothesesDisplacerTest(TestCase):
         # With 2 channels (C=2), range is [-C, 2C] = [-2, 4], mapped to [0, 1]:
         # prediction_error = (-2.0 + 2*2) / (3*2) = 1/3
         self.assertAlmostEqual(telemetry.mlh_prediction_error, 1 / 3)
+
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.custom_distances"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.euclidean_distances"
+    )
+    def test_calculate_evidence_for_new_locations_invoke_euclidean_distances_for_orientation_matrix_pose_vectors(  # noqa: E501
+        self,
+        euclidean_distances_mock: MagicMock,
+        custom_distances_mock: MagicMock,
+    ) -> None:
+        euclidean_distances_mock.return_value = sentinel.nearest_node_dists
+        channel_locations_mock = MagicMock()
+        channel_locations_mock.shape.__getitem__.return_value = 0
+        channel_locations_mock.__getitem__.return_value = sentinel.nearest_node_locs
+        graph_memory_mock = MagicMock()
+        graph_memory_mock.get_locations_in_graph.return_value = channel_locations_mock
+        displacer = DefaultHypothesesDisplacer(
+            feature_weights=MagicMock(),
+            graph_memory=graph_memory_mock,
+            max_match_distance=MagicMock(),
+            feature_evidence_scorer=MagicMock(),
+        )
+        displacer._get_node_distance_weights = MagicMock()
+        displacer._get_node_distance_weights.return_value = np.array([])
+        displacer._object_pose_evidence = MagicMock()
+
+        displacer._calculate_evidence_for_new_locations(
+            graph_id=MagicMock(),
+            input_channel=MagicMock(),
+            search_locations=sentinel.search_locations,
+            channel_possible_poses=MagicMock(),
+            channel_features={"pose_vectors": OrientationMatrix(np.identity(3))},
+        )
+
+        euclidean_distances_mock.assert_called_once_with(
+            predicted_locations=sentinel.search_locations,
+            nearest_node_locations=sentinel.nearest_node_locs,
+        )
+        custom_distances_mock.assert_not_called()
+        displacer._get_node_distance_weights.assert_called_once_with(
+            sentinel.nearest_node_dists
+        )
 
     @given(
         rotated_pose_vectors=rotation_matrices(),
