@@ -188,6 +188,68 @@ class DefaultHypothesesDisplacerTest(TestCase):
         self.assertAlmostEqual(telemetry.mlh_prediction_error, 1 / 3)
 
     @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.get_relevant_curvature"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.batch_rotate_pose_vectors"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.custom_distances"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.euclidean_distances"
+    )
+    def test_calculate_evidence_for_new_locations_invoke_custom_distances_for_surface_pose_vectors(  # noqa: E501
+        self,
+        euclidean_distances_mock: MagicMock,
+        custom_distances_mock: MagicMock,
+        batch_rotate_pose_vectors_mock: MagicMock,
+        get_relevant_curvature_mock: MagicMock,
+    ) -> None:
+        custom_distances_mock.return_value = sentinel.nearest_node_dists
+        rotated_pose_vectors_mock = MagicMock()
+        rotated_pose_vectors_mock.__getitem__.return_value = sentinel.surface_normals
+        batch_rotate_pose_vectors_mock.return_value = rotated_pose_vectors_mock
+        get_relevant_curvature_mock.return_value = sentinel.curvature
+        channel_locations_mock = MagicMock()
+        channel_locations_mock.shape.__getitem__.return_value = 0
+        channel_locations_mock.__getitem__.return_value = sentinel.nearest_node_locs
+        graph_memory_mock = MagicMock()
+        graph_memory_mock.get_locations_in_graph.return_value = channel_locations_mock
+        displacer = DefaultHypothesesDisplacer(
+            feature_weights=MagicMock(),
+            graph_memory=graph_memory_mock,
+            max_match_distance=MagicMock(),
+            feature_evidence_scorer=MagicMock(),
+        )
+
+        displacer._get_node_distance_weights = MagicMock()
+        displacer._get_node_distance_weights.return_value = np.array([])
+        displacer._sensory_pose_evidence = MagicMock()
+
+        displacer._calculate_evidence_for_new_locations(
+            graph_id=MagicMock(),
+            input_channel=MagicMock(),
+            search_locations=sentinel.search_locations,
+            channel_possible_poses=MagicMock(),
+            channel_features={
+                "pose_vectors": SurfacePoseVectors(np.identity(3)),
+                "pose_fully_defined": True,
+            },
+        )
+
+        custom_distances_mock.assert_called_once_with(
+            predicted_locations=sentinel.search_locations,
+            nearest_node_locations=sentinel.nearest_node_locs,
+            surface_normals=sentinel.surface_normals,
+            curvature=sentinel.curvature,
+        )
+        euclidean_distances_mock.assert_not_called()
+        displacer._get_node_distance_weights.assert_called_once_with(
+            sentinel.nearest_node_dists
+        )
+
+    @patch(
         "tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer.custom_distances"
     )
     @patch(
