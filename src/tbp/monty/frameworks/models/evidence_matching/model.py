@@ -86,16 +86,18 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                 # receiving LMs' poses
                                 new_s = copy.deepcopy(s)
                                 new_s_pose_vectors = new_s.get_pose_vectors()
-                                # TODO: Replace with match statement
-                                if isinstance(new_s_pose_vectors, OrientationMatrix):
-                                    rotated_displacement = (
-                                        new_s.get_pose_vectors().value.dot(sensor_disp)
-                                    )
-                                else:
-                                    raise TypeError(
-                                        "Only OrientationMatrices can rotate sensor "
-                                        "displacements."
-                                    )
+                                match new_s_pose_vectors:
+                                    case OrientationMatrix():
+                                        rotated_displacement = (
+                                            new_s.get_pose_vectors().value.dot(
+                                                sensor_disp
+                                            )
+                                        )
+                                    case _:
+                                        raise TypeError(
+                                            "Only OrientationMatrices can rotate sensor"
+                                            " displacements."
+                                        )
                                 new_s.transform_morphological_features(
                                     translation=rotated_displacement,
                                     rotation=sensor_rotation_disp,

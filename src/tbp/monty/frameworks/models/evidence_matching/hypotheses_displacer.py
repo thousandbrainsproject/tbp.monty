@@ -277,24 +277,24 @@ class DefaultHypothesesDisplacer:
             nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
         nearest_node_locs = channel_locations[nearest_node_ids]
-        # TODO: Replace with match statement
-        if isinstance(channel_features["pose_vectors"], OrientationMatrix):
-            nearest_node_dists = euclidean_distances(
-                predicted_locations=search_locations,
-                nearest_node_locations=nearest_node_locs,
-            )
-        elif isinstance(channel_features["pose_vectors"], SurfacePoseVectors):
-            nearest_node_dists = custom_distances(
-                predicted_locations=search_locations,
-                nearest_node_locations=nearest_node_locs,
-                surface_normals=rotated_pose_vectors[:, 0, :],
-                curvature=get_relevant_curvature(channel_features),
-            )
-        else:
-            raise TypeError(
-                "Can't calculate evidence for pose type "
-                f"{type(channel_features['pose_vectors'])}"
-            )
+        match channel_features["pose_vectors"]:
+            case SurfacePoseVectors():
+                nearest_node_dists = custom_distances(
+                    predicted_locations=search_locations,
+                    nearest_node_locations=nearest_node_locs,
+                    surface_normals=rotated_pose_vectors[:, 0, :],
+                    curvature=get_relevant_curvature(channel_features),
+                )
+            case OrientationMatrix():
+                nearest_node_dists = euclidean_distances(
+                    predicted_locations=search_locations,
+                    nearest_node_locations=nearest_node_locs,
+                )
+            case _:
+                raise TypeError(
+                    "Can't calculate evidence for pose type "
+                    f"{type(channel_features['pose_vectors'])}"
+                )
 
         # shape=(H, K)
         node_distance_weights = self._get_node_distance_weights(nearest_node_dists)
@@ -309,25 +309,25 @@ class DefaultHypothesesDisplacer:
         )
         # Calculate the pose error for each hypothesis
         # shape=(H, K)
-        # TODO: Replace with match statement
-        if isinstance(channel_features["pose_vectors"], SurfacePoseVectors):
-            radius_evidence = self._sensory_pose_evidence(
-                rotated_pose_vectors,
-                channel_features["pose_fully_defined"],
-                new_pos_features,
-                input_channel,
-                node_distance_weights,
-            )
-        elif isinstance(channel_features["pose_vectors"], OrientationMatrix):
-            radius_evidence = self._object_pose_evidence(
-                rotated_pose_vectors,
-                new_pos_features,
-            )
-        else:
-            raise TypeError(
-                "Cannot compute evidence for type "
-                f"{type(channel_features['pose_vectors'])}"
-            )
+        match channel_features["pose_vectors"]:
+            case SurfacePoseVectors():
+                radius_evidence = self._sensory_pose_evidence(
+                    rotated_pose_vectors,
+                    channel_features["pose_fully_defined"],
+                    new_pos_features,
+                    input_channel,
+                    node_distance_weights,
+                )
+            case OrientationMatrix():
+                radius_evidence = self._object_pose_evidence(
+                    rotated_pose_vectors,
+                    new_pos_features,
+                )
+            case _:
+                raise TypeError(
+                    "Cannot compute evidence for type "
+                    f"{type(channel_features['pose_vectors'])}"
+                )
         # Set the evidences which are too far away to -1
         radius_evidence[mask] = -1
         # If a node is too far away, weight the negative evidence fully (*1). This
