@@ -245,103 +245,77 @@ experiment:
         - 3
     environment:
       env_init_args:
-        objects:
-        - name: coneSolid
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+        agents:
+        - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
+          _partial_: true
+          agent_id: agent_id_0
+          sensor_configs:
+            patch_0:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              position:
+              - 0.0
+              - 0.0
+              - 0.0
+              zoom: 10.0
+            patch_1:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              position:
+              - 0.0
+              - 0.01
+              - 0.0
+              zoom: 10.0
+            patch_2:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              position:
+              - 0.0
+              - -0.01
+              - 0.0
+              zoom: 10.0
+            patch_3:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              position:
+              - 0.01
+              - 0.0
+              - 0.0
+              zoom: 10.0
+            patch_4:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              position:
+              - -0.01
+              - 0.0
+              - 0.0
+              zoom: 10.0
+            view_finder:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              position:
+              - 0.0
+              - 0.0
+              - 0.0
+              zoom: 1.0
           position:
           - 0.0
           - 1.5
-          - -0.1
-        scene_id: null
-        seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
-        agents:
-          agent_args:
-            agent_id: agent_id_0
-            sensor_ids:
-            - patch_0
-            - patch_1
-            - patch_2
-            - patch_3
-            - patch_4
-            - view_finder
-            height: 0.0
-            position:
-            - 0.0
-            - 1.5
-            - 0.2
-            resolutions:
-            - - 64
-              - 64
-            - - 64
-              - 64
-            - - 64
-              - 64
-            - - 64
-              - 64
-            - - 64
-              - 64
-            - - 64
-              - 64
-            positions:
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.01
-              - 0.0
-            - - 0.0
-              - -0.01
-              - 0.0
-            - - 0.01
-              - 0.0
-              - 0.0
-            - - -0.01
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.0
-            rotations:
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            semantics:
-            - false
-            - false
-            - false
-            - false
-            - false
-            - false
-            zooms:
-            - 10.0
-            - 10.0
-            - 10.0
-            - 10.0
-            - 10.0
-            - 1.0
-          agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
-      env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+          - 0.2
+      env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
@@ -431,7 +405,7 @@ experiment:
           level: INFO
     n_train_epochs: 1
     n_eval_epochs: 1
-    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train_mujoco/pretrained"}
     python_log_level: DEBUG
     seed: 42
     show_sensor_output: false

@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: tutorial_evidence_5lm
   - /monty/sensor_module: 5sm_camera
   - /monty/connectivity: 5lm_5sm
-  - /environment: habitat_dist_agent_sensors5
+  - /environment: mujoco_dist_agent_sensors5
   - /env_interface: tutorial_eval_2obj_predefined_r1
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
@@ -19,7 +19,7 @@ experiment:
   config:
     n_train_epochs: 1 # unused but required
     n_eval_epochs: 1
-    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train_mujoco/pretrained"}
     python_log_level: DEBUG
     seed: 42
     show_sensor_output: false
