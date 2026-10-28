@@ -16,6 +16,7 @@ from typing import Protocol, Sequence
 from typing_extensions import Self
 
 from tbp.monty import telemetry
+from tbp.monty.experiment.recognition_status import RecognitionConclusion
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.telemetry.schemas import TelemetryEvent
@@ -419,6 +420,27 @@ class MinimumLMs(RecognitionPolicy):
         if is_done:
             logger.info("MinimumLMs is done, with num_matched=%d", num_matched)
         return RecognitionResult(is_done)
+
+
+class AllLMsNoMatch(RecognitionPolicy):
+    """All LMs have reached a "no_match" conclusion."""
+
+    def __init__(self: Self) -> None:
+        """Initialize the policy."""
+        pass
+
+    def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,  # noqa: ARG002
+    ) -> RecognitionResult:
+        all_no_match = all(
+            lm.recognition_status.conclusion is RecognitionConclusion.NO_MATCH
+            for lm in model.learning_modules
+        )
+        if all_no_match:
+            logger.info("AllLMsNoMatch is done")
+        return RecognitionResult(is_done=all_no_match)
 
 
 class NaiveScan(RecognitionPolicy):
