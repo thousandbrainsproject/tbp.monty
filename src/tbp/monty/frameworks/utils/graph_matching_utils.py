@@ -301,7 +301,7 @@ def custom_distances(
     surface_normals: npt.NDArray[np.float64],
     curvature: float,
 ):
-    """Calculate custom distances modulated by surface normal and curvature.
+    """Calculate custom distances modulated by surface norm gal and curvature.
 
     Args:
         predicted_locations: Hypotheses locations of shape (num_hyp, 3).
