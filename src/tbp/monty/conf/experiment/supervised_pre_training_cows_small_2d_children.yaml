@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: evidence_3lm_heterarchy
   - /monty/sensor_module: 3sm_2d3d_dist_raw0
   - /monty/connectivity: 3lm_3sm_heterarchy
-  - /environment: habitat_dist_agent_sensors3
+  - /environment: mujoco_dist_agent_sensors3
   - /env_interface: train_cows_small_2d_children_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
@@ -19,12 +19,12 @@ experiment:
     show_sensor_output: false
     n_train_epochs: 7
     n_eval_epochs: 7
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_cows_3d_children/pretrained/}
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_cows_3d_children/pretrained/
     seed: 42
     supervised_lm_ids:
       - learning_module_1
     environment:
       env_init_args:
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
     logging:
       run_name: supervised_pre_training_cows_small_2d_children

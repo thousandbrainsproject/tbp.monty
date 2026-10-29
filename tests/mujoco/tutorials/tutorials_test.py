@@ -38,7 +38,7 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/first_experiment_mujoco"],
+                overrides=["experiment=tutorial/first_experiment"],
             )
             experiment = instantiate_experiment(config.experiment)
             with experiment:
@@ -49,9 +49,10 @@ class TutorialsTest(TestCase):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=tutorial/surf_agent_2obj_train_mujoco",
+                    "experiment=tutorial/surf_agent_2obj_train",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
+                    "experiment.config.recognition_policy=null",
                     "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
@@ -65,7 +66,7 @@ class TutorialsTest(TestCase):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=tutorial/surf_agent_2obj_eval_mujoco",
+                    "experiment=tutorial/surf_agent_2obj_eval",
                     # Non-interactive
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
@@ -83,7 +84,7 @@ class TutorialsTest(TestCase):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=tutorial/surf_agent_2obj_unsupervised_mujoco",
+                    "experiment=tutorial/surf_agent_2obj_unsupervised",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                     "experiment.config.recognition_policy.max_train_steps=3",
@@ -99,7 +100,7 @@ class TutorialsTest(TestCase):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=tutorial/dist_agent_5lm_2obj_train_mujoco",
+                    "experiment=tutorial/dist_agent_5lm_2obj_train",
                     # Non-interactive
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
@@ -116,7 +117,7 @@ class TutorialsTest(TestCase):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=tutorial/dist_agent_5lm_2obj_eval_mujoco",
+                    "experiment=tutorial/dist_agent_5lm_2obj_eval",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.recognition_policy.max_eval_steps=3",

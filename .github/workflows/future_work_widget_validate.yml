@@ -16,39 +16,11 @@ on:
       - '.github/workflows/future_work_widget_validate.yml'
 
 jobs:
-  install_monty:
-    name: install-monty
-    runs-on:
-      group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-4core
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
-    outputs:
-      conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
-    steps:
-      - name: Checkout tbp.monty
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          path: tbp.monty
-      - name: Install Monty
-        id: install_monty
-        uses: ./tbp.monty/.github/actions/install_monty
-        with:
-          working_directory: tbp.monty
   future_work_widget_validate:
     name: future-work-widget-validate
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
-    needs:
-      - install_monty
     steps:
-      - name: Restore cache
-        id: restore_cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
       - name: Checkout tbp.monty
         uses: actions/checkout@v7
         with:
@@ -60,27 +32,27 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           path: pr_code
-      - name: Install Monty
-        if: steps.restore_cache.outputs.cache-hit != 'true'
-        uses: ./tbp.monty/.github/actions/install_monty
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          working_directory: tbp.monty
-      - name: Install additional dependencies
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          pip install -e .[github_readme_sync_tool,future_work_widget_tool]
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Build future work widget
         working-directory: tbp.monty
         id: build
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          python -m tools.github_readme_sync.cli generate-index ../pr_code/docs "${{ runner.temp }}/index.json"
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra future_work_widget_tool \
+            python -m tools.github_readme_sync.cli generate-index ../pr_code/docs "${{ runner.temp }}/index.json"
           mkdir -p "${{ runner.temp }}/future-work-widget"
           cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
-          python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget" > "${{ runner.temp }}/build_result.json" 2>&1 || true
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra future_work_widget_tool \
+            python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget" > "${{ runner.temp }}/build_result.json" 2>&1 || true
       - name: Annotate errors
         if: always()
         working-directory: tbp.monty

@@ -31,12 +31,12 @@ defaults:
   - /monty/connectivity: 1lm_1sm
 
   # /environment specifies the environment configuration to use. We use a
-  # Habitat simulator environment, loaded with the YCB dataset, and Monty
+  # MuJoCo simulator environment, loaded with the YCB dataset, and Monty
   # controls a "distant" agent. Distant agent is like an eye, looking at things
   # from a distance.
-  - /environment: habitat_ycb_dist_agent_semantics0
+  - /environment: mujoco_ycb_dist_agent
 
-  # /env_interface specifies how to setup the enviromment for the experiment.
+  # /env_interface specifies how to set up the environment for the experiment.
   # We will train on one object and use a predefined rotation for placement of
   # one object.
   - /env_interface: tutorial_train_1obj_predefined
