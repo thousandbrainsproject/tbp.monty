@@ -98,56 +98,38 @@ experiment:
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
-        objects:
-        - name: coneSolid
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+        agents:
+        - _target_: tbp.monty.simulators.mujoco.agents.SurfaceAgent
+          _partial_: true
+          agent_id: agent_id_0
+          sensor_configs:
+            patch:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              position:
+              - 0.0
+              - 0.0
+              - 0.0
+              resolution:
+                width: 64
+                height: 64
+              zoom: 10.0
+            view_finder:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              position:
+              - 0.0
+              - 0.0
+              - 0.03
+              resolution:
+                width: 64
+                height: 64
+              zoom: 1.0
           position:
           - 0.0
           - 1.5
-          - -0.1
-        scene_id: null
-        seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
-        agents:
-          agent_args:
-            agent_id: agent_id_0
-            sensor_ids:
-            - patch
-            - view_finder
-            height: 0.0
-            position:
-            - 0.0
-            - 1.5
-            - 0.1
-            resolutions:
-            - - 64
-              - 64
-            - - 64
-              - 64
-            positions:
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.03
-            rotations:
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            semantics:
-            - false
-            - false
-            zooms:
-            - 10.0
-            - 1.0
-            action_space_type: surface_agent
-          agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
-      env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+          - 0.1
+        raise_actuate_missing: false
+      env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
@@ -190,10 +172,18 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
-      max_train_steps: 1000
-      max_eval_steps: 500
+      _target_: tbp.monty.experiment.recognition_policy.MinEvalMaxTotalSteps
+      min_eval_steps: 20
       max_total_steps: 5000
+      wrapped:
+        _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
+        policies:
+        - _target_: tbp.monty.experiment.recognition_policy.StepLimit
+          min_train_steps: 3
+          num_exploring_steps: 1000
+          max_train_steps: 1000
+          max_eval_steps: 500
+        - _target_: tbp.monty.experiment.recognition_policy.MatchCriteria
     logging:
       python_log_level: WARNING
       python_log_to_file: true

@@ -258,7 +258,6 @@ jobs:
           name: test_coverage_uv_integration
           path: tbp.monty/htmlcov
 
-
   test_monty:
     name: test-monty
     runs-on:
@@ -266,7 +265,6 @@ jobs:
       labels: tbp-linux-x64-ubuntu2204-8core
     timeout-minutes: 120
     needs:
-      # TODO: check all these using `uv` once we move off Conda
       - check_dependencies_monty # Don't run if dependency check fails
       - check_style_monty # Don't run if style check fails
       - check_types_monty # Don't run if type check fails
@@ -300,7 +298,7 @@ jobs:
           export MUJOCO_GL=egl
           export EGL_PLATFORM=headless
           mkdir -p test_results/pytest
-          uv run --frozen pytest src tests/mujoco/conf tests/unit \
+          uv run --frozen pytest src tests/conf tests/unit \
             --cov --cov-context=test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml --verbose \
             --doctest-modules --doctest-continue-on-failure \

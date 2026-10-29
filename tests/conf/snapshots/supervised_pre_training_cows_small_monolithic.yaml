@@ -9,8 +9,20 @@ experiment:
         min_eval_steps: 3
         min_train_steps: 3
       motor_system_config:
+        _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
         policy_selector:
-          policy:
+          _target_: tbp.monty.frameworks.models.motor_policy_selectors.DistantPolicySelector
+          jump_to_goal:
+            _target_: ${monty.class:tbp.monty.frameworks.models.motor_policies.JumpToGoal}
+            agent_id: agent_id_0
+            sensor_id: view_finder
+          look_at_goal:
+            _target_: ${monty.class:tbp.monty.frameworks.models.salience.motor_policy.LookAtGoal}
+            agent_id: agent_id_0
+            sensor_id: view_finder
+          default:
+            _target_: ${monty.class:tbp.monty.frameworks.models.motor_policies.InformedPolicyRandomWalk}
+            agent_id: agent_id_0
             action_sampler:
               _target_: tbp.monty.frameworks.actions.action_samplers.ConstantSampler
               actions:
@@ -18,12 +30,7 @@ experiment:
               - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
               - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
-            _target_: tbp.monty.frameworks.models.motor_policies.NaiveScanPolicy
-            use_goal_driven_actions: false
-            agent_id: agent_id_0
-            fixed_amount: 5
-          _target_: tbp.monty.frameworks.models.motor_policy_selectors.SinglePolicySelector
-        _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
+              rotation_degrees: 5.0
       learning_modules:
         learning_module_0:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
@@ -44,7 +51,7 @@ experiment:
             goal_tolerances:
               location: 0.015
             elapsed_steps_factor: 10
-            min_post_goal_success_steps: 5
+            min_post_goal_success_steps: 100
             x_percent_scale_factor: 0.75
             desired_object_distance: 0.03
         learning_module_1:
@@ -59,19 +66,13 @@ experiment:
           tolerances:
             patch_1:
               hsv: ${np.array:[0.1, 0.2, 0.2]}
-          max_match_distance: 0.001
+          max_match_distance: 0.0025
           x_percent_threshold: 20
           evidence_threshold_config: all
           max_graph_size: 0.1
           num_model_voxels_per_dim: 100
-          gsg:
-            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-            goal_tolerances:
-              location: 0.015
-            elapsed_steps_factor: 10
-            min_post_goal_success_steps: 5
-            x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
+          gsg: null
+          object_evidence_threshold: 20
         learning_module_2:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -94,14 +95,7 @@ experiment:
           max_graph_size: 0.4
           num_model_voxels_per_dim: 100
           max_nodes_per_graph: 2000
-          gsg:
-            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-            goal_tolerances:
-              location: 0.015
-            elapsed_steps_factor: 10
-            min_post_goal_success_steps: 5
-            x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
+          gsg: null
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
@@ -188,10 +182,22 @@ experiment:
             distance: 0.05
           save_raw_obs: false
         sensor_module_3:
-          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
+          _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          sensor_id: view_finder
-          transforms: []
+          salience_strategy:
+            _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2
+            color:
+              _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience
+              center_sigma: 1.0
+              surround_sigma: 3.0
+              n_scales: 2
+              max_octaves: 10
+              operating_limits:
+                _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.NoOperatingLimits
+            depth: null
+            orientation: null
+          segmentation_strategy:
+            _target_: tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0
@@ -203,81 +209,54 @@ experiment:
       - - 2
       lm_to_lm_matrix: null
       lm_to_lm_vote_matrix: null
+      attention_system:
+        _target_: tbp.monty.attention.attention_system.DefaultAttentionSystem
+        voxel_size: 0.005
+        decay:
+          _target_: tbp.monty.attention.decay.LinearWeightDecay
+          rate: 0.1
+        merge:
+          _target_: tbp.monty.attention.merge.Union
+        goal_filter:
+          _target_: tbp.monty.attention.goal_filter.HardGoalFilter
     environment:
       env_init_args:
-        objects:
-        - name: coneSolid
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
+        agents:
+        - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
+          _partial_: true
+          agent_id: agent_id_0
+          sensor_configs:
+            patch_0:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              zoom: 10.0
+            patch_1:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              zoom: 30.0
+            patch_2:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              zoom: 5.0
+            view_finder:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 256
+                height: 256
+              zoom: 1.0
           position:
           - 0.0
           - 1.5
-          - -0.1
-        scene_id: null
-        seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4}
-        agents:
-          agent_args:
-            agent_id: agent_id_0
-            sensor_ids:
-            - patch_0
-            - patch_1
-            - patch_2
-            - view_finder
-            height: 0.0
-            position:
-            - 0.0
-            - 1.5
-            - 0.2
-            resolutions:
-            - - 64
-              - 64
-            - - 64
-              - 64
-            - - 64
-              - 64
-            - - 64
-              - 64
-            positions:
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.0
-            rotations:
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            semantics:
-            - false
-            - false
-            - false
-            - false
-            zooms:
-            - 10.0
-            - 30.0
-            - 5.0
-            - 1.0
-          agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
-      env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+          - 0.2
+        raise_actuate_missing: false
+      env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
         agent_id: agent_id_0
@@ -301,8 +280,8 @@ experiment:
           - 64
         - - 64
           - 64
-        - - 64
-          - 64
+        - - 256
+          - 256
         world_coord: true
         zooms:
         - 10.0
@@ -334,7 +313,7 @@ experiment:
       - 027_mug_numenta_vert
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
-        rotations: ${constants.rotations_all}
+        rotations: ${constants.rotations_cube_faces}
       positioning_procedures:
       - _target_: tbp.monty.frameworks.environments.positioning_procedures.GetGoodViewFactory
         agent_id: agent_id_0
@@ -349,13 +328,10 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 3
     recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
-      policies:
-      - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
-      - _target_: tbp.monty.experiment.recognition_policy.NaiveScan
-        fixed_amount: 5
-      - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
-        max_total_steps: 6000
+      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+      max_train_steps: 250
+      max_eval_steps: 500
+      max_total_steps: 500
     logging:
       python_log_level: INFO
       python_log_to_file: true
@@ -366,9 +342,9 @@ experiment:
         handlers: []
       run_name: supervised_pre_training_cows_small_monolithic
     show_sensor_output: false
-    n_train_epochs: ${constants.rotations_all_count}
+    n_train_epochs: ${constants.rotations_cube_faces_count}
     n_eval_epochs: 3
-    model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models/supervised_pre_training_cows_small_2d_children/pretrained/}
+    model_name_or_path: ${constants.compositional_pretrained_dir}/supervised_pre_training_cows_small_2d_children/pretrained/
     seed: 42
     supervised_lm_ids:
     - learning_module_2

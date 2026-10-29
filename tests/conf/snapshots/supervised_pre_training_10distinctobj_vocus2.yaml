@@ -94,55 +94,30 @@ experiment:
       lm_to_lm_vote_matrix: null
     environment:
       env_init_args:
-        objects:
-        - name: coneSolid
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
+        agents:
+        - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
+          _partial_: true
+          agent_id: agent_id_0
+          sensor_configs:
+            patch:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 64
+                height: 64
+              zoom: 10.0
+            view_finder:
+              _target_: tbp.monty.frameworks.sensors.SensorConfig
+              resolution:
+                width: 256
+                height: 256
+              zoom: 1.0
           position:
           - 0.0
           - 1.5
-          - -0.1
-        scene_id: null
-        seed: 42
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
-        agents:
-          agent_args:
-            agent_id: agent_id_0
-            sensor_ids:
-            - patch
-            - view_finder
-            height: 0.0
-            position:
-            - 0.0
-            - 1.5
-            - 0.2
-            resolutions:
-            - - 64
-              - 64
-            - - 256
-              - 256
-            positions:
-            - - 0.0
-              - 0.0
-              - 0.0
-            - - 0.0
-              - 0.0
-              - 0.0
-            rotations:
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            - - 1.0
-              - 0.0
-              - 0.0
-              - 0.0
-            semantics:
-            - false
-            - false
-            zooms:
-            - 10.0
-            - 1.0
-          agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
-      env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+          - 0.2
+        raise_actuate_missing: false
+      env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
       - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
         agent_id: agent_id_0
