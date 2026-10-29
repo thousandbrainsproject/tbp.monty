@@ -217,10 +217,6 @@ class EvidenceGraphLM(GraphLM):
             LM.
         hypotheses_updater_args: Dictionary of configuration parameters for the
             hypotheses updater.
-        output_max_model_distance: How far (in meters) the most likely hypothesis
-            may lie from the nearest stored point of its object for the LM to
-            still send its output to higher-level LMs. Keeps a recognized object
-            from being reported once the sensor has moved off the learned model.
 
     Debugging Attributes:
         use_multithreading: Whether to calculate evidence updates for different
@@ -262,7 +258,6 @@ class EvidenceGraphLM(GraphLM):
         gsg: EvidenceGoalGenerator | None = None,
         hypotheses_updater_class: type[HypothesesUpdater] = DefaultHypothesesUpdater,
         hypotheses_updater_args: dict | None = None,
-        output_max_model_distance: float = 0.01,
         *args,
         **kwargs,
     ) -> None:
@@ -278,9 +273,6 @@ class EvidenceGraphLM(GraphLM):
         self.gsg = gsg
         if self.gsg:
             self.gsg.parent_lm = self
-
-        # --- Output gating ---
-        self.output_max_model_distance = output_max_model_distance
 
         # --- Matching Params ---
         self.max_match_distance = max_match_distance
@@ -544,9 +536,9 @@ class EvidenceGraphLM(GraphLM):
 
         pass_message is False unless the LM has reached a "match" terminal state,
         its sensor is on the object, and the most likely hypothesis lies within
-        output_max_model_distance of the recognized object's stored points. The
-        evidence requirement is the one "match" already imposes through
-        object_evidence_threshold.
+        max_match_distance of the recognized object's stored points, i.e. it is
+        still supported by the model. The evidence requirement is the one "match"
+        already imposes through object_evidence_threshold.
         """
         mlh = self._get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
@@ -1192,9 +1184,10 @@ class EvidenceGraphLM(GraphLM):
                 in the object's reference frame.
 
         Returns:
-            True if the location is within output_max_model_distance of the
-            nearest stored point in any of the object's input channels; False
-            when the object is unknown or the hypothesis has no location.
+            True if the location is within max_match_distance of the nearest
+            stored point in any of the object's input channels, the same radius
+            within which a hypothesis accrues evidence; False when the object is
+            unknown or the hypothesis has no location.
         """
         graph_id, location = mlh["graph_id"], mlh["location"]
         if location is None or graph_id not in self.get_all_known_object_ids():
@@ -1208,7 +1201,7 @@ class EvidenceGraphLM(GraphLM):
             )
             for channel in self.get_input_channels_in_graph(graph_id)
         ]
-        return min(distances) <= self.output_max_model_distance
+        return min(distances) <= self.max_match_distance
 
     def _object_id_to_features(self, object_id):
         """Convert an object ID to a stable categorical feature.

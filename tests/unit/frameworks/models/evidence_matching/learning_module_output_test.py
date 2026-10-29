@@ -34,7 +34,7 @@ def lm_with_model(channel_distances: dict[str, float]) -> MagicMock:
     # graph per input channel; the real methods under test are bound to it.
     lm = MagicMock(spec=EvidenceGraphLM)
     lm.graph_memory = MagicMock()
-    lm.output_max_model_distance = MAX_DISTANCE
+    lm.max_match_distance = MAX_DISTANCE
     lm.get_all_known_object_ids.return_value = ["mug"]
     lm.get_input_channels_in_graph.return_value = list(channel_distances)
     lm.graph_memory.get_graph.side_effect = lambda _graph_id, channel: (
