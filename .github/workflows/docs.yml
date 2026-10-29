@@ -50,7 +50,7 @@ jobs:
         run: |
           uv run --frozen \
             --extra dev \
-            --extra github_readme_sync_tool
+            --extra github_readme_sync_tool \
             python -m tools.github_readme_sync.cli check docs
 
   should_run_docs:
