@@ -146,34 +146,37 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > | Dataset | Archive Format | Download Link |
 > | --- | --- | --- |
-> | compositional_objects_1.4 | tgz | [compositional_objects_1.4.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz) |
-> | compositional_objects_1.4 | zip | [compositional_objects_1.4.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip) |
-> | compositional_objects_1.4_random_locs | tgz | [compositional_objects_1.4_random_locs.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz) |
-> | compositional_objects_1.4_random_locs | zip | [compositional_objects_1.4_random_locs.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.zip) |
+> | compositional_objects_1.4_mujoco | tgz | [compositional_objects_1.4_mujoco.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.tgz) |
+> | compositional_objects_1.4_mujoco | zip | [compositional_objects_1.4_mujoco.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.zip) |
+> | compositional_objects_1.4_random_locs_mujoco | tgz | [compositional_objects_1.4_random_locs_mujoco.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.tgz) |
+> | compositional_objects_1.4_random_locs_mujoco | zip | [compositional_objects_1.4_random_locs_mujoco.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.zip) |
 >
-> Both COWS Small and COWS Large use `compositional_objects_1.4`. The COWS Large `random_locs` experiments additionally require `compositional_objects_1.4_random_locs` for evaluation.
+> Both COWS Small and COWS Large use `compositional_objects_1.4_mujoco`. The COWS Large `random_locs` experiments additionally require `compositional_objects_1.4_random_locs_mujoco` for evaluation.
 >
-> Unpack the archive in the `~/tbp/data/habitat/versioned_data/` folder. For example:
+> Unpack the archive in the `~/tbp/data/mujoco/versioned_data/` folder. For example:
 >
 > ```plaintext tgz
-> mkdir -p ~/tbp/data/habitat/versioned_data/
+> mkdir -p ~/tbp/data/mujoco/versioned_data/
 >
-> cd ~/tbp/data/habitat/versioned_data/
+> cd ~/tbp/data/mujoco/versioned_data/
 >
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.tgz | tar -xzf -
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.tgz | tar -xzf -
 > ```
 >
 > or
 >
 > ```plaintext zip
-> mkdir -p ~/tbp/data/habitat/versioned_data/
+> mkdir -p ~/tbp/data/mujoco/versioned_data/
 >
-> cd ~/tbp/data/habitat/versioned_data/
+> cd ~/tbp/data/mujoco/versioned_data/
 >
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4.zip
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_mujoco.zip
 >
-> unzip compositional_objects_1.4.zip
+> unzip compositional_objects_1.4_mujoco.zip
+> > curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects_1.4_random_locs_mujoco.zip
+>
+> unzip compositional_objects_1.4_random_locs_mujoco.zip
 > ```
 >
 > To generate the pretrained models, run the following experiments in order. Train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
@@ -193,8 +196,8 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > | Models | Archive Format | Download Link |
 > | --- | --- | --- |
-> | pretrained_compositional_objects_v7 | tgz | [pretrained_compositional_objects_v7.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz) |
-> | pretrained_compositional_objects_v7 | zip | [pretrained_compositional_objects_v7.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip) |
+> | pretrained_compositional_objects_v8 | tgz | [pretrained_compositional_objects_v8.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.tgz) |
+> | pretrained_compositional_objects_v8 | zip | [pretrained_compositional_objects_v8.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.zip) |
 >
 > Both COWS Small and COWS Large use this archive, including the shared 3D-child models.
 >
@@ -205,7 +208,7 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.tgz | tar -xzf -
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.tgz | tar -xzf -
 > ```
 >
 > or
@@ -215,9 +218,9 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v7.zip
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.zip
 >
-> unzip pretrained_compositional_objects_v7.zip
+> unzip pretrained_compositional_objects_v8.zip
 > ```
 
 
@@ -268,26 +271,26 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 >
 > | Dataset | Archive Format | Download Link |
 > | --- | --- | --- |
-> | numenta_lab | tgz | [numenta_lab.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz) |
-> | numenta_lab | zip | [numenta_lab.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.zip) |
+> | numenta_lab_v2 | tgz | [numenta_lab_v2.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab_v2.tgz) |
+> | numenta_lab_v2 | zip | [numenta_lab_v2.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab_v2.zip) |
 >
-> Unpack the archive in the `~/tbp/data/` folder. For example:
+> Unpack the archive in the `~/tbp/data/mujoco` folder. For example:
 >
 > ```plaintext tgz
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/mujoco
 >
-> cd ~/tbp/data/
+> cd ~/tbp/data/mujoco
 >
-> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz | tar -xzf -
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab_v2.tgz | tar -xzf -
 > ```
 > ```plaintext zip
-> mkdir -p ~/tbp/data/
+> mkdir -p ~/tbp/data/mujoco
 >
-> cd ~/tbp/data/
+> cd ~/tbp/data/mujoco
 >
-> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.zip
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab_v2.zip
 >
-> unzip numenta_lab.zip
+> unzip numenta_lab_v2.zip
 > ```
 
 ### Results
@@ -299,7 +302,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 ### Explanation of Some of the Results
 
 - **Why is there such a drop in performance going from sim-to-real?**  
-  Although there are likely a variety of factors at play, it is worth emphasizing that it is highly non trivial to learn on photogrammetry scanned objects, and then generalize to images extracted from an RGBD depth camera, as this is a significant shift in the source of data available to the model. Furthermore, note that due to structural similarity of several of the objects in the dataset to one another, it is not too surprising that the model may converge to an incorrect hypothesis given only a single view.
+  Although there are likely a variety of factors at play, it is worth emphasizing that it is highly non-trivial to learn on photogrammetry scanned objects, and then generalize to images extracted from an RGBD depth camera, as this is a significant shift in the source of data available to the model. Furthermore, note that due to structural similarity of several of the objects in the dataset to one another, it is not too surprising that the model may converge to an incorrect hypothesis given only a single view.
 - **Why is the percent MLH used so high?**  
   Each episode is restricted to a single viewing angle of an object, resulting in significant ambiguity. Furthermore, episodes use a maximum of 100 matching steps so that these experiments can be run quickly.
 - **Are there any other factors contributing to performance differences to be aware of?**  
