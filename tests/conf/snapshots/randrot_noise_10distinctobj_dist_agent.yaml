@@ -205,7 +205,6 @@ experiment:
 episodes: all
 num_parallel: 16
 print_cfg: false
-quiet_habitat_logs: true
 constants:
   default_all_noise_params:
     features:

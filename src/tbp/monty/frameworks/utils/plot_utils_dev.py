@@ -1388,8 +1388,8 @@ def plot_graph_mismatch(
 
     # NB how we aim to plot both reference objects in the reference frame of the first
     # object, by correcting the second one
-    # Further note the order of indexing the xyz accounts for the y axis being
-    # the vertical axis in Habitat; this is also done for e.g. the surface normal
+    # Further note the order of indexing the xyz accounts for the y-axis being
+    # the vertical axis in the simulator; this is also done for e.g. the surface normal
     ax.scatter(
         top_mlh_graph[:, 0],
         top_mlh_graph[:, 2],
@@ -1511,8 +1511,9 @@ def plot_hotspots(
 
     ax.scatter(
         learned_model_cloud[:, 0],
-        learned_model_cloud[:, 2],  # Index like this so that z (forward-backward in
-        # Habitat) is treated as such by matplotlib
+        # Index like this so that z (forward-backward in the simulator) is treated
+        # as such by matplotlib.
+        learned_model_cloud[:, 2],
         learned_model_cloud[:, 1],
         c=learned_model_cloud[:, 2],
         alpha=0.3,

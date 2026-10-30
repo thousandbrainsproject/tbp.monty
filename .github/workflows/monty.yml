@@ -298,12 +298,10 @@ jobs:
           export MUJOCO_GL=egl
           export EGL_PLATFORM=headless
           mkdir -p test_results/pytest
-          uv run --frozen pytest src tests/conf tests/unit \
+          uv run --frozen pytest \
             --cov --cov-context=test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml --verbose \
             --doctest-modules --doctest-continue-on-failure \
-            --ignore=src/tbp/monty/simulators/habitat \
-            --ignore=src/tbp/monty/simulators/tacto \
             --durations=10 --durations-min=60
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -371,7 +369,7 @@ jobs:
           export EGL_PLATFORM=headless
           set -e
           mkdir -p test_results/pytest
-          uv run --frozen pytest tests/mujoco/tutorials \
+          uv run --frozen pytest tests/tutorials \
             --cov --cov-context test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml \
             --verbose \

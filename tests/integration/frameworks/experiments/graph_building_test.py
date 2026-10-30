@@ -9,46 +9,41 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from pathlib import Path
-
-import hydra
-import pytest
-from omegaconf import DictConfig
-
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
-
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 
-from tbp.monty.frameworks.experiments.pretraining_experiments import (
-    MontySupervisedObjectPretrainingExperiment,
-)
+import hydra
+from omegaconf import DictConfig
+
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
+from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 
 
 class GraphBuildingTest(unittest.TestCase):
-    def setUp(self):
-        """Code that gets executed before every test."""
-        self.output_dir = tempfile.mkdtemp()
-        self.habitat_save_path = tempfile.mkdtemp()
+    """Tests for graph memory building functionality.
+
+    These tests run rudimentary tests to confirm that our graph memory building
+    works as it should. We're also testing whether we can successfully train a
+    model and use it in subsequent evaluation experiments.
+    """
+
+    def setUp(self) -> None:
+        self.save_path = tempfile.mkdtemp()
         self.mesh_save_path = tempfile.mkdtemp()
-        self.model_load_path = Path(self.habitat_save_path) / "pretrained"
-        self.habitat_learned_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0]]
+        self.model_load_path = Path(self.save_path) / "pretrained"
+        self.learned_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0]]
 
         def training_config(test_name: str) -> DictConfig:
             return hydra.compose(
                 config_name="experiment",
                 overrides=[
                     f"experiment=test/graph_building/{test_name}",
-                    f"experiment.config.logging.output_dir={self.habitat_save_path}",
+                    f"experiment.config.logging.output_dir={self.save_path}",
                 ],
             )
 
@@ -57,7 +52,7 @@ class GraphBuildingTest(unittest.TestCase):
                 config_name="experiment",
                 overrides=[
                     f"experiment=test/graph_building/{test_name}",
-                    f"experiment.config.logging.output_dir={self.habitat_save_path}",
+                    f"experiment.config.logging.output_dir={self.save_path}",
                     f"experiment.config.model_name_or_path={self.model_load_path}",
                 ],
             )
@@ -66,22 +61,20 @@ class GraphBuildingTest(unittest.TestCase):
             self.supervised_pre_training_cfg = training_config(
                 "supervised_pre_training"
             )
-            self.spth_feat_cfg = training_config("spth_feat")
-            self.load_habitat_cfg = loading_config("load_habitat")
-            self.load_habitat_for_ppf_cfg = loading_config("load_habitat_for_ppf")
-            self.load_habitat_for_feat_eval_cfg = loading_config(
-                "load_habitat_for_feat_eval"
-            )
-            self.load_habitat_for_feat_train_cfg = loading_config(
-                "load_habitat_for_feat_train"
-            )
+            self.sptm_feat_cfg = training_config("sptm_feat")
+            self.load_cfg = loading_config("load")
+            self.load_for_ppf_cfg = loading_config("load_for_ppf")
+            self.load_for_feat_eval_cfg = loading_config("load_for_feat_eval")
+            self.load_for_feat_train_cfg = loading_config("load_for_feat_train")
 
-    def tearDown(self):
-        """Code that gets executed after every test."""
-        shutil.rmtree(self.output_dir)
+    def tearDown(self) -> None:
+        shutil.rmtree(self.save_path)
+        shutil.rmtree(self.mesh_save_path)
 
-    def check_graph_formatting(self, graph, features_to_check):
-        """Makes sure graph contains right feature at location information."""
+    def check_graph_formatting(
+        self, graph: GraphObjectModel, features_to_check: list[str]
+    ) -> None:
+        # Makes sure graph contains right feature at location information.
         self.assertIsNot(
             graph.pos,
             None,
@@ -116,7 +109,7 @@ class GraphBuildingTest(unittest.TestCase):
 
     def build_and_save_supervised_graph(
         self,
-    ) -> MontySupervisedObjectPretrainingExperiment:
+    ) -> MontyExperiment:
         """Builds and saves a supervised graph.
 
         Returns:
@@ -129,18 +122,18 @@ class GraphBuildingTest(unittest.TestCase):
 
     def build_and_save_supervised_graph_feat(
         self,
-    ) -> MontySupervisedObjectPretrainingExperiment:
+    ) -> MontyExperiment:
         """Builds and saves a supervised graph with feature matching.
 
         Returns:
             The experiment.
         """
-        exp = instantiate_experiment(self.spth_feat_cfg.experiment)
+        exp = instantiate_experiment(self.sptm_feat_cfg.experiment)
         with exp:
             exp.run()
         return exp
 
-    def test_get_correct_k_n(self):
+    def test_get_correct_k_n(self) -> None:
         # enough data points sampled, just add 1 to remove self connection
         self.assertEqual(get_correct_k_n(5, 10), 6)
         # not enough points sampled, set k_n to num points - 1
@@ -148,7 +141,7 @@ class GraphBuildingTest(unittest.TestCase):
         # not enough points to make edges
         self.assertEqual(get_correct_k_n(5, 2), None)
 
-    def test_can_build_graph_habitat_supervised(self):
+    def test_can_build_graph_supervised(self) -> None:
         exp = self.build_and_save_supervised_graph()
 
         cfg_object_names = list(
@@ -180,9 +173,9 @@ class GraphBuildingTest(unittest.TestCase):
                 "Edge attributes don't store 3d displacements",
             )
 
-    def test_can_load_disp_graph(self):
+    def test_can_load_disp_graph(self) -> None:
         self.build_and_save_supervised_graph()
-        exp = instantiate_experiment(self.load_habitat_cfg.experiment)
+        exp = instantiate_experiment(self.load_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -194,9 +187,9 @@ class GraphBuildingTest(unittest.TestCase):
                 )
             exp.evaluate()
 
-    def test_can_load_disp_graph_for_ppf_matching(self):
+    def test_can_load_disp_graph_for_ppf_matching(self) -> None:
         self.build_and_save_supervised_graph()
-        exp = instantiate_experiment(self.load_habitat_for_ppf_cfg.experiment)
+        exp = instantiate_experiment(self.load_for_ppf_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -213,9 +206,9 @@ class GraphBuildingTest(unittest.TestCase):
                 )
             exp.evaluate()
 
-    def test_can_load_disp_graph_for_feature_matching(self):
+    def test_can_load_disp_graph_for_feature_matching(self) -> None:
         self.build_and_save_supervised_graph()
-        exp = instantiate_experiment(self.load_habitat_for_feat_eval_cfg.experiment)
+        exp = instantiate_experiment(self.load_for_feat_eval_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
@@ -232,9 +225,9 @@ class GraphBuildingTest(unittest.TestCase):
                 )
             exp.run()
 
-    def test_can_extend_and_save_feat_graph(self):
+    def test_can_extend_and_save_feat_graph(self) -> None:
         self.build_and_save_supervised_graph_feat()
-        exp = instantiate_experiment(self.load_habitat_for_feat_train_cfg.experiment)
+        exp = instantiate_experiment(self.load_for_feat_train_cfg.experiment)
         with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(

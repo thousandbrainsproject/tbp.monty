@@ -8,30 +8,17 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import pytest
-
-from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.sensors import SensorID
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import json
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
 import hydra
-import magnum as mn
 import numpy as np
 
 from tbp.monty.frameworks.run import main
-from tbp.monty.simulators.habitat import SingleSensorAgent
+from tests import HYDRA_ROOT
 
 DATASET_LEN = 1000
 TRAIN_EPOCHS = 2
@@ -63,37 +50,14 @@ EXPECTED_LOG += ["post_eval"]
 
 
 class MontyRunTest(unittest.TestCase):
+    """Test for the `main` function of `run.py`.
+
+    This tests that the logic in the `main` function drives an experiment through
+    the expected steps of the training and evaluation process.
+    """
+
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
-        agent_patch = mock.patch("habitat_sim.Agent", autospec=True)
-        sim_patch = mock.patch("habitat_sim.Simulator", autospec=True)
-        self.addCleanup(agent_patch.stop)
-        self.addCleanup(sim_patch.stop)
-
-        # Mock habitat_sim classes
-        mock_agent_class = agent_patch.start()
-        camera = SingleSensorAgent(
-            agent_id=AgentID("agent_id_0"), sensor_id=SensorID("sensor_id_0")
-        )
-        self.mock_agent = mock_agent_class.return_value
-        self.mock_agent.agent_config = camera.get_spec()
-        self.mock_agent.scene_node = mock.Mock(
-            translation=mn.Vector3.zero_init(),
-            rotation=mn.Quaternion.zero_init(),
-            node_sensors={},
-        )
-        mock_sim_class = sim_patch.start()
-        self.mock_sim = mock_sim_class.return_value
-        self.mock_sim.agents = [self.mock_agent]
-        self.mock_sim.get_agent.side_effect = lambda agent_idx: (
-            self.mock_agent if agent_idx == 0 else None
-        )
-        self.mock_sim.reset.return_value = {
-            0: {"sensor_id_0.depth": np.random.rand(64, 64, 1)}
-        }
-        self.mock_sim.get_sensor_observations.side_effect = [
-            {0: {"sensor_id_0.depth": obs}} for obs in FAKE_OBS
-        ]
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.cfg = hydra.compose(

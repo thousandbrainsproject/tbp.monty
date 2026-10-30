@@ -7,15 +7,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import pytest
-
-from tbp.monty.hydra import instantiate_experiment
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import tempfile
 import unittest
 
@@ -30,6 +21,11 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
     get_perc_on_obj_semantic,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.object_recognition_experiments import (
+    MontyObjectRecognitionExperiment,
+)
+from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
 
@@ -58,11 +54,13 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("dist_agent_too_far_away", self.output_dir)
-            agent_cfg = config.experiment.config.environment.env_init_args.agents
+            agent_cfg = config.experiment.config.environment.env_init_args.agents[0]
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp = instantiate_experiment(config.experiment)
+            exp: MontyObjectRecognitionExperiment = instantiate_experiment(
+                config.experiment
+            )
             with exp:
                 exp.experiment_mode = ExperimentMode.TRAIN
                 exp.model.set_experiment_mode(exp.experiment_mode)
@@ -72,17 +70,18 @@ class GetGoodViewTest(unittest.TestCase):
                 target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
                 target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
+                assert exp.env_interface is not None  # for type narrowing
                 observation, state = exp.env_interface.step([])
-                view = observation[agent_id]["view_finder"]
+                view = observation[agent_id][SensorID("view_finder")]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
                     semantic, semantic_id=SemanticID(1)
                 )
 
                 # Make sure we've actually moved
-                assert not np.allclose(
-                    state[agent_id].position, agent_cfg.agent_args.position
-                ), "Agent did not move."
+                assert not np.allclose(agent_cfg.position, state[agent_id].position), (
+                    "Agent did not move."
+                )
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
                     f"Initial view is not good enough, {perc_on_target_obj} "
@@ -112,11 +111,13 @@ class GetGoodViewTest(unittest.TestCase):
         """
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config("multi_object_target_not_visible", self.output_dir)
-            agent_cfg = config.experiment.config.environment.env_init_args.agents
+            agent_cfg = config.experiment.config.environment.env_init_args.agents[0]
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp = instantiate_experiment(config.experiment)
+            exp: MontyObjectRecognitionExperiment = instantiate_experiment(
+                config.experiment
+            )
             with exp:
                 exp.train()
 
@@ -128,17 +129,13 @@ class GetGoodViewTest(unittest.TestCase):
                 target_perc_on_target_obj = GOOD_VIEW_PERCENTAGE_DEFAULT
                 target_closest_point = GOOD_VIEW_DISTANCE_DEFAULT
 
+                assert exp.env_interface is not None  # for type narrowing
                 observation, state = exp.env_interface.step([])
-                view = observation[agent_id]["view_finder"]
+                view = observation[agent_id][SensorID("view_finder")]
                 semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
                 perc_on_target_obj = get_perc_on_obj_semantic(
                     semantic, semantic_id=SemanticID(1)
                 )
-
-                # Make sure we've actually moved
-                assert not np.allclose(
-                    state[agent_id].position, agent_cfg.agent_args.position
-                ), "Agent did not move."
 
                 assert perc_on_target_obj >= target_perc_on_target_obj, (
                     f"Initial view is not good enough, {perc_on_target_obj} "
@@ -148,6 +145,11 @@ class GetGoodViewTest(unittest.TestCase):
                 points_on_target_obj = semantic == 1
                 closest_point_on_target_obj = np.min(
                     view["depth"][points_on_target_obj]
+                )
+
+                # Make sure we've actually moved
+                assert not np.allclose(agent_cfg.position, state[agent_id].position), (
+                    "Agent did not move."
                 )
 
                 assert closest_point_on_target_obj > target_closest_point, (
