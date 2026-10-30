@@ -1162,8 +1162,8 @@ class GraphMemory(LMMemory):
            that the points will be transformed into the model's reference frame before
            storage, but it is not this method's responsibility.
         3. Known object, unknown channel: Transforms the points into this model's
-           reference frame and then builds the new channel's graph aligned via
-           ``_build_graph``.
+           reference frame (if `object_rotation` is not None). It then builds the new
+           graph.
 
         """
         if graph_id is None:
@@ -1180,9 +1180,6 @@ class GraphMemory(LMMemory):
             logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
 
         for input_channel, channel_features in features.items():
-            # This step drops NaN entries from both the features and locations arrays,
-            # ensuring that only valid observations are considered for the current
-            # input channel.
             (
                 input_channel_features,
                 input_channel_locations,
@@ -1209,17 +1206,7 @@ class GraphMemory(LMMemory):
                 )
             else:
                 # Case 3: known object, unknown channel.
-                logger.info(
-                    f"{graph_id} in memory but {input_channel} is a new input "
-                    "channel. Transforming points into the model's reference frame."
-                )
-                if object_rotation is None:
-                    logger.warning(
-                        f"No object rotation detected for {graph_id}. Adding "
-                        f"{input_channel} without transforming its points; the new "
-                        "channel may be misaligned with existing channels."
-                    )
-                else:
+                if object_rotation is not None:
                     (
                         input_channel_locations,
                         input_channel_features,
