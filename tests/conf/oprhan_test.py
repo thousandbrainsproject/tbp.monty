@@ -48,7 +48,8 @@ def test_no_orphaned_component_configs():
             # This is a bit involved because we want the paths to be
             # relative to HYDRA_ROOT **and** `yaml.dump` doesn't work with
             # Path objects correctly, so we need to convert to a string.
-            [str(Path(c).relative_to(HYDRA_ROOT)) for c in orphaned_configs],
+            # Sort them so they're easier to remove.
+            [str(Path(c).relative_to(HYDRA_ROOT)) for c in sorted(orphaned_configs)],
             default_flow_style=False,  # uses bullet lists instead of JSON style lists
         )
 
