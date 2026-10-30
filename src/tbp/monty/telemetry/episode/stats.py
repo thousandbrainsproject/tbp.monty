@@ -9,13 +9,12 @@
 
 from __future__ import annotations
 
-from typing import Mapping
+from typing import Mapping, Sequence
 
 import numpy as np
 import numpy.typing as npt
 
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.telemetry.episode.schemas import LearningModuleStateTelemetry
 from tbp.monty.frameworks.utils.logging_utils import (
     compute_pose_error,
     compute_unsupervised_stats,
@@ -25,16 +24,17 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     rotations_to_quats,
 )
 from tbp.monty.geometry import Rotation
+from tbp.monty.telemetry.episode.schemas import LMStateTelemetry, LMStepState
 
 
-# TODO telemetry: convert to utils file? Declared as class for now to prevent name clash
+# TODO: convert to utils file? Declared as class for now to prevent name clash
 class GraphLMStats:
     """Utility class substituting `logging_utils.get_stats_per_lm` and its callees."""
 
     @classmethod
     def get_lm_performance_stats(
         cls,
-        lm: LearningModuleStateTelemetry,
+        lm: LMStateTelemetry,
         model: MontyBase,
         target: Mapping,
         target_data: Mapping,
@@ -55,22 +55,26 @@ class GraphLMStats:
             LM performance stats.
         """
         lm_stats = cls.get_graph_lm_stats(lm, target)
-        if lm.current_mlh is not None:
-            lm_stats = cls.add_evidence_lm_episode_stats(lm, lm_stats, target)
+        if lm.step_state.current_mlh is not None:
+            lm_stats = cls.add_evidence_lm_episode_stats(
+                lm.step_state, lm_stats, target
+            )
         else:
-            lm_stats = cls.add_pose_lm_episode_stats(lm, lm_stats)
-        lm_stats = cls.add_policy_episode_stats(lm, lm_stats)
+            lm_stats = cls.add_pose_lm_episode_stats(lm.step_state, lm_stats)
+        lm_stats = cls.add_policy_episode_stats(lm.step_state, lm_stats)
         lm_stats["monty_steps"] = model.episode_steps
         lm_stats["monty_matching_steps"] = model.matching_steps
         lm_stats["episode_seed"] = episode_seed
         lm_stats.update(target_data)
 
         # Add LM-specific target information
-        lm_stats.update({"stepwise_target_object": lm.stepwise_target_object})
+        lm_stats.update(
+            {"stepwise_target_object": lm.step_state.stepwise_target_object}
+        )
         return lm_stats
 
     @staticmethod
-    def get_graph_lm_stats(lm: LearningModuleStateTelemetry, target: Mapping) -> dict:
+    def get_graph_lm_stats(lm_state: LMStateTelemetry, target: Mapping) -> dict:
         """Generates the stats dictionary for one episode for an LM.
 
         Equivalent of `logging_utils.get_graph_lm_episode_stats`.
@@ -78,6 +82,9 @@ class GraphLMStats:
         Returns:
             LM episode stats.
         """
+        lm = lm_state.step_state
+        lm_recognition_state = lm_state.recognition_state
+
         primary_target: str = target["object"]
         primary_target_rotation_quat: npt.ArrayLike = target["quat_rotation"]
 
@@ -87,8 +94,8 @@ class GraphLMStats:
         # the learning module is actually receiving sensory input from when it converges
         location = np.array([0, 0, 0])
         num_steps = 0
-        result = None
-        possible_matches = []
+        result: Sequence[str] | None = None
+        possible_matches: Sequence[str] = []
         rotation_error = None
         individual_ts_step = None
         individual_ts_perf = "patch_off_object"
@@ -99,9 +106,9 @@ class GraphLMStats:
             num_steps = lm.matching_steps
             location = np.array(lm.location)
             possible_matches = lm.possible_matches
-            primary_performance = lm.terminal_state.value
-            stepwise_performance = lm.terminal_state.value
-            result = lm.detected_object
+            primary_performance = lm_recognition_state.terminal_state.value
+            stepwise_performance = lm_recognition_state.terminal_state.value
+            result = lm_recognition_state.detected_object
             if len(possible_matches) == 0:
                 primary_performance = "no_match"
                 stepwise_performance = "no_match"
@@ -110,7 +117,9 @@ class GraphLMStats:
                 stepwise_performance = "no_label"
             # Exactly one match
             elif primary_performance == "match":
-                target_to_graph = lm.graph_id_to_target[lm.detected_object]
+                target_to_graph = lm.graph_id_to_target[
+                    lm_recognition_state.detected_object
+                ]
                 if primary_target in target_to_graph:
                     primary_performance = "correct"
                     if lm.buffer_stats["symmetric_rotations"] is not None:
@@ -222,7 +231,7 @@ class GraphLMStats:
     @classmethod
     def add_evidence_lm_episode_stats(
         cls,
-        lm: LearningModuleStateTelemetry,
+        lm: LMStepState,
         stats: dict,
         target: Mapping,
     ) -> dict:
@@ -230,11 +239,16 @@ class GraphLMStats:
 
         Returns:
             Updated stats dictionary.
+
+        Raises:
+            ValueError: If ``lm.current_mlh`` is ``None``.
         """
         primary_target: str = target["object"]
         primary_target_rotation_quat: npt.ArrayLike = target["quat_rotation"]
-        consistent_child_objects: Mapping = target["consistent_child_objects"]
         last_mlh = lm.current_mlh
+
+        if last_mlh is None:
+            raise ValueError("lm.current_mlh cannot be None")
 
         stats["most_likely_object"] = last_mlh["graph_id"]
         stats["most_likely_location"] = last_mlh["location"]
@@ -260,21 +274,10 @@ class GraphLMStats:
                 ),
                 4,
             )
-        # Check if the most likely object is a consistent child object
-        # Don't do this if the episode timed out, we had no match, or the detected
-        # object was already an exact match with the label.
-        if (
-            stats["primary_performance"] in ["confused", "confused_mlh"]
-            and consistent_child_objects
-            and last_mlh["graph_id"] in consistent_child_objects
-        ):
-            stats["primary_performance"] = "consistent_child_obj"
         return stats
 
     @staticmethod
-    def add_pose_lm_episode_stats(
-        lm: LearningModuleStateTelemetry, stats: dict
-    ) -> dict:
+    def add_pose_lm_episode_stats(lm: LMStepState, stats: dict) -> dict:
         """Add possible poses of an LM to episode stats.
 
         Args:
@@ -313,7 +316,7 @@ class GraphLMStats:
         return stats
 
     @staticmethod
-    def add_policy_episode_stats(lm: LearningModuleStateTelemetry, stats: dict) -> dict:
+    def add_policy_episode_stats(lm: LMStepState, stats: dict) -> dict:
         if "goal_state_achieved" in lm.buffer_stats:
             stats["goal_states_attempted"] = len(lm.buffer_stats["goal_state_achieved"])
             stats["goal_state_achieved"] = np.sum(
@@ -329,8 +332,8 @@ class GraphLMStats:
     def calculate_performance(
         stats: dict,
         performance_type: str,
-        lm: LearningModuleStateTelemetry,
-        target_object,
+        lm: LMStepState,
+        target_object: str | None,
     ) -> dict:
         """Calculate performance of an LM on a given target object.
 
@@ -346,7 +349,11 @@ class GraphLMStats:
         """
         if stats[performance_type] in ["time_out", "pose_time_out"]:
             # Check if the final result (object label) is consistent with the target
-            if target_object in lm.graph_id_to_target[lm.current_mlh["graph_id"]]:
+            if (
+                target_object is not None
+                and lm.current_mlh
+                and target_object in lm.graph_id_to_target[lm.current_mlh["graph_id"]]
+            ):
                 stats[performance_type] = "correct_mlh"
             else:
                 stats[performance_type] = "confused_mlh"

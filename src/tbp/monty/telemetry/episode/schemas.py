@@ -10,17 +10,14 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Mapping, MutableMapping, Sequence, cast
 
 import numpy as np
+from pydantic import BaseModel
 from typing_extensions import Self
 
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
-from tbp.monty.frameworks.telemetry.schemas import (
-    EpisodeTelemetryEvent,
-    TelemetryEvent,
-    TelemetrySchema,
-)
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.evidence_matching.learning_module import (
@@ -37,7 +34,7 @@ class TerminalState(Enum):
     TIME_OUT = "time_out"  # TODO: from MontyForGraphMatching._set_time_outs, yes/no?
 
     @classmethod
-    def from_graph_lm(cls, lm: GraphLM) -> Self:
+    def from_graph_lm(cls, lm: GraphLM) -> TerminalState:
         """Extracts the LM terminal state and turns it into an enum value.
 
         Returns:
@@ -50,8 +47,8 @@ class TerminalState(Enum):
             return cls.UNDEFINED
 
 
-class LMTelemetrySchema(TelemetrySchema):
-    """Generic schema for learning module telemetry."""
+class LMTelemetryModel(BaseModel):
+    """Learning module identity info shared by LM-related telemetry events."""
 
     lm_id: str
     """Learning module ID."""
@@ -60,14 +57,8 @@ class LMTelemetrySchema(TelemetrySchema):
     """Learning module type."""
 
 
-class LMTelemetryEvent(LMTelemetrySchema, TelemetryEvent):
-    """Generic event schema for learning module telemetry."""
-
-    pass
-
-
-class LMRecognitionStateMixin(LMTelemetrySchema):
-    """Generic schema mixin for LM object recognition telemetry."""
+class LMRecognitionState(BaseModel):
+    """Learning module state data emitted upon object recognition."""
 
     terminal_state: TerminalState
     """Terminal state of the learning module."""
@@ -76,28 +67,30 @@ class LMRecognitionStateMixin(LMTelemetrySchema):
     """ID of the object detected by the learning module."""
 
 
-class LearningModuleObjectRecognized(LMRecognitionStateMixin, LMTelemetryEvent):
-    """Event schema containing LM state data emitted upon object recognition."""
+class LMRecognitionStateTelemetry(LMTelemetryModel):
+    """Learning module state data emitted upon object recognition."""
+
+    recognition_state: LMRecognitionState
 
     @classmethod
-    def from_graph_lm(cls, lm: GraphLM, emitter: str | object) -> Self:
-        """Populates a `LearningModuleObjectRecognized` event from a `GraphLM`.
+    def from_graph_lm(cls, lm: GraphLM) -> Self:
+        """Populates an event from a `GraphLM`.
 
         Returns:
             The event schema.
         """
         return cls(
-            emitter=emitter,
             lm_id=lm.learning_module_id,
             lm_type=type(lm),
-            terminal_state=TerminalState.from_graph_lm(lm),
-            detected_object=lm.detected_object,
+            recognition_state=LMRecognitionState(
+                terminal_state=TerminalState.from_graph_lm(lm),
+                detected_object=lm.detected_object,
+            ),
         )
 
 
-# TODO telemetry: better name for this? StepState? StateEvent?
-class LearningModuleStateTelemetry(LMRecognitionStateMixin, LMTelemetryEvent):
-    """Event schema containing learning module state data emitted at every step."""
+class LMStepState(BaseModel):
+    """Learning module state data emitted at every step."""
 
     is_on_object: bool
     """Indicates if ``GraphLM.buffer.on_object[0]`` is ``True``."""
@@ -108,7 +101,7 @@ class LearningModuleStateTelemetry(LMRecognitionStateMixin, LMTelemetryEvent):
     location: Sequence[float]
     """Result of `GraphLM.buffer.get_current_location()`."""
 
-    buffer_stats: Mapping
+    buffer_stats: MutableMapping
     """Equivalent of `GraphLM.buffer.stats`."""
 
     stepwise_target_object: str | None
@@ -144,20 +137,26 @@ class LearningModuleStateTelemetry(LMRecognitionStateMixin, LMTelemetryEvent):
     pose_similarity_threshold: float | None
     """Equivalent of `EvidenceGraphLM.pose_similarity_threshold`."""
 
+
+class LMStateTelemetry(LMTelemetryModel):
+    """Event schema containing learning module state data emitted at every step."""
+
+    recognition_state: LMRecognitionState
+    step_state: LMStepState
+
     @classmethod
-    def from_graph_lm(cls, lm: GraphLM, emitter: str | object) -> Self:
+    def from_graph_lm(cls, lm: GraphLM) -> Self:
         """Populates a new event from a `GraphLM`.
 
         Returns:
             The event schema.
         """
         # First, try to get data that is specific to child classes of GraphLM
-        # TODO telemetry: perhaps protocols would be more appropriate for this?
 
-        eg_lm = cast("EvidenceGraphLM", lm)  # for static analysis only
+        eg_lm = cast("EvidenceGraphLM", lm)
 
         try:
-            current_mlh = eg_lm.get_current_mlh()
+            current_mlh = eg_lm._get_current_mlh()
         except AttributeError:
             current_mlh = None
 
@@ -168,7 +167,7 @@ class LearningModuleStateTelemetry(LMRecognitionStateMixin, LMTelemetryEvent):
             path_similarity_threshold = None
             pose_similarity_threshold = None
 
-        fg_lm = cast("FeatureGraphLM", lm)  # for static analysis only
+        fg_lm = cast("FeatureGraphLM", lm)
 
         try:
             possible_poses = fg_lm.possible_poses
@@ -182,11 +181,11 @@ class LearningModuleStateTelemetry(LMRecognitionStateMixin, LMTelemetryEvent):
             except AttributeError:
                 pass
 
-        # Construct the event
+        # Then, construct the event
 
-        # TODO telemetry: maybe use numpydantic instead of .tolist()?
+        # TODO: maybe use numpydantic to keep ndarrays instead of .tolist()?
 
-        location = lm.buffer.get_current_location()
+        location = lm.buffer.current_location()
         if isinstance(location, np.ndarray):
             location = location.tolist()
 
@@ -202,30 +201,50 @@ class LearningModuleStateTelemetry(LMRecognitionStateMixin, LMTelemetryEvent):
         # Perhaps `ThreadedTelemetrySubscriber` could handle copying dict members in a
         # generic manner as needed.
         return cls(
-            emitter=emitter,
             lm_id=lm.learning_module_id,
             lm_type=type(lm),
-            terminal_state=TerminalState.from_graph_lm(lm),
-            detected_object=lm.detected_object,
-            is_on_object=(lm.buffer.on_object and lm.buffer.on_object[0]),
-            matching_steps=lm.buffer.get_num_matching_steps(),
-            location=location,
-            buffer_stats=lm.buffer.stats,  # TODO .copy()?
-            stepwise_target_object=lm.stepwise_target_object,
-            graph_id_to_target=lm.graph_id_to_target,  # TODO .copy()?
-            target_to_graph_id=lm.target_to_graph_id,  # TODO .copy()?
-            detected_pose=detected_pose,
-            symmetry_evidence=lm.symmetry_evidence,
-            current_mlh=current_mlh,
-            possible_matches=lm.get_possible_matches(),
-            possible_paths=lm.possible_paths,  # TODO .copy()?
-            possible_poses=possible_poses,  # TODO .copy()?
-            path_similarity_threshold=path_similarity_threshold,
-            pose_similarity_threshold=pose_similarity_threshold,
+            recognition_state=LMRecognitionState(
+                terminal_state=TerminalState.from_graph_lm(lm),
+                detected_object=lm.detected_object,
+            ),
+            step_state=LMStepState(
+                is_on_object=(lm.buffer.on_object and lm.buffer.on_object[0]),
+                matching_steps=lm.buffer.get_num_matching_steps(),
+                location=location,
+                buffer_stats=lm.buffer.stats,  # TODO .copy()?
+                stepwise_target_object=lm.stepwise_target_object,
+                graph_id_to_target=lm.graph_id_to_target,  # TODO .copy()?
+                target_to_graph_id=lm.target_to_graph_id,  # TODO .copy()?
+                detected_pose=detected_pose,
+                symmetry_evidence=lm.symmetry_evidence,
+                current_mlh=current_mlh,
+                possible_matches=lm.get_possible_matches(),
+                possible_paths=lm.possible_paths,  # TODO .copy()?
+                possible_poses=possible_poses,  # TODO .copy()?
+                path_similarity_threshold=path_similarity_threshold,
+                pose_similarity_threshold=pose_similarity_threshold,
+            ),
         )
 
 
-class EpisodeStatsTelemetry(EpisodeTelemetryEvent):
+class EpisodeTelemetryModel(BaseModel):
+    """Base model mixin for telemetry schemas with fields for episode state.
+
+    All instances carry universal context baggage (emitter, timestamp, episode, step,
+    mode).
+    """
+
+    mode: ExperimentMode
+    """Current experiment mode."""
+
+    episode: int
+    """Current episode number."""
+
+    step: int
+    """Current episode step number."""
+
+
+class EpisodeStatsTelemetry(EpisodeTelemetryModel):
     """Event produced by `EpisodeTelemetryHandler`.
 
     Contains aggregated overall episode statistics of the experiment.
@@ -233,29 +252,3 @@ class EpisodeStatsTelemetry(EpisodeTelemetryEvent):
 
     stats: Mapping
     """Stats data dictionary to pass along to subscribers, e.g. Wandb connector."""
-
-    # TODO telemetry: remove this method? no longer used, constructed via post_episode
-    @classmethod
-    def from_parent(
-        cls, stats: dict, parent: EpisodeTelemetryEvent, emitter: str | object = ""
-    ) -> Self:
-        """Constructs an `EpisodeStatsTelemetry` from a parent event.
-
-        Copies event fields from the parent into the new derived event.
-
-        Args:
-            stats: The aggregated stats dict to embed in the event, typically
-                `EpisodeTelemetryHandler.data`.
-            parent: The triggering event whose context fields are to be copied.
-            emitter: Emitting class or module. If empty, inherits from the parent.
-
-        Returns:
-            The new event.
-        """
-        return cls(
-            stats=stats,
-            emitter=(emitter if emitter else parent.emitter),
-            mode=parent.mode,
-            episode=parent.episode,
-            step=parent.step,
-        )

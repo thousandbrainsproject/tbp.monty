@@ -18,7 +18,7 @@ import threading
 from queue import Queue
 from typing import final
 
-from tbp.monty.frameworks.telemetry.schemas import TelemetrySchema
+from tbp.monty.telemetry.schemas import TelemetrySchema
 
 
 class TelemetrySubscriber(logging.Handler, metaclass=abc.ABCMeta):
@@ -28,7 +28,7 @@ class TelemetrySubscriber(logging.Handler, metaclass=abc.ABCMeta):
     implement `logger_names()` and `_consume()`.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """Base constructor for abstract `TelemetrySubscriber`.
 
         Args:
@@ -41,23 +41,20 @@ class TelemetrySubscriber(logging.Handler, metaclass=abc.ABCMeta):
 
         self.subscribe()
 
-    def __del__(self):
-        self.unsubscribe()
-
     @property
     @abc.abstractmethod
     def logger_names(self) -> list[str]:
         """Names of loggers to subscribe to."""
         ...
 
-    def subscribe(self):
+    def subscribe(self) -> None:
         """Subscribes the instance to its loggers."""
         for name in self.logger_names:
             logger = logging.getLogger(name)
             logger.addHandler(self)  # idempotent
             self.loggers.add(logger)
 
-    def unsubscribe(self):
+    def unsubscribe(self) -> None:
         """Unsubscribes the instance from its loggers."""
         for logger in self.loggers:
             logger.removeHandler(self)
@@ -65,18 +62,18 @@ class TelemetrySubscriber(logging.Handler, metaclass=abc.ABCMeta):
 
     @staticmethod
     def _get_schema_from_record(record: logging.LogRecord) -> TelemetrySchema:
-        schema = record.__dict__.get("telemetry_schema")
+        schema = record.msg
         if not isinstance(schema, TelemetrySchema):
-            raise TypeError(f"Telemetry schema of invalid type '{type(schema)}'")
+            raise TypeError(f"Expecting TelemetrySchema but got {type(schema)}")
         return schema
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         """Consumes the schema from an incoming telemetry `LogRecord` immediately."""
         schema = self._get_schema_from_record(record)
         self._consume(schema)
 
     @abc.abstractmethod
-    def _consume(self, schema: TelemetrySchema):
+    def _consume(self, schema: TelemetrySchema) -> None:
         """Processes a single telemetry schema."""
         ...
 
@@ -101,7 +98,7 @@ class ThreadedTelemetrySubscriber(TelemetrySubscriber):
         subscriber.stop()
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """Initializes the subscriber."""
         super().__init__(**kwargs)
 
@@ -111,11 +108,11 @@ class ThreadedTelemetrySubscriber(TelemetrySubscriber):
         self._thread = threading.Thread(target=self._consume_loop, daemon=True)
         self._start_flag = threading.Event()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Attempts a best-effort stop on garbage collection."""
         self.stop()
 
-    def _clear_queue(self):
+    def _clear_queue(self) -> None:
         """Clears schema queue."""
         while not self.schema_queue.empty():
             try:
@@ -124,17 +121,17 @@ class ThreadedTelemetrySubscriber(TelemetrySubscriber):
                 continue
             self.schema_queue.task_done()
 
-    def subscribe(self):
+    def subscribe(self) -> None:
         """Subscribes the instance to its loggers, clearing the schema queue first."""
         self._clear_queue()
         super().subscribe()
 
-    def unsubscribe(self):
+    def unsubscribe(self) -> None:
         """Unsubscribes the instance from its loggers, clearing the schema queue."""
         super().unsubscribe()
         self._clear_queue()
 
-    def start(self):
+    def start(self) -> None:
         """If not started, subscribes to logger(s) and starts the background thread."""
         if not self._start_flag.is_set():
             self._start_flag.set()
@@ -142,7 +139,7 @@ class ThreadedTelemetrySubscriber(TelemetrySubscriber):
         if not self._thread.is_alive():
             self._thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         """Stops the background thread and unsubscribes from logger(s)."""
         self._start_flag.clear()
         self.unsubscribe()
@@ -150,12 +147,12 @@ class ThreadedTelemetrySubscriber(TelemetrySubscriber):
             self._thread.join()
 
     @final
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         """Enqueues the schema from an incoming telemetry `LogRecord`."""
         schema = self._get_schema_from_record(record)
         self.schema_queue.put_nowait(schema)
 
-    def _consume_loop(self):
+    def _consume_loop(self) -> None:
         """Thread entry point; continuously consumes schemas until stopped."""
         while self._start_flag.is_set():
             try:
@@ -178,7 +175,7 @@ class MultiprocessTelemetrySubscriber(ThreadedTelemetrySubscriber):
     reserved for the forwarding logic and must not be overridden.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """Initializes the subscriber, creating the ``mp.Queue`` and child process.
 
         The process is not started until `start()` is called.
@@ -192,7 +189,7 @@ class MultiprocessTelemetrySubscriber(ThreadedTelemetrySubscriber):
             daemon=True,
         )
 
-    def _clear_queue(self):
+    def _clear_queue(self) -> None:
         """Clears schema queues."""
         super()._clear_queue()
         while not self._mp_schema_queue.empty():
@@ -201,14 +198,14 @@ class MultiprocessTelemetrySubscriber(ThreadedTelemetrySubscriber):
             except queue.Empty:
                 continue
 
-    def start(self):
+    def start(self) -> None:
         """Starts the bridge thread, then the child process."""
         super().start()
         self._mp_start_flag.set()
         if not self._process.is_alive():
             self._process.start()
 
-    def stop(self):
+    def stop(self) -> None:
         """Stops the bridge thread, then the child process."""
         self._mp_start_flag.clear()
         super().stop()
@@ -216,7 +213,7 @@ class MultiprocessTelemetrySubscriber(ThreadedTelemetrySubscriber):
             self._process.join()
 
     @final
-    def _consume(self, schema: TelemetrySchema):
+    def _consume(self, schema: TelemetrySchema) -> None:
         """Pickles and forwards a schema to the child process queue.
 
         This is the bridge step. Do not override in subclasses; implement
@@ -224,7 +221,9 @@ class MultiprocessTelemetrySubscriber(ThreadedTelemetrySubscriber):
         """
         self._mp_schema_queue.put(schema)
 
-    def _process_main(self, schema_queue: mp.Queue, start_flag: mp.synchronize.Event):
+    def _process_main(
+        self, schema_queue: mp.Queue, start_flag: mp.synchronize.Event
+    ) -> None:
         """Child process entry point; continuously consumes schemas until stopped."""
         while start_flag.is_set():
             try:
@@ -234,7 +233,7 @@ class MultiprocessTelemetrySubscriber(ThreadedTelemetrySubscriber):
             self._process_consume(schema)
 
     @abc.abstractmethod
-    def _process_consume(self, schema: TelemetrySchema):
+    def _process_consume(self, schema: TelemetrySchema) -> None:
         """Schema processing logic. Runs in the child process.
 
         Note: Cannot reference a live object from the parent process.

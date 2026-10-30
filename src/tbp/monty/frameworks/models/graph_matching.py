@@ -23,7 +23,6 @@ from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
     RecognitionStatus,
 )
-from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import (
@@ -34,14 +33,14 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
-from tbp.monty.frameworks.telemetry.episode.schemas import (
-    LearningModuleObjectRecognized,
-    LearningModuleStateTelemetry,
-    TerminalState,
-)
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
+from tbp.monty.telemetry.episode.schemas import (
+    LMRecognitionStateTelemetry,
+    LMStateTelemetry,
+    TerminalState,
+)
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching", "TerminalState"]
@@ -636,7 +635,12 @@ class GraphLM(LearningModule):
 
     def _emit_lm_state(self):
         """Emits post-step LM state telemetry."""
-        telemeter.emit(LearningModuleStateTelemetry.from_graph_lm(self, emitter=self))
+        telemeter.info(
+            TelemetryEvent(
+                kind=LMStateTelemetry.__name__,
+                event_data=LMStateTelemetry.from_graph_lm(self),
+            )
+        )
 
     def update_ltm_from_stm(self) -> None:
         """If training, update memory from buffer."""
@@ -910,7 +914,12 @@ class GraphLM(LearningModule):
         else:
             self.buffer.set_individual_ts(None, None)
 
-        telemeter.emit(LearningModuleObjectRecognized.from_graph_lm(self, emitter=self))
+        telemeter.info(
+            TelemetryEvent(
+                kind=LMRecognitionStateTelemetry.__name__,
+                event_data=LMRecognitionStateTelemetry.from_graph_lm(self),
+            )
+        )
 
         self._emit_lm_state()  # TODO telemetry: probably unnecessary, I will re-assess
 

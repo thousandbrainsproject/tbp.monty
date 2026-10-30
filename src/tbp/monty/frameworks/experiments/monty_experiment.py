@@ -22,6 +22,7 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from typing_extensions import Self
 
+from tbp.monty import telemetry
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
     Interface,
@@ -35,7 +36,6 @@ from tbp.monty.experiment.recognition_policy import (
     RecognitionCounter,
     RecognitionPolicy,
 )
-from tbp.monty.frameworks import telemetry
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.positioning_procedures import (
     ObjectNotVisibleError,
@@ -47,19 +47,17 @@ from tbp.monty.frameworks.loggers.exp_logger import LoggingCallbackHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.telemetry.episode.subscribers import (
+from tbp.monty.frameworks.utils.live_plotter import LivePlotter
+from tbp.monty.memento import Memento
+from tbp.monty.telemetry.episode.subscribers import (
     EpisodeTelemetryHandler,
     MontyHandlerTelemetryConnector,
 )
-from tbp.monty.frameworks.utils.live_plotter import LivePlotter
-from tbp.monty.memento import Memento
 
 __all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
-telemeter = telemetry.getTelemeter(
-    __name__, event_level=telemetry.INFO, snapshot_level=telemetry.TRACE
-)  # TODO telemetry: equivalent of logger.setLevel
+telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyExperiment:
@@ -382,8 +380,7 @@ class MontyExperiment:
 
     def init_telemetry(self):
         """Initialize Monty telemetry."""
-        # TODO telemetry: Hydra config for levels
-        self.episode_telemetry = EpisodeTelemetryHandler(telemetry.INFO)
+        self.episode_telemetry = EpisodeTelemetryHandler()
         self.monty_handler_telemetry = MontyHandlerTelemetryConnector(
             handlers=self.monty_logger.handlers, output_dir=self.output_dir
         )
@@ -782,7 +779,6 @@ class MontyExperiment:
 
         self.episode_telemetry.unsubscribe()
         self.monty_handler_telemetry.unsubscribe()
-        # TODO telemetry: close all self.xxx_telemetry?
 
         # Close python logging
         for handler in logger.handlers:
