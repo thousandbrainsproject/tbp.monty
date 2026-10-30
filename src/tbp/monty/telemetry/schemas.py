@@ -21,6 +21,9 @@ class TelemetrySchema(BaseModel):
     Subclasses add fields for their payload.
     """
 
+    model_config = ConfigDict(extra="allow")
+    """Allows adding extra attributes to the model."""
+
     VERSION: Final[int] = 1
     """Schema version number, incremented on backwards-incompatible field changes.
     For use by a model validator or discriminated union."""
@@ -42,5 +45,14 @@ class TelemetrySchema(BaseModel):
 class TelemetryEvent(TelemetrySchema):
     """Base model class for telemetry events; carries instantaneous data changes."""
 
-    model_config = ConfigDict(extra="allow")
-    """Allows adding extra attributes to the model."""
+    pass
+
+
+class TelemetrySnapshot(TelemetrySchema):
+    """Base model class for telemetry snapshots.
+
+    The difference from events is that snapshots are always of level ``telemetry.TRACE``
+    and contain binary or blob data.
+    """
+
+    pass

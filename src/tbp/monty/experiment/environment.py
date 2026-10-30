@@ -231,7 +231,7 @@ class OneObjectPerEpisodeInterface(Interface):
         )
         self.current_object = 0
         self.n_objects = len(self.object_names)
-        self.primary_target = None
+        self.primary_target: dict | None = None
         self._positioning_procedures = positioning_procedures
 
     def pre_episode(self, rng: np.random.RandomState):
