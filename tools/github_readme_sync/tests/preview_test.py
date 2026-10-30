@@ -13,11 +13,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
+from pydantic import ValidationError
+
 from tools.github_readme_sync.preview import (
     SCHEMA_VERSION,
     load_preview_bundle,
     publish_preview,
     render_preview,
+    validate_preview_bundle,
 )
 from tools.github_readme_sync.readme import ReadMe
 
@@ -58,6 +61,7 @@ def make_bundle():
 
 
 class TestRenderPreview(unittest.TestCase):
+    @patch("tools.github_readme_sync.preview.validate_preview_bundle")
     @patch.object(ReadMe, "process_markdown")
     @patch("tools.github_readme_sync.preview.load_doc")
     @patch("tools.github_readme_sync.preview.check_hierarchy_file")
@@ -66,6 +70,7 @@ class TestRenderPreview(unittest.TestCase):
         mock_check_hierarchy_file,
         mock_load_doc,
         mock_process_markdown,
+        mock_validate_preview_bundle,
     ):
         child_node = {"slug": "child", "children": []}
         page_node = {"slug": "page", "children": [child_node]}
@@ -172,6 +177,13 @@ class TestRenderPreview(unittest.TestCase):
                 ),
             ],
         )
+        mock_validate_preview_bundle.assert_called_once_with(
+            bundle=expected_bundle,
+            expected_repository=REPOSITORY,
+            expected_pr_number=PR_NUMBER,
+            expected_head_sha=HEAD_SHA,
+            expected_base_ref=BASE_REF,
+        )
 
 
 class TestPublishPreview(unittest.TestCase):
@@ -181,10 +193,12 @@ class TestPublishPreview(unittest.TestCase):
         self.rdme = MagicMock(spec=ReadMe)
 
     @patch("tools.github_readme_sync.preview.upload_rendered")
+    @patch("tools.github_readme_sync.preview.validate_preview_bundle")
     @patch("tools.github_readme_sync.preview.load_preview_bundle")
-    def test_publish_preview_loads_bundle_and_uploads_rendered_documents(
+    def test_publish_preview_loads_bundle_and_uploads_validated_rendered_documents(
         self,
         mock_load_preview_bundle,
+        mock_validate_preview_bundle,
         mock_upload_rendered,
     ):
         self.rdme.version_has_suffix.return_value = True
@@ -201,16 +215,25 @@ class TestPublishPreview(unittest.TestCase):
 
         self.rdme.version_has_suffix.assert_called_once_with()
         mock_load_preview_bundle.assert_called_once_with(self.bundle_file)
+        mock_validate_preview_bundle.assert_called_once_with(
+            bundle=self.bundle,
+            expected_repository=REPOSITORY,
+            expected_pr_number=PR_NUMBER,
+            expected_head_sha=HEAD_SHA,
+            expected_base_ref=BASE_REF,
+        )
         mock_upload_rendered.assert_called_once_with(
             self.bundle["documents"],
             self.rdme,
         )
 
     @patch("tools.github_readme_sync.preview.upload_rendered")
+    @patch("tools.github_readme_sync.preview.validate_preview_bundle")
     @patch("tools.github_readme_sync.preview.load_preview_bundle")
     def test_publish_preview_raises_value_error_when_version_is_stable(
         self,
         mock_load_preview_bundle,
+        mock_validate_preview_bundle,
         mock_upload_rendered,
     ):
         self.rdme.version_has_suffix.return_value = False
@@ -231,6 +254,42 @@ class TestPublishPreview(unittest.TestCase):
         )
         self.rdme.version_has_suffix.assert_called_once_with()
         mock_load_preview_bundle.assert_not_called()
+        mock_validate_preview_bundle.assert_not_called()
+        mock_upload_rendered.assert_not_called()
+
+    @patch("tools.github_readme_sync.preview.upload_rendered")
+    @patch("tools.github_readme_sync.preview.validate_preview_bundle")
+    @patch("tools.github_readme_sync.preview.load_preview_bundle")
+    def test_publish_preview_raises_value_error_when_bundle_validation_fails(
+        self,
+        mock_load_preview_bundle,
+        mock_validate_preview_bundle,
+        mock_upload_rendered,
+    ):
+        self.rdme.version_has_suffix.return_value = True
+        mock_load_preview_bundle.return_value = self.bundle
+        mock_validate_preview_bundle.side_effect = ValueError("invalid preview bundle")
+
+        with self.assertRaises(ValueError) as error:
+            publish_preview(
+                bundle_file=self.bundle_file,
+                rdme=self.rdme,
+                expected_repository=REPOSITORY,
+                expected_pr_number=PR_NUMBER,
+                expected_head_sha=HEAD_SHA,
+                expected_base_ref=BASE_REF,
+            )
+
+        self.assertEqual(str(error.exception), "invalid preview bundle")
+        self.rdme.version_has_suffix.assert_called_once_with()
+        mock_load_preview_bundle.assert_called_once_with(self.bundle_file)
+        mock_validate_preview_bundle.assert_called_once_with(
+            bundle=self.bundle,
+            expected_repository=REPOSITORY,
+            expected_pr_number=PR_NUMBER,
+            expected_head_sha=HEAD_SHA,
+            expected_base_ref=BASE_REF,
+        )
         mock_upload_rendered.assert_not_called()
 
 
@@ -270,4 +329,121 @@ class TestLoadPreviewBundle(unittest.TestCase):
         self.assertEqual(
             str(error.exception),
             "Preview bundle must be a JSON object",
+        )
+
+
+class TestValidatePreviewBundle(unittest.TestCase):
+    def assert_invalid(self, bundle, expected_location, expected_type):
+        with self.assertRaises(ValidationError) as error:
+            validate_preview_bundle(
+                bundle=bundle,
+                expected_repository=REPOSITORY,
+                expected_pr_number=PR_NUMBER,
+                expected_head_sha=HEAD_SHA,
+                expected_base_ref=BASE_REF,
+            )
+
+        errors = error.exception.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["loc"], expected_location)
+        self.assertEqual(errors[0]["type"], expected_type)
+
+    def test_validate_preview_bundle_raises_value_error_when_top_key_missing(self):
+        bundle = make_bundle()
+        del bundle["repository"]
+
+        self.assert_invalid(
+            bundle,
+            ("repository",),
+            "missing",
+        )
+
+    def test_validate_preview_bundle_raises_value_error_when_top_key_unknown(self):
+        bundle = make_bundle()
+        bundle["extra"] = "unexpected"
+
+        self.assert_invalid(
+            bundle,
+            ("extra",),
+            "extra_forbidden",
+        )
+
+    def test_validate_preview_bundle_raises_type_error_when_schema_not_int(self):
+        bundle = make_bundle()
+        bundle["schema_version"] = True
+
+        self.assert_invalid(
+            bundle,
+            ("schema_version",),
+            "int_type",
+        )
+
+    def test_validate_preview_bundle_raises_value_error_when_schema_unsupported(self):
+        bundle = make_bundle()
+        bundle["schema_version"] = SCHEMA_VERSION + 1
+
+        self.assert_invalid(
+            bundle,
+            ("schema_version",),
+            "value_error",
+        )
+
+    def test_validate_preview_bundle_raises_value_error_when_repository_mismatch(self):
+        bundle = make_bundle()
+        bundle["repository"] = "someone/other-repository"
+
+        self.assert_invalid(
+            bundle,
+            ("repository",),
+            "value_error",
+        )
+
+    def test_validate_preview_bundle_raises_type_error_when_pr_number_nonpositive(self):
+        bundle = make_bundle()
+        bundle["pull_request"]["number"] = 0
+
+        self.assert_invalid(
+            bundle,
+            ("pull_request", "number"),
+            "greater_than",
+        )
+
+    def test_validate_preview_bundle_raises_value_error_when_pr_number_mismatch(self):
+        bundle = make_bundle()
+        bundle["pull_request"]["number"] = PR_NUMBER + 1
+
+        self.assert_invalid(
+            bundle,
+            ("pull_request", "number"),
+            "value_error",
+        )
+
+    def test_validate_preview_bundle_raises_value_error_when_head_sha_malformed(self):
+        bundle = make_bundle()
+        bundle["pull_request"]["head_sha"] = "a" * 39
+
+        self.assert_invalid(
+            bundle,
+            ("pull_request", "head_sha"),
+            "value_error",
+        )
+
+    def test_validate_preview_bundle_raises_value_error_when_head_sha_mismatch(self):
+        bundle = make_bundle()
+        bundle["pull_request"]["head_sha"] = "b" * 40
+
+        self.assert_invalid(
+            bundle,
+            ("pull_request", "head_sha"),
+            "value_error",
+        )
+
+    def test_validate_preview_bundle_raises_value_error_when_base_ref_mismatch(self):
+        bundle = make_bundle()
+        bundle["pull_request"]["base_ref"] = "release"
+
+        self.assert_invalid(
+            bundle,
+            ("pull_request", "base_ref"),
+            "value_error",
         )
