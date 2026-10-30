@@ -1153,8 +1153,8 @@ class GraphMemory(LMMemory):
         """Determine how to update memory and call corresponding function.
 
         Nothing is stored when ``graph_id`` is None (no object was recognized in
-        time). Otherwise, how each channel's data is handled falls into one
-        of three cases:
+        time) or `features` is empty. Otherwise, how each channel's data is handled
+        falls into one of three cases:
 
         1. Unknown object: Points are stored as-is (i.e., untransformed) for all
            channels.
@@ -1173,8 +1173,8 @@ class GraphMemory(LMMemory):
         # Determine this before the loop: channels added by this call must not
         # make the object look like it was already in memory (and thus has a
         # reference frame to transform into) for channels later in the loop.
-        graph_was_in_memory = graph_id in self.get_memory_ids()
-        if graph_was_in_memory:
+        object_known = graph_id in self.get_memory_ids()
+        if object_known:
             logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
         else:
             logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
@@ -1188,7 +1188,7 @@ class GraphMemory(LMMemory):
                 input_channel_locations,
             ) = self._extract_entries_with_content(channel_features, locations)
 
-            if not graph_was_in_memory:
+            if not object_known:
                 # Case 1: unknown object.
                 self._build_graph(
                     input_channel_locations,

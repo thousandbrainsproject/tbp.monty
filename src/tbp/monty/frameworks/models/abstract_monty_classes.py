@@ -464,8 +464,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
                 the body.
             location_rel_model: Location of the last observation relative to the
                 object model.
-            object_rotation: Detected rotation of the object model relative to the
-                world, or None if not determined.
+            object_rotation: Rotation of the object relative to the world.
         """
         pass
 
