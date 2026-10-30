@@ -30,7 +30,7 @@ Can be used to explicitly include configurations known to be referenced outside
 of Hydra, e.g. configs used only in tests."""
 
 
-def test_no_orphaned_component_configs():
+def test_no_orphaned_component_configs() -> None:
     """Verify that there are no orphaned component configurations.
 
     An orphaned component is a component config, i.e. not a top-level experiment
