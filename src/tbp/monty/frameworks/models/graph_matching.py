@@ -13,6 +13,7 @@ import logging
 from typing import Any, Collection, Sequence
 
 import numpy as np
+import numpy.typing as npt
 import torch
 
 from tbp.monty import telemetry
@@ -1142,66 +1143,50 @@ class GraphMemory(LMMemory):
 
     def update_memory(
         self,
-        locations,
-        features,
-        graph_id,
-        object_location_rel_body,
-        location_rel_model,
-        object_rotation,
-    ):
+        locations: npt.NDArray,
+        features: dict[str, dict[str, npt.NDArray]],
+        graph_id: str | None,
+        object_location_rel_body: npt.NDArray,
+        location_rel_model: npt.NDArray,
+        object_rotation: Rotation | None,
+    ) -> None:
         """Determine how to update memory and call corresponding function.
 
         Nothing is stored when ``graph_id`` is None (no object was recognized in
-        time). Otherwise each input channel in ``features`` is handled by one of
-        three cases:
+        time). Otherwise, how each channel's data is handled falls into one
+        of three cases:
 
-        1. Unknown object: ``_build_graph`` stores the channel's points as-is. The
-           first episode's pose defines the model's reference frame.
-        2. Known object, known channel: ``_extend_graph`` adds the points to the
-           channel's existing graph. The transform into the model's reference
-           frame is not visible here; it happens inside ``update_model`` on the
-           object model, which calls ``apply_rf_transform_to_points`` with the
-           detected object pose before merging the points.
-        3. Known object, unknown channel: happens when, for example, a child LM's
-           output first reaches this LM in a later episode. ``_build_graph`` does
-           not transform, so this method applies ``apply_rf_transform_to_points``
-           itself, with the same arguments case 2 passes on, and then builds the
-           channel's graph so it lines up with the existing channels. If no
-           object rotation was detected, the points are added untransformed and a
-           warning is logged.
+        1. Unknown object: Points are stored as-is (i.e., untransformed) for all
+           channels.
+        2. Known object, known channel: Adds the points via ``_extend_graph``. Note
+           that the points will be transformed into the model's reference frame before
+           storage, but it is not this method's responsibility.
+        3. Known object, unknown channel: Transforms the points into this model's
+           reference frame and then builds the new channel's graph aligned via
+           ``_build_graph``.
 
-        Whether the object was in memory is fixed before the loop. Otherwise a
-        channel built under rule 1 would make later channels in the same call look
-        like rule 3 and get transformed against a reference frame that is already
-        the current episode's.
-
-        Args:
-            locations: Observed locations, one row per step, in body coordinates.
-            features: Features per input channel, one entry per step; steps where a
-                channel received nothing hold NaN and are dropped.
-            graph_id: ID of the recognized object, a new object ID, or None.
-            object_location_rel_body: Detected location of the object relative to
-                the body.
-            location_rel_model: Location of the last observation relative to the
-                object model.
-            object_rotation: Detected rotation of the object model relative to the
-                world, or None if not determined.
         """
         if graph_id is None:
             logger.info("no match found in time, not updating memory")
             return
 
+        # Determine this before the loop: channels added by this call must not
+        # make the object look like it was already in memory (and thus has a
+        # reference frame to transform into) for channels later in the loop.
         graph_was_in_memory = graph_id in self.get_memory_ids()
         if graph_was_in_memory:
             logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
         else:
             logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
 
-        for input_channel in features:
+        for input_channel, channel_features in features.items():
+            # This step drops NaN entries from both the features and locations arrays,
+            # ensuring that only valid observations are considered for the current
+            # input channel.
             (
                 input_channel_features,
                 input_channel_locations,
-            ) = self._extract_entries_with_content(features[input_channel], locations)
+            ) = self._extract_entries_with_content(channel_features, locations)
 
             if not graph_was_in_memory:
                 # Case 1: unknown object.
