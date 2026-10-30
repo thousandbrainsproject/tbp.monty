@@ -11,8 +11,9 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from pydantic import ValidationError
 from unittest.mock import MagicMock, call, patch
+
+from pydantic import ValidationError
 
 from tools.github_readme_sync.preview import (
     SCHEMA_VERSION,

@@ -12,13 +12,13 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from tools.github_readme_sync.hierarchy import check_hierarchy_file
 from tools.github_readme_sync.readme import ReadMe
 from tools.github_readme_sync.upload import load_doc, upload_rendered
-
 
 SCHEMA_VERSION = 1
 """Current schema version for documentation preview bundles."""
@@ -212,7 +212,6 @@ def load_preview_bundle(bundle_file: Path) -> dict[str, Any]:
         raise TypeError("Preview bundle must be a JSON object")
 
     return bundle
-
 
 
 class PullRequestMetadata(BaseModel):
