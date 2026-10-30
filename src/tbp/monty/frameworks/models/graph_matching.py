@@ -13,6 +13,7 @@ import logging
 from typing import Any, Collection, Sequence
 
 import numpy as np
+import numpy.typing as npt
 import torch
 
 from tbp.monty import telemetry
@@ -33,6 +34,9 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_generation import GraphGoalGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    apply_rf_transform_to_points,
+)
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
@@ -1139,50 +1143,86 @@ class GraphMemory(LMMemory):
 
     def update_memory(
         self,
-        locations,
-        features,
-        graph_id,
-        object_location_rel_body,
-        location_rel_model,
-        object_rotation,
-    ):
-        """Determine how to update memory and call corresponding function."""
+        locations: npt.NDArray,
+        features: dict[str, dict[str, npt.NDArray]],
+        graph_id: str | None,
+        object_location_rel_body: npt.NDArray,
+        location_rel_model: npt.NDArray,
+        object_rotation: Rotation | None,
+    ) -> None:
+        """Determine how to update memory and call corresponding function.
+
+        Nothing is stored when ``graph_id`` is None (no object was recognized in
+        time) or `features` is empty. Otherwise, how each channel's data is handled
+        falls into one of three cases:
+
+        1. Unknown object: Points are stored as-is (i.e., untransformed) for all
+           channels.
+        2. Known object, known channel: Adds the points via ``_extend_graph``. Note
+           that the points will be transformed into the model's reference frame before
+           storage, but it is not this method's responsibility.
+        3. Known object, unknown channel: Transforms the points into this model's
+           reference frame (if `object_rotation` is not None). It then builds the new
+           graph.
+
+        """
         if graph_id is None:
             logger.info("no match found in time, not updating memory")
+            return
+
+        # Determine this before the loop: channels added by this call must not
+        # make the object look like it was already in memory (and thus has a
+        # reference frame to transform into) for channels later in the loop.
+        object_known = graph_id in self.get_memory_ids()
+        if object_known:
+            logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
         else:
-            for input_channel in features:
-                (
-                    input_channel_features,
+            logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
+
+        for input_channel, channel_features in features.items():
+            (
+                input_channel_features,
+                input_channel_locations,
+            ) = self._extract_entries_with_content(channel_features, locations)
+
+            if not object_known:
+                # Case 1: unknown object.
+                self._build_graph(
                     input_channel_locations,
-                ) = self._extract_entries_with_content(
-                    features[input_channel], locations
+                    input_channel_features,
+                    graph_id,
+                    input_channel,
                 )
-                # Update graph
-                if (
-                    graph_id in self.get_memory_ids()
-                    and input_channel in self.get_input_channels_in_graph(graph_id)
-                ):
-                    logger.info(
-                        f"{graph_id} already in memory ({self.get_memory_ids()})"
-                    )
-                    self._extend_graph(
+            elif input_channel in self.get_input_channels_in_graph(graph_id):
+                # Case 2: known object, known channel.
+                self._extend_graph(
+                    input_channel_locations,
+                    input_channel_features,
+                    graph_id,
+                    input_channel,
+                    object_location_rel_body,
+                    location_rel_model,
+                    object_rotation,
+                )
+            else:
+                # Case 3: known object, unknown channel.
+                if object_rotation is not None:
+                    (
                         input_channel_locations,
                         input_channel_features,
-                        graph_id,
-                        input_channel,
-                        object_location_rel_body,
-                        location_rel_model,
-                        object_rotation,
+                    ) = apply_rf_transform_to_points(
+                        locations=input_channel_locations,
+                        features=input_channel_features,
+                        location_rel_model=location_rel_model,
+                        object_location_rel_body=object_location_rel_body,
+                        object_rotation=object_rotation,
                     )
-                else:
-                    logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
-                    print(f"building graph for {input_channel}")
-                    self._build_graph(
-                        input_channel_locations,
-                        input_channel_features,
-                        graph_id,
-                        input_channel,
-                    )
+                self._build_graph(
+                    input_channel_locations,
+                    input_channel_features,
+                    graph_id,
+                    input_channel,
+                )
 
     def initialize_feature_arrays(self):
         for graph_id in self.get_memory_ids():
