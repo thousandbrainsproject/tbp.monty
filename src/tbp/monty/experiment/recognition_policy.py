@@ -430,9 +430,8 @@ class MatchCriteria(RecognitionPolicy):
                 terminal_states,
             )
         return RecognitionResult(
-            is_done=is_done,
-            time_out_lms=is_met,
-            start_exploring=start_exploring)
+            is_done=is_done, time_out_lms=is_met, start_exploring=start_exploring
+        )
 
 
 class MinimumLMs(RecognitionPolicy):
@@ -503,9 +502,7 @@ class AllLMsNoMatch(RecognitionPolicy):
                 count.mode,
                 start_exploring,
             )
-        return RecognitionResult(
-            is_done=is_done,
-            start_exploring=start_exploring)
+        return RecognitionResult(is_done=is_done, start_exploring=start_exploring)
 
 
 class NaiveScan(RecognitionPolicy):

@@ -414,7 +414,8 @@ class MontyForGraphMatching(MontyBase):
                         # ----TEMPORARILY DISABLED----
                         # self.switch_to_exploratory_step()
                         logger.info(
-                            f"Should go into exploratory mode after {self.matching_steps} steps"
+                            "Should go into exploratory mode"
+                            f" after {self.matching_steps} steps"
                         )
 
                     elif (
