@@ -411,7 +411,11 @@ class MontyForGraphMatching(MontyBase):
                     self._set_time_outs(global_time_out=False)
 
                     if self.experiment_mode is ExperimentMode.TRAIN:
-                        self.switch_to_exploratory_step()
+                        # ----TEMPORARILY DISABLED----
+                        # self.switch_to_exploratory_step()
+                        logger.info(
+                            f"Should go into exploratory mode after {self.matching_steps} steps"
+                        )
 
                     elif (
                         self.experiment_mode is ExperimentMode.EVAL
