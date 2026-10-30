@@ -1149,25 +1149,70 @@ class GraphMemory(LMMemory):
         location_rel_model,
         object_rotation,
     ):
-        """Determine how to update memory and call corresponding function."""
+        """Determine how to update memory and call corresponding function.
+
+        Nothing is stored when ``graph_id`` is None (no object was recognized in
+        time). Otherwise each input channel in ``features`` is handled by one of
+        three cases:
+
+        1. Unknown object: ``_build_graph`` stores the channel's points as-is. The
+           first episode's pose defines the model's reference frame.
+        2. Known object, known channel: ``_extend_graph`` adds the points to the
+           channel's existing graph. The transform into the model's reference
+           frame is not visible here; it happens inside ``update_model`` on the
+           object model, which calls ``apply_rf_transform_to_points`` with the
+           detected object pose before merging the points.
+        3. Known object, unknown channel: happens when, for example, a child LM's
+           output first reaches this LM in a later episode. ``_build_graph`` does
+           not transform, so this method applies ``apply_rf_transform_to_points``
+           itself, with the same arguments case 2 passes on, and then builds the
+           channel's graph so it lines up with the existing channels. If no
+           object rotation was detected, the points are added untransformed and a
+           warning is logged.
+
+        Whether the object was in memory is fixed before the loop. Otherwise a
+        channel built under rule 1 would make later channels in the same call look
+        like rule 3 and get transformed against a reference frame that is already
+        the current episode's.
+
+        Args:
+            locations: Observed locations, one row per step, in body coordinates.
+            features: Features per input channel, one entry per step; steps where a
+                channel received nothing hold NaN and are dropped.
+            graph_id: ID of the recognized object, a new object ID, or None.
+            object_location_rel_body: Detected location of the object relative to
+                the body.
+            location_rel_model: Location of the last observation relative to the
+                object model.
+            object_rotation: Detected rotation of the object model relative to the
+                world, or None if not determined.
+        """
         if graph_id is None:
             logger.info("no match found in time, not updating memory")
             return
 
-        # Determine this before the loop: channels added by this call must not
-        # make the object look like it was already in memory (and thus has a
-        # reference frame to transform into) for channels later in the loop.
         graph_was_in_memory = graph_id in self.get_memory_ids()
+        if graph_was_in_memory:
+            logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
+        else:
+            logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
+
         for input_channel in features:
             (
                 input_channel_features,
                 input_channel_locations,
             ) = self._extract_entries_with_content(features[input_channel], locations)
 
-            if graph_was_in_memory and input_channel in (
-                self.get_input_channels_in_graph(graph_id)
-            ):
-                logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
+            if not graph_was_in_memory:
+                # Case 1: unknown object.
+                self._build_graph(
+                    input_channel_locations,
+                    input_channel_features,
+                    graph_id,
+                    input_channel,
+                )
+            elif input_channel in self.get_input_channels_in_graph(graph_id):
+                # Case 2: known object, known channel.
                 self._extend_graph(
                     input_channel_locations,
                     input_channel_features,
@@ -1177,15 +1222,8 @@ class GraphMemory(LMMemory):
                     location_rel_model,
                     object_rotation,
                 )
-                continue
-
-            if graph_was_in_memory:
-                # The object is already in memory but this input channel is not
-                # (e.g. a child LM whose output only converged in a later episode).
-                # The object's pose in the current episode may differ from the pose
-                # that defined the model's reference frame, so the new channel's
-                # points need the same transform that _extend_graph applies before
-                # they are stored alongside the existing channels.
+            else:
+                # Case 3: known object, unknown channel.
                 logger.info(
                     f"{graph_id} in memory but {input_channel} is a new input "
                     "channel. Transforming points into the model's reference frame."
@@ -1207,15 +1245,12 @@ class GraphMemory(LMMemory):
                         object_location_rel_body=object_location_rel_body,
                         object_rotation=object_rotation,
                     )
-            else:
-                logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
-
-            self._build_graph(
-                input_channel_locations,
-                input_channel_features,
-                graph_id,
-                input_channel,
-            )
+                self._build_graph(
+                    input_channel_locations,
+                    input_channel_features,
+                    graph_id,
+                    input_channel,
+                )
 
     def initialize_feature_arrays(self):
         for graph_id in self.get_memory_ids():
