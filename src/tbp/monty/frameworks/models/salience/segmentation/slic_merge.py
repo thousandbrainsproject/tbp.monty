@@ -47,7 +47,7 @@ class SlicMerge(SegmentationStrategy):
         sigma: float = 1.0,
         min_size_factor: float = 0.5,
         max_size_factor: float = 3.0,
-        merge_threshold: float = 0.1,
+        merge_threshold: float = 0.039,
     ) -> None:
         """Initialize the SLIC superpixel segmentation with region merging strategy.
 

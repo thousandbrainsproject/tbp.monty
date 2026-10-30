@@ -46,14 +46,7 @@ experiment:
           max_graph_size: 0.3
           num_model_voxels_per_dim: 100
           max_nodes_per_graph: 2000
-          gsg:
-            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-            goal_tolerances:
-              location: 0.015
-            elapsed_steps_factor: 10
-            min_post_goal_success_steps: 5
-            x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
+          gsg: null
         learning_module_1:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -66,19 +59,13 @@ experiment:
           tolerances:
             patch_1:
               hsv: ${np.array:[0.1, 0.2, 0.2]}
-          max_match_distance: 0.001
+          max_match_distance: 0.0025
           x_percent_threshold: 20
           evidence_threshold_config: all
           max_graph_size: 0.1
           num_model_voxels_per_dim: 100
-          gsg:
-            _target_: tbp.monty.frameworks.models.goal_generation.EvidenceGoalGenerator
-            goal_tolerances:
-              location: 0.015
-            elapsed_steps_factor: 10
-            min_post_goal_success_steps: 5
-            x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
+          gsg: null
+          object_evidence_threshold: 5
         learning_module_2:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -106,7 +93,7 @@ experiment:
             goal_tolerances:
               location: 0.015
             elapsed_steps_factor: 10
-            min_post_goal_success_steps: 5
+            min_post_goal_success_steps: 20
             x_percent_scale_factor: 0.75
             desired_object_distance: 0.03
       sensor_modules:
@@ -134,7 +121,7 @@ experiment:
             - 2
             - 2
             distance: 0.01
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_1:
           _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
           sensor_module_id: patch_1
@@ -193,13 +180,24 @@ experiment:
             - 4
             - 4
             distance: 0.05
-          save_raw_obs: true
+          save_raw_obs: false
         sensor_module_3:
-          _target_: tbp.monty.experiment.sensor_module.ExperimentSensorModule
+          _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
           sensor_module_id: view_finder
-          sensor_id: view_finder
-          transforms:
-          - _target_: tbp.monty.experiment.sensor_modules.telemetry.Snapshot
+          salience_strategy:
+            _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2
+            color:
+              _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience
+              center_sigma: 1.0
+              surround_sigma: 3.0
+              n_scales: 2
+              max_octaves: 10
+              operating_limits:
+                _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.NoOperatingLimits
+            depth: null
+            orientation: null
+          segmentation_strategy:
+            _target_: tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge
       sm_to_agent_dict:
         patch_0: agent_id_0
         patch_1: agent_id_0
@@ -213,6 +211,14 @@ experiment:
       lm_to_lm_vote_matrix: null
       attention_system:
         _target_: tbp.monty.attention.attention_system.DefaultAttentionSystem
+        voxel_size: 0.005
+        decay:
+          _target_: tbp.monty.attention.decay.LinearWeightDecay
+          rate: 0.1
+        merge:
+          _target_: tbp.monty.attention.merge.Union
+        goal_filter:
+          _target_: tbp.monty.attention.goal_filter.HardGoalFilter
     environment:
       env_init_args:
         data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
@@ -242,8 +248,8 @@ experiment:
             view_finder:
               _target_: tbp.monty.frameworks.sensors.SensorConfig
               resolution:
-                width: 64
-                height: 64
+                width: 256
+                height: 256
               zoom: 1.0
           position:
           - 0.0
@@ -274,8 +280,8 @@ experiment:
           - 64
         - - 64
           - 64
-        - - 64
-          - 64
+        - - 256
+          - 256
         world_coord: true
         zooms:
         - 10.0
@@ -326,7 +332,7 @@ experiment:
       _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
       max_train_steps: 1000
       max_eval_steps: 100
-      max_total_steps: 6000
+      max_total_steps: 500
     logging:
       python_log_level: WARNING
       python_log_to_file: true

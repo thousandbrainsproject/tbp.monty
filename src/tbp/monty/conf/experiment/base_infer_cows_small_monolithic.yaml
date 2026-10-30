@@ -4,14 +4,14 @@ defaults:
   - /monty: evidencegraph_exp1000_emin_t3
   - /monty/motor_system_config: distant_5
   - /monty/learning_module: evidence_3lm_heterarchy
-  - /monty/sensor_module: 3sm_2d3d_dist
+  - /monty/sensor_module: 3sm_2d3d_dist_slic
   - /monty/connectivity: 3lm_3sm_monolithic
-  - /monty/attention_system: default
-  - /environment: mujoco_dist_agent_sensors3
+  - /monty/attention_system: voxel5mm
+  - /environment: mujoco_dist_agent_sensors3_256
   - /env_interface: eval_cows_small_predefined
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
-  - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
-  - /termination: named_lm2_objectrecognition_t1000_e100_tot6000
+  - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4_256
+  - /termination: named_lm2_objectrecognition_t1000_e100_tot500
   - /logging: basic_warning_wandb_evidence_eval_runs
 
 experiment:
@@ -29,3 +29,14 @@ experiment:
         data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
     logging:
       run_name: base_infer_cows_small_monolithic
+    monty_config:
+      learning_modules:
+        learning_module_0:
+          gsg: null
+        learning_module_1:
+          gsg: null
+          max_match_distance: 0.0025
+          object_evidence_threshold: 5
+        learning_module_2:
+          gsg:
+            min_post_goal_success_steps: 20
