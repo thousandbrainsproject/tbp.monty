@@ -22,6 +22,8 @@ from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
 logger = logging.getLogger(__name__)
 
+MINIMUM_CURVATURE = 0.5
+
 
 def get_correct_k_n(k_n: int, num_datapoints: int) -> int | None:
     """Determine k_n given the number of datapoints.
@@ -274,48 +276,66 @@ def get_scaled_evidences(evidences, per_object=False):
     return scaled_evidences
 
 
-def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curvature):
-    """Calculate custom distances modulated by surface normal and curvature.
+def euclidean_distances(
+    predicted_locations: npt.NDArray[np.float64],
+    nearest_node_locations: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Calculate Euclidean distances between predicted locations and nearest nodes.
 
     Args:
-        nearest_node_locs: Locations of nearest nodes to search_locs
-            (shape=(num_hyp, max_nneighbors, 3)).
-        search_locs: Search locations for each hypothesis (shape=(num_hyp, 3)).
-        search_sns: Sensed surface normal rotated by the hypothesis pose
-            (shape=(num_hyp, 3)).
-        search_curvature: Magnitude of sensed curvature (maximum if using two
-            principal curvatures) used to modulate the search sphere thickness
-            in the direction of the surface normal (shape=1).
+        predicted_locations: Hypotheses' locations of shape (num_hyp, 3).
+        nearest_node_locations: Locations of nearest nodes in object model of shape
+            (num_hyp, max_nneighbors, 3).
 
     Returns:
-        custom_nearest_node_dists: custom distances of each nearest location
-            from its search location taking into account the hypothesis point
-            normal and sensed curvature.
-            shape=(num_hyp, max_nneighbors).
+        Distances from each hypothesis location to each of its nearest nodes of
+        shape (num_hyp, max_nneighbors).
     """
-    # Calculate difference vectors between query point and all other points
-    # Expand the dimensions of search_locs so it has shape (num_hyp, 1, 3)
-    # Shape of differences = (num_hyp, max_nneighbors, 3)
-    differences = nearest_node_locs - np.expand_dims(search_locs, axis=1)
-    # Calculate the dot product between the query normal and the difference vectors
-    # This tells us how well the points are aligned with the plane perpendicular to
-    # the query normal. Points with dot product 0 are in this plane, higher
-    # magnitudes of the dot product means they are further away from that plane
-    # (-> should have larger distance).
-    dot_products = np.einsum("ijk,ik->ij", differences, search_sns)
-    # Calculate the euclidean distances. shape=(num_hyp, max_nneighbors)
-    euclidean_dists = np.linalg.norm(differences, axis=2)
-    # Calculate the total distances by adding the absolute dot product to the
-    # euclidean distances. We multiply the dot product by 1/curvature to modulate
-    # the flatness of the search sphere. If the curvature is large we want to be
-    # able to go further out of the sphere while we want to stay close to the point
-    # normal plane if we have a curvature close to 0.
-    # To have a minimum wiggle room above and below the plane, even if we have 0
-    # curvature (and to avoid division by 0) we add 0.5 to the denominator.
-    # shape=(num_hyp, max_nneighbors).
-    return euclidean_dists + np.abs(dot_products) * (
-        1 / (np.abs(search_curvature) + 0.5)
-    )
+    differences = nearest_node_locations - predicted_locations[:, np.newaxis, :]
+    return np.linalg.norm(differences, axis=-1)
+
+
+def custom_distances(
+    predicted_locations: npt.NDArray[np.float64],
+    nearest_node_locations: npt.NDArray[np.float64],
+    surface_normals: npt.NDArray[np.float64],
+    curvature: float,
+):
+    """Calculate custom distances modulated by surface norm gal and curvature.
+
+    Args:
+        predicted_locations: Hypotheses locations of shape (num_hyp, 3).
+        nearest_node_locations: Locations of nearest nodes in object model of shape
+            (num_hyp, max_nneighbors, 3).
+        surface_normals: Sensed surface normal rotated by the hypothesis pose of
+            shape (num_hyp, 3). Assumes unit norm.
+        curvature: Scalar magnitude of sensed curvature (maximum if using two
+            principal curvatures) used to modulate the search sphere thickness
+            in the direction of the surface normal.
+
+    Returns:
+        Distances from each hypothesis location to each of its nearest nodes of
+        shape (num_hyp, max_nneighbors).
+    """
+    # Shapes use H = num_hyp, K = max_nneighbors, D = 3 (xyz). The einsum subscripts
+    # use the same letters in lower case.
+
+    # Vector from each hypothesis location to each of its nearest nodes.
+    # shape=(H, K, D)
+    differences = nearest_node_locations - predicted_locations[:, np.newaxis, :]
+    euclidean_dists = np.linalg.norm(differences, axis=-1)
+
+    # Signed distance of each node from the hypothesis' tangent plane: the dot
+    # product of its difference vector with the (unit) surface normal, summed over
+    # d. 0 means the node lies in the plane. shape=(H, K)
+    offsets_along_normal = np.einsum("hkd,hd->hk", differences, surface_normals)
+
+    # Penalize leaving the tangent plane, which squashes the search sphere along the
+    # normal. Flat surfaces (curvature near 0) keep the search close to the plane;
+    # curved surfaces allow more room off it. The MINIMUM_CURVATURE keeps some
+    # room at zero curvature and avoids dividing by 0.
+    normal_penalty_scale = 1 / (np.abs(curvature) + MINIMUM_CURVATURE)
+    return euclidean_dists + np.abs(offsets_along_normal) * normal_penalty_scale
 
 
 # ====== Functions for detecting on new object ======
