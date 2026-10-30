@@ -73,20 +73,11 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 ### Explanation of Some of the Results
 
-- **Why does the distant agent do worse than the surface agent?**
-  The distant agent has limited capabilities to move along the object. In particular, the distant agent currently uses an almost random policy which is not as efficient and informative as the surface agent which follows the principal curvatures of the object. Note however that both the distant and surface agent can now move around the object using the hypothesis-testing action policy, and so the difference in performance between the two is not as great as it previously was.
-
-- **Why is the distant agent on the distant agent models worse than on the surface agent model?**
-  As you can see in the figure above, the models learned with distant agent have several blind spots and unevenly sampled areas. When we test random rotations we may see the object from views that are underrepresented in the object model. If we use a 10% threshold instead of 20% we can actually get a little better performance with the distant agent since we allow it to converge faster. This may be because it gets less time to move into badly represented areas and because it reaches the time-out condition less often.
-
 - **Why is the accuracy on distinct objects higher than on similar objects?**
   Since we need to be able to deal with noise, it can happen that objects that are similar to each other get confused. In particular, objects that only differ in some specific locations (like the fork and the spoon) can be difficult to distinguish if the policy doesn't efficiently move to the distinguishable features and if there is noise.
 
 - **Why is raw sensor noise so much worse than the standard noise condition?**
   This is not related to the capabilities of the learning module but to the sensor module. Currently, our surface normal and principal curvature estimates are not implemented to be very robust to sensor noise such that noise in the depth image can distort the surface normal by more than 70 degrees. We don't want our learning module to be robust to this much noise in the surface normals but instead want the sensor module to communicate better features. We already added some improvements on our surface normal estimates which helped a lot on the raw noise experiment.
-
-- **Why do the distant agent experiments take longer and have more episodes where the most likely hypothesis is used?**
-  Since the distant agent policy is less efficient in how it explores a given view (random walk of tilting the camera), we take more steps to converge with the distant agent or sometimes do not resolve the object at all (this is when we reach a time-out and use the MLH). If we have to take more steps for each episode, the runtime also increases.
 
 - **Why is the run time for 77 objects longer than for 10?**
   For one, we run more episodes per epoch (77 instead of 10) so each epoch will take longer. However, in the current benchmark, we test with fewer rotations (only 3 epochs instead of 14 or 10 epochs in the shorter experiments). Therefore the main factor here is that the number of evidence updates we need to perform at each step scales linearly with the number of objects an LM has in its memory (going down over time as we remove objects from our hypothesis space). Additionally, we need to take more steps to distinguish 77 objects than to distinguish 10 (especially if the 10 objects are distinct).
