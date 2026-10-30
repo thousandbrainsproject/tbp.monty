@@ -12,11 +12,13 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 from typing import Any
 
 from tools.github_readme_sync.hierarchy import check_hierarchy_file
 from tools.github_readme_sync.readme import ReadMe
 from tools.github_readme_sync.upload import load_doc, upload_rendered
+
 
 SCHEMA_VERSION = 1
 """Current schema version for documentation preview bundles."""
@@ -212,6 +214,65 @@ def load_preview_bundle(bundle_file: Path) -> dict[str, Any]:
     return bundle
 
 
+
+class PullRequestMetadata(BaseModel):
+    """Required pull request metadata checked against trusted job inputs."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    number: int = Field(gt=0)
+    head_sha: str
+    base_ref: str
+
+    @field_validator("number")
+    @classmethod
+    def validate_number(cls, value: int, info: ValidationInfo) -> int:
+        if value != info.context["expected_pr_number"]:
+            raise ValueError("does not match the expected pr_number")
+        return value
+
+    @field_validator("head_sha")
+    @classmethod
+    def validate_head_sha(cls, value: str, info: ValidationInfo) -> str:
+        if not SHA_RE.fullmatch(value):
+            raise ValueError("must be a 40-character SHA")
+        if value != info.context["expected_head_sha"]:
+            raise ValueError("does not match the expected head_sha")
+        return value
+
+    @field_validator("base_ref")
+    @classmethod
+    def validate_base_ref(cls, value: str, info: ValidationInfo) -> str:
+        if value != info.context["expected_base_ref"]:
+            raise ValueError("does not match the expected base branch")
+        return value
+
+
+class PreviewBundle(BaseModel):
+    """Base model class for all preview bundles."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    schema_version: int
+    repository: str
+    pull_request: PullRequestMetadata
+    documents: Any
+
+    @field_validator("schema_version")
+    @classmethod
+    def validate_schema_version(cls, value: int) -> int:
+        if value != SCHEMA_VERSION:
+            raise ValueError(f"must be {SCHEMA_VERSION}, got {value!r}")
+        return value
+
+    @field_validator("repository")
+    @classmethod
+    def validate_repository(cls, value: str, info: ValidationInfo) -> str:
+        if value != info.context["expected_repository"]:
+            raise ValueError("does not match the current repository")
+        return value
+
+
 def validate_preview_bundle(
     bundle: dict[str, Any],
     expected_repository: str,
@@ -221,7 +282,8 @@ def validate_preview_bundle(
 ) -> None:
     """Validate a preview bundle before it is uploaded.
 
-    Validates the bundle's top-level keys and pull request identity metadata.
+    Pydantic raises one ValidationError containing independent errors in
+    the top-level keys and pull request identity metadata.
 
     Args:
         bundle: Parsed preview bundle to validate.
@@ -229,108 +291,13 @@ def validate_preview_bundle(
         expected_pr_number: Pull request number trusted by the publishing job.
         expected_head_sha: Pull request head SHA trusted by the publishing job.
         expected_base_ref: Base branch trusted by the publishing job.
-
-    Raises:
-        TypeError: If a bundle field has an invalid type.
-        ValueError: If the schema or trusted metadata do not match the
-            expected values.
     """
-    _require_exact_keys(
-        value=bundle,
-        required={
-            "schema_version",
-            "repository",
-            "pull_request",
-            "documents",
+    PreviewBundle.model_validate(
+        bundle,
+        context={
+            "expected_repository": expected_repository,
+            "expected_pr_number": expected_pr_number,
+            "expected_head_sha": expected_head_sha,
+            "expected_base_ref": expected_base_ref,
         },
-        path="$",
     )
-
-    schema_version = bundle["schema_version"]
-
-    if not isinstance(schema_version, int) or isinstance(schema_version, bool):
-        raise TypeError("$.schema_version must be an integer")
-
-    if schema_version != SCHEMA_VERSION:
-        raise ValueError(
-            f"$.schema_version must be {SCHEMA_VERSION}, got {schema_version!r}"
-        )
-
-    repository = bundle["repository"]
-
-    if not isinstance(repository, str):
-        raise TypeError("$.repository must be a string")
-
-    if repository != expected_repository:
-        raise ValueError("$.repository does not match the current repository")
-
-    pull_request = bundle["pull_request"]
-
-    _require_exact_keys(
-        value=pull_request,
-        required={
-            "number",
-            "head_sha",
-            "base_ref",
-        },
-        path="$.pull_request",
-    )
-
-    number = pull_request["number"]
-
-    if not isinstance(number, int) or isinstance(number, bool) or number <= 0:
-        raise TypeError("$.pull_request.number must be a positive integer")
-
-    if number != expected_pr_number:
-        raise ValueError("$.pull_request.number does not match the expected pr_number")
-
-    head_sha = pull_request["head_sha"]
-    if not isinstance(head_sha, str):
-        raise TypeError("$.pull_request.head_sha must be a string")
-
-    if not SHA_RE.fullmatch(head_sha):
-        raise ValueError("$.pull_request.head_sha must be a 40-character SHA")
-
-    if head_sha != expected_head_sha:
-        raise ValueError("$.pull_request.head_sha does not match the expected head_sha")
-
-    base_ref = pull_request["base_ref"]
-
-    if not isinstance(base_ref, str):
-        raise TypeError("$.pull_request.base_ref must be a string")
-
-    if base_ref != expected_base_ref:
-        raise ValueError(
-            "$.pull_request.base_ref does not match the expected base branch"
-        )
-
-
-def _require_exact_keys(
-    value: dict[str, Any],
-    required: set[str],
-    path: str,
-) -> None:
-    """Require a dictionary to contain only its declared keys.
-
-    Args:
-        value: Dictionary whose keys should be checked.
-        required: Keys that must be present.
-        path: JSON-style path identifying the dictionary.
-
-    Raises:
-        ValueError: If a required key is missing or an unknown key is present.
-        TypeError: If the `value` arugment isn't a dictionary.
-    """
-    if not isinstance(value, dict):
-        raise TypeError("The value must be an object")
-
-    keys = set(value)
-
-    missing = required - keys
-    unknown = keys - required
-
-    if missing:
-        raise ValueError(f"{path} is missing required keys: {sorted(missing)}")
-
-    if unknown:
-        raise ValueError(f"{path} contains unknown keys: {sorted(unknown)}")

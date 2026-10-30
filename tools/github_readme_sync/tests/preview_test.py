@@ -11,6 +11,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from pydantic import ValidationError
 from unittest.mock import MagicMock, call, patch
 
 from tools.github_readme_sync.preview import (
@@ -331,8 +332,8 @@ class TestLoadPreviewBundle(unittest.TestCase):
 
 
 class TestValidatePreviewBundle(unittest.TestCase):
-    def assert_invalid(self, bundle, error_type, expected_message):
-        with self.assertRaises(error_type) as error:
+    def assert_invalid(self, bundle, expected_location, expected_type):
+        with self.assertRaises(ValidationError) as error:
             validate_preview_bundle(
                 bundle=bundle,
                 expected_repository=REPOSITORY,
@@ -341,7 +342,10 @@ class TestValidatePreviewBundle(unittest.TestCase):
                 expected_base_ref=BASE_REF,
             )
 
-        self.assertEqual(str(error.exception), expected_message)
+        errors = error.exception.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["loc"], expected_location)
+        self.assertEqual(errors[0]["type"], expected_type)
 
     def test_validate_preview_bundle_raises_value_error_when_top_key_missing(self):
         bundle = make_bundle()
@@ -349,8 +353,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            "$ is missing required keys: ['repository']",
+            ("repository",),
+            "missing",
         )
 
     def test_validate_preview_bundle_raises_value_error_when_top_key_unknown(self):
@@ -359,8 +363,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            "$ contains unknown keys: ['extra']",
+            ("extra",),
+            "extra_forbidden",
         )
 
     def test_validate_preview_bundle_raises_type_error_when_schema_not_int(self):
@@ -369,8 +373,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            TypeError,
-            "$.schema_version must be an integer",
+            ("schema_version",),
+            "int_type",
         )
 
     def test_validate_preview_bundle_raises_value_error_when_schema_unsupported(self):
@@ -379,8 +383,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            f"$.schema_version must be {SCHEMA_VERSION}, got {SCHEMA_VERSION + 1!r}",
+            ("schema_version",),
+            "value_error",
         )
 
     def test_validate_preview_bundle_raises_value_error_when_repository_mismatch(self):
@@ -389,8 +393,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            "$.repository does not match the current repository",
+            ("repository",),
+            "value_error",
         )
 
     def test_validate_preview_bundle_raises_type_error_when_pr_number_nonpositive(self):
@@ -399,8 +403,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            TypeError,
-            "$.pull_request.number must be a positive integer",
+            ("pull_request", "number"),
+            "greater_than",
         )
 
     def test_validate_preview_bundle_raises_value_error_when_pr_number_mismatch(self):
@@ -409,8 +413,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            "$.pull_request.number does not match the expected pr_number",
+            ("pull_request", "number"),
+            "value_error",
         )
 
     def test_validate_preview_bundle_raises_value_error_when_head_sha_malformed(self):
@@ -419,8 +423,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            "$.pull_request.head_sha must be a 40-character SHA",
+            ("pull_request", "head_sha"),
+            "value_error",
         )
 
     def test_validate_preview_bundle_raises_value_error_when_head_sha_mismatch(self):
@@ -429,8 +433,8 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            "$.pull_request.head_sha does not match the expected head_sha",
+            ("pull_request", "head_sha"),
+            "value_error",
         )
 
     def test_validate_preview_bundle_raises_value_error_when_base_ref_mismatch(self):
@@ -439,6 +443,6 @@ class TestValidatePreviewBundle(unittest.TestCase):
 
         self.assert_invalid(
             bundle,
-            ValueError,
-            "$.pull_request.base_ref does not match the expected base branch",
+            ("pull_request", "base_ref"),
+            "value_error",
         )
