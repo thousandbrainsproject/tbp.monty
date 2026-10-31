@@ -31,10 +31,8 @@ except ImportError:
     HYDRA_AVAILABLE = False
     hydra = None  # type: ignore[assignment, unused-ignore]
 
-from tbp.monty.frameworks.experiments.monty_experiment import (
-    ExperimentMode,
-    MontyExperiment,
-)
+from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 
 from .experiment_config import (
     BroadcasterSetupParams,
@@ -60,6 +58,47 @@ logger = logging.getLogger(__name__)
 
 class ExperimentAbortedError(Exception):
     """Exception raised when experiment is aborted via LiveView UI."""
+
+
+class _LiveViewStepHook:
+    """StepHook adapter forwarding step events to the LiveView experiment.
+
+    Upstream MontyExperiment now drives per-step customization through a
+    ``StepHook`` callable instead of ``pre_step``/``post_step`` overrides.
+    """
+
+    def __init__(self, experiment: "MontyExperimentWithLiveView") -> None:
+        self._experiment = experiment
+
+    def __call__(
+        self,
+        ctx: Any,  # noqa: ARG002
+        monty: Any,  # noqa: ARG002
+        supervised_lm_ids: list[str],  # noqa: ARG002
+        step: int,
+        observations: Any,
+        actions: list[Any],
+    ) -> list[Any]:
+        """Run LiveView hooks for the current step and return the actions."""
+        experiment = self._experiment
+        experiment._check_abort_request()
+
+        if experiment.broadcaster:
+            if experiment.experiment_mode == ExperimentMode.TRAIN:
+                cumulative_step = experiment.total_train_steps + step
+            else:
+                cumulative_step = experiment.total_eval_steps + step
+            experiment.broadcaster.publish_state(
+                {"current_step": cumulative_step}
+            )
+
+        experiment._update_state_from_experiment()
+        experiment._broadcast_evidence_data(step)
+        experiment._broadcast_sensor_images(step, observations)
+        return actions
+
+    def close(self) -> None:
+        """No-op; broadcaster lifecycle is owned by the experiment."""
 
 
 class MontyExperimentWithLiveView(MontyExperiment):
@@ -109,6 +148,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
         )
         self._extract_and_set_config(config, overrides)
         super().__init__(config)
+
+        # Upstream replaced pre_step/post_step overrides with a StepHook.
+        self._step_hook = _LiveViewStepHook(self)
 
         self._initialize_broadcaster_if_enabled()
         self._initialize_experiment_timing()
@@ -250,11 +292,25 @@ class MontyExperimentWithLiveView(MontyExperiment):
         if self.broadcaster:
             self.broadcaster.publish_state(state_update)
 
+    def _get_step_limit(self, name: str) -> int:
+        """Read a step limit from the recognition policy (display only).
+
+        Upstream moved these values into the instantiated recognition policy
+        (``self._recognition_policy``), which stores them as private attrs.
+        """
+        policy = getattr(self, "_recognition_policy", None)
+        for attr in (f"_{name}", name):
+            if policy is not None:
+                value = getattr(policy, attr, None)
+                if value is not None:
+                    return int(value)
+        return 0
+
     def _create_training_config(self) -> TrainingConfig:
         """Create training configuration from experiment attributes."""
         return TrainingConfig(
             do_train=self.do_train,
-            max_train_steps=self.max_train_steps,
+            max_train_steps=self._get_step_limit("max_train_steps"),
             n_train_epochs=self.n_train_epochs,
         )
 
@@ -262,16 +318,16 @@ class MontyExperimentWithLiveView(MontyExperiment):
         """Create evaluation configuration from experiment attributes."""
         return EvaluationConfig(
             do_eval=self.do_eval,
-            max_eval_steps=self.max_eval_steps,
+            max_eval_steps=self._get_step_limit("max_eval_steps"),
             n_eval_epochs=self.n_eval_epochs,
         )
 
     def _create_experiment_limits(self) -> ExperimentLimits:
         """Create experiment limits from experiment attributes."""
         return ExperimentLimits(
-            max_train_steps=self.max_train_steps,
-            max_eval_steps=self.max_eval_steps,
-            max_total_steps=self.max_total_steps,
+            max_train_steps=self._get_step_limit("max_train_steps"),
+            max_eval_steps=self._get_step_limit("max_eval_steps"),
+            max_total_steps=self._get_step_limit("max_total_steps"),
             n_train_epochs=self.n_train_epochs,
             n_eval_epochs=self.n_eval_epochs,
         )
@@ -316,23 +372,6 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
         self.broadcaster.publish_state(state)
 
-    def pre_step(self, step: int, observation: Any) -> None:
-        """Update state before each step."""
-        # Check for abort request before processing step
-        self._check_abort_request()
-
-        super().pre_step(step, observation)
-        if self.broadcaster:
-            # Calculate cumulative step count: total from previous episodes +
-            # current step in this episode. This makes "Current Step" match
-            # the cumulative progress shown in "Total Steps"
-            if self.experiment_mode == ExperimentMode.TRAIN:
-                cumulative_step = self.total_train_steps + step
-            else:
-                cumulative_step = self.total_eval_steps + step
-            self.broadcaster.publish_state({"current_step": cumulative_step})
-        self._update_state_from_experiment()
-
     def _check_abort_request(self) -> None:
         """Check if abort has been requested and raise exception if so."""
         # Check both local flag and subscriber
@@ -342,13 +381,6 @@ class MontyExperimentWithLiveView(MontyExperiment):
         if self.command_subscriber and self.command_subscriber.is_abort_requested():
             self._abort_requested = True
             raise ExperimentAbortedError("Experiment aborted via LiveView UI")
-
-    def post_step(self, step: int, observation: Any) -> None:
-        """Update state after each step."""
-        super().post_step(step, observation)
-        self._update_state_from_experiment()
-        self._broadcast_evidence_data(step)
-        self._broadcast_sensor_images(step, observation)
 
     def pre_episode(self) -> None:
         """Update state before each episode.
