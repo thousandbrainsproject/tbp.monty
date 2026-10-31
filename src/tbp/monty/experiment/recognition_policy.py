@@ -16,6 +16,7 @@ from typing import Protocol, Sequence
 from typing_extensions import Self
 
 from tbp.monty import telemetry
+from tbp.monty.experiment.recognition_status import RecognitionConclusion
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.telemetry.schemas import TelemetryEvent
@@ -364,11 +365,18 @@ class StepLimit(RecognitionPolicy):
                 time_out_lms=is_done,
             )
         elif count.mode is ExperimentMode.TRAIN:
+            start_exploring = count.matching_steps >= self._min_train_steps
+            if start_exploring:
+                logger.info(
+                    "StepLimit should explore, with step=%d matching_steps=%d",
+                    count.step,
+                    count.matching_steps,
+                )
             is_done = count.matching_steps >= self._max_train_steps
             result = RecognitionResult(
                 is_done=is_done,
                 time_out_lms=is_done,
-                start_exploring=(count.matching_steps >= self._min_train_steps),
+                start_exploring=start_exploring,
             )
         elif count.mode is ExperimentMode.EVAL:
             is_done = count.matching_steps >= self._max_eval_steps
@@ -399,20 +407,31 @@ class MatchCriteria(RecognitionPolicy):
     def __call__(
         self: Self,
         model: MontyBase,
-        count: RecognitionCounter,  # noqa: ARG002
+        count: RecognitionCounter,
     ) -> RecognitionResult:
         terminal_states: dict[str, str | None] = {
             lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
         }
         # TODO: Either configure the `match_criterion` on the policy itself,
         #       or provide configurable policies for each criterion.
-        is_done = model._match_criterion(terminal_states)
-        if is_done:
+        is_met = model._match_criterion(terminal_states)
+        start_exploring = is_met and (count.mode is ExperimentMode.TRAIN)
+        is_done = is_met and (count.mode is ExperimentMode.EVAL)
+        if is_met:
             logger.info(
-                "MatchCriteria is done, with terminal_states=%s",
+                "MatchCriteria is met, with "
+                "step=%d matching_steps=%d mode=%s "
+                "is_done=%s start_exploring=%s terminal_states=%s",
+                count.step,
+                count.matching_steps,
+                count.mode,
+                is_done,
+                start_exploring,
                 terminal_states,
             )
-        return RecognitionResult(is_done=is_done, time_out_lms=is_done)
+        return RecognitionResult(
+            is_done=is_done, time_out_lms=is_met, start_exploring=start_exploring
+        )
 
 
 class MinimumLMs(RecognitionPolicy):
@@ -421,7 +440,7 @@ class MinimumLMs(RecognitionPolicy):
     _min_lms: int
     """The minimum number of LMs that must reach a conclusion."""
 
-    def __init__(self: Self, min_lms: int) -> None:
+    def __init__(self: Self, min_lms: int = 1) -> None:
         """Initialize the policy.
 
         Args:
@@ -450,6 +469,40 @@ class MinimumLMs(RecognitionPolicy):
         if is_done:
             logger.info("MinimumLMs is done, with num_matched=%d", num_matched)
         return RecognitionResult(is_done)
+
+
+class AllLMsNoMatch(RecognitionPolicy):
+    """All LMs have reached a "no_match" conclusion."""
+
+    def __init__(self: Self) -> None:
+        """Initialize the policy."""
+        pass
+
+    def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,
+    ) -> RecognitionResult:
+        if model.is_exploring:
+            return RecognitionResult()
+
+        all_no_match = all(
+            lm.recognition_status.conclusion is RecognitionConclusion.NO_MATCH
+            for lm in model.learning_modules
+        )
+        start_exploring = all_no_match and (count.mode is ExperimentMode.TRAIN)
+        is_done = all_no_match and (count.mode is ExperimentMode.EVAL)
+
+        if all_no_match:
+            logger.info(
+                "AllLMsNoMatch is True, with "
+                "step=%d matching_steps=%d mode=%s start_exploring=%s",
+                count.step,
+                count.matching_steps,
+                count.mode,
+                start_exploring,
+            )
+        return RecognitionResult(is_done=is_done, start_exploring=start_exploring)
 
 
 class NaiveScan(RecognitionPolicy):

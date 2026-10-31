@@ -15,6 +15,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from tbp.monty.experiment.recognition_policy import (
+    AllLMsNoMatch,
     AnyPolicy,
     MatchCriteria,
     MaximumSteps,
@@ -503,6 +504,26 @@ class MinimumLMsTest(unittest.TestCase):
         count = RecognitionCounter()
         result = policy(model, count)
         self.assertEqual(result.is_done, num_concluded >= min_lms)
+
+
+class AllLMsNoMatchTest(unittest.TestCase):
+    @given(
+        conclusions=st.lists(
+            st.one_of(st.none(), st.sampled_from(RecognitionConclusion)),
+            min_size=1,
+            max_size=20,
+        ),
+    )
+    def test_done_iff_all_lms_are_no_match(
+        self, conclusions: list[RecognitionConclusion | None]
+    ) -> None:
+        num_no_match = conclusions.count(RecognitionConclusion.NO_MATCH)
+        model = _model_with_conclusions(conclusions)
+        policy = AllLMsNoMatch()
+        count = RecognitionCounter()
+        result = policy(model, count)
+        is_done = num_no_match == len(conclusions)
+        self.assertEqual(result.is_done, is_done)
 
 
 class NaiveScanTest(unittest.TestCase):
