@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run script for LiveView Experiment Monitor
 # Runs a Monty experiment with LiveView dashboard
-# Works from any directory, automatically handles conda environment
+# Works from any directory, automatically handles the uv environment
 
 set -e
 
@@ -17,55 +17,25 @@ cd "$TBP_MONTY_ROOT" || {
 }
 
 # Default experiment name
-EXPERIMENT_NAME="${1:-tutorial_surf_agent_2obj_with_liveview}"
+EXPERIMENT_NAME="${1:-randrot_noise_77obj_surf_agent}"
 
 echo "Starting LiveView Experiment Monitor..." >&2
 echo "" >&2
 
-# Check if conda is available
-if ! command -v conda >/dev/null 2>&1; then
-    echo "Error: conda not found. Please install conda." >&2
+# Check if uv is available (MuJoCo requires a native arm64 Python 3.11+ env,
+# which this repo now manages via uv).
+if ! command -v uv >/dev/null 2>&1; then
+    echo "Error: uv not found. Please install uv (https://docs.astral.sh/uv/)." >&2
     exit 1
-fi
-
-# Check for tbp.monty environment
-ENV_NAME=""
-if conda env list | grep -q "^tbp.monty "; then
-    ENV_NAME="tbp.monty"
-else
-    echo "Error: tbp.monty conda environment not found." >&2
-    echo "" >&2
-    echo "Please set up the tbp.monty environment first:" >&2
-    echo "  conda env create" >&2
-    echo "  conda activate tbp.monty" >&2
-    echo "  pip install -e ." >&2
-    echo "" >&2
-    echo "Then run setup:" >&2
-    echo "  ./contrib/liveview_experiment/scripts/setup.sh" >&2
-    exit 1
-fi
-
-# Activate conda environment if not already activated
-if [ -z "${CONDA_DEFAULT_ENV:-}" ] || [ "$CONDA_DEFAULT_ENV" != "$ENV_NAME" ]; then
-    echo "Activating $ENV_NAME conda environment..." >&2
-    eval "$(conda shell.bash hook)" 2>/dev/null || true
-    conda activate "$ENV_NAME" || {
-        echo "Error: Could not activate $ENV_NAME environment." >&2
-        echo "Please run: conda activate $ENV_NAME" >&2
-        exit 1
-    }
 fi
 
 # Check for core tbp.monty dependencies
-if ! python -c "import hydra" 2>/dev/null; then
-    echo "Error: hydra-core not found in tbp.monty environment." >&2
+if ! uv run python -c "import hydra" 2>/dev/null; then
+    echo "Error: hydra-core not found in uv environment." >&2
     echo "" >&2
-    echo "The conda environment exists but is missing dependencies." >&2
-    echo "" >&2
-    echo "Please install the package in editable mode:" >&2
-    echo "  conda activate tbp.monty" >&2
+    echo "Please sync the uv environment first:" >&2
     echo "  cd $TBP_MONTY_ROOT" >&2
-    echo "  pip install -e ." >&2
+    echo "  uv sync --extra simulator_mujoco" >&2
     echo "" >&2
     echo "This will install all dependencies including hydra-core." >&2
     exit 1
@@ -99,15 +69,15 @@ else
     IS_LIVEVIEW_CONFIG=true
 fi
 
-echo "✓ Environment: $CONDA_DEFAULT_ENV" >&2
+echo "✓ Environment: uv" >&2
 echo "✓ Experiment: $EXPERIMENT_NAME" >&2
 echo "✓ Config: $CONFIG_PATH" >&2
 echo "" >&2
 
 # Auto-install pyzmq if missing (needed for ZMQ communication)
-if ! python -c "import zmq" 2>/dev/null; then
+if ! uv run python -c "import zmq" 2>/dev/null; then
     echo "Installing pyzmq..." >&2
-    pip install --quiet "pyzmq>=25.0.0" >&2 || {
+    uv pip install --quiet "pyzmq>=25.0.0" >&2 || {
         echo "Error: Failed to install pyzmq" >&2
         exit 1
     }
@@ -220,7 +190,7 @@ cd "$TBP_MONTY_ROOT"
 if [ "$IS_LIVEVIEW_CONFIG" = "true" ]; then
     # LiveView config exists - use it as-is (values from yaml are defaults)
     # Only override ports/host if needed (but they should already be in the config)
-    python run.py \
+    uv run python run.py \
         "experiment=${EXPERIMENT_NAME}" \
         "hydra.searchpath=[${TBP_MONTY_ROOT}/src/tbp/monty/conf,${LIVEVIEW_DIR}/conf]" || {
         EXPERIMENT_EXIT_CODE=$?
@@ -232,7 +202,7 @@ else
     # Also disable wandb and excessive logging
     # Allow custom run name suffix via LIVEVIEW_RUN_NAME_SUFFIX env var
     RUN_NAME_SUFFIX="${LIVEVIEW_RUN_NAME_SUFFIX:-_with_liveview}"
-    python run.py \
+    uv run python run.py \
         "experiment=${EXPERIMENT_NAME}" \
         "hydra.searchpath=[${TBP_MONTY_ROOT}/src/tbp/monty/conf,${LIVEVIEW_DIR}/conf]" \
         "experiment._target_=contrib.liveview_experiment.src.monty_experiment_with_liveview.MontyExperimentWithLiveView" \
@@ -242,9 +212,8 @@ else
         "+experiment.config.enable_liveview=true" \
         "+experiment.config.sensor_image_throttle_ms=100" \
         "experiment.config.monty_config.sensor_modules.sensor_module_0.save_raw_obs=true" \
-        "experiment.config.logging.run_name=${EXPERIMENT_NAME}${RUN_NAME_SUFFIX}" \
-        "experiment.config.logging.wandb_handlers=[]" \
-        "experiment.config.logging.monty_handlers=[]" || {
+        "logging=basic_warning_monty_runs" \
+        "experiment.config.logging.run_name=${EXPERIMENT_NAME}${RUN_NAME_SUFFIX}" || {
         EXPERIMENT_EXIT_CODE=$?
         cleanup
         exit $EXPERIMENT_EXIT_CODE
