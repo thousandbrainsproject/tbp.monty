@@ -133,11 +133,11 @@ Once the votes are in the receiving LMs reference frame, the receiving LM update
 
 # Terminal Condition
 
-In our current experiment set up, we divide time into episodes. **Each episode ends when a terminal state is reached**. In the object recognition task this is either **no match** (the model does not know the current object and we construct a new graph for it), **match** (we recognized an object to correspond to a graph in memory), or **time out** (we took a maximum number of steps without reaching one of the other terminal states). This means, each episode contains a variable amount of steps and after every step, we need to check if a terminal condition was met. This check is summarized in the figure below (except for time out which is checked separately in the code).
+In episode-based experiments, Monty matches observations against the objects in memory. A learning module can reach **no match** (it does not know the current object) or **match** (it recognizes an object and its pose). The experiment also enforces step limits, which can lead to **time out**. The check below determines when matching has finished; during training, exploration can follow before the episode ends.
 
 This check can be divided into **global Monty checks and local LM checks** (purple box). An individual LM can reach its terminal state much earlier than the overall Monty system. For example, if one LM does not have a model of the shown object it will reach no match quite fast while the other LMs will continue until they recognize the object. Or one LM might receive some unique evidence about an object and recognize it before all other LMs do.
 
-The `match_criterion` experiment setting controls which learning modules must reach the terminal `match` state before the episode ends. Experiment configs set it through the `/termination` config group in `src/tbp/monty/conf/termination/`, alongside the `recognition_policy` that enforces the step limits. To end the episode after a configured number of LMs match, use `AnyLMsMatch`:
+The `match_criterion` experiment setting controls which learning modules must reach the terminal `match` state to finish matching. Experiment configs set it through the `/termination` config group in `src/tbp/monty/conf/termination/`, alongside the `recognition_policy` that enforces the step limits. To finish matching after a configured number of LMs match, use `AnyLMsMatch`:
 
 ```yaml
 match_criterion:
@@ -157,4 +157,25 @@ match_criterion:
 
 The IDs are the learning-module keys from the Monty configuration.
 
-![Terminal condition check performed after every step (time out is checked separately before each step).](../../figures/how-monty-works/terminal_state.png)
+The diagram follows `MontyForGraphMatching.check_terminal_conditions`, which is called during matching when an LM has processed new information. It first checks whether all LMs have reached `no_match`. Otherwise, it waits for the minimum matching-step condition, updates each LM's terminal state, and evaluates the configured criterion. A mixed set of `match` and `no_match` states does not itself terminate matching: the configured criterion must be satisfied.
+
+![Matching termination: check for all LMs having no match, enforce minimum steps, update local LM states, then apply the configured match criterion. Timeout handling is separate.](../../figures/how-monty-works/terminal_state.png)
+
+Here are six examples. Except for the first row, assume that at least one LM is not `no_match`. The last four rows use the states after the local LM checks.
+
+| LM states or condition | Criterion | Result |
+| --- | --- | --- |
+| Every LM is `no_match`, even before the minimum matching-step condition is met | Either | Return `True`; no further matching checks are needed. |
+| The minimum matching-step condition is not yet met | Either | Return `False`; continue matching. |
+| One LM is `match`; the others are not | `AnyLMsMatch(count=2)` | Return `False`; one more LM must match. |
+| Two LMs are `match` | `AnyLMsMatch(count=2)` | Return `True`; the criterion is satisfied. |
+| `learning_module_0` and an unlisted LM match, but required `learning_module_1` does not | `NamedLMsMatch(ids=["learning_module_0", "learning_module_1"])` | Return `False`; the unlisted LM cannot substitute. |
+| Both required LMs are `match` | `NamedLMsMatch(ids=["learning_module_0", "learning_module_1"])` | Return `True`, regardless of unlisted LMs. |
+
+A `True` result finishes matching; during training, Monty can then switch to exploration. The experiment's recognition policy checks step limits separately and can trigger timeout handling without a match. The diagram does not replace those episode-level checks.
+
+The editable Graphviz source is stored alongside the PNG as `terminal_state.dot`. Rebuild the PNG from that directory:
+
+```shell
+dot -Tpng -Gdpi=144 terminal_state.dot -o terminal_state.png
+```
