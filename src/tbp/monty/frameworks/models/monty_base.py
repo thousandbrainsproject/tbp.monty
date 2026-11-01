@@ -160,22 +160,26 @@ class MontyBase(Monty):
         # If we're performing a "motor only" step, the normal step logic is skipped.
         if self.is_motor_only_step:
             logger.debug("Performing a motor-only step")
-            return self.motor_only_step(ctx, observations, proprioceptive_state)
-
-        # For the base class, just use matching step. Note that matching_step and
-        # exploratory_step are fully implemented by the abstract class.
-        if self.step_type == "matching_step":
-            self._matching_step(ctx, observations, proprioceptive_state)
-        elif self.step_type == "exploratory_step":
-            self._exploratory_step(ctx, observations, proprioceptive_state)
+            actions = self.motor_only_step(ctx, observations, proprioceptive_state)
         else:
-            raise ValueError(f"step type {self.step_type} not found in base monty")
+            # For the base class, just use matching step. Note that matching_step and
+            # exploratory_step are fully implemented by the abstract class.
+            if self.step_type == "matching_step":
+                self._matching_step(ctx, observations, proprioceptive_state)
+            elif self.step_type == "exploratory_step":
+                self._exploratory_step(ctx, observations, proprioceptive_state)
+            else:
+                raise ValueError(f"step type {self.step_type} not found in base monty")
+            actions = self._actions
+
+        for lm in self.learning_modules:
+            lm.post_step(ctx)
 
         # TODO: Once this works, refactor to be more functional and less side-effect
         #       driven. For now, we're minimizing changes to the existing side-effect
         #       driven pattern and return `self._actions` that got updated at some
         #       point during the step method calls above.
-        return self._actions
+        return actions
 
     def aggregate_sensory_inputs(
         self,

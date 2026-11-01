@@ -624,7 +624,6 @@ class GraphLM(LearningModule):
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
-        self._emit_lm_state()
 
     def exploratory_step(
         self,
@@ -638,6 +637,11 @@ class GraphLM(LearningModule):
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
+
+    def post_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+    ) -> None:
         self._emit_lm_state()
 
     def _emit_lm_state(self):
