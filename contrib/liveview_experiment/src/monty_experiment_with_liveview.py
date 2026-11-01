@@ -466,7 +466,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
         final_evidences = self._aggregate_evidence_from_lms()
 
         if final_evidences:
-            # Publish single aggregated evidence point per step
+            # Publish single aggregated evidence point per step.
+            # Keep the cumulative step so each object's curve continues on the
+            # x-axis where the previous object left off, with raw evidence values.
             # Include run_name so server can partition by publisher in parallel mode
             self.broadcaster.publish_data(
                 "evidence_chart",
