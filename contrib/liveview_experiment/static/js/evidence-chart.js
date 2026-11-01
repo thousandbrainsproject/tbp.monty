@@ -357,7 +357,7 @@ window.Hooks.EvidenceChart = {
                 font: { size: 14 }
             },
             xaxis: {
-                title: 'Step',
+                title: 'Time (s)',
                 showgrid: true,
                 gridcolor: '#e5e7eb',
             },
@@ -387,15 +387,11 @@ window.Hooks.EvidenceChart = {
     
     updated() {
         // On each update, read all data points from stream and update chart
-        const allPoints = this.getAllDataPoints();
+        const points = this.getAllDataPoints();
         
-        if (allPoints.length === 0) return;
+        if (points.length === 0) return;
         
-        // Chart only the current episode so each object's evidence curve is
-        // drawn from step 0 without overlapping curves from previous objects.
-        const points = this.getCurrentEpisodePoints(allPoints);
-        
-        // Build traces from the current episode's points
+        // Build traces from all points
         const traces = this.buildTraces(points);
         const shapes = this.buildEpisodeShapes(points);
         
@@ -408,25 +404,6 @@ window.Hooks.EvidenceChart = {
             },
             shapes,
         });
-    },
-    
-    getCurrentEpisodePoints(points) {
-        // Keep only the points belonging to the latest (current) episode.
-        // Evidence arrives with an `episode` number; on a new episode the
-        // previous object's curve should disappear rather than overlap the
-        // new one on the shared local-step axis.
-        let currentEpisode = null;
-        for (const point of points) {
-            if (point.episode !== null && point.episode !== undefined) {
-                if (currentEpisode === null || point.episode > currentEpisode) {
-                    currentEpisode = point.episode;
-                }
-            }
-        }
-        if (currentEpisode === null) {
-            return points;
-        }
-        return points.filter((point) => point.episode === currentEpisode);
     },
     
     getAllDataPoints() {
@@ -463,7 +440,55 @@ window.Hooks.EvidenceChart = {
         });
     },
     
+    computeEpisodeOffsets(points) {
+        // Compute a cumulative y-offset per episode so that, when the object
+        // switches, each evidence line continues from the previous object's
+        // final max evidence instead of restarting at 0.
+        const sorted = [...points].sort((a, b) => {
+            const ea = a.episode !== null && a.episode !== undefined ? a.episode : -1;
+            const eb = b.episode !== null && b.episode !== undefined ? b.episode : -1;
+            if (ea !== eb) return ea - eb;
+            return (a.step || 0) - (b.step || 0);
+        });
+
+        const episodeFinalMax = {};
+        let currentEpisode = null;
+        let currentMax = 0;
+        for (const point of sorted) {
+            const ep = point.episode !== null && point.episode !== undefined ? point.episode : -1;
+            if (ep !== currentEpisode) {
+                if (currentEpisode !== null) {
+                    episodeFinalMax[currentEpisode] = currentMax;
+                }
+                currentEpisode = ep;
+                currentMax = 0;
+            }
+            const values = Object.values(point.evidences || {});
+            for (const value of values) {
+                if (typeof value === 'number' && value > currentMax) {
+                    currentMax = value;
+                }
+            }
+        }
+        if (currentEpisode !== null) {
+            episodeFinalMax[currentEpisode] = currentMax;
+        }
+
+        const offsets = {};
+        let running = 0;
+        const episodes = Object.keys(episodeFinalMax)
+            .map(Number)
+            .sort((a, b) => a - b);
+        for (const ep of episodes) {
+            offsets[ep] = running;
+            running += episodeFinalMax[ep];
+        }
+        return offsets;
+    },
+
     buildTraces(points) {
+        const offsets = this.computeEpisodeOffsets(points);
+
         // Get all unique object names
         const objectNames = new Set();
         points.forEach(point => {
@@ -477,26 +502,12 @@ window.Hooks.EvidenceChart = {
             const x = [];
             const y = [];
             
-            let lastEpisode = null;
             points.forEach(point => {
                 if (point.evidences[objName] !== undefined) {
-                    // Insert gap to create vertical drop on episode change
-                    if (
-                        lastEpisode !== null &&
-                        point.episode !== null &&
-                        point.episode !== undefined &&
-                        point.episode !== lastEpisode
-                    ) {
-                        x.push(point.step || 0);
-                        y.push(NaN);
-                    }
-
+                    const ep = point.episode !== null && point.episode !== undefined ? point.episode : -1;
+                    const offset = offsets[ep] || 0;
                     x.push(point.step || 0);
-                    y.push(point.evidences[objName]);
-
-                    if (point.episode !== null && point.episode !== undefined) {
-                        lastEpisode = point.episode;
-                    }
+                    y.push(point.evidences[objName] + offset);
                 }
             });
             
@@ -523,18 +534,69 @@ window.Hooks.EvidenceChart = {
         if (points.length === 0) return null;
         const steps = points.map(p => p.step || 0);
         const maxStep = Math.max(...steps);
-        // Evidence is plotted against the episode-local step, so always
-        // anchor the x-axis at 0. This keeps each object's curve starting
-        // at the origin instead of scrolling along a cumulative timeline.
-        return [0, maxStep + 5];
+        const minStep = Math.max(0, maxStep - 100);  // Show last 100 steps
+        return [minStep, maxStep + 5];
     },
 
     buildEpisodeShapes(points) {
-        // Evidence is now plotted against the episode-local step, so there is
-        // no cumulative timeline to shade per episode. Return no shapes.
-        return [];
-    },
+        if (points.length === 0) return [];
 
+        const shapes = [];
+        let currentEpisode = null;
+        let startStep = null;
+        let targetObject = '';
+
+        points.forEach((point, idx) => {
+            const ep = point.episode;
+            const step = point.step || 0;
+
+            if (currentEpisode === null) {
+                currentEpisode = ep;
+                startStep = step;
+                targetObject = point.target_object || '';
+                return;
+            }
+
+            if (ep !== currentEpisode) {
+                const color = getObjectColor(targetObject || 'episode', shapes.length);
+                shapes.push({
+                    type: 'rect',
+                    xref: 'x',
+                    yref: 'paper',
+                    x0: startStep,
+                    x1: step,
+                    y0: 0,
+                    y1: 1,
+                    fillcolor: color,
+                    opacity: 0.08,
+                    line: { width: 0 },
+                });
+                currentEpisode = ep;
+                startStep = step;
+                targetObject = point.target_object || '';
+            }
+
+            // Last point - close the final band
+            if (idx === points.length - 1) {
+                const color = getObjectColor(targetObject || 'episode', shapes.length);
+                shapes.push({
+                    type: 'rect',
+                    xref: 'x',
+                    yref: 'paper',
+                    x0: startStep,
+                    x1: step + 1,
+                    y0: 0,
+                    y1: 1,
+                    fillcolor: color,
+                    opacity: 0.08,
+                    line: { width: 0 },
+                });
+            }
+        });
+
+        return shapes;
+    },
+    
     destroyed() {
         console.log('EvidenceChart hook destroyed');
         if (this.chartEl) {
