@@ -357,7 +357,7 @@ window.Hooks.EvidenceChart = {
                 font: { size: 14 }
             },
             xaxis: {
-                title: 'Time (s)',
+                title: 'Step',
                 showgrid: true,
                 gridcolor: '#e5e7eb',
             },
@@ -500,69 +500,18 @@ window.Hooks.EvidenceChart = {
         if (points.length === 0) return null;
         const steps = points.map(p => p.step || 0);
         const maxStep = Math.max(...steps);
-        const minStep = Math.max(0, maxStep - 100);  // Show last 100 steps
-        return [minStep, maxStep + 5];
+        // Evidence is plotted against the episode-local step, so always
+        // anchor the x-axis at 0. This keeps each object's curve starting
+        // at the origin instead of scrolling along a cumulative timeline.
+        return [0, maxStep + 5];
     },
 
     buildEpisodeShapes(points) {
-        if (points.length === 0) return [];
-
-        const shapes = [];
-        let currentEpisode = null;
-        let startStep = null;
-        let targetObject = '';
-
-        points.forEach((point, idx) => {
-            const ep = point.episode;
-            const step = point.step || 0;
-
-            if (currentEpisode === null) {
-                currentEpisode = ep;
-                startStep = step;
-                targetObject = point.target_object || '';
-                return;
-            }
-
-            if (ep !== currentEpisode) {
-                const color = getObjectColor(targetObject || 'episode', shapes.length);
-                shapes.push({
-                    type: 'rect',
-                    xref: 'x',
-                    yref: 'paper',
-                    x0: startStep,
-                    x1: step,
-                    y0: 0,
-                    y1: 1,
-                    fillcolor: color,
-                    opacity: 0.08,
-                    line: { width: 0 },
-                });
-                currentEpisode = ep;
-                startStep = step;
-                targetObject = point.target_object || '';
-            }
-
-            // Last point - close the final band
-            if (idx === points.length - 1) {
-                const color = getObjectColor(targetObject || 'episode', shapes.length);
-                shapes.push({
-                    type: 'rect',
-                    xref: 'x',
-                    yref: 'paper',
-                    x0: startStep,
-                    x1: step + 1,
-                    y0: 0,
-                    y1: 1,
-                    fillcolor: color,
-                    opacity: 0.08,
-                    line: { width: 0 },
-                });
-            }
-        });
-
-        return shapes;
+        // Evidence is now plotted against the episode-local step, so there is
+        // no cumulative timeline to shade per episode. Return no shapes.
+        return [];
     },
-    
+
     destroyed() {
         console.log('EvidenceChart hook destroyed');
         if (this.chartEl) {

@@ -461,17 +461,19 @@ class MontyExperimentWithLiveView(MontyExperiment):
         if not self.broadcaster or not hasattr(self, "model"):
             return
 
-        cumulative_step, current_episode = self._calculate_cumulative_step(step)
+        _, current_episode = self._calculate_cumulative_step(step)
         target_object = self._get_current_target_object()
         final_evidences = self._aggregate_evidence_from_lms()
 
         if final_evidences:
-            # Publish single aggregated evidence point per step
+            # Publish single aggregated evidence point per step.
+            # Use the episode-local step (not the cumulative step) so each
+            # object's evidence curve starts at 0 on the chart.
             # Include run_name so server can partition by publisher in parallel mode
             self.broadcaster.publish_data(
                 "evidence_chart",
                 {
-                    "step": cumulative_step,
+                    "step": step,
                     "evidences": final_evidences,
                     "target_object": target_object,
                     "episode": current_episode,
