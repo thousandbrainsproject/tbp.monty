@@ -387,11 +387,15 @@ window.Hooks.EvidenceChart = {
     
     updated() {
         // On each update, read all data points from stream and update chart
-        const points = this.getAllDataPoints();
+        const allPoints = this.getAllDataPoints();
         
-        if (points.length === 0) return;
+        if (allPoints.length === 0) return;
         
-        // Build traces from all points
+        // Chart only the current episode so each object's evidence curve is
+        // drawn from step 0 without overlapping curves from previous objects.
+        const points = this.getCurrentEpisodePoints(allPoints);
+        
+        // Build traces from the current episode's points
         const traces = this.buildTraces(points);
         const shapes = this.buildEpisodeShapes(points);
         
@@ -404,6 +408,25 @@ window.Hooks.EvidenceChart = {
             },
             shapes,
         });
+    },
+    
+    getCurrentEpisodePoints(points) {
+        // Keep only the points belonging to the latest (current) episode.
+        // Evidence arrives with an `episode` number; on a new episode the
+        // previous object's curve should disappear rather than overlap the
+        // new one on the shared local-step axis.
+        let currentEpisode = null;
+        for (const point of points) {
+            if (point.episode !== null && point.episode !== undefined) {
+                if (currentEpisode === null || point.episode > currentEpisode) {
+                    currentEpisode = point.episode;
+                }
+            }
+        }
+        if (currentEpisode === null) {
+            return points;
+        }
+        return points.filter((point) => point.episode === currentEpisode);
     },
     
     getAllDataPoints() {
