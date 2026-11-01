@@ -440,55 +440,7 @@ window.Hooks.EvidenceChart = {
         });
     },
     
-    computeEpisodeOffsets(points) {
-        // Compute a cumulative y-offset per episode so that, when the object
-        // switches, each evidence line continues from the previous object's
-        // final max evidence instead of restarting at 0.
-        const sorted = [...points].sort((a, b) => {
-            const ea = a.episode !== null && a.episode !== undefined ? a.episode : -1;
-            const eb = b.episode !== null && b.episode !== undefined ? b.episode : -1;
-            if (ea !== eb) return ea - eb;
-            return (a.step || 0) - (b.step || 0);
-        });
-
-        const episodeFinalMax = {};
-        let currentEpisode = null;
-        let currentMax = 0;
-        for (const point of sorted) {
-            const ep = point.episode !== null && point.episode !== undefined ? point.episode : -1;
-            if (ep !== currentEpisode) {
-                if (currentEpisode !== null) {
-                    episodeFinalMax[currentEpisode] = currentMax;
-                }
-                currentEpisode = ep;
-                currentMax = 0;
-            }
-            const values = Object.values(point.evidences || {});
-            for (const value of values) {
-                if (typeof value === 'number' && value > currentMax) {
-                    currentMax = value;
-                }
-            }
-        }
-        if (currentEpisode !== null) {
-            episodeFinalMax[currentEpisode] = currentMax;
-        }
-
-        const offsets = {};
-        let running = 0;
-        const episodes = Object.keys(episodeFinalMax)
-            .map(Number)
-            .sort((a, b) => a - b);
-        for (const ep of episodes) {
-            offsets[ep] = running;
-            running += episodeFinalMax[ep];
-        }
-        return offsets;
-    },
-
     buildTraces(points) {
-        const offsets = this.computeEpisodeOffsets(points);
-
         // Get all unique object names
         const objectNames = new Set();
         points.forEach(point => {
@@ -502,12 +454,26 @@ window.Hooks.EvidenceChart = {
             const x = [];
             const y = [];
             
+            let lastEpisode = null;
             points.forEach(point => {
                 if (point.evidences[objName] !== undefined) {
-                    const ep = point.episode !== null && point.episode !== undefined ? point.episode : -1;
-                    const offset = offsets[ep] || 0;
+                    // Insert gap to create vertical drop on episode change
+                    if (
+                        lastEpisode !== null &&
+                        point.episode !== null &&
+                        point.episode !== undefined &&
+                        point.episode !== lastEpisode
+                    ) {
+                        x.push(point.step || 0);
+                        y.push(NaN);
+                    }
+
                     x.push(point.step || 0);
-                    y.push(point.evidences[objName] + offset);
+                    y.push(point.evidences[objName]);
+
+                    if (point.episode !== null && point.episode !== undefined) {
+                        lastEpisode = point.episode;
+                    }
                 }
             });
             
