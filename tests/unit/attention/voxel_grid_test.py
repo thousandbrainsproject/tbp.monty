@@ -12,8 +12,8 @@ import json
 import re
 import unittest
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np

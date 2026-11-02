@@ -10,7 +10,7 @@
 
 from __future__ import annotations
 
-from typing_extensions import Protocol
+from typing import Protocol
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID

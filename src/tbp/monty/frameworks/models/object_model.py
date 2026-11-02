@@ -634,6 +634,7 @@ class GridObjectModel(GraphObjectModel):
             voxels_with_values[0],
             voxels_with_values[1],
             voxels_with_values[2],
+            strict=True,
         ):
             observations_in_voxel_ids = np.where(
                 (voxel_ids_of_new_obs == voxel).all(axis=1)

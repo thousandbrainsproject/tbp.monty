@@ -11,7 +11,8 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from tbp.monty import telemetry
 from tbp.monty.attention.attention_system import (

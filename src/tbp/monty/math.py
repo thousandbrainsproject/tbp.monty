@@ -8,14 +8,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Tuple
-
 # TODO: These are type aliases for now, but we should consider combining
 #  these together into a unified concept for pose, perhaps using NumPy's
 #  custom array containers.
-VectorXYZ = Tuple[float, float, float]
-EulerAnglesXYZ = Tuple[float, float, float]
-QuaternionWXYZ = Tuple[float, float, float, float]
+VectorXYZ = tuple[float, float, float]
+EulerAnglesXYZ = tuple[float, float, float]
+QuaternionWXYZ = tuple[float, float, float, float]
 
 IDENTITY_QUATERNION: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0)
 ZERO_VECTOR: VectorXYZ = (0.0, 0.0, 0.0)

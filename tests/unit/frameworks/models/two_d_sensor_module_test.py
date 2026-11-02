@@ -10,7 +10,8 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any, Callable, Literal
+from collections.abc import Callable
+from typing import Any, Literal
 from unittest.mock import Mock, sentinel
 
 import numpy as np
