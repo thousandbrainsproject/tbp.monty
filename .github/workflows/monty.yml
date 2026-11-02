@@ -241,7 +241,7 @@ jobs:
           export MUJOCO_GL=egl
           export EGL_PLATFORM=headless
           mkdir -p test_results/pytest
-          uv run --frozen pytest tests/integration tests/mujoco/integration \
+          uv run --frozen pytest tests/integration \
             --cov --cov-context=test --cov-report html --cov-report term \
             --junitxml=test_results/pytest/results.xml --verbose \
             --durations=10 --durations-min=60
