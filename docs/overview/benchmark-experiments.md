@@ -196,8 +196,8 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > | Models | Archive Format | Download Link |
 > | --- | --- | --- |
-> | pretrained_compositional_objects_v8 | tgz | [pretrained_compositional_objects_v8.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.tgz) |
-> | pretrained_compositional_objects_v8 | zip | [pretrained_compositional_objects_v8.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.zip) |
+> | pretrained_compositional_objects_v9 | tgz | [pretrained_compositional_objects_v9.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.tgz) |
+> | pretrained_compositional_objects_v9 | zip | [pretrained_compositional_objects_v9.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.zip) |
 >
 > Both COWS Small and COWS Large use this archive, including the shared 3D-child models.
 >
@@ -208,7 +208,7 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.tgz | tar -xzf -
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.tgz | tar -xzf -
 > ```
 >
 > or
@@ -218,9 +218,9 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.zip
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.zip
 >
-> unzip pretrained_compositional_objects_v8.zip
+> unzip pretrained_compositional_objects_v9.zip
 > ```
 
 
