@@ -487,11 +487,11 @@ class AllLMsNoMatch(RecognitionPolicy):
             return RecognitionResult()
 
         all_no_match = all(
-            lm.recognition_status.conclusion is RecognitionConclusion.NO_MATCH
+            lm.recognition_status.conclusion == RecognitionConclusion.NO_MATCH
             for lm in model.learning_modules
         )
-        start_exploring = all_no_match and (count.mode is ExperimentMode.TRAIN)
-        is_done = all_no_match and (count.mode is ExperimentMode.EVAL)
+        is_done = all_no_match and (count.mode == ExperimentMode.EVAL)
+        start_exploring = all_no_match and (count.mode == ExperimentMode.TRAIN)
 
         if all_no_match:
             logger.info(

@@ -508,6 +508,7 @@ class MinimumLMsTest(unittest.TestCase):
 
 class AllLMsNoMatchTest(unittest.TestCase):
     @given(
+        mode=st.sampled_from(ExperimentMode),
         conclusions=st.lists(
             st.one_of(st.none(), st.sampled_from(RecognitionConclusion)),
             min_size=1,
@@ -515,15 +516,22 @@ class AllLMsNoMatchTest(unittest.TestCase):
         ),
     )
     def test_done_iff_all_lms_are_no_match(
-        self, conclusions: list[RecognitionConclusion | None]
+        self, mode: ExperimentMode, conclusions: list[RecognitionConclusion | None]
     ) -> None:
         num_no_match = conclusions.count(RecognitionConclusion.NO_MATCH)
         model = _model_with_conclusions(conclusions)
+        model.is_exploring = False
         policy = AllLMsNoMatch()
-        count = RecognitionCounter()
+        count = RecognitionCounter(mode=mode)
         result = policy(model, count)
-        is_done = num_no_match == len(conclusions)
-        self.assertEqual(result.is_done, is_done)
+        all_no_match = num_no_match == len(conclusions)
+        self.assertEqual(
+            result,
+            RecognitionResult(
+                is_done=all_no_match and (mode == ExperimentMode.EVAL),
+                start_exploring=all_no_match and (mode == ExperimentMode.TRAIN),
+            ),
+        )
 
 
 class NaiveScanTest(unittest.TestCase):
