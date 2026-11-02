@@ -432,7 +432,7 @@ class BurstSamplingHypothesesUpdater:
         if isinstance(features["pose_vectors"], SurfacePoseVectors):
             return 2 if features["pose_fully_defined"] else self.umbilical_num_poses
 
-        raise TypeError(f"Unsupposed pose type: {type(features['pose_vectors'])}")
+        raise TypeError(f"Unsupported pose type: {type(features['pose_vectors'])}")
 
     def _sample_count(
         self,

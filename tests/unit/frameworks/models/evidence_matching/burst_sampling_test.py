@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from unittest import TestCase
-from unittest.mock import Mock, patch, MagicMock, sentinel
+from unittest.mock import MagicMock, Mock, patch, sentinel
 
 import numpy as np
 from hypothesis import given
@@ -28,7 +28,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
-from tbp.monty.geometry import Rotation, SurfacePoseVectors
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):
@@ -855,32 +855,91 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         expected_tiled = np.repeat(expected_rot_mats, num_selected_nodes, axis=0)
         np.testing.assert_array_almost_equal(result.poses, expected_tiled, decimal=5)
 
+
 class BurstSamplingNumHypsPerNodeTest(TestCase):
-    @given(
-        st.lists(st.none())
-    )
-    def test_returns_len_initial_possible_poses_if_not_none(self, initial_possible_poses: list[None]) -> None:
+    @given(st.lists(st.none()))
+    def test_returns_len_initial_possible_poses_if_not_none(
+        self, initial_possible_poses: list[None]
+    ) -> None:
         updater = BurstSamplingHypothesesUpdater(
-            feature_weights = MagicMock(),
-            graph_memory = MagicMock(),
-            max_match_distance = MagicMock(),
-            tolerances = MagicMock(),
-            evidence_threshold_config = "all"
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
         )
-        updater.initial_possible_poses = initial_possible_poses
+        updater.initial_possible_poses = initial_possible_poses  # type: ignore[assignment]
 
         result = updater._num_hyps_per_node(MagicMock())
 
         self.assertIs(result, len(initial_possible_poses))
 
     def test_returns_one_if_pose_vector_is_orientation_matrix(self) -> None:
-        pass
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
 
-    def test_returns_two_if_pose_vector_is_surface_pose_vector_and_pose_fully_defined(self) -> None:
-        pass
+        result = updater._num_hyps_per_node(
+            {"pose_vectors": OrientationMatrix(np.identity(3))}
+        )
 
-    def test_returns_umbilical_num_poses_if_pose_vector_is_surface_pose_vector_and_pose_not_fully_defined(self) -> None:
-        pass
-    
+        self.assertEqual(result, 1)
+
+    def test_returns_two_if_pose_vector_is_surface_pose_vector_and_pose_fully_defined(
+        self,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+
+        result = updater._num_hyps_per_node(
+            {
+                "pose_vectors": SurfacePoseVectors(np.identity(3)),
+                "pose_fully_defined": True,
+            }
+        )
+
+        self.assertEqual(result, 2)
+
+    def test_returns_umbilical_num_poses_if_pose_vector_is_surface_pose_vector_and_pose_not_fully_defined(  # noqa: E501
+        self,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        updater.umbilical_num_poses = sentinel.umbilical_num_poses
+
+        result = updater._num_hyps_per_node(
+            {
+                "pose_vectors": SurfacePoseVectors(np.identity(3)),
+                "pose_fully_defined": False,
+            }
+        )
+
+        self.assertIs(result, sentinel.umbilical_num_poses)
+
     def test_raises_type_error_if_pose_vector_is_unsupported(self) -> None:
-        pass
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+
+        with self.assertRaises(
+            TypeError, msg="Unsupported pose type: <class 'unittest.mock.MagicMock'>"
+        ):
+            updater._num_hyps_per_node({"pose_vectors": MagicMock()})
