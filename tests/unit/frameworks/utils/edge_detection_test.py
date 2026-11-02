@@ -33,7 +33,7 @@ from tbp.monty.geometry import SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE
 from tbp.monty.observations import SensorObservation
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    rotation_matrices,
+    rotation_matrix,
     unit_vectors,
 )
 
@@ -401,7 +401,7 @@ class TestEdgeDetector(ParametrizedTestCase):
 
     @given(
         angle=st.just(None),
-        cam_to_world=rotation_matrices,
+        cam_to_world=rotation_matrix,
     )
     def test_uniform_patch_returns_no_edge(self, angle, cam_to_world):
         detector = EdgeDetector()
@@ -452,7 +452,7 @@ class TestEdgeDetector(ParametrizedTestCase):
 
     @given(
         angle=edge_angles,
-        cam_to_world=rotation_matrices,
+        cam_to_world=rotation_matrix,
     )
     def test_angled_edge_patch_reports_expected_angle(self, angle, cam_to_world):
         detector = EdgeDetector()
