@@ -111,7 +111,7 @@ experiment:
 
 # Running the Experiment
 
-Monty experiments are run with `run.py` (or `run_parallel.py`) located directly under `tbp.monty`. To run the experiment defined above, `cd` into `tbp.monty`, make sure the `tbp.monty` environment has been activated (via `conda activate tbp.monty`), and enter
+Monty experiments are run with `run.py` (or `run_parallel.py`) located directly under `tbp.monty`. To run the experiment defined above, `cd` into `tbp.monty`, make sure the `tbp.monty` environment is up-to-date (via `uv sync --extra dev --extra simulator_mujoco`), and enter
 
 ```shell
 uv run python run.py experiment=tutorial/first_experiment_mujoco
