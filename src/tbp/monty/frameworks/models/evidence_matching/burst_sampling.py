@@ -55,6 +55,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
 )
+from tbp.monty.geometry import OrientationMatrix, SurfacePoseVectors
 
 
 @dataclass
@@ -418,11 +419,20 @@ class BurstSamplingHypothesesUpdater:
 
         Returns:
             The number of hypotheses per node.
+
+        Raises:
+            TypeError: If pose vectors is not OrientationMatrix or SurfacePoseVectors.
         """
-        if self.initial_possible_poses is None:
+        if self.initial_possible_poses is not None:
+            return len(self.initial_possible_poses)
+
+        # TODO: Replace with a match statement
+        if isinstance(features["pose_vectors"], OrientationMatrix):
+            return 1
+        if isinstance(features["pose_vectors"], SurfacePoseVectors):
             return 2 if features["pose_fully_defined"] else self.umbilical_num_poses
 
-        return len(self.initial_possible_poses)
+        raise TypeError(f"Unsupposed pose type: {type(features['pose_vectors'])}")
 
     def _sample_count(
         self,
