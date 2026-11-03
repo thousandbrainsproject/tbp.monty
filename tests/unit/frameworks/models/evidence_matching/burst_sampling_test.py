@@ -30,7 +30,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
 from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
-from tests.strategies.sentinels import distinct
+from tests.strategies import sentinels
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):
@@ -948,7 +948,7 @@ class BurstSamplingNumHypsPerNodeTest(TestCase):
 
 
 class BurstSamplingSampleFromChannelTest(TestCase):
-    @given(possible_s_d=distinct(prefix="s_d", min_size=1))
+    @given(possible_s_d=sentinels.distinct(prefix="s_d", min_size=1))
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.burst_sampling.align_multiple_orthonormal_vectors"
     )
