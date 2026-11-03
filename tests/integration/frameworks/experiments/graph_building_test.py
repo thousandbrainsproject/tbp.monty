@@ -74,7 +74,12 @@ class GraphBuildingTest(unittest.TestCase):
     def check_graph_formatting(
         self, graph: GraphObjectModel, features_to_check: list[str]
     ) -> None:
-        # Makes sure graph contains right feature at location information.
+        """Checks that the graph contains the correct feature at location information.
+
+        Args:
+            graph: The graph object model to check.
+            features_to_check: The list of features to check in the graph.
+        """
         self.assertIsNot(
             graph.pos,
             None,

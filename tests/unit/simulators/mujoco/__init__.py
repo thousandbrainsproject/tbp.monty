@@ -6,3 +6,12 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+
+import pytest
+
+# Adding this at the `mujoco` unit test module level means we don't have to remember to
+# add it for every module beneath here.
+pytest.importorskip(
+    "mujoco",
+    reason="MuJoCo optional dependency not installed.",
+)

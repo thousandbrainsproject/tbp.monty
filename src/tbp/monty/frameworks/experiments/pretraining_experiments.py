@@ -53,6 +53,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             agents_config = config["environment"]["env_init_args"]["agents"]
             # Introspect the first agent partial to determine what the
             # original sensor positions were.
+            # TODO: Support more than one agent, this assumes there's only one.
             sensor_cfgs = agents_config[0].keywords["sensor_configs"]
             self.sensor_pos = np.array(
                 [sensor["position"] for sensor in sensor_cfgs.values()]

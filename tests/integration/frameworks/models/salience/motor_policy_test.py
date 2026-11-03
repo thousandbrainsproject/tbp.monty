@@ -9,6 +9,15 @@
 
 from __future__ import annotations
 
+# This integration test directly depends on the MuJoCo simulator, so skip it if
+# we don't have it installed.
+import pytest
+
+pytest.importorskip(
+    "mujoco",
+    reason="MuJoCo optional dependency not installed.",
+)
+
 import unittest
 from functools import partial
 from typing import ClassVar
