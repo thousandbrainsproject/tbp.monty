@@ -8,8 +8,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Any
 from unittest import TestCase
-from unittest.mock import MagicMock, Mock, patch, sentinel
+from unittest.mock import MagicMock, Mock, patch, sentinel, ANY
 
 import numpy as np
 from hypothesis import given
@@ -28,7 +29,9 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
+from tbp.monty.frameworks.utils.graph_matching_utils import possible_sensed_directions
 from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
+from tests.strategies.sentinels import distinct
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):
@@ -943,3 +946,50 @@ class BurstSamplingNumHypsPerNodeTest(TestCase):
             TypeError, msg="Unsupported pose type: <class 'unittest.mock.MagicMock'>"
         ):
             updater._num_hyps_per_node({"pose_vectors": MagicMock()})
+
+class BurstSamplingSampleFromChannelTest(TestCase):
+    @given(
+        possible_s_d=distinct(prefix="s_d", min_size=1)
+    )
+    @patch("tbp.monty.frameworks.models.evidence_matching.burst_sampling.align_multiple_orthonormal_vectors")
+    @patch("tbp.monty.frameworks.models.evidence_matching.burst_sampling.possible_sensed_directions")
+    def test_sample_from_channel_calls_possible_sensed_direction_for_surface_pose_vectors(  # noqa: E501
+            self,
+            possible_sensed_directions_mock: MagicMock,
+            align_multiple_orthonormal_vectors_mock: MagicMock,
+            possible_s_d: list[Any]
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        sensed_directions = SurfacePoseVectors(np.identity(3))
+        num_hyps_per_node_mock = MagicMock()
+        num_hyps_per_node_stub = 1
+        num_hyps_per_node_mock.return_value = num_hyps_per_node_stub
+        updater._num_hyps_per_node = num_hyps_per_node_mock
+        updater._feature_evidence_scorer = MagicMock()
+        updater._feature_evidence_scorer.return_value = np.array([])
+        possible_sensed_directions_mock.return_value = possible_s_d
+
+        updater._sample_from_channel(
+            features={
+                "pose_vectors": sensed_directions
+            },
+            count = MagicMock(),
+            graph_id = MagicMock(),
+            input_channel = MagicMock()
+        )
+
+        possible_sensed_directions_mock.assert_called_once_with(sensed_directions, num_hyps_per_node_stub)
+        self.assertEqual(align_multiple_orthonormal_vectors_mock.call_count, len(possible_s_d))
+        for idx, s_d in enumerate(possible_s_d):
+            call_args = align_multiple_orthonormal_vectors_mock.call_args_list[idx]
+            assert call_args.args[1] is s_d
+
+
+    def test_sample_from_channel_uses_sensed_directions_for_orientation_matrix(self) -> None:
+        pass

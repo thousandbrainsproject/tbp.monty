@@ -15,6 +15,6 @@ import hypothesis.strategies as st
 
 
 @st.composite
-def distinct(draw: st.DrawFn, prefix: str) -> list[Any]:
-    ids = draw(st.lists(st.integers(min_value=0), unique=True))
+def distinct(draw: st.DrawFn, prefix: str, min_size: int = 0) -> list[Any]:
+    ids = draw(st.lists(st.integers(min_value=0), unique=True, min_size=min_size))
     return [getattr(sentinel, f"{prefix}_{i}") for i in ids]
