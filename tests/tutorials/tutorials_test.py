@@ -132,7 +132,12 @@ class TutorialsTest(TestCase):
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
-                overrides=["experiment=tutorial/omniglot_training"],
+                overrides=[
+                    "experiment=tutorial/omniglot_training",
+                    # We don't need to run the whole thing.
+                    "experiment.config.n_train_epochs=1",
+                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
+                ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))
             config.experiment.config.logging.output_dir = inference_output_dir
