@@ -432,7 +432,9 @@ class BurstSamplingHypothesesUpdater:
         if isinstance(features["pose_vectors"], SurfacePoseVectors):
             return 2 if features["pose_fully_defined"] else self.umbilical_num_poses
 
-        raise TypeError(f"Unsupported pose type: {type(features['pose_vectors'])}")
+        raise TypeError(
+            f"Unsupported pose_vector type: {type(features['pose_vectors'])}"
+        )
 
     def _sample_count(
         self,
@@ -677,7 +679,9 @@ class BurstSamplingHypothesesUpdater:
                     sensed_directions, num_hyps_per_node
                 )
             else:
-                raise TypeError(f"Unsupported pose type: {type(sensed_directions)}")
+                raise TypeError(
+                    f"Unsupported pose_vector type: {type(sensed_directions)}"
+                )
 
             selected_rotations = np.vstack(
                 [

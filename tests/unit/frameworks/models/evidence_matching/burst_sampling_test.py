@@ -955,7 +955,7 @@ class BurstSamplingSampleFromChannelTest(TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.burst_sampling.possible_sensed_directions"
     )
-    def test_sample_from_channel_calls_possible_sensed_direction_for_surface_pose_vectors(  # noqa: E501
+    def test_calls_possible_sensed_direction_for_surface_pose_vectors(
         self,
         possible_sensed_directions_mock: MagicMock,
         align_multiple_orthonormal_vectors_mock: MagicMock,
@@ -999,7 +999,7 @@ class BurstSamplingSampleFromChannelTest(TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.burst_sampling.possible_sensed_directions"
     )
-    def test_sample_from_channel_uses_sensed_directions_for_orientation_matrix(
+    def test_uses_sensed_directions_for_orientation_matrix(
         self,
         possible_sensed_directions_mock: MagicMock,
         align_multiple_orthonormal_vectors_mock: MagicMock,
@@ -1026,3 +1026,27 @@ class BurstSamplingSampleFromChannelTest(TestCase):
         align_multiple_orthonormal_vectors_mock.assert_called_once_with(
             ANY, sensed_directions, as_scipy=False
         )
+
+    def test_raises_type_error_for_unsupported_pose_vector_type(
+        self,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        updater._num_hyps_per_node = MagicMock()  # type: ignore[method-assign]
+        updater._num_hyps_per_node.return_value = 1
+        updater._feature_evidence_scorer = MagicMock()
+        updater._feature_evidence_scorer.return_value = np.array([])
+
+        with self.assertRaises(TypeError) as error:
+            updater._sample_from_channel(
+                features={"pose_vectors": "unsupported_type"},
+                count=MagicMock(),
+                graph_id=MagicMock(),
+                input_channel=MagicMock(),
+            )
+        self.assertIn("Unsupported pose_vector type:", str(error.exception))
