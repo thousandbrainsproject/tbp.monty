@@ -31,6 +31,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
 )
 from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 from tests.strategies import sentinels
+from tests.strategies.geometry import orientation_matrix, surface_pose_vectors
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):
@@ -948,7 +949,10 @@ class BurstSamplingNumHypsPerNodeTest(TestCase):
 
 
 class BurstSamplingSampleFromChannelTest(TestCase):
-    @given(possible_s_d=sentinels.distinct(prefix="s_d", min_size=1))
+    @given(
+        possible_s_d=sentinels.distinct(prefix="s_d", min_size=1),
+        sensed_directions=surface_pose_vectors(),
+    )
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.burst_sampling.align_multiple_orthonormal_vectors"
     )
@@ -960,6 +964,7 @@ class BurstSamplingSampleFromChannelTest(TestCase):
         possible_sensed_directions_mock: MagicMock,
         align_multiple_orthonormal_vectors_mock: MagicMock,
         possible_s_d: list[Any],
+        sensed_directions: SurfacePoseVectors,
     ) -> None:
         updater = BurstSamplingHypothesesUpdater(
             feature_weights=MagicMock(),
@@ -968,7 +973,6 @@ class BurstSamplingSampleFromChannelTest(TestCase):
             tolerances=MagicMock(),
             evidence_threshold_config="all",
         )
-        sensed_directions = SurfacePoseVectors(np.identity(3))
         num_hyps_per_node_stub = 1
         updater._num_hyps_per_node = MagicMock()  # type: ignore[method-assign]
         updater._num_hyps_per_node.return_value = num_hyps_per_node_stub
@@ -993,6 +997,7 @@ class BurstSamplingSampleFromChannelTest(TestCase):
             call_args = align_multiple_orthonormal_vectors_mock.call_args_list[idx]
             assert call_args.args[1] is s_d
 
+    @given(sensed_directions=orientation_matrix())
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.burst_sampling.align_multiple_orthonormal_vectors"
     )
@@ -1003,8 +1008,8 @@ class BurstSamplingSampleFromChannelTest(TestCase):
         self,
         possible_sensed_directions_mock: MagicMock,
         align_multiple_orthonormal_vectors_mock: MagicMock,
+        sensed_directions: OrientationMatrix,
     ) -> None:
-        sensed_directions = OrientationMatrix(np.identity(3))
         updater = BurstSamplingHypothesesUpdater(
             feature_weights=MagicMock(),
             graph_memory=MagicMock(),

@@ -20,10 +20,14 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 )
 from tbp.monty.geometry import OrientationMatrix, SurfacePoseVectors
 from tests.strategies import sentinels
+from tests.strategies.geometry import orientation_matrix, surface_pose_vectors
 
 
 class DefaultHypothesesUpdaterGetAllInformedPosesTest(TestCase):
-    @given(possible_s_d=sentinels.distinct(prefix="s_d", min_size=1))
+    @given(
+        possible_s_d=sentinels.distinct(prefix="s_d", min_size=1),
+        sensed_directions=surface_pose_vectors(),
+    )
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.hypotheses_updater.align_multiple_orthonormal_vectors"
     )
@@ -35,6 +39,7 @@ class DefaultHypothesesUpdaterGetAllInformedPosesTest(TestCase):
         possible_sensed_directions_mock: MagicMock,
         align_multiple_orthonormal_vectors_mock: MagicMock,
         possible_s_d: list[Any],
+        sensed_directions: SurfacePoseVectors,
     ) -> None:
         align_multiple_orthonormal_vectors_mock.return_value = np.zeros((1, 3, 3))
         graph_memory_mock = MagicMock()
@@ -45,27 +50,27 @@ class DefaultHypothesesUpdaterGetAllInformedPosesTest(TestCase):
             max_match_distance=MagicMock(),
             tolerances=MagicMock(),
         )
-        sensed_directions_stub = SurfacePoseVectors(np.identity(3))
         possible_sensed_directions_mock.return_value = possible_s_d
 
         updater._get_all_informed_possible_poses(
             graph_id=MagicMock(),
             sensed_channel_features={
-                "pose_vectors": sensed_directions_stub,
+                "pose_vectors": sensed_directions,
                 "pose_fully_defined": True,
             },
             input_channel=MagicMock(),
         )
 
-        possible_sensed_directions_mock.assert_called_once_with(
-            sensed_directions_stub, 2
-        )
+        possible_sensed_directions_mock.assert_called_once_with(sensed_directions, 2)
         assert align_multiple_orthonormal_vectors_mock.call_count == len(possible_s_d)
         for i, s_d in enumerate(possible_s_d):
             call_args = align_multiple_orthonormal_vectors_mock.call_args_list[i]
             assert call_args.args[1] == s_d
 
-    @given(possible_s_d=sentinels.distinct(prefix="s_d", min_size=1))
+    @given(
+        possible_s_d=sentinels.distinct(prefix="s_d", min_size=1),
+        sensed_directions=surface_pose_vectors(),
+    )
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.hypotheses_updater.align_multiple_orthonormal_vectors"
     )
@@ -77,6 +82,7 @@ class DefaultHypothesesUpdaterGetAllInformedPosesTest(TestCase):
         possible_sensed_directions_mock: MagicMock,
         align_multiple_orthonormal_vectors_mock: MagicMock,
         possible_s_d: list[Any],
+        sensed_directions: SurfacePoseVectors,
     ) -> None:
         align_multiple_orthonormal_vectors_mock.return_value = np.zeros((1, 3, 3))
         graph_memory_mock = MagicMock()
@@ -88,26 +94,26 @@ class DefaultHypothesesUpdaterGetAllInformedPosesTest(TestCase):
             tolerances=MagicMock(),
             umbilical_num_poses=sentinel.umbilical_num_poses,
         )
-        sensed_directions_stub = SurfacePoseVectors(np.identity(3))
         possible_sensed_directions_mock.return_value = possible_s_d
 
         updater._get_all_informed_possible_poses(
             graph_id=MagicMock(),
             sensed_channel_features={
-                "pose_vectors": sensed_directions_stub,
+                "pose_vectors": sensed_directions,
                 "pose_fully_defined": False,
             },
             input_channel=MagicMock(),
         )
 
         possible_sensed_directions_mock.assert_called_once_with(
-            sensed_directions_stub, sentinel.umbilical_num_poses
+            sensed_directions, sentinel.umbilical_num_poses
         )
         assert align_multiple_orthonormal_vectors_mock.call_count == len(possible_s_d)
         for i, s_d in enumerate(possible_s_d):
             call_args = align_multiple_orthonormal_vectors_mock.call_args_list[i]
             assert call_args.args[1] == s_d
 
+    @given(sensed_directions=orientation_matrix())
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.hypotheses_updater.align_multiple_orthonormal_vectors"
     )
@@ -118,6 +124,7 @@ class DefaultHypothesesUpdaterGetAllInformedPosesTest(TestCase):
         self,
         possible_sensed_directions_mock: MagicMock,
         align_multiple_orthonormal_vectors_mock: MagicMock,
+        sensed_directions: OrientationMatrix,
     ) -> None:
         align_multiple_orthonormal_vectors_mock.return_value = np.zeros((1, 3, 3))
         graph_memory_mock = MagicMock()
@@ -128,19 +135,17 @@ class DefaultHypothesesUpdaterGetAllInformedPosesTest(TestCase):
             max_match_distance=MagicMock(),
             tolerances=MagicMock(),
         )
-        sensed_directions_stub = OrientationMatrix(np.identity(3))
-
         updater._get_all_informed_possible_poses(
             graph_id=MagicMock(),
             sensed_channel_features={
-                "pose_vectors": sensed_directions_stub,
+                "pose_vectors": sensed_directions,
             },
             input_channel=MagicMock(),
         )
 
         possible_sensed_directions_mock.assert_not_called()
         align_multiple_orthonormal_vectors_mock.assert_called_once_with(
-            ANY, sensed_directions_stub, as_scipy=False
+            ANY, sensed_directions, as_scipy=False
         )
 
     def test_raises_type_error_for_unsupported_pose_vector_type(self) -> None:
