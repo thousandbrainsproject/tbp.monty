@@ -36,9 +36,14 @@ from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
+from tbp.monty.telemetry.episode.schemas import (
+    LMRecognitionStateTelemetry,
+    LMStateTelemetry,
+    TerminalState,
+)
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
-__all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
+__all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching", "TerminalState"]
 
 logger = logging.getLogger(__name__)
 telemeter = telemetry.getTelemeter(__name__)
@@ -613,6 +618,7 @@ class GraphLM(LearningModule):
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
+        self._emit_lm_state()
 
     def exploratory_step(
         self,
@@ -626,6 +632,16 @@ class GraphLM(LearningModule):
         buffer_data = self._add_displacements(percepts)
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
+        self._emit_lm_state()
+
+    def _emit_lm_state(self):
+        """Emits post-step LM state telemetry."""
+        telemeter.info(
+            TelemetryEvent(
+                kind=LMStateTelemetry.__name__,
+                event_data=LMStateTelemetry.from_graph_lm(self),
+            )
+        )
 
     def update_ltm_from_stm(self) -> None:
         """If training, update memory from buffer."""
@@ -909,6 +925,15 @@ class GraphLM(LearningModule):
             self.buffer.set_individual_ts(self.detected_object, self.detected_pose)
         else:
             self.buffer.set_individual_ts(None, None)
+
+        telemeter.info(
+            TelemetryEvent(
+                kind=LMRecognitionStateTelemetry.__name__,
+                event_data=LMRecognitionStateTelemetry.from_graph_lm(self),
+            )
+        )
+
+        self._emit_lm_state()  # TODO telemetry: probably unnecessary, I will re-assess
 
     def collect_stats_to_save(self):
         """Get all stats that this LM should store in the buffer for logging.
