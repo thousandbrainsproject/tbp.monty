@@ -7,7 +7,7 @@ These benchmark experiments are not common benchmarks from the AI field. There a
 
 You can find Monty experiment configs for all the following experiments in the [benchmarks](https://github.com/thousandbrainsproject/tbp.monty/tree/main/benchmarks) folder. Note that the experiment parameters are not overly optimized for accuracy. **The parameters used here aim to strike a good balance between speed and accuracy** to allow our researchers to iterate quickly and evaluate algorithm changes regularly. If a particular use case requires higher accuracy or faster learning or inference, this can be achieved by adjusting learning module parameters.
 
-The runtimes reported in the tables below reflect the **total experiment runtime**, which includes overhead such as environment setup (e.g., Habitat initialization), logging, and telemetry. The isolated Monty runtime (i.e., the time spent on learning or inference) is typically less than the reported values. In Wandb logs, this corresponds to the column labeled `RUNTIME`.
+The runtimes reported in the tables below reflect the **total experiment runtime**, which includes overhead such as environment setup (e.g., simulator initialization), logging, and telemetry. The isolated Monty runtime (i.e., the time spent on learning or inference) is typically less than the reported values. In Wandb logs, this corresponds to the column labeled `RUNTIME`.
 
 If you want to evaluate Monty on external benchmarks, please have a look at our [application criteria](./application-criteria.md) and [challenging preconceptions](./vision-of-the-thousand-brains-project/challenging-preconceptions.md) pages first. Particularly, note that Monty is a sensorimotor system made to efficiently learn and infer by interacting with an environment. It is not designed for large, static datasets.
 
@@ -196,8 +196,8 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > | Models | Archive Format | Download Link |
 > | --- | --- | --- |
-> | pretrained_compositional_objects_v8 | tgz | [pretrained_compositional_objects_v8.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.tgz) |
-> | pretrained_compositional_objects_v8 | zip | [pretrained_compositional_objects_v8.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.zip) |
+> | pretrained_compositional_objects_v9 | tgz | [pretrained_compositional_objects_v9.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.tgz) |
+> | pretrained_compositional_objects_v9 | zip | [pretrained_compositional_objects_v9.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.zip) |
 >
 > Both COWS Small and COWS Large use this archive, including the shared 3D-child models.
 >
@@ -208,7 +208,7 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.tgz | tar -xzf -
+> curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.tgz | tar -xzf -
 > ```
 >
 > or
@@ -218,15 +218,15 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 >
 > cd ~/tbp/results/monty/pretrained_models/
 >
-> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v8.zip
+> curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_compositional_objects_v9.zip
 >
-> unzip pretrained_compositional_objects_v8.zip
+> unzip pretrained_compositional_objects_v9.zip
 > ```
 
 
 # Monty-Meets-World
 
-The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models. 
+The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models. 
 
 For a really cool video of the first time Monty was tested in the real world, see the recording linked on our [project showcase page](../community/project-showcase.md#monty-for-object-detection-with-the-ipad-camera).
 
@@ -265,7 +265,7 @@ Finally, note that the world_image experimental runs **do not support running wi
 See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for the code.
 
 > [!NOTE]
-> The `randrot_noise_sim_on_scan_monty_world` experiment requires HabitatSim to be installed as well as additional data containing the meshes for the simulator to use.
+> The `randrot_noise_sim_on_scan_monty_world` experiment requires MuJoCo to be installed as well as additional data containing the meshes for the simulator to use.
 >
 >You can download the data:
 >
