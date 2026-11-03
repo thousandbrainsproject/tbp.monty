@@ -89,7 +89,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                 # TODO: Replace with match statement
                                 if isinstance(new_s_pose_vectors, OrientationMatrix):
                                     rotated_displacement = (
-                                        new_s.get_pose_vectors().value.dot(sensor_disp)
+                                        new_s.get_pose_vectors().value.T.dot(sensor_disp)
                                     )
                                 else:
                                     raise TypeError(
