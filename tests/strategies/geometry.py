@@ -93,6 +93,7 @@ def rotation_matrices(draw: st.DrawFn) -> npt.NDArray[np.float64]:
     """
     return Rotation.random(draw(st.integers(min_value=1, max_value=1000))).as_matrix()
 
+
 @st.composite
 def surface_pose_vectors(draw: st.DrawFn) -> SurfacePoseVectors:  # noqa: ARG001
     """Generates a random SurfacePoseVectors instance.
