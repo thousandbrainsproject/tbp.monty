@@ -12,6 +12,7 @@ from __future__ import annotations
 import abc
 from typing import Any, Collection, Dict, Protocol, Sequence
 
+import numpy as np
 import numpy.typing as npt
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message
