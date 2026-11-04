@@ -75,6 +75,7 @@ class GraphLMProposeRegionTest(unittest.TestCase):
 
         assert len(proposed_region) == 0
 
+
 class GraphMemoryUpdateMemoryTest(unittest.TestCase):
     def test_if_graph_id_is_none_does_not_update_memory(self) -> None:
         gm = GraphMemory()
