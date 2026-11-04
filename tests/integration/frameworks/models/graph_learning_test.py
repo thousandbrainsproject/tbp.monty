@@ -9,19 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-from tbp.monty.cmp import Message
-from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.geometry import SurfacePoseVectors
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
 import copy
 import shutil
 import tempfile
@@ -35,12 +22,18 @@ import numpy.typing as npt
 import pandas as pd
 from omegaconf import DictConfig
 
+from tbp.monty.cmp import Message
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.utils.logging_utils import (
     load_stats,
 )
+from tbp.monty.geometry import SurfacePoseVectors
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
@@ -51,7 +44,7 @@ class EpisodeObservations:
     name: str
     observations: list[Any]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.observations)
 
 
@@ -73,7 +66,7 @@ class TrainedGraphLM:
         return self.learning_module.mode
 
     @mode.setter
-    def mode(self, mode: ExperimentMode | None):
+    def mode(self, mode: ExperimentMode | None) -> None:
         self.learning_module.mode = mode
 
     def num_observations(self, episode_num: int) -> int:
@@ -93,14 +86,14 @@ class TrainedGraphLM:
         """Reset short-term memory buffer."""
         self.learning_module.reset_stm()
 
-    def fixme_reset_ground_truth(self, primary_target) -> None:
+    # TODO: fix primary_target's type
+    def fixme_reset_ground_truth(self, primary_target: dict[str, Any]) -> None:
         """Reset internal state based on ground truth."""
         self.learning_module.fixme_reset_ground_truth(primary_target)
 
 
 class GraphLearningTest(BaseGraphTest):
-    def setUp(self):
-        """Code that gets executed before every test."""
+    def setUp(self) -> None:
         super().setUp()
 
         self.output_dir = Path(tempfile.mkdtemp())
@@ -140,21 +133,16 @@ class GraphLearningTest(BaseGraphTest):
             self.five_lm_ppf_displacement_cfg = hydra_config("five_lm_ppf_displacement")
             self.five_lm_feature_cfg = hydra_config("five_lm_feature")
 
-    def tearDown(self):
-        """Code that gets executed after every test."""
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
-    def test_can_initialize(self):
-        """Canary to confirm we can initialize an experiment.
-
-        This could be part of the setUp method, but it's easier to debug if something
-        breaks the setup_experiment method if there's a separate test for it.
-        """
+    def test_can_initialize(self) -> None:
+        """Canary to confirm we can initialize an experiment."""
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             pass
 
-    def test_can_run_train_episode(self):
+    def test_can_run_train_episode(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -214,7 +202,7 @@ class GraphLearningTest(BaseGraphTest):
 
                 step += 1
 
-    def test_can_run_eval_episode(self):
+    def test_can_run_eval_episode(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
@@ -222,7 +210,7 @@ class GraphLearningTest(BaseGraphTest):
             exp.pre_epoch()
             exp.run_episode()
 
-    def test_can_run_eval_episode_with_surface_agent(self):
+    def test_can_run_eval_episode_with_surface_agent(self) -> None:
         exp = instantiate_experiment(self.surface_agent_eval_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
@@ -230,22 +218,22 @@ class GraphLearningTest(BaseGraphTest):
             exp.pre_epoch()
             exp.run_episode()
 
-    def test_can_run_ppf_experiment(self):
+    def test_can_run_ppf_experiment(self) -> None:
         exp = instantiate_experiment(self.ppf_pred_cfg.experiment)
         with exp:
             exp.run()
 
-    def test_can_run_disp_experiment(self):
+    def test_can_run_disp_experiment(self) -> None:
         exp = instantiate_experiment(self.disp_pred_cfg.experiment)
         with exp:
             exp.run()
 
-    def test_can_run_feature_experiment(self):
+    def test_can_run_feature_experiment(self) -> None:
         exp = instantiate_experiment(self.feature_pred_cfg.experiment)
         with exp:
             exp.run()
 
-    def test_fixed_actions_disp(self):
+    def test_fixed_actions_disp(self) -> None:
         """Runs three test episodes on capsule3DSolid and cubeSolid.
 
         1. capsule, rotation = 0,0,0 -> no models in memory yet -> store new model
@@ -273,7 +261,7 @@ class GraphLearningTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
-    def test_fixed_actions_ppf(self):
+    def test_fixed_actions_ppf(self) -> None:
         """Like test_fixed_actions_disp but using point pair features for matching."""
         exp = instantiate_experiment(self.fixed_actions_ppf_cfg.experiment)
         with exp:
@@ -286,7 +274,7 @@ class GraphLearningTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
-    def test_fixed_actions_feat(self):
+    def test_fixed_actions_feat(self) -> None:
         """Like test_fixed_actions_disp but using point pair features for matching."""
         exp = instantiate_experiment(self.fixed_actions_feat_cfg.experiment)
         with exp:
@@ -299,7 +287,7 @@ class GraphLearningTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
-    def test_save_and_load(self):
+    def test_save_and_load(self) -> None:
         # Move this to graph_building_test.py?
         exp = instantiate_experiment(self.fixed_actions_ppf_cfg.experiment)
         with exp:
@@ -340,10 +328,10 @@ class GraphLearningTest(BaseGraphTest):
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
-            for episode_num in range(6):
-                if episode_num % 2 == 0:
+            for e in range(6):
+                if e % 2 == 0:
                     exp.pre_epoch()
-                if episode_num >= 2:
+                if e >= 2:
                     # Set max steps low & raise mmd to get pose time outs
                     exp._recognition_policy._max_train_steps = 3
                     if exp._recreation_mode:
@@ -351,7 +339,7 @@ class GraphLearningTest(BaseGraphTest):
                         lm_cfg["max_match_distance"] = 0.1
                     else:
                         exp.model.learning_modules[0].max_match_distance = 0.1
-                if episode_num >= 4:
+                if e >= 4:
                     # set curvature threshold high to get time outs
                     if exp._recreation_mode:
                         lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
@@ -364,7 +352,7 @@ class GraphLearningTest(BaseGraphTest):
                             "principal_curvatures_log"
                         ] = [10, 10]
                 exp.run_episode()
-                if episode_num % 2 == 1:
+                if e % 2 == 1:
                     exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
@@ -400,7 +388,7 @@ class GraphLearningTest(BaseGraphTest):
                 "time out episode should log more than one possible match.",
             )
 
-    def test_confused_logging(self):
+    def test_confused_logging(self) -> None:
         # When the algorithm evolves, this scenario may not lead to confusion
         # anymore. Setting min_steps would also avoid this, probably.
         exp = instantiate_experiment(self.fixed_actions_feat_cfg.experiment)
@@ -453,7 +441,7 @@ class GraphLearningTest(BaseGraphTest):
                 "confused object id should not be in possible_match_sources.",
             )
 
-    def test_moving_off_object(self):
+    def test_moving_off_object(self) -> None:
         # Tests additional elements of logging, in particular in relation
         # to logging of observations when off the object
 
@@ -511,6 +499,7 @@ class GraphLearningTest(BaseGraphTest):
         with exp:
             exp.run()
 
+        # TODO: improve load_stats with a structured return type
         train_stats, eval_stats, detailed_stats, lm_models = load_stats(
             exp.output_dir,
             load_train=True,
@@ -556,7 +545,7 @@ class GraphLearningTest(BaseGraphTest):
         )
         # Could add more tests but not sure how important.
 
-    def test_uniform_initial_poses(self):
+    def test_uniform_initial_poses(self) -> None:
         """Test same scenario as test_fixed_actions_feat with uniform poses."""
         exp = instantiate_experiment(self.feature_uniform_initial_poses_cfg.experiment)
         with exp:
@@ -652,7 +641,7 @@ class GraphLearningTest(BaseGraphTest):
             tms.append(TrainedGraphLM(graph_lm, object_obs))
         return tms
 
-    def test_same_sequence_recognition(self):
+    def test_same_sequence_recognition(self) -> None:
         """Test that the object is recognized with same action sequence."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
 
@@ -690,7 +679,7 @@ class GraphLearningTest(BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
-    def test_reverse_sequence_recognition(self):
+    def test_reverse_sequence_recognition(self) -> None:
         """Test that object is recognized irrespective of sampling order."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test.reverse()
@@ -729,7 +718,7 @@ class GraphLearningTest(BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
-    def test_offset_sequence_recognition(self):
+    def test_offset_sequence_recognition(self) -> None:
         """Test that the object is recognized irrespective of its location rel body."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
 
@@ -768,7 +757,7 @@ class GraphLearningTest(BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
-    def test_new_sampling_recognition(self):
+    def test_new_sampling_recognition(self) -> None:
         """Test object recognition with slightly perturbed observations.
 
         Test that the object is recognized if observations don't exactly fit
@@ -810,7 +799,7 @@ class GraphLearningTest(BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
-    def test_different_locations_not_recognized(self):
+    def test_different_locations_not_recognized(self) -> None:
         """Test that the object is not recognized if locations don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[0].location = fake_obs_test[0].location + np.ones(3) * 5
@@ -835,7 +824,7 @@ class GraphLearningTest(BaseGraphTest):
                     "Should have no possible matches.",
                 )
 
-    def test_different_features_not_recognized(self):
+    def test_different_features_not_recognized(self) -> None:
         """Test that the object is not recognized if features don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[0].non_morphological_features["hsv"] = [0.5, 1, 1]
@@ -853,7 +842,7 @@ class GraphLearningTest(BaseGraphTest):
                 "Should have no possible matches.",
             )
 
-    def test_different_pose_features_not_recognized(self):
+    def test_different_pose_features_not_recognized(self) -> None:
         """Test that the object is not recognized if pose features don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
         fake_obs_test[0].morphological_features["pose_vectors"] = SurfacePoseVectors(
@@ -880,7 +869,7 @@ class GraphLearningTest(BaseGraphTest):
                     "Should have no possible matches.",
                 )
 
-    def test_moving_off_object_and_back(self):
+    def test_moving_off_object_and_back(self) -> None:
         """Test that the object is still recognized after moving off the object.
 
         TODO: since the monty class checks pass_message in combine_inputs it doesn't
@@ -927,7 +916,7 @@ class GraphLearningTest(BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
-    def test_5lm_displacement_experiment(self):
+    def test_5lm_displacement_experiment(self) -> None:
         """Test 5 displacement LMs voting with two evaluation settings."""
         exp = instantiate_experiment(self.five_lm_ppf_displacement_cfg.experiment)
         with exp:
@@ -942,7 +931,7 @@ class GraphLearningTest(BaseGraphTest):
             eval_stats, num_lms=5, min_done=3, num_episodes=1
         )
 
-    def test_5lm_feature_experiment(self):
+    def test_5lm_feature_experiment(self) -> None:
         """Test 5 feature LMs voting with two evaluation settings."""
         objects = [self.fake_obs_learn, self.fake_obs_house_3d]
         num_episodes = len(objects)
