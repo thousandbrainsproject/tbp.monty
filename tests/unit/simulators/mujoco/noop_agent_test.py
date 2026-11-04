@@ -94,7 +94,7 @@ class NoopAgentTest(unittest.TestCase):
     def test_agent_observation_semantic_default_ids(self) -> None:
         """Test that the semantic sensor default ids match expectations.
 
-        We want the semantic sensor to behave similar to how the Habitat version does
+        We want the semantic sensor to behave similar to how the Habitat version did
         so we need to confirm that the values returned map correctly.
         """
         sim = MuJoCoSimulator(
