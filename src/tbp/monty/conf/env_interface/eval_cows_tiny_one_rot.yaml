@@ -1,0 +1,14 @@
+# @package experiment.config
+
+do_eval: true
+eval_env_interface_args:
+  object_names:
+  - 002_cube_tbp
+  - 004_cube_numenta
+  - 012_cylinder_tbp_horz
+  - 014_cylinder_numenta_horz
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
+    rotations:
+    - [0, 0, 0]
+eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}

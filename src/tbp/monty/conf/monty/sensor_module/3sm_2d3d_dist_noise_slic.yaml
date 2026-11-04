@@ -1,0 +1,78 @@
+# @package experiment.config.monty_config.sensor_modules
+
+sensor_module_0:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  sensor_module_id: patch_0
+  features:
+    - pose_vectors
+    - pose_fully_defined
+    - on_object
+    - min_depth
+    - mean_depth
+    - hsv
+    - principal_curvatures_log
+  delta_thresholds:
+    on_object: 0
+    distance: 0.01
+  save_raw_obs: false
+  noise_params: ${constants.default_all_noise_params}
+sensor_module_1:
+  _target_: tbp.monty.frameworks.models.two_d_sensor_module.TwoDSensorModule
+  sensor_module_id: patch_1
+  save_raw_obs: false
+  edge_detector:
+    _target_: tbp.monty.frameworks.utils.edge_detection.EdgeDetector
+    gaussian_sigma: 1.0
+    kernel_size: 7
+    strength_threshold: 0.1
+    coherence_threshold: 0.5
+    radius: 14.0
+    sigma_r: 7.0
+    depth_edge_threshold: 0.01
+    max_center_offset: null
+  noise_params: ${constants.default_all_noise_params}
+  features:
+    - pose_vectors
+    - pose_fully_defined
+    - principal_curvatures
+    - on_object
+    - rgba
+    - hsv
+    - edge_strength
+    - coherence
+    - mean_depth
+    - min_depth
+  delta_thresholds:
+    on_object: 0
+    distance: 0.01
+sensor_module_2:
+  _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
+  sensor_module_id: patch_2
+  features:
+    - pose_vectors
+    - pose_fully_defined
+    - on_object
+    - hsv
+    - principal_curvatures_log
+  delta_thresholds:
+    on_object: 0
+    distance: 0.05
+  save_raw_obs: false
+  noise_params: ${constants.default_all_noise_params}
+sensor_module_3:
+  _target_: tbp.monty.frameworks.models.salience.sensor_module.SalienceSM
+  sensor_module_id: view_finder
+  salience_strategy:
+    _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2
+    color:
+      _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience
+      center_sigma: 1.0
+      surround_sigma: 3.0
+      n_scales: 2
+      max_octaves: 10
+      operating_limits:
+        _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.NoOperatingLimits
+    depth: null
+    orientation: null
+  segmentation_strategy:
+    _target_: tbp.monty.frameworks.models.salience.segmentation.slic_merge.SlicMerge
