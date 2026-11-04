@@ -1209,7 +1209,13 @@ class GraphMemory(LMMemory):
                 )
             else:
                 # Case 3: known object, unknown channel.
-                if object_rotation is not None:
+                if object_rotation is None:
+                    logger.warning(
+                        f"No object rotation for {graph_id}; adding new channel "
+                        f"{input_channel} without transforming it into the "
+                        "object's reference frame."
+                    )
+                else:
                     (
                         input_channel_locations,
                         input_channel_features,
