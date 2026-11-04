@@ -1001,6 +1001,9 @@ class GraphLM(LearningModule):
 
     def _update_memory(self):
         """Give all infos to graph_memory.update_memory to determine how to update."""
+        if self.detected_object is None:
+            logger.info("no match found in time, not updating memory")
+            return
         args = self.buffer.get_infos_for_graph_update()
         args["graph_id"] = self.detected_object
         args["object_rotation"] = self.detected_rotation_r
