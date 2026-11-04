@@ -446,11 +446,11 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def update_memory(
         self,
-        locations: npt.NDArray,
-        features: dict[str, dict[str, npt.NDArray]],
+        locations: npt.NDArray[np.float64],
+        features: dict[str, dict[str, npt.NDArray[np.float64]]],
         graph_id: str | None,
-        object_location_rel_body: npt.NDArray,
-        location_rel_model: npt.NDArray,
+        object_location_rel_body: npt.NDArray[np.float64],
+        location_rel_model: npt.NDArray[np.float64],
         object_rotation: Rotation | None,
     ) -> None:
         """Update models stored in memory given an episode's observations.
