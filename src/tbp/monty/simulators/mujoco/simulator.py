@@ -510,7 +510,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
         """
-        # In Habitat, the capsule is initially oriented with the round portions at the
+        # In Habitat, the capsule was initially oriented with the round portions at the
         # top and bottom along the vertical Y axis. MuJoCo places the capsule with the
         # round ends pointing towards and away from the agent along the Z axis.
         # To mimic Habitat's behaviour, we need to rotate the primitive object to

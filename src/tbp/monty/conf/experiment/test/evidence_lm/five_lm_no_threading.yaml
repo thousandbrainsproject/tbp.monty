@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: test_evidence_5lm_multithreading0
   - /monty/sensor_module: 5sm_camera
   - /monty/connectivity: 5lm_5sm
-  - /environment: test_habitat_dist_agent_sensors5
+  - /environment: test_mujoco_dist_agent_sensors5
   - /env_interface: test_train_2obj_predefined_eval_1obj_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0

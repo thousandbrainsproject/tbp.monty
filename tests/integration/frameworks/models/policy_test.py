@@ -7,44 +7,25 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-from typing import cast
-
-import pytest
-
-from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    LearningModule,
-    Observations,
-)
-from tbp.monty.frameworks.models.motor_policies import (
-    JumpToGoal,
-    PolicyStatus,
-    SurfacePolicyCurvatureInformed,
-)
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
 import copy
 import shutil
 import tempfile
 import unittest
+from functools import partial
+from typing import Any, MutableMapping, cast
 from unittest.mock import Mock
 
-import habitat_sim
-import habitat_sim.utils as hab_utils
 import hydra
 import numpy as np
+import numpy.typing as npt
 import quaternion as qt
 from omegaconf import DictConfig
 from unittest_parametrize import ParametrizedTestCase, parametrize
 
-from tbp.monty.cmp import Message
+from tbp.monty.cmp import Goal, Message
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import (
     Action,
     LookDown,
@@ -63,31 +44,39 @@ from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
 )
+from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    LearningModule,
+    Observations,
+)
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.goal_generation import (
     EvidenceGoalGenerator,
 )
+from tbp.monty.frameworks.models.motor_policies import (
+    JumpToGoal,
+    PolicyStatus,
+    SurfacePolicyCurvatureInformed,
+)
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
     MotorSystemState,
-    ProprioceptiveState,
 )
 from tbp.monty.frameworks.models.sensor_modules import CameraSM
-from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
 from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
-from tbp.monty.simulators.habitat import (
-    PRIMITIVE_OBJECT_TYPES,
-    HabitatSim,
-    SingleSensorAgent,
-)
+from tbp.monty.hydra import instantiate_experiment
+from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
+from tbp.monty.simulators.mujoco.agents import DistantAgent
+from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
+from tests import HYDRA_ROOT
 
 
-class PolicyTest(unittest.TestCase):
+class BasicPolicyTest(unittest.TestCase):
     def setUp(self) -> None:
-        """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
         def hydra_config(test_name: str) -> DictConfig:
@@ -109,6 +98,61 @@ class PolicyTest(unittest.TestCase):
             self.dist_hypo_driven_multi_lm_cfg = hydra_config(
                 "dist_hypo_driven_multi_lm"
             )
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.output_dir)
+
+    def test_can_run_informed_policy(self) -> None:
+        exp = instantiate_experiment(self.base_dist_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_spiral_policy(self) -> None:
+        exp = instantiate_experiment(self.spiral_cfg.experiment)
+        with exp:
+            # TODO: test that no two locations are the same
+            exp.run()
+
+    def test_can_run_dist_agent_hypo_driven_policy(self) -> None:
+        exp = instantiate_experiment(self.dist_hypo_driven_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_surface_policy(self) -> None:
+        exp = instantiate_experiment(self.base_surf_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_curv_informed_policy(self) -> None:
+        exp = instantiate_experiment(self.curve_informed_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_surf_agent_hypo_driven_policy(self) -> None:
+        exp = instantiate_experiment(self.surf_hypo_driven_cfg.experiment)
+        with exp:
+            exp.run()
+
+    def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self) -> None:
+        exp = instantiate_experiment(self.dist_hypo_driven_multi_lm_cfg.experiment)
+        with exp:
+            exp.run()
+
+
+class AdvancedPolicyTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.output_dir = tempfile.mkdtemp()
+
+        def hydra_config(test_name: str) -> DictConfig:
+            return hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    f"experiment=test/policy/{test_name}",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+
+        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.surf_poor_initial_view_cfg = hydra_config("surf_poor_initial_view")
             self.dist_fixed_action_cfg = hydra_config("dist_fixed_action")
             self.surf_fixed_action_cfg = hydra_config("surf_fixed_action")
@@ -120,7 +164,11 @@ class PolicyTest(unittest.TestCase):
 
         # ==== Setup fake observations for testing principal-curvature policies ====
         fake_sender_id = "patch"
-        default_percept_args = dict(
+        # TODO: Create a more specific type? We're using MutableMapping because it's
+        #  covariant on the value type, whereas Dict is not. This matters later when
+        #  we pass this dictionary to Message as the kwargs.
+        #  See https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+        default_percept_args: MutableMapping[str, Any] = dict(
             location=np.array([0, 0, 0]),
             morphological_features={
                 "pose_vectors": SurfacePoseVectors(
@@ -185,59 +233,8 @@ class PolicyTest(unittest.TestCase):
             Message(**fp_2_corrupt_z),
         ]
 
-    def tearDown(self):
-        """Code that gets executed after every test."""
-        shutil.rmtree(self.output_dir)
-
-    # ==== BASIC UNIT TESTS FOR LOADING VARIOUS ACTION POLICIES ====
-
-    # @unittest.skip("debugging")
-    def test_can_run_informed_policy(self):
-        exp = instantiate_experiment(self.base_dist_cfg.experiment)
-        with exp:
-            exp.run()
-
-    # @unittest.skip("debugging")
-    def test_can_run_spiral_policy(self):
-        exp = instantiate_experiment(self.spiral_cfg.experiment)
-        with exp:
-            # TODO: test that no two locations are the same
-            exp.run()
-
-    # @unittest.skip("debugging")
-    def test_can_run_dist_agent_hypo_driven_policy(self):
-        exp = instantiate_experiment(self.dist_hypo_driven_cfg.experiment)
-        with exp:
-            exp.run()
-
-    # @unittest.skip("debugging")
-    def test_can_run_surface_policy(self):
-        exp = instantiate_experiment(self.base_surf_cfg.experiment)
-        with exp:
-            exp.run()
-
-    # @unittest.skip("debugging")
-    def test_can_run_curv_informed_policy(self) -> None:
-        exp = instantiate_experiment(self.curve_informed_cfg.experiment)
-        with exp:
-            exp.run()
-
-    # @unittest.skip("debugging")
-    def test_can_run_surf_agent_hypo_driven_policy(self):
-        exp = instantiate_experiment(self.surf_hypo_driven_cfg.experiment)
-        with exp:
-            exp.run()
-
-    # @unittest.skip("debugging")
-    def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
-        exp = instantiate_experiment(self.dist_hypo_driven_multi_lm_cfg.experiment)
-        with exp:
-            exp.run()
-
-    # ==== MORE INVOLVED TESTS OF ACTION POLICIES ====
-
-    def initialize_lm_with_gsg(self):
-        """Setups up an LM with a goal generator for testing.
+    def initialize_lm_with_gsg(self) -> tuple[EvidenceGraphLM, dict[str, int | float]]:
+        """Sets up an LM with a goal generator for testing.
 
         Returns:
             graph_lm: Created evidence graph LM instance
@@ -267,7 +264,7 @@ class PolicyTest(unittest.TestCase):
         )
         return graph_lm, gsg_args
 
-    def test_touch_object_basic_surf_agent(self):
+    def test_touch_object_basic_surf_agent(self) -> None:
         """Test ability to move a surface agent to touch an object.
 
         Given a substandard view of an object, the "experimenter" (via agent actions)
@@ -284,9 +281,7 @@ class PolicyTest(unittest.TestCase):
                 "motor_system_config"
             ].policy_selector.policy.desired_object_distance
         )
-        exp: MontyExperiment = instantiate_experiment(
-            self.surf_poor_initial_view_cfg.experiment
-        )
+        exp = instantiate_experiment(self.surf_poor_initial_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -322,7 +317,7 @@ class PolicyTest(unittest.TestCase):
                 f"vs target of {target_closest_point}"
             )
 
-    def test_distant_policy_moves_back_to_object(self):
+    def test_distant_policy_moves_back_to_object(self) -> None:
         """Test ability of distant agent to move back to an object.
 
         Test that the standard-distant agent policy (performing saccades) correctly
@@ -331,9 +326,7 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness and large saccade sizes, so
         that we are guaranteed to move off of the cube.
         """
-        exp: MontyExperiment = instantiate_experiment(
-            self.dist_fixed_action_cfg.experiment
-        )
+        exp = instantiate_experiment(self.dist_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -371,6 +364,7 @@ class PolicyTest(unittest.TestCase):
                         last_action, type(stored_action), should_have_moved_back
                     )
                     if isinstance(stored_action, (LookDown, LookUp)):
+                        assert isinstance(last_action, (LookDown, LookUp))
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
@@ -382,18 +376,21 @@ class PolicyTest(unittest.TestCase):
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, (TurnLeft, TurnRight)):
+                        assert isinstance(last_action, (TurnLeft, TurnRight))
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, MoveForward):
+                        assert isinstance(last_action, MoveForward)
                         self.assertEqual(
                             last_action.distance,
                             -stored_action.distance,
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, MoveTangentially):
+                        assert isinstance(last_action, MoveTangentially)
                         self.assertEqual(
                             last_action.distance,
                             -stored_action.distance,
@@ -405,6 +402,7 @@ class PolicyTest(unittest.TestCase):
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, OrientHorizontal):
+                        assert isinstance(last_action, OrientHorizontal)
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
@@ -421,6 +419,7 @@ class PolicyTest(unittest.TestCase):
                             should_have_moved_back,
                         )
                     elif isinstance(stored_action, OrientVertical):
+                        assert isinstance(last_action, OrientVertical)
                         self.assertEqual(
                             last_action.rotation_degrees,
                             -stored_action.rotation_degrees,
@@ -443,7 +442,7 @@ class PolicyTest(unittest.TestCase):
 
                 step += 1
 
-    def test_surface_policy_moves_back_to_object(self):
+    def test_surface_policy_moves_back_to_object(self) -> None:
         """Test ability of surface agent to move back to an object.
 
         Test that the standard surface-agent policy correctly moves back to the
@@ -452,9 +451,7 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness, so that we are guaranteed to move
         off of the cube.
         """
-        exp: MontyExperiment = instantiate_experiment(
-            self.surf_fixed_action_cfg.experiment
-        )
+        exp = instantiate_experiment(self.surf_fixed_action_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -592,7 +589,7 @@ class PolicyTest(unittest.TestCase):
 
                 step += 1
 
-    def test_surface_policy_orientation(self):
+    def test_surface_policy_orientation(self) -> None:
         """Test ability of surface agent to orient to a surface normal.
 
         Test that the surface-agent correctly orients to be pointing down at an
@@ -601,9 +598,7 @@ class PolicyTest(unittest.TestCase):
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
         """
-        exp: MontyExperiment = instantiate_experiment(
-            self.rotated_cube_view_cfg.experiment
-        )
+        exp = instantiate_experiment(self.rotated_cube_view_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
@@ -629,16 +624,18 @@ class PolicyTest(unittest.TestCase):
 
             # Rotate vector representing agent's pointing direction by the agent's
             # current orientation
-            agent_direction = np.array(
-                hab_utils.quat_rotate_vector(
-                    proprioceptive_state[AgentID("agent_id_0")].rotation,
+            agent_rot = Rotation.from_quat(
+                qt.as_float_array(proprioceptive_state[AgentID("agent_id_0")].rotation)
+            )
+            agent_direction = agent_rot.apply(
+                [
                     [
                         0,
                         0,
                         -1,
-                    ],  # The initial direction vector corresponding to the agent's
+                    ]  # The initial direction vector corresponding to the agent's
                     # orientation
-                )
+                ]
             )
 
             assert np.all(
@@ -670,10 +667,10 @@ class PolicyTest(unittest.TestCase):
         ctx = RuntimeContext(rng)
 
         # Initialize motor-system state
-        proprioceptive_state = ProprioceptiveState(
+        motor_system_state = MotorSystemState(
             {
                 AgentID("agent_id_0"): AgentState(
-                    position=np.array([0, 0, 0]),  # unused
+                    position=(0, 0, 0),  # unused
                     rotation=qt.quaternion(1, 0, 0, 0),
                     sensors={},  # unused
                 )
@@ -688,7 +685,7 @@ class PolicyTest(unittest.TestCase):
         # Note that the movement is a unit vector because it is a direction, the amount
         # (i.e. size) of the translation is represented separately.
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[0]
+            ctx, motor_system_state, self.fake_percept_pc[0]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -702,7 +699,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 2
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[1]
+            ctx, motor_system_state, self.fake_percept_pc[1]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -717,7 +714,7 @@ class PolicyTest(unittest.TestCase):
         # Step 3: Our bias should change from following minimal to maximal
         # PC
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[2]
+            ctx, motor_system_state, self.fake_percept_pc[2]
         )
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
@@ -731,7 +728,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 4
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[3]
+            ctx, motor_system_state, self.fake_percept_pc[3]
         )
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
@@ -745,7 +742,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 5: Pass observation *without* a well-defined PC direction
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[4]
+            ctx, motor_system_state, self.fake_percept_pc[4]
         )
         assert np.isclose(
             np.dot(self.fake_percept_pc[4].surface_normal(), direction), 0
@@ -767,16 +764,16 @@ class PolicyTest(unittest.TestCase):
 
         # Update relevant motor-system variables
         policy.ignoring_pc_counter = self.policy_cfg_fragment.min_general_steps
-        proprioceptive_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
+        motor_system_state[AgentID("agent_id_0")].rotation = qt.quaternion(0, 0, 1, 0)
 
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_pc[5]
+            ctx, motor_system_state, self.fake_percept_pc[5]
         )
         assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
             "Not following correct PC direction"
         )
 
-    def test_advanced_following_principal_curvature(self):
+    def test_advanced_following_principal_curvature(self) -> None:
         """Test more edge-case elements of the following-PC policy.
 
         This unit test checks more edge-case elements of the following-PC policy,
@@ -797,10 +794,10 @@ class PolicyTest(unittest.TestCase):
         ctx = RuntimeContext(rng)
 
         # Initialize motor system state
-        proprioceptive_state = ProprioceptiveState(
+        motor_system_state = MotorSystemState(
             {
                 AgentID("agent_id_0"): AgentState(
-                    position=np.array([0, 0, 0]),  # unused
+                    position=(0, 0, 0),  # unused
                     rotation=qt.quaternion(1, 0, 0, 0),
                     sensors={},  # unused
                 )
@@ -815,7 +812,7 @@ class PolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_advanced_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[0]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         assert np.isclose(
             np.dot(self.fake_percept_advanced_pc[0].surface_normal(), direction), 0
@@ -834,7 +831,7 @@ class PolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_pc[0].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[0]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -851,7 +848,7 @@ class PolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_advanced_pc[1].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[1]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[1]
         )
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
@@ -867,7 +864,7 @@ class PolicyTest(unittest.TestCase):
         policy.tangent_locs.append(self.fake_percept_advanced_pc[2].location)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[2]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[2]
         )
         assert np.isclose(np.linalg.norm(direction), 1), (
             "Direction should be a unit vector"
@@ -893,7 +890,7 @@ class PolicyTest(unittest.TestCase):
         # designed to avoid)
         policy.tangent_norms.append([0, 0, 1])
         direction = policy.tangential_direction(
-            ctx, proprioceptive_state, self.fake_percept_advanced_pc[0]
+            ctx, motor_system_state, self.fake_percept_advanced_pc[0]
         )
         # Note the following movement is a random direction deterministically set by the
         # random seed
@@ -909,16 +906,21 @@ class PolicyTest(unittest.TestCase):
         )
         assert policy.using_pc_guide is False, "Should not be using PC guide"
         assert policy.prev_angle is None, "Should have reset prev_angle"
-        assert policy.pc_is_z_defined is False, "Should have reset z-defind flag"
+        assert policy.pc_is_z_defined is False, "Should have reset z-defined flag"
 
     def core_evaluate_compute_goal_for_target_loc(
         self,
         ctx: RuntimeContext,
         lm: LearningModule,
-        policy,
-        object_orientation,
-        target_location_on_object,
-    ):
+        policy: SurfacePolicyCurvatureInformed,
+        object_orientation: EulerAnglesXYZ,
+        target_location_on_object: VectorXYZ,
+    ) -> tuple[
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+        VectorXYZ,
+        npt.NDArray[np.float64],
+    ]:
         """Test GSGs ability to propose a motor-system goal.
 
         Test the GSGs ability to propose a motor-system goal, and then for
@@ -936,8 +938,8 @@ class PolicyTest(unittest.TestCase):
         Returns:
             motor_goal_location: Motor goal location
             motor_goal_pose: Motor goal 0th pose vector
-            target_loc_hab: Habitat target location
-            agent_direction_hab: Habitat agent direction
+            target_loc: Target location
+            agent_direction: Agent direction
         """
         # --- Determine the motor-goal ---
 
@@ -955,7 +957,11 @@ class PolicyTest(unittest.TestCase):
             },
         }
 
-        fake_percept_config = dict(
+        # TODO: Create a more specific type? We're using MutableMapping because it's
+        #  covariant on the value type, whereas Dict is not. This matters later when
+        #  we pass this dictionary to Message as the kwargs.
+        #  See https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+        fake_percept_config: MutableMapping[str, Any] = dict(
             location=np.array([0, 1.5, 0.1]),
             morphological_features={
                 "pose_vectors": SurfacePoseVectors(
@@ -986,31 +992,31 @@ class PolicyTest(unittest.TestCase):
         lm.matching_step(ctx, [Message(**fake_percept_config)])
 
         # GSG handles computing the motor goal
-        motor_goal = lm.gsg._compute_goal_for_target_loc(
+        motor_goal: Goal = lm.gsg._compute_goal_for_target_loc(
             observations=[Message(**fake_percept_config)],
             target_info=target_info,
         )
 
-        # --- Determine Habitat-coordinates from goal ---
-
+        # Determine coordinates from goal.
         set_agent_pose = policy._derive_set_agent_pose_from_goal(motor_goal)
-        target_loc_hab = set_agent_pose.location
+        target_loc = set_agent_pose.location
         target_quat = set_agent_pose.rotation_quat
 
         resulting_rot = Rotation.from_quat(qt.as_float_array(target_quat))
 
         # As the agent faces "forward" along the negative z-axis, we use this vector
         # to visualize its orientation
-        agent_direction_hab = resulting_rot.apply(np.array([0, 0, -1]))
+        agent_direction = resulting_rot.apply(np.array([0, 0, -1]))
 
+        assert motor_goal.location is not None
         return (
             motor_goal.location,
             motor_goal.morphological_features["pose_vectors"].direction,
-            target_loc_hab,
-            agent_direction_hab,
+            target_loc,
+            agent_direction,
         )
 
-    def test_multi_param_compute_goal_for_target_loc(self):
+    def test_multi_param_compute_goal_for_target_loc(self) -> None:
         """Perform core_evaluate_compute_goal_for_target_loc.
 
         Should work across a variety of parameter settings.
@@ -1032,14 +1038,14 @@ class PolicyTest(unittest.TestCase):
         (
             motor_goal_location,
             motor_goal_direction,
-            target_loc_hab,
-            agent_direction_hab,
+            target_loc,
+            agent_direction,
         ) = self.core_evaluate_compute_goal_for_target_loc(
             ctx,
             lm,
             policy,
-            object_orientation=[0, 0, 0],
-            target_location_on_object=[0.2, 0.2, 0.2],
+            object_orientation=(0, 0, 0),
+            target_location_on_object=(0.2, 0.2, 0.2),
         )
 
         assert np.all(
@@ -1051,13 +1057,13 @@ class PolicyTest(unittest.TestCase):
             "Goal pose is not as expected"
         )
 
-        assert np.all(
-            np.isclose(target_loc_hab, [0.1, 1.6 + surface_displacement, 0.2])
-        ), "Habitat target location is not as expected"
+        assert np.all(np.isclose(target_loc, [0.1, 1.6 + surface_displacement, 0.2])), (
+            "Target location is not as expected"
+        )
 
         # Pointing down
-        assert np.all(np.isclose(agent_direction_hab, [0, -1.0, 0])), (
-            "Habitat pose is not as expected"
+        assert np.all(np.isclose(agent_direction, [0, -1.0, 0])), (
+            "Agent pose is not as expected"
         )
 
         # === Second, harder example ===
@@ -1065,15 +1071,15 @@ class PolicyTest(unittest.TestCase):
         (
             motor_goal_location_2,
             motor_goal_direction_2,
-            target_loc_hab_2,
-            agent_direction_hab_2,
+            target_loc_2,
+            agent_direction_2,
         ) = self.core_evaluate_compute_goal_for_target_loc(
             ctx,
             lm,
             policy,
-            object_orientation=[180, 0, 0],  # Flip the object around the x-axis, such
+            object_orientation=(180, 0, 0),  # Flip the object around the x-axis, such
             # that e.g. a vector pointing up will now point down
-            target_location_on_object=[0.1, 0.2, 0.1],
+            target_location_on_object=(0.1, 0.2, 0.1),
         )
 
         # Surface displacement is negative, because object is flipped in x-axis
@@ -1087,13 +1093,13 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Surface displacement is negative, because object is flipped in x-axis
-        assert np.all(
-            np.isclose(target_loc_hab_2, [0, 1.4 - surface_displacement, 0.1])
-        ), "Habitat target location is not as expected"
+        assert np.all(np.isclose(target_loc_2, [0, 1.4 - surface_displacement, 0.1])), (
+            "Target location is not as expected"
+        )
 
         # Pointing up, because object is flipped in y-axis
-        assert np.all(np.isclose(agent_direction_hab_2, [0, 1.0, 0])), (
-            "Habitat pose is not as expected"
+        assert np.all(np.isclose(agent_direction_2, [0, 1.0, 0])), (
+            "Agent pose is not as expected"
         )
 
         # === Third, hardest example ===
@@ -1101,14 +1107,14 @@ class PolicyTest(unittest.TestCase):
         (
             motor_goal_location_3,
             motor_goal_direction_3,
-            target_loc_hab_3,
-            agent_direction_hab_3,
+            target_loc_3,
+            agent_direction_3,
         ) = self.core_evaluate_compute_goal_for_target_loc(
             ctx,
             lm,
             policy,
-            object_orientation=[160, 45, 70],
-            target_location_on_object=[0.3, 0.2, 0.15],
+            object_orientation=(160, 45, 70),
+            target_location_on_object=(0.3, 0.2, 0.15),
         )
 
         # Below results manually verified
@@ -1121,37 +1127,45 @@ class PolicyTest(unittest.TestCase):
         ), "Goal pose is not as expected"
 
         assert np.all(
-            np.isclose(target_loc_hab_3, [0.18586463, 1.58288073, -0.04139085])
-        ), "Habitat target location is not as expected"
+            np.isclose(target_loc_3, [0.18586463, 1.58288073, -0.04139085])
+        ), "Target location is not as expected"
 
         assert np.all(
-            np.isclose(agent_direction_hab_3, [-0.965738, 0.09413407, -0.24184476])
-        ), "Habitat pose is not as expected"
+            np.isclose(agent_direction_3, [-0.965738, 0.09413407, -0.24184476])
+        ), "Agent pose is not as expected"
 
 
 JUMP_AGENT_ID = AgentID("agent_id_0")
 JUMP_SENSOR_ID = SensorID("patch")
-JUMP_RESOLUTION = (64, 64)
-# The agent starts at (0, 1.5, 0) looking down the negative z axis, so an object
+JUMP_RESOLUTION = Resolution2D(64, 64)
+JUMP_ZOOM = 10.0
+# The agent starts at (0, 1.5, 0.2) looking down the negative z axis, so an object
 # at this position is centered in the initial view.
 JUMP_OBJECT_POSITION = (0.0, 1.5, -0.35)
+JUMP_SEMANTIC_ID = SemanticID(1)
 
 
 class JumpToGoalTest(ParametrizedTestCase):
     """Tests for the JumpToGoal undo check against rendered primitive objects.
 
-    The percept after the jump is built from habitat observations with the standard
+    The percept after the jump is built from simulator observations with the standard
     sensor pipeline, so that `Message.get_on_object()` is observed rather than mocked.
     The case of interest is a hypothesis-testing jump that lands the agent inside the
     object's geometry.
     """
 
     def setUp(self) -> None:
-        self.agent = SingleSensorAgent(
+        self.agent = partial(
+            DistantAgent,
             agent_id=JUMP_AGENT_ID,
-            sensor_id=JUMP_SENSOR_ID,
-            resolution=JUMP_RESOLUTION,
-            semantic=True,
+            position=(0.0, 1.5, 0.2),
+            sensor_configs={
+                JUMP_SENSOR_ID: SensorConfig(
+                    resolution=JUMP_RESOLUTION,
+                    zoom=JUMP_ZOOM,
+                    semantic=True,
+                )
+            },
         )
         self.sensor_module = CameraSM(
             sensor_module_id=JUMP_SENSOR_ID,
@@ -1163,13 +1177,14 @@ class JumpToGoalTest(ParametrizedTestCase):
         self.depth_to_3d = DepthTo3DLocations(
             agent_id=JUMP_AGENT_ID,
             sensor_ids=[JUMP_SENSOR_ID],
-            resolutions=[JUMP_RESOLUTION],
+            resolutions=[(JUMP_RESOLUTION.height, JUMP_RESOLUTION.width)],
+            zooms=[JUMP_ZOOM],
             world_coord=True,
             get_all_points=True,
             use_semantic_sensor=True,
         )
 
-    def percept(self, sim: HabitatSim, observations: Observations) -> Message:
+    def percept(self, sim: MuJoCoSimulator, observations: Observations) -> Message:
         """Turn observations into a percept using the CameraSM.
 
         Args:
@@ -1188,37 +1203,36 @@ class JumpToGoalTest(ParametrizedTestCase):
 
     @parametrize(
         "object_name",
-        [(name,) for name in ("cubeSolid", "capsule3DSolid", "icosphereSolid")],
+        [(name,) for name in ("cubeSolid", "capsule3DSolid", "cylinderSolid")],
     )
     def test_undoes_jump_that_lands_inside_object(self, object_name: str) -> None:
-        with HabitatSim(agents=[self.agent]) as sim:
-            sim.add_object(object_name, position=JUMP_OBJECT_POSITION)
+        with MuJoCoSimulator(agents=[self.agent]) as sim:
+            sim.add_object(
+                object_name,
+                position=JUMP_OBJECT_POSITION,
+                semantic_id=JUMP_SEMANTIC_ID,
+            )
 
             observations, _ = sim.reset()
             pre_jump_state = MotorSystemState(sim.states)
             pre_jump_percept = self.percept(sim, observations)
             # Sanity check: the object is in view from the initial pose.
             self.assertTrue(pre_jump_percept.get_on_object())
-            self.assertEqual(
-                pre_jump_percept._semantic_id,
-                PRIMITIVE_OBJECT_TYPES[object_name],
-            )
+            self.assertEqual(pre_jump_percept._semantic_id, JUMP_SEMANTIC_ID)
 
             # Teleport the agent to the object's center, i.e. inside its geometry.
-            sim.initialize_agent(
-                JUMP_AGENT_ID,
-                habitat_sim.AgentState(
-                    position=np.array(JUMP_OBJECT_POSITION, dtype=np.float32)
-                ),
+            observations, _ = sim.step(
+                [
+                    SetAgentPose(
+                        agent_id=JUMP_AGENT_ID,
+                        location=JUMP_OBJECT_POSITION,
+                        rotation_quat=(1.0, 0.0, 0.0, 0.0),
+                    )
+                ]
             )
-            observations, _ = sim.step([])
             post_jump_state = MotorSystemState(sim.states)
-            raw_depth = observations[JUMP_AGENT_ID][JUMP_SENSOR_ID]["depth"]
-            # Habitat renders nothing from inside a closed mesh: the depth at the
-            # image center is 0.
-            self.assertEqual(
-                raw_depth[JUMP_RESOLUTION[0] // 2, JUMP_RESOLUTION[1] // 2], 0.0
-            )
+            # MuJoCo culls back faces, so nothing of the object is rendered from
+            # inside it and the percept is off-object.
             post_jump_percept = self.percept(sim, observations)
 
         self.assertFalse(post_jump_percept.get_on_object())
