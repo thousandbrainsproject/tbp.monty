@@ -21,9 +21,6 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
     get_perc_on_obj_semantic,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
-from tbp.monty.frameworks.experiments.object_recognition_experiments import (
-    MontyObjectRecognitionExperiment,
-)
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
@@ -58,9 +55,7 @@ class GetGoodViewTest(unittest.TestCase):
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp: MontyObjectRecognitionExperiment = instantiate_experiment(
-                config.experiment
-            )
+            exp = instantiate_experiment(config.experiment)
             with exp:
                 exp.experiment_mode = ExperimentMode.TRAIN
                 exp.model.set_experiment_mode(exp.experiment_mode)
@@ -115,9 +110,7 @@ class GetGoodViewTest(unittest.TestCase):
             agent_id = config.experiment.config.train_env_interface_args[
                 "positioning_procedures"
             ][0].agent_id
-            exp: MontyObjectRecognitionExperiment = instantiate_experiment(
-                config.experiment
-            )
+            exp = instantiate_experiment(config.experiment)
             with exp:
                 exp.train()
 
