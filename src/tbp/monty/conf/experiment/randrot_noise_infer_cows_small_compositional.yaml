@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: evidence_3lm_heterarchy
   - /monty/sensor_module: 3sm_2d3d_dist_noise
   - /monty/connectivity: 3lm_3sm_heterarchy
-  - /environment: habitat_dist_agent_sensors3
+  - /environment: mujoco_dist_agent_sensors3
   - /env_interface: eval_cows_small_random
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
@@ -25,6 +25,6 @@ experiment:
     python_log_level: DEBUG
     environment:
       env_init_args:
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4}
+        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
     logging:
       run_name: randrot_noise_infer_cows_small_compositional

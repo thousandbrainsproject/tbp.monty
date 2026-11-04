@@ -550,7 +550,6 @@ class CameraSM(SensorModule):
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
-        self.is_exploring = False
         self.processed_obs: list[dict[str, Any]] = []
         # TODO: give more descriptive & distinct names
         self.sensor_module_id = sensor_module_id
@@ -559,7 +558,6 @@ class CameraSM(SensorModule):
     def reset(self) -> None:
         self._snapshot_telemetry.reset()
         self._percept_filter.reset()
-        self.is_exploring = False
         self.processed_obs = []
 
     def update_state(self, agent: AgentState) -> None:
@@ -592,7 +590,7 @@ class CameraSM(SensorModule):
             Percept with features and morphological features. Noise may be
             added. The `pass_message` and `process_features_in_lm` flags may be set.
         """
-        if self.save_raw_obs and not self.is_exploring:
+        if self.save_raw_obs:
             self._snapshot_telemetry.raw_observation(
                 observation, self.state.rotation, self.state.position
             )
@@ -605,8 +603,7 @@ class CameraSM(SensorModule):
 
         percept = self._percept_filter(percept)
 
-        if not self.is_exploring:
-            self.processed_obs.append(percept.__dict__)
+        self.processed_obs.append(percept.__dict__)
 
         return percept
 
@@ -636,7 +633,6 @@ class FeatureChangeFilter(PerceptFilter):
         self._last_sent_n_steps_ago = 0
 
     def reset(self):
-        """Reset buffer and is_exploring flag."""
         self._last_percept = None
 
     def _feature_changes_are_significant(self, percept: Message) -> bool:

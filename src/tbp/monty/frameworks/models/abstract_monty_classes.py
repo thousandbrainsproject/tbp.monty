@@ -341,6 +341,10 @@ class RuntimeLearningModule(Protocol):
         """
         ...
 
+    def propose_region(self) -> AttentionRegion:
+        """Return the attention region to attend to."""
+        ...
+
     def get_output(self) -> Message | None:
         """Return learning module output (same format as input)."""
         ...
@@ -403,6 +407,10 @@ class LearningModule(
 
     @abc.abstractmethod
     def propose_goals(self) -> list[Goal]:
+        pass
+
+    @abc.abstractmethod
+    def propose_region(self) -> AttentionRegion:
         pass
 
     @abc.abstractmethod

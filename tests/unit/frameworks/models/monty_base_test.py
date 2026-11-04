@@ -51,6 +51,9 @@ class MontyBasePrivateTest(unittest.TestCase):
             sentinel.lm3_goal_1,
             sentinel.lm3_goal_2,
         ]
+        self.lm1.propose_region.return_value = sentinel.lm1_region
+        self.lm2.propose_region.return_value = sentinel.lm2_region
+        self.lm3.propose_region.return_value = sentinel.lm3_region
         self.sm1.propose_goals.return_value = []
         self.sm2.propose_goals.return_value = [
             sentinel.sm2_goal_1,
@@ -69,7 +72,12 @@ class MontyBasePrivateTest(unittest.TestCase):
             sentinel.sm2_goal_1,
             sentinel.sm2_goal_2,
         ]
-        self.attention_system.step.assert_called_once_with(
-            goals, [sentinel.sm1_region, sentinel.sm2_region]
-        )
+        regions = [
+            sentinel.sm1_region,
+            sentinel.sm2_region,
+            sentinel.lm1_region,
+            sentinel.lm2_region,
+            sentinel.lm3_region,
+        ]
+        self.attention_system.step.assert_called_once_with(goals, regions)
         self.assertIs(self.monty_base._goals, sentinel.attention_system_goals)

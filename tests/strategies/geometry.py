@@ -15,6 +15,7 @@ import numpy as np
 import numpy.typing as npt
 import quaternion as qt
 
+from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 
 
@@ -50,11 +51,11 @@ def rotation_non_zero(draw: st.DrawFn) -> npt.NDArray[np.double]:
     """Generates a random non-zero rotation as a normalized quaternion.
 
     Args:
-        draw (st.DrawFn): The Hypothesis draw function.
+        draw: The Hypothesis draw function.
 
     Returns:
-        npt.NDArray[np.double]: A normalized quaternion representing a random non-zero
-            rotation. np.double is used as that is what qt.from_float_array returns.
+        A normalized quaternion representing a random non-zero rotation. np.double is
+        used as that is what qt.from_float_array returns.
     """
     return cast(
         "npt.NDArray[np.double]",
@@ -73,3 +74,16 @@ def rotation_non_zero(draw: st.DrawFn) -> npt.NDArray[np.double]:
             )
         ).normalized(),
     )
+
+
+@st.composite
+def rotation_matrices(draw: st.DrawFn) -> npt.NDArray[np.float64]:
+    """Generate multiple rotation matrices (numpy arrays).
+
+    Args:
+        draw: The Hypothesis draw function.
+
+    Returns:
+        Multiple rotation matrices of shape (N, 3, 3).
+    """
+    return Rotation.random(draw(st.integers(min_value=1, max_value=1000))).as_matrix()

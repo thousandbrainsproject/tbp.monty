@@ -32,14 +32,13 @@ def vectors_3d(
     draw: st.DrawFn,
     min_value: float = -1e6,
     max_value: float = 1e6,
-    dtype: npt.DTypeLike = np.float32,
+    dtype: npt.DTypeLike = np.float64,
 ):
-    # TODO(scottcanoe): Reconsider np.float32 as the default dtype.
     return draw(
         arrays(
             dtype=dtype,
             shape=3,
-            elements=st.floats(min_value=min_value, max_value=max_value, width=32),
+            elements=st.floats(min_value=min_value, max_value=max_value),
         )
     )
 
@@ -49,12 +48,12 @@ def nonzero_magnitude_vectors(
     draw: st.DrawFn,
     min_value: float = -1e6,
     max_value: float = 1e6,
-    dtype: npt.DTypeLike = np.float32,
+    dtype: npt.DTypeLike = np.float64,
 ):
-    # TODO(scottcanoe): Reconsider np.float32 as the default dtype.
     return draw(
-        vectors_3d(min_value=min_value, max_value=max_value, dtype=dtype).filter(
-            lambda v: np.linalg.norm(v) > DEFAULT_TOLERANCE
+        st.one_of(
+            vectors_3d(min_value=min_value, max_value=-DEFAULT_TOLERANCE, dtype=dtype),
+            vectors_3d(min_value=DEFAULT_TOLERANCE, max_value=max_value, dtype=dtype),
         )
     )
 
@@ -85,7 +84,7 @@ def quaternions(draw: st.DrawFn):
 
 
 rotation_objs = quaternions().map(lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]))
-rotation_matrices = quaternions().map(
+rotation_matrix = quaternions().map(
     lambda q: Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
 )
 
