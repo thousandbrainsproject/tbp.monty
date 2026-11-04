@@ -537,7 +537,7 @@ class MontyExperiment:
         result = self._recognition_policy(self.model, count)
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
-        if result.is_time_out:
+        if result.time_out_lms:
             self.model.deal_with_time_out()
         return result.is_done
 

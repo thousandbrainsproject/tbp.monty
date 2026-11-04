@@ -36,7 +36,7 @@ Before sending information to the sensor module which extracts features and pose
 
 | List of all transform classes  | Description                                                                                                                                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **MissingToMaxDepth**          | Habitat depth sensors return 0 when no mesh is present at a location. Instead, return max_depth.                                                                                                  |
+| **MissingToMaxDepth**          | Simulated depth sensors return 0 when no mesh is present at a location. Instead, return max_depth.                                                                                                  |
 | **AddNoiseToRawDepthImage**    | Add gaussian noise to raw sensory input.                                                                                                                                                          |
 | **GaussianBlurRGB**            | Apply Gaussian blur to the RGB channels of selected sensors while preserving the alpha channel.                                                                                                  |
 | **DepthTo3DLocations**         | Transform semantic and depth observations from camera coordinates (2D) into agent (or world) coordinates (3D). Also estimates whether we are on the object or not if no semantic sensor is present. |

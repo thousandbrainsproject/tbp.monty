@@ -52,28 +52,11 @@ jobs:
         run: |
           mkdir -p ~/tbp
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.8"
-      - name: Install miniconda
-        run: |
-          if [ ! -d ~/miniconda ]
-          then
-            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
-            bash ~/miniconda.sh -b -p ~/miniconda
-            rm ~/miniconda.sh
-          fi
-          export PATH="$HOME/miniconda/bin:$PATH"
-          conda --version
-      - name: Create conda environment
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
-          conda env create
-          source activate tbp.monty
-          pip install -e .[dev,github_readme_sync_tool,print_version_tool]
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Get version and branch
         id: preview_info
         uses: ./tbp.monty/.github/actions/get_preview_info
@@ -82,11 +65,13 @@ jobs:
       - name: Deploy docs
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
           export IMAGE_PATH="${{ steps.preview_info.outputs.image_path }}"
-          python -m tools.github_readme_sync.cli upload ../pr_docs/docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra print_version_tool \
+            python -m tools.github_readme_sync.cli upload ../pr_docs/docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
       - name: Update PR comment on success
         if: success()
         uses: ./tbp.monty/.github/actions/pin_comment

@@ -180,7 +180,6 @@ add_module_names = False
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "habitat_sim": ("https://aihabitat.org/docs/habitat-sim/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),

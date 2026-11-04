@@ -56,60 +56,61 @@ jobs:
         run: |
           mkdir -p ~/tbp
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
-      - name: Set up Python 3.8
+      - name: Install uv
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
-        uses: actions/setup-python@v7
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.8"
-      - name: Install miniconda
-        if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
-        run: |
-          if [ ! -d ~/miniconda ]
-          then
-            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
-            bash ~/miniconda.sh -b -p ~/miniconda
-            rm ~/miniconda.sh
-          fi
-          export PATH="$HOME/miniconda/bin:$PATH"
-          conda --version
-      - name: Create conda environment
-        if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
-          conda env create
-          source activate tbp.monty
-          pip install -e .[dev,github_readme_sync_tool,print_version_tool,generate_api_docs_tool,future_work_widget_tool]
-          pip list
-          conda list
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Check style
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          ruff check tools
-          ruff format --check tools
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra print_version_tool \
+            --extra generate_api_docs_tool \
+            --extra future_work_widget_tool \
+            ruff check tools
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra print_version_tool \
+            --extra generate_api_docs_tool \
+            --extra future_work_widget_tool \
+            ruff format --check tools
       - name: Check types
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
         continue-on-error: true # Accept type errors for now
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          mypy tools
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra print_version_tool \
+            --extra generate_api_docs_tool \
+            --extra future_work_widget_tool \
+            mypy tools
       - name: Check dependencies
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          deptry src tools
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra print_version_tool \
+            --extra generate_api_docs_tool \
+            --extra future_work_widget_tool \
+            deptry src tools
       - name: Run tests
         if: ${{ needs.should_run_tools.outputs.should_run_tools == 'true' }}
         working-directory: tbp.monty
         run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          pytest tools --doctest-modules --doctest-continue-on-failure
+          uv run --frozen \
+            --extra dev \
+            --extra github_readme_sync_tool \
+            --extra print_version_tool \
+            --extra generate_api_docs_tool \
+            --extra future_work_widget_tool \
+            pytest tools --doctest-modules --doctest-continue-on-failure

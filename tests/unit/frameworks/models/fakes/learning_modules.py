@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Collection, Sequence
 
-from tbp.monty.cmp import Goal, Message
+from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
@@ -68,6 +68,9 @@ class FakeLearningModule(LearningModule):
 
     def propose_goals(self) -> list[Goal]:
         return []
+
+    def propose_region(self) -> AttentionRegion:
+        return AttentionRegion.empty()
 
     def get_output(self) -> Message | None:
         pass

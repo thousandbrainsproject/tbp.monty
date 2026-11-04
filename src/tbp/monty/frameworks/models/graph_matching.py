@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from tbp.monty import telemetry
-from tbp.monty.cmp import Goal, Message, location_mean
+from tbp.monty.cmp import AttentionRegion, Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.recognition_status import (
@@ -412,8 +412,6 @@ class MontyForGraphMatching(MontyBase):
 
                     if self.experiment_mode is ExperimentMode.TRAIN:
                         self.switch_to_exploratory_step()
-                        for sm in self.sensor_modules:
-                            sm.is_exploring = True
 
                     elif (
                         self.experiment_mode is ExperimentMode.EVAL
@@ -499,6 +497,8 @@ class MontyForGraphMatching(MontyBase):
 class GraphLM(LearningModule):
     """General Learning Module that contains a graph memory."""
 
+    _goals: list[Goal]
+    """Cache of goals for ``propose_region`` to reference."""
     possible_paths: dict[str, Any]
     detected_rotation_r: Rotation | None
 
@@ -539,6 +539,7 @@ class GraphLM(LearningModule):
         self._init_GraphLM()
 
     def _init_GraphLM(self) -> None:  # noqa: N802
+        self._goals = []
         self.terminal_state = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
@@ -685,9 +686,20 @@ class GraphLM(LearningModule):
         Only returned if the LM/GSG was stepped, otherwise returns empty list.
         """
         if self.buffer.get_last_obs_processed() and self.gsg is not None:
-            return self.gsg.output_goals()
+            self._goals = self.gsg.output_goals()
+        else:
+            self._goals = []
 
-        return []
+        return self._goals
+
+    def propose_region(self) -> AttentionRegion:
+        """Returns attention region that ensures proposed goals can be attended to."""
+        if self._goals:
+            return AttentionRegion.uniform(
+                locations=np.array([goal.location for goal in self._goals]),
+                weight=AttentionRegion.MAX_WEIGHT,
+            )
+        return AttentionRegion.empty()
 
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.

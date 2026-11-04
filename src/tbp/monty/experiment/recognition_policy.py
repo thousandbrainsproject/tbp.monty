@@ -63,13 +63,11 @@ class RecognitionResult:
     is_done: bool = False
     """A terminal condition has been reached."""
 
-    # TODO: this is a request, not a condition.
-    #       rename and document accordingly.
-    is_time_out: bool = False
-    """A time-out condition has been reached."""
+    time_out_lms: bool = False
+    """Request to time-out LMs that are not done yet."""
 
     start_exploring: bool = False
-    """A transition to 'exploring' mode is requested."""
+    """Request for transition to 'exploring' mode."""
 
 
 class RecognitionPolicy(Protocol):
@@ -168,13 +166,13 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
         if model.is_done:
             result = RecognitionResult(
                 is_done=True,
-                is_time_out=wrapped.is_time_out,
+                time_out_lms=wrapped.time_out_lms,
                 start_exploring=wrapped.start_exploring,
             )
         elif count.step >= self._max_total_steps:
             result = RecognitionResult(
                 is_done=True,
-                is_time_out=True,
+                time_out_lms=True,
                 start_exploring=wrapped.start_exploring,
             )
         elif (
@@ -183,7 +181,7 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
         ):
             result = RecognitionResult(
                 is_done=False,
-                is_time_out=wrapped.is_time_out,
+                time_out_lms=wrapped.time_out_lms,
                 start_exploring=wrapped.start_exploring,
             )
         else:
@@ -197,12 +195,17 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
                 count.step,
                 count.matching_steps,
             )
+            lms = {
+                str(lm.learning_module_id): lm.recognition_status
+                for lm in model.learning_modules
+            }
             telemeter.info(
                 TelemetryEvent(
                     kind="TerminalCondition",
                     model=dict(
                         is_done=model.is_done,
                         is_exploring=model.is_exploring,
+                        lms=lms,
                     ),
                     count=count,
                     result=result,
@@ -239,7 +242,7 @@ class MaxTotalSteps(RecognitionPolicy):
         is_done = count.step >= self._max_total_steps
         if is_done:
             logger.info("MaxTotalSteps is done, with step=%d", count.step)
-        return RecognitionResult(is_done=is_done, is_time_out=is_done)
+        return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
 class MaximumSteps(RecognitionPolicy):
@@ -283,7 +286,7 @@ class MaximumSteps(RecognitionPolicy):
         is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
         result = RecognitionResult(
             is_done=is_done,
-            is_time_out=is_done,
+            time_out_lms=is_done,
         )
         if result.is_done:
             logger.info(
@@ -358,20 +361,20 @@ class StepLimit(RecognitionPolicy):
             is_done = count.exploring_steps >= self._num_exploring_steps
             result = RecognitionResult(
                 is_done=is_done,
-                is_time_out=is_done,
+                time_out_lms=is_done,
             )
         elif count.mode is ExperimentMode.TRAIN:
             is_done = count.matching_steps >= self._max_train_steps
             result = RecognitionResult(
                 is_done=is_done,
-                is_time_out=is_done,
+                time_out_lms=is_done,
                 start_exploring=(count.matching_steps >= self._min_train_steps),
             )
         elif count.mode is ExperimentMode.EVAL:
             is_done = count.matching_steps >= self._max_eval_steps
             result = RecognitionResult(
                 is_done=is_done,
-                is_time_out=is_done,
+                time_out_lms=is_done,
             )
         else:
             result = RecognitionResult()
@@ -384,6 +387,32 @@ class StepLimit(RecognitionPolicy):
             )
 
         return result
+
+
+class MatchCriteria(RecognitionPolicy):
+    """The `model.learning_modules` meet the configured `match_criteria`."""
+
+    def __init__(self: Self) -> None:
+        """Initialize the policy."""
+        pass
+
+    def __call__(
+        self: Self,
+        model: MontyBase,
+        count: RecognitionCounter,  # noqa: ARG002
+    ) -> RecognitionResult:
+        terminal_states: dict[str, str | None] = {
+            lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
+        }
+        # TODO: Either configure the `match_criterion` on the policy itself,
+        #       or provide configurable policies for each criterion.
+        is_done = model._match_criterion(terminal_states)
+        if is_done:
+            logger.info(
+                "MatchCriteria is done, with terminal_states=%s",
+                terminal_states,
+            )
+        return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
 class MinimumLMs(RecognitionPolicy):
@@ -513,7 +542,7 @@ class ObjectRecognition(RecognitionPolicy):
             else self._max_eval_steps
         )
         if (not model.is_exploring) and (model.matching_steps >= max_steps):
-            result = RecognitionResult(is_done=True, is_time_out=True)
+            result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info(
                 "ObjectRecognition is done, "
                 "with model.is_exploring=%s model.matching_steps=%d",
@@ -521,7 +550,7 @@ class ObjectRecognition(RecognitionPolicy):
                 model.matching_steps,
             )
         elif count.step >= self._max_total_steps:
-            result = RecognitionResult(is_done=True, is_time_out=True)
+            result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info("ObjectRecognition is done, with step=%d", count.step)
         elif model.is_done:
             result = RecognitionResult(is_done=True)
@@ -562,7 +591,7 @@ class AnyPolicy(RecognitionPolicy):
             rr = policy(model, count)
             result = RecognitionResult(
                 is_done=result.is_done or rr.is_done,
-                is_time_out=result.is_time_out or rr.is_time_out,
+                time_out_lms=result.time_out_lms or rr.time_out_lms,
                 start_exploring=result.start_exploring or rr.start_exploring,
             )
             if result.is_done:
