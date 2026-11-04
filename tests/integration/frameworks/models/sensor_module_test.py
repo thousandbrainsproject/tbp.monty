@@ -7,29 +7,21 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-import hydra
-import pytest
-
-from tbp.monty.context import RuntimeContext
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import shutil
 import tempfile
 import unittest
 
+import hydra
+
+from tbp.monty.context import RuntimeContext
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 
 
 class SensorModuleTest(unittest.TestCase):
-    def setUp(self):
-        """Code that gets executed before every test."""
+    def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
@@ -55,32 +47,23 @@ class SensorModuleTest(unittest.TestCase):
                 ],
             )
 
-    def tearDown(self):
-        """Code that gets executed after every test."""
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
-    # @unittest.skip("debugging")
-    def test_can_set_up(self):
-        """Check that correct features are returned by sensor module."""
+    def test_can_set_up(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
             exp.pre_episode()
-            step = 0
             ctx = RuntimeContext(rng=exp.rng)
             actions: list[Action] = []
-            while True:
+            for _ in range(2):
                 observations, proprioceptive_state = exp.env_interface.step(actions)
                 actions = exp.model.step(ctx, observations, proprioceptive_state)
-                if step == 1:
-                    break
 
-                step += 1
-
-    # @unittest.skip("debugging")
-    def test_features_in_sensor(self):
+    def test_features_in_sensor(self) -> None:
         """Check that correct features are returned by sensor module."""
         exp = instantiate_experiment(self.sensor_feature_cfg.experiment)
         with exp:

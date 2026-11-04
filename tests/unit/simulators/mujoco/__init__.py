@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -9,7 +9,7 @@
 
 import pytest
 
-# Adding this at the test `mujoco` module level means we don't have to remember to
+# Adding this at the `mujoco` unit test module level means we don't have to remember to
 # add it for every module beneath here.
 pytest.importorskip(
     "mujoco",

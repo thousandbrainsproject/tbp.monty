@@ -8,30 +8,22 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import copy
 import shutil
 import tempfile
-from typing import Any
 
 import hydra
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
 class NoResetEvidenceLMTest(BaseGraphTest):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
@@ -52,8 +44,14 @@ class NoResetEvidenceLMTest(BaseGraphTest):
                 ],
             )
 
+    def tearDown(self) -> None:
+        shutil.rmtree(self.output_dir)
+
     def assert_dicts_equal(
-        self, d1: dict[Any, np.ndarray], d2: dict[Any, np.ndarray], msg: str
+        self,
+        d1: dict[str, npt.NDArray[np.float64]],
+        d2: dict[str, npt.NDArray[np.float64]],
+        msg: str,
     ) -> None:
         """Asserts that two dictionaries containing NumPy arrays are equal.
 
@@ -69,13 +67,8 @@ class NoResetEvidenceLMTest(BaseGraphTest):
         for key, d1_val in d1.items():
             self.assertTrue(np.array_equal(d1_val, d2[key]), msg)
 
-    def test_no_reset_evidence_lm(self):
+    def test_no_reset_evidence_lm(self) -> None:
         """Checks that unsupervised LM does not reset the evidence between episodes.
-
-        This test uses the `self.unsupervised_evidence_config` which defines
-        `MontyForNoResetEvidenceGraphMatching` and `NoResetEvidenceGraphLM`
-        as the Monty Class and Monty LM Class, respectively. The expected behavior is
-        that the evidence values are not reset or changed between episodes.
 
         Note: We use the default `MontyForEvidenceGraphMatching` and `EvidenceGraphLM`
         to train a Monty Experiment, then transfer the pretrained graphs to an
@@ -131,6 +124,3 @@ class NoResetEvidenceLMTest(BaseGraphTest):
                 "evidence dict should contain evidence values",
             )
             eval_exp.post_epoch()
-
-    def tearDown(self):
-        shutil.rmtree(self.output_dir)
