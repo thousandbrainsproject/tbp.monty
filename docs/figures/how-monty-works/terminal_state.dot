@@ -1,0 +1,48 @@
+// Graphviz source for terminal_state.png.
+// Rebuild: dot -Tpng -Gdpi=144 terminal_state.dot -o terminal_state.png
+digraph terminal_state {
+    graph [rankdir=TB, bgcolor="white", pad=0.25, nodesep=0.45, ranksep=0.45,
+           fontname="DejaVu Sans", fontsize=13];
+    node [shape=box, style="rounded,filled", fillcolor="#f1f5f9",
+          color="#475569", fontname="DejaVu Sans", fontsize=12, margin="0.18,0.12"];
+    edge [color="#475569", fontname="DejaVu Sans", fontsize=11];
+
+    start [label="Matching phase\ncheck_terminal_conditions()"];
+    all_no_match [shape=diamond, style=filled, fillcolor="#e0f2fe",
+                  label="All LMs already\nno_match?"];
+    minimum [shape=diamond, style=filled, fillcolor="#e0f2fe",
+             label="Minimum matching-step\ncondition met?\n(exceeded_min_steps)"];
+
+    subgraph cluster_lm {
+        label="Local LM checks";
+        labelloc=b;
+        labeljust=l;
+        color="#9333ea";
+        style=rounded;
+        margin=20;
+        update_lms [fillcolor="#faf5ff",
+                    label="Update each LM's terminal state\nupdate_terminal_condition()\nObject matches also require a pose."];
+    }
+
+    criterion [shape=diamond, style=filled, fillcolor="#e0f2fe",
+               label="Match criterion satisfied?\nAnyLMsMatch: at least count LMs\nNamedLMsMatch: all named LMs"];
+    no_match [fillcolor="#ffedd5", label="Matching termination reached\nAll LMs: no_match\nReturn True"];
+    match [fillcolor="#dcfce7", label="Matching termination reached\nConfigured criterion satisfied\nReturn True"];
+    next_step [fillcolor="#f1f5f9", label="Continue matching\nReturn False"];
+
+    start -> all_no_match [weight=10];
+    all_no_match -> no_match [label="yes"];
+    all_no_match -> minimum [label="no", weight=10];
+    minimum -> next_step [label="no"];
+    minimum -> update_lms [label="yes", weight=10];
+    update_lms -> criterion [weight=10];
+    criterion -> match [label="yes", weight=10];
+    criterion -> next_step [label="no"];
+
+    limits [style="rounded,dashed,filled", fillcolor="#fff7ed",
+            label="Separate experiment control\nRecognition policy / step limits"];
+    time_out [style="rounded,dashed,filled", fillcolor="#fff7ed",
+              label="Timeout handling"];
+    limits -> time_out [style=dashed, label="limit reached"];
+    { rank=same; start; limits; }
+}
