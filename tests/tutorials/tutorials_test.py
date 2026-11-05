@@ -52,8 +52,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_train",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy=null",
-                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
+                    "experiment.config.recognition_strategy=null",
+                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.Any, strategies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -71,8 +71,8 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -87,8 +87,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_unsupervised",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_train_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_train_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -120,8 +120,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/dist_agent_5lm_2obj_eval",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -136,7 +136,7 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/omniglot_training",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
+                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.Any, strategies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))
@@ -152,8 +152,8 @@ class TutorialsTest(TestCase):
                     f"experiment.config.model_name_or_path={inference_output_dir}/pretrained/",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -171,8 +171,8 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                     "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )
