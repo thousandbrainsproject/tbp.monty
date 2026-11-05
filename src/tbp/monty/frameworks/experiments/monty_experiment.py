@@ -32,7 +32,7 @@ from tbp.monty.experiment.environment import (
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.recognition_strategy import (
     MontyIsDone,
-    RecognitionCounter,
+    RecognitionContext,
     RecognitionStrategy,
 )
 from tbp.monty.frameworks.actions.actions import Action
@@ -516,7 +516,7 @@ class MontyExperiment:
         Returns:
             The number of total steps taken in the episode.
         """
-        count = RecognitionCounter(mode=self.experiment_mode)
+        count = RecognitionContext(mode=self.experiment_mode)
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
         while not self._recognition_complete(count):
@@ -533,7 +533,7 @@ class MontyExperiment:
             logger.info("Episode ran %d steps.", count.step)
         return count.step
 
-    def _recognition_complete(self, count: RecognitionCounter) -> bool:
+    def _recognition_complete(self, count: RecognitionContext) -> bool:
         result = self._recognition_strategy(self.model, count)
         if result.start_exploring:
             self.model.switch_to_exploratory_step()

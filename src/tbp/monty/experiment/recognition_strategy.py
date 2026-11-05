@@ -29,7 +29,7 @@ __all__ = [
     "MontyIsDone",
     "NaiveScan",
     "ObjectRecognition",
-    "RecognitionCounter",
+    "RecognitionContext",
     "RecognitionResult",
     "RecognitionStrategy",
     "StepLimit",
@@ -40,7 +40,7 @@ telemeter = telemetry.getTelemeter(__name__)
 
 
 @dataclass
-class RecognitionCounter:
+class RecognitionContext:
     """Experiment counters and limits."""
 
     step: int = 0
@@ -79,13 +79,13 @@ class RecognitionStrategy(Protocol):
     """
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self, model: MontyBase, ctx: RecognitionContext
     ) -> RecognitionResult:
         """Apply this strategy to produce a Recognition Result from per-LM status.
 
         Args:
             model: The Monty model to be queried.
-            count: The Experiment counters and limits.
+            ctx: The Experiment counters and limits.
 
         Returns:
             An aggregate Recognition Result based on this strategy.
@@ -99,7 +99,7 @@ class MontyIsDone(RecognitionStrategy):
     def __call__(
         self: Self,
         model: MontyBase,
-        count: RecognitionCounter,  # noqa: ARG002
+        ctx: RecognitionContext,  # noqa: ARG002
     ) -> RecognitionResult:
         is_done = model.is_done
         if is_done:
@@ -160,24 +160,24 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
     def __call__(
         self: Self,
         model: MontyBase,
-        count: RecognitionCounter,
+        ctx: RecognitionContext,
     ) -> RecognitionResult:
-        wrapped = self._wrapped(model, count)
+        wrapped = self._wrapped(model, ctx)
         if model.is_done:
             result = RecognitionResult(
                 is_done=True,
                 time_out_lms=wrapped.time_out_lms,
                 start_exploring=wrapped.start_exploring,
             )
-        elif count.step >= self._max_total_steps:
+        elif ctx.step >= self._max_total_steps:
             result = RecognitionResult(
                 is_done=True,
                 time_out_lms=True,
                 start_exploring=wrapped.start_exploring,
             )
         elif (
-            count.mode is ExperimentMode.EVAL
-            and count.matching_steps < self._min_eval_steps
+            ctx.mode is ExperimentMode.EVAL
+            and ctx.matching_steps < self._min_eval_steps
         ):
             result = RecognitionResult(
                 is_done=False,
@@ -192,8 +192,8 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
                 "MinEvalMaxTotalSteps is done, "
                 "with model.is_done=%s step=%d matching_steps=%d",
                 model.is_done,
-                count.step,
-                count.matching_steps,
+                ctx.step,
+                ctx.matching_steps,
             )
             lms = {
                 str(lm.learning_module_id): lm.recognition_status
@@ -207,7 +207,7 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
                         is_exploring=model.is_exploring,
                         lms=lms,
                     ),
-                    count=count,
+                    ctx=ctx,
                     result=result,
                 )
             )
@@ -237,11 +237,11 @@ class MaxTotalSteps(RecognitionStrategy):
     def __call__(
         self: Self,
         model: MontyBase,  # noqa: ARG002
-        count: RecognitionCounter,
+        ctx: RecognitionContext,
     ) -> RecognitionResult:
-        is_done = count.step >= self._max_total_steps
+        is_done = ctx.step >= self._max_total_steps
         if is_done:
-            logger.info("MaxTotalSteps is done, with step=%d", count.step)
+            logger.info("MaxTotalSteps is done, with step=%d", ctx.step)
         return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
@@ -276,11 +276,11 @@ class MaximumSteps(RecognitionStrategy):
     def __call__(
         self: Self,
         model: MontyBase,
-        count: RecognitionCounter,
+        ctx: RecognitionContext,
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
-            if count.mode is ExperimentMode.TRAIN
+            if ctx.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
         is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
@@ -355,23 +355,23 @@ class StepLimit(RecognitionStrategy):
         self._max_eval_steps = max_eval_steps
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self, model: MontyBase, ctx: RecognitionContext
     ) -> RecognitionResult:
         if model.is_exploring:
-            is_done = count.exploring_steps >= self._num_exploring_steps
+            is_done = ctx.exploring_steps >= self._num_exploring_steps
             result = RecognitionResult(
                 is_done=is_done,
                 time_out_lms=is_done,
             )
-        elif count.mode is ExperimentMode.TRAIN:
-            is_done = count.matching_steps >= self._max_train_steps
+        elif ctx.mode is ExperimentMode.TRAIN:
+            is_done = ctx.matching_steps >= self._max_train_steps
             result = RecognitionResult(
                 is_done=is_done,
                 time_out_lms=is_done,
-                start_exploring=(count.matching_steps >= self._min_train_steps),
+                start_exploring=(ctx.matching_steps >= self._min_train_steps),
             )
-        elif count.mode is ExperimentMode.EVAL:
-            is_done = count.matching_steps >= self._max_eval_steps
+        elif ctx.mode is ExperimentMode.EVAL:
+            is_done = ctx.matching_steps >= self._max_eval_steps
             result = RecognitionResult(
                 is_done=is_done,
                 time_out_lms=is_done,
@@ -382,8 +382,8 @@ class StepLimit(RecognitionStrategy):
         if result.is_done:
             logger.info(
                 "StepLimit is done, with matching_steps=%d exploring_steps=%d",
-                count.matching_steps,
-                count.exploring_steps,
+                ctx.matching_steps,
+                ctx.exploring_steps,
             )
 
         return result
@@ -395,7 +395,7 @@ class MatchCriteria(RecognitionStrategy):
     def __call__(
         self: Self,
         model: MontyBase,
-        count: RecognitionCounter,  # noqa: ARG002
+        ctx: RecognitionContext,  # noqa: ARG002
     ) -> RecognitionResult:
         terminal_states: dict[str, str | None] = {
             lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
@@ -435,7 +435,7 @@ class MinimumLMs(RecognitionStrategy):
     def __call__(
         self: Self,
         model: MontyBase,
-        count: RecognitionCounter,  # noqa: ARG002
+        ctx: RecognitionContext,  # noqa: ARG002
     ) -> RecognitionResult:
         num_matched = sum(
             1
@@ -476,11 +476,11 @@ class NaiveScan(RecognitionStrategy):
     def __call__(
         self: Self,
         model: MontyBase,  # noqa: ARG002
-        count: RecognitionCounter,
+        ctx: RecognitionContext,
     ) -> RecognitionResult:
-        is_done = count.step >= self._step_limit
+        is_done = ctx.step >= self._step_limit
         if is_done:
-            logger.info("NaiveScan is done, with step=%d", count.step)
+            logger.info("NaiveScan is done, with step=%d", ctx.step)
         return RecognitionResult(is_done)
 
 
@@ -489,7 +489,7 @@ class ObjectRecognition(RecognitionStrategy):
 
     Terminal conditions include:
     - `model.matching_steps >= {max_train_steps | max_eval_steps}`
-    - `count.step >= max_total_steps`
+    - `ctx.step >= max_total_steps`
     - `model.is_done`
     """
 
@@ -530,11 +530,11 @@ class ObjectRecognition(RecognitionStrategy):
         self._max_total_steps = max_total_steps
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self, model: MontyBase, ctx: RecognitionContext
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
-            if count.mode is ExperimentMode.TRAIN
+            if ctx.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
         if (not model.is_exploring) and (model.matching_steps >= max_steps):
@@ -545,9 +545,9 @@ class ObjectRecognition(RecognitionStrategy):
                 model.is_exploring,
                 model.matching_steps,
             )
-        elif count.step >= self._max_total_steps:
+        elif ctx.step >= self._max_total_steps:
             result = RecognitionResult(is_done=True, time_out_lms=True)
-            logger.info("ObjectRecognition is done, with step=%d", count.step)
+            logger.info("ObjectRecognition is done, with step=%d", ctx.step)
         elif model.is_done:
             result = RecognitionResult(is_done=True)
             logger.info("ObjectRecognition is done, with model.is_done")
@@ -580,11 +580,11 @@ class AnyStrategy(RecognitionStrategy):
         self._policies = strategies
 
     def __call__(
-        self: Self, model: MontyBase, count: RecognitionCounter
+        self: Self, model: MontyBase, ctx: RecognitionContext
     ) -> RecognitionResult:
         result = RecognitionResult()
         for strategy in self._policies:
-            rr = strategy(model, count)
+            rr = strategy(model, ctx)
             result = RecognitionResult(
                 is_done=result.is_done or rr.is_done,
                 time_out_lms=result.time_out_lms or rr.time_out_lms,
