@@ -12,10 +12,9 @@ from __future__ import annotations
 import copy
 import dataclasses
 import importlib
+from collections.abc import Callable
 from inspect import Parameter, signature
-from typing import Any, Callable, ClassVar, Protocol
-
-from typing_extensions import TypeIs
+from typing import Any, ClassVar, Protocol, TypeIs
 
 
 class Dataclass(Protocol):

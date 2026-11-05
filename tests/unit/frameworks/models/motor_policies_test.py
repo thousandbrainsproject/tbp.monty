@@ -202,7 +202,7 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
             )
             loaded = PredefinedPolicy.read_action_file(actions_file)
             self.assertEqual(len(loaded), len(expected))
-            for loaded_action, expected_action in zip(loaded, expected):
+            for loaded_action, expected_action in zip(loaded, expected, strict=True):
                 self.assertEqual(dict(loaded_action), dict(expected_action))
 
     def test_cycles_continuously(self) -> None:

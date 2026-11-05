@@ -12,7 +12,7 @@ import logging
 import shutil
 import tempfile
 import unittest
-from typing import Mapping
+from collections.abc import Mapping
 
 import hydra
 from omegaconf import OmegaConf

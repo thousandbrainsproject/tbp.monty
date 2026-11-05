@@ -9,11 +9,11 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Sequence, TypedDict, cast
+from collections.abc import Sequence
+from typing import NotRequired, TypedDict, cast
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import NotRequired
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
