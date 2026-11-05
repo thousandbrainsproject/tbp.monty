@@ -204,7 +204,7 @@ ignore = [
     "FURB110", # FURB110: Replace ternary `if` expression with `or` operator
     # Hydra dies when we use these fixes as it introspects the types at runtime
     # TODO: Change these to use lazy imports on Python 3.15
-    "TC003", #TC003: Move standard library import into a type-checking block
+    "TC003", # TC003: Move standard library import into a type-checking block
     # End of deliberately ignored rules
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings
