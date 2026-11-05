@@ -79,13 +79,13 @@ class RecognitionStrategy(Protocol):
     """
 
     def __call__(
-        self: Self, model: MontyBase, ctx: RecognitionContext
+        self: Self, ctx: RecognitionContext, model: MontyBase
     ) -> RecognitionResult:
         """Apply this strategy to produce a Recognition Result from per-LM status.
 
         Args:
-            model: The Monty model to be queried.
             ctx: The Experiment counters and limits.
+            model: The Monty model to be queried.
 
         Returns:
             An aggregate Recognition Result based on this strategy.
@@ -98,8 +98,8 @@ class MontyIsDone(RecognitionStrategy):
 
     def __call__(
         self: Self,
-        model: MontyBase,
         ctx: RecognitionContext,  # noqa: ARG002
+        model: MontyBase,
     ) -> RecognitionResult:
         is_done = model.is_done
         if is_done:
@@ -159,10 +159,10 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
 
     def __call__(
         self: Self,
-        model: MontyBase,
         ctx: RecognitionContext,
+        model: MontyBase,
     ) -> RecognitionResult:
-        wrapped = self._wrapped(model, ctx)
+        wrapped = self._wrapped(ctx, model)
         if model.is_done:
             result = RecognitionResult(
                 is_done=True,
@@ -236,8 +236,8 @@ class MaxTotalSteps(RecognitionStrategy):
 
     def __call__(
         self: Self,
-        model: MontyBase,  # noqa: ARG002
         ctx: RecognitionContext,
+        model: MontyBase,  # noqa: ARG002
     ) -> RecognitionResult:
         is_done = ctx.step >= self._max_total_steps
         if is_done:
@@ -275,8 +275,8 @@ class MaximumSteps(RecognitionStrategy):
 
     def __call__(
         self: Self,
-        model: MontyBase,
         ctx: RecognitionContext,
+        model: MontyBase,
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
@@ -355,7 +355,7 @@ class StepLimit(RecognitionStrategy):
         self._max_eval_steps = max_eval_steps
 
     def __call__(
-        self: Self, model: MontyBase, ctx: RecognitionContext
+        self: Self, ctx: RecognitionContext, model: MontyBase
     ) -> RecognitionResult:
         if model.is_exploring:
             is_done = ctx.exploring_steps >= self._num_exploring_steps
@@ -394,8 +394,8 @@ class MatchCriteria(RecognitionStrategy):
 
     def __call__(
         self: Self,
-        model: MontyBase,
         ctx: RecognitionContext,  # noqa: ARG002
+        model: MontyBase,
     ) -> RecognitionResult:
         terminal_states: dict[str, str | None] = {
             lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
@@ -434,8 +434,8 @@ class MinimumLMs(RecognitionStrategy):
 
     def __call__(
         self: Self,
-        model: MontyBase,
         ctx: RecognitionContext,  # noqa: ARG002
+        model: MontyBase,
     ) -> RecognitionResult:
         num_matched = sum(
             1
@@ -475,8 +475,8 @@ class NaiveScan(RecognitionStrategy):
 
     def __call__(
         self: Self,
-        model: MontyBase,  # noqa: ARG002
         ctx: RecognitionContext,
+        model: MontyBase,  # noqa: ARG002
     ) -> RecognitionResult:
         is_done = ctx.step >= self._step_limit
         if is_done:
@@ -530,7 +530,7 @@ class ObjectRecognition(RecognitionStrategy):
         self._max_total_steps = max_total_steps
 
     def __call__(
-        self: Self, model: MontyBase, ctx: RecognitionContext
+        self: Self, ctx: RecognitionContext, model: MontyBase
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
@@ -580,11 +580,11 @@ class AnyStrategy(RecognitionStrategy):
         self._policies = strategies
 
     def __call__(
-        self: Self, model: MontyBase, ctx: RecognitionContext
+        self: Self, ctx: RecognitionContext, model: MontyBase
     ) -> RecognitionResult:
         result = RecognitionResult()
         for strategy in self._policies:
-            rr = strategy(model, ctx)
+            rr = strategy(ctx, model)
             result = RecognitionResult(
                 is_done=result.is_done or rr.is_done,
                 time_out_lms=result.time_out_lms or rr.time_out_lms,

@@ -516,25 +516,25 @@ class MontyExperiment:
         Returns:
             The number of total steps taken in the episode.
         """
-        count = RecognitionContext(mode=self.experiment_mode)
+        recognition_ctx = RecognitionContext(mode=self.experiment_mode)
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
-        while not self._recognition_complete(count):
-            actions = self.run_step(ctx, count.step, actions)
-            count.step += 1
+        while not self._recognition_complete(recognition_ctx):
+            actions = self.run_step(ctx, recognition_ctx.step, actions)
+            recognition_ctx.step += 1
             if self._check_if_any_lms_updated():
                 if self.model.is_exploring:
-                    count.exploring_steps += 1
+                    recognition_ctx.exploring_steps += 1
                 else:
-                    count.matching_steps += 1
-        if count.step < 3:
-            logger.warning("Episode only ran %d steps!", count.step)
+                    recognition_ctx.matching_steps += 1
+        if recognition_ctx.step < 3:
+            logger.warning("Episode only ran %d steps!", recognition_ctx.step)
         else:
-            logger.info("Episode ran %d steps.", count.step)
-        return count.step
+            logger.info("Episode ran %d steps.", recognition_ctx.step)
+        return recognition_ctx.step
 
-    def _recognition_complete(self, count: RecognitionContext) -> bool:
-        result = self._recognition_strategy(self.model, count)
+    def _recognition_complete(self, ctx: RecognitionContext) -> bool:
+        result = self._recognition_strategy(ctx, self.model)
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
         if result.time_out_lms:

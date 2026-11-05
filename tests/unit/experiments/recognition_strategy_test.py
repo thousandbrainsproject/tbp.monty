@@ -96,7 +96,7 @@ class MontyIsDoneTest(unittest.TestCase):
         model = _model_is_done(is_done)
         strategy = MontyIsDone()
         ctx = RecognitionContext(step)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, is_done)
 
 
@@ -159,8 +159,8 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        result = strategy(model, ctx)
-        wrapped.assert_called_once_with(model, ctx)
+        result = strategy(ctx, model)
+        wrapped.assert_called_once_with(ctx, model)
         is_done = matching_steps >= min_eval_steps
         self.assertEqual(
             result, RecognitionResult(is_done, time_out_lms, start_exploring)
@@ -195,8 +195,8 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        result = strategy(model, ctx)
-        wrapped.assert_called_once_with(model, ctx)
+        result = strategy(ctx, model)
+        wrapped.assert_called_once_with(ctx, model)
         is_done = step >= max_total_steps
         self.assertEqual(result, RecognitionResult(is_done, is_done, start_exploring))
 
@@ -230,8 +230,8 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        result = strategy(model, ctx)
-        wrapped.assert_called_once_with(model, ctx)
+        result = strategy(ctx, model)
+        wrapped.assert_called_once_with(ctx, model)
         self.assertEqual(
             result,
             RecognitionResult(
@@ -260,7 +260,7 @@ class MaxTotalStepsTest(unittest.TestCase):
         model = MagicMock()
         strategy = MaxTotalSteps(max_total_steps)
         ctx = RecognitionContext(step)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = step >= max_total_steps
         self.assertEqual(result.is_done, is_done)
         model.assert_not_called()
@@ -298,7 +298,7 @@ class MaximumStepsTest(unittest.TestCase):
         )
         strategy = MaximumSteps(max_steps, max_steps)
         ctx = RecognitionContext()
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
 
@@ -318,7 +318,7 @@ class MaximumStepsTest(unittest.TestCase):
         )
         strategy = MaximumSteps(max_steps, max_steps)
         ctx = RecognitionContext()
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertFalse(result.is_done)
 
     @given(
@@ -340,7 +340,7 @@ class MaximumStepsTest(unittest.TestCase):
         )
         strategy = MaximumSteps(max_train_steps, max_eval_steps)
         ctx = RecognitionContext(mode=mode)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
 
@@ -388,7 +388,7 @@ class StepLimitTest(unittest.TestCase):
         model = _model_with_step_type("matching_step")
         strategy = StepLimit(max_train_steps=max_steps, max_eval_steps=max_steps)
         ctx = RecognitionContext(matching_steps=matching_steps, mode=mode)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -413,7 +413,7 @@ class StepLimitTest(unittest.TestCase):
             max_eval_steps=max_eval_steps,
         )
         ctx = RecognitionContext(matching_steps=matching_steps, mode=mode)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -432,7 +432,7 @@ class StepLimitTest(unittest.TestCase):
         ctx = RecognitionContext(
             exploring_steps=exploring_steps, mode=ExperimentMode.TRAIN
         )
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = exploring_steps >= num_exploring_steps
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -456,7 +456,7 @@ class StepLimitTest(unittest.TestCase):
             matching_steps=matching_steps,
             mode=ExperimentMode.TRAIN,
         )
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertTrue(result.start_exploring)
         is_done = matching_steps >= max_train_steps
         self.assertEqual(result.is_done, is_done)
@@ -473,7 +473,7 @@ class MatchCriteriaTest(unittest.TestCase):
         model.learning_modules = []
         strategy = MatchCriteria()
         ctx = RecognitionContext()
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         model._match_criterion.assert_called_once()
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -501,7 +501,7 @@ class MinimumLMsTest(unittest.TestCase):
         model = _model_with_conclusions(conclusions)
         strategy = MinimumLMs(min_lms)
         ctx = RecognitionContext()
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, num_concluded >= min_lms)
 
 
@@ -518,7 +518,7 @@ class NaiveScanTest(unittest.TestCase):
         model = _model_is_done(is_done=False)
         strategy = NaiveScan(fixed_amount=5)
         ctx = RecognitionContext(step)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = step >= 307
         self.assertEqual(result.is_done, is_done)
 
@@ -527,7 +527,7 @@ class NaiveScanTest(unittest.TestCase):
         model = _model_is_done(is_done=False)
         strategy = NaiveScan(fixed_amount)
         ctx = RecognitionContext(step=10000)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
 
 
@@ -574,7 +574,7 @@ class ObjectRecognitionTest(unittest.TestCase):
         )
         strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
         ctx = RecognitionContext(step)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
 
@@ -591,11 +591,11 @@ class ObjectRecognitionTest(unittest.TestCase):
         at_limit = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=max_steps
         )
-        self.assertTrue(strategy(at_limit, RecognitionContext(mode=mode)).is_done)
+        self.assertTrue(strategy(RecognitionContext(mode=mode), at_limit).is_done)
         before_limit = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=max_steps - 1
         )
-        self.assertFalse(strategy(before_limit, RecognitionContext(mode=mode)).is_done)
+        self.assertFalse(strategy(RecognitionContext(mode=mode), before_limit).is_done)
 
     @given(
         max_total_steps=st.integers(min_value=1),
@@ -616,7 +616,7 @@ class ObjectRecognitionTest(unittest.TestCase):
         )
         strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
         ctx = RecognitionContext(max_total_steps + extra)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
 
     @given(
@@ -639,7 +639,7 @@ class ObjectRecognitionTest(unittest.TestCase):
         )
         strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
         ctx = RecognitionContext(step)
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, is_done)
 
 
@@ -671,7 +671,7 @@ class AnyStrategyTest(unittest.TestCase):
         model = MagicMock()
         strategy = AnyStrategy(strategies)
         ctx = RecognitionContext()
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, done_index is not None)
         num_called = len(strategies) if done_index is None else done_index + 1
         for called in strategies[:num_called]:
@@ -702,7 +702,7 @@ class AnyStrategyTest(unittest.TestCase):
         ctx = RecognitionContext()
 
         strategy = AnyStrategy([default_result])
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertFalse(result.is_done)
         self.assertFalse(result.time_out_lms)
         self.assertFalse(result.start_exploring)
@@ -715,7 +715,7 @@ class AnyStrategyTest(unittest.TestCase):
                 default_result,
             ]
         )
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
         self.assertFalse(result.time_out_lms)
         self.assertTrue(result.start_exploring)
@@ -728,7 +728,7 @@ class AnyStrategyTest(unittest.TestCase):
                 is_done_time_out_lms_result,
             ]
         )
-        result = strategy(model, ctx)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
         self.assertTrue(result.time_out_lms)
         self.assertTrue(result.start_exploring)
