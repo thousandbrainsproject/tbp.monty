@@ -10,7 +10,8 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Collection, Dict, Protocol, Sequence
+from collections.abc import Collection, Sequence
+from typing import Any, Protocol
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
@@ -43,13 +44,13 @@ __all__ = [
 ]
 
 
-class AgentObservations(Dict[SensorID, SensorObservation]):
+class AgentObservations(dict[SensorID, SensorObservation]):
     """Observations from an agent."""
 
     pass
 
 
-class Observations(Dict[AgentID, AgentObservations]):
+class Observations(dict[AgentID, AgentObservations]):
     """Observations from the environment."""
 
     pass

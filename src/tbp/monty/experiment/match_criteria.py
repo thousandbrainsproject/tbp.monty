@@ -8,9 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Mapping, Protocol
-
-from typing_extensions import Self
+from collections.abc import Mapping
+from typing import Protocol, Self
 
 __all__ = ["AnyLMsMatch", "MatchCriterion", "NamedLMsMatch"]
 

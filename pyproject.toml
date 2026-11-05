@@ -165,7 +165,7 @@ plugins = ["pydantic.mypy"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py313"
 
 [tool.ruff.format]
 indent-style = "space"
@@ -202,6 +202,9 @@ ignore = [
     "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
     "PLR1711", # PLR1711: Useless `return` statement at end of function
     "FURB110", # FURB110: Replace ternary `if` expression with `or` operator
+    # Hydra dies when we use these fixes as it introspects the types at runtime
+    # TODO: Change these to use lazy imports on Python 3.15
+    "TC003", # TC003: Move standard library import into a type-checking block
     # End of deliberately ignored rules
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings

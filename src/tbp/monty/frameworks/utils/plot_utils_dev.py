@@ -14,8 +14,9 @@ files to segment what is imported.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence, cast
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np

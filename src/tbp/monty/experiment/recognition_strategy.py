@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol, Sequence
-
-from typing_extensions import Self
+from typing import Protocol, Self
 
 from tbp.monty import telemetry
 from tbp.monty.frameworks.experiments.mode import ExperimentMode

@@ -14,13 +14,12 @@ import logging
 import logging.config
 import pprint
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal, Self, cast
 
 import hydra
 import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
-from typing_extensions import Self
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
