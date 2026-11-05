@@ -5,7 +5,7 @@ match_criterion:
   count: 3
 recognition_strategy:
   _target_: tbp.monty.experiment.recognition_strategy.AnyStrategy
-  policies:
+  strategies:
   - _target_: tbp.monty.experiment.recognition_strategy.MontyIsDone
   - _target_: tbp.monty.experiment.recognition_strategy.NaiveScan
     fixed_amount: 5
