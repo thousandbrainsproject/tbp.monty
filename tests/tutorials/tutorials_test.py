@@ -53,7 +53,7 @@ class TutorialsTest(TestCase):
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                     "experiment.config.recognition_strategy=null",
-                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.AnyStrategy, policies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
+                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.AnyStrategy, strategies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -136,7 +136,7 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/omniglot_training",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.AnyStrategy, policies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
+                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.AnyStrategy, strategies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))
