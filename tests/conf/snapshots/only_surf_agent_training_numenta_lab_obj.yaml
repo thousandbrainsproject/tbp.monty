@@ -153,7 +153,7 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 1
     recognition_strategy:
-      _target_: tbp.monty.experiment.recognition_strategy.AnyStrategy
+      _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:
       - _target_: tbp.monty.experiment.recognition_strategy.StepLimit
         min_train_steps: 3

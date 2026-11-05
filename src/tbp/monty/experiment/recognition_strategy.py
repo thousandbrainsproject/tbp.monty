@@ -20,7 +20,7 @@ from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = [
-    "AnyStrategy",
+    "Any",
     "MaxTotalSteps",
     "MaximumSteps",
     "MinEvalMaxTotalSteps",
@@ -555,7 +555,7 @@ class ObjectRecognition(RecognitionStrategy):
         return result
 
 
-class AnyStrategy(RecognitionStrategy):
+class Any(RecognitionStrategy):
     """Combine multiple terminal conditions for Experiments.
 
     Terminal condition is reached if _any_ `RecognitionStrategy` says so.
@@ -592,5 +592,5 @@ class AnyStrategy(RecognitionStrategy):
             if result.is_done:
                 break
         if result.is_done:
-            logger.info("AnyStrategy is done, with %s", result)
+            logger.info("Any is done, with %s", result)
         return result

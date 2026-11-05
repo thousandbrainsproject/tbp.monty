@@ -8,7 +8,7 @@ recognition_strategy:
   min_eval_steps: 20
   max_total_steps: 5000
   wrapped:
-    _target_: tbp.monty.experiment.recognition_strategy.AnyStrategy
+    _target_: tbp.monty.experiment.recognition_strategy.Any
     strategies:
     - _target_: tbp.monty.experiment.recognition_strategy.StepLimit
       min_train_steps: 3

@@ -19,7 +19,7 @@ from tbp.monty.experiment.recognition_status import (
     RecognitionStatus,
 )
 from tbp.monty.experiment.recognition_strategy import (
-    AnyStrategy,
+    Any,
     MatchCriteria,
     MaximumSteps,
     MaxTotalSteps,
@@ -658,10 +658,10 @@ def strategies_with_done_index(draw: st.DrawFn) -> tuple[list[MagicMock], int | 
     return (strategies, done_index)
 
 
-class AnyStrategyTest(unittest.TestCase):
+class AnyTest(unittest.TestCase):
     def test_raises_value_error_if_strategies_are_empty(self) -> None:
         with self.assertRaises(ValueError):
-            AnyStrategy([])
+            Any([])
 
     @given(strategies_and_done_index=strategies_with_done_index())
     def test_stops_at_first_strategy_that_is_done(
@@ -669,7 +669,7 @@ class AnyStrategyTest(unittest.TestCase):
     ) -> None:
         (strategies, done_index) = strategies_and_done_index
         model = MagicMock()
-        strategy = AnyStrategy(strategies)
+        strategy = Any(strategies)
         ctx = RecognitionContext()
         result = strategy(ctx, model)
         self.assertEqual(result.is_done, done_index is not None)
@@ -701,13 +701,13 @@ class AnyStrategyTest(unittest.TestCase):
         model = MagicMock()
         ctx = RecognitionContext()
 
-        strategy = AnyStrategy([default_result])
+        strategy = Any([default_result])
         result = strategy(ctx, model)
         self.assertFalse(result.is_done)
         self.assertFalse(result.time_out_lms)
         self.assertFalse(result.start_exploring)
 
-        strategy = AnyStrategy(
+        strategy = Any(
             [
                 start_exploring_result,
                 is_done_result,
@@ -720,7 +720,7 @@ class AnyStrategyTest(unittest.TestCase):
         self.assertFalse(result.time_out_lms)
         self.assertTrue(result.start_exploring)
 
-        strategy = AnyStrategy(
+        strategy = Any(
             [
                 default_result,
                 time_out_lms_result,
