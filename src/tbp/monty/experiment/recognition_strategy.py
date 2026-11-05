@@ -21,7 +21,7 @@ from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = [
-    "AnyPolicy",
+    "AnyStrategy",
     "MaxTotalSteps",
     "MaximumSteps",
     "MinEvalMaxTotalSteps",
@@ -30,8 +30,8 @@ __all__ = [
     "NaiveScan",
     "ObjectRecognition",
     "RecognitionCounter",
-    "RecognitionPolicy",
     "RecognitionResult",
+    "RecognitionStrategy",
     "StepLimit",
 ]
 
@@ -53,12 +53,12 @@ class RecognitionCounter:
     """Count of exploring steps taken."""
 
     mode: ExperimentMode = ExperimentMode.EVAL
-    """The stepping mode (traning or evaluation)."""
+    """The stepping mode (training or evaluation)."""
 
 
 @dataclass
 class RecognitionResult:
-    """Aggregated result from the Recognition Policy."""
+    """Aggregated result from the RecognitionStrategy."""
 
     is_done: bool = False
     """A terminal condition has been reached."""
@@ -70,31 +70,31 @@ class RecognitionResult:
     """Request for transition to 'exploring' mode."""
 
 
-class RecognitionPolicy(Protocol):
+class RecognitionStrategy(Protocol):
     """Decides what constitutes "recognition" in an Experiment.
 
     Each Learning Module determines its own Recognition Status independently of the
-    others. The Recognition Policy turns the per-LM status into the single decision
+    others. The RecognitionStrategy turns the per-LM status into the single decision
     of whether Monty has recognized the object.
     """
 
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
-        """Apply this policy to produce a Recognition Result from per-LM status.
+        """Apply this strategy to produce a Recognition Result from per-LM status.
 
         Args:
             model: The Monty model to be queried.
             count: The Experiment counters and limits.
 
         Returns:
-            An aggregate Recognition Result based on this policy.
+            An aggregate Recognition Result based on this strategy.
         """
         ...
 
 
-class MontyIsDone(RecognitionPolicy):
-    """Legacy (default) policy."""
+class MontyIsDone(RecognitionStrategy):
+    """Legacy (default) recognition strategy."""
 
     def __call__(
         self: Self,
@@ -107,17 +107,17 @@ class MontyIsDone(RecognitionPolicy):
         return RecognitionResult(is_done)
 
 
-class MinEvalMaxTotalSteps(RecognitionPolicy):
-    """Is not done while `matching_steps < min_eval_steps`.
+class MinEvalMaxTotalSteps(RecognitionStrategy):
+    """Recognition strategy that is not done while `matching_steps < min_eval_steps`.
 
-    The primary purpose of this policy is to return `is_done = False`
+    The primary purpose of this strategy is to return `is_done = False`
     until at least `min_eval_steps` have been taken. It includes
     a `step >= max_total_steps` check to return `is_done = True` when
     `matching_steps` fails to increment sufficiently over `max_total_steps` steps.
     """
 
-    _wrapped: RecognitionPolicy
-    """The policy _wrapped_ and possibly overridden by this policy."""
+    _wrapped: RecognitionStrategy
+    """The strategy _wrapped_ and possibly overridden by this strategy."""
 
     _min_eval_steps: int
     """The minimum steps to take in matching mode."""
@@ -127,14 +127,14 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
 
     def __init__(
         self: Self,
-        wrapped: RecognitionPolicy,
+        wrapped: RecognitionStrategy,
         min_eval_steps: int = 0,
         max_total_steps: int = 1,
     ) -> None:
-        """Initialize the policy.
+        """Initialize the strategy.
 
         Args:
-            wrapped: The policy _wrapped_ and possibly overridden by this policy.
+            wrapped: The strategy _wrapped_ and possibly overridden by this strategy.
             min_eval_steps: The minimum steps to take in matching mode.
             max_total_steps: The maximum number of steps before forcing termination.
 
@@ -215,14 +215,14 @@ class MinEvalMaxTotalSteps(RecognitionPolicy):
         return result
 
 
-class MaxTotalSteps(RecognitionPolicy):
+class MaxTotalSteps(RecognitionStrategy):
     """`step >= max_total_steps`."""
 
     _max_total_steps: int
     """The maximum number of steps before terminating the episode."""
 
     def __init__(self: Self, max_total_steps: int) -> None:
-        """Initialize the policy.
+        """Initialize the strategy.
 
         Args:
             max_total_steps: The maximum number of steps before terminating the episode.
@@ -245,7 +245,7 @@ class MaxTotalSteps(RecognitionPolicy):
         return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
-class MaximumSteps(RecognitionPolicy):
+class MaximumSteps(RecognitionStrategy):
     """`model.matching_steps >= {max_train_steps | max_eval_steps}`."""
 
     _max_train_steps: int
@@ -255,7 +255,7 @@ class MaximumSteps(RecognitionPolicy):
     """The maximum steps to take in evaluation mode."""
 
     def __init__(self: Self, max_train_steps: int, max_eval_steps: int) -> None:
-        """Initialize the policy.
+        """Initialize the strategy.
 
         Args:
             max_train_steps: The maximum steps to take in training mode.
@@ -298,8 +298,8 @@ class MaximumSteps(RecognitionPolicy):
         return result
 
 
-class StepLimit(RecognitionPolicy):
-    """Check step counter limits.
+class StepLimit(RecognitionStrategy):
+    """Recognition strategy that checks step counter limits.
 
     Terminal conditions include:
     - `matching_steps >= {max_train_steps | max_eval_steps}`
@@ -325,7 +325,7 @@ class StepLimit(RecognitionPolicy):
         max_train_steps: int = 1,
         max_eval_steps: int = 1,
     ) -> None:
-        """Initialize the policy.
+        """Initialize the strategy.
 
         Args:
             min_train_steps: The minimum steps to take in training mode.
@@ -389,12 +389,8 @@ class StepLimit(RecognitionPolicy):
         return result
 
 
-class MatchCriteria(RecognitionPolicy):
+class MatchCriteria(RecognitionStrategy):
     """The `model.learning_modules` meet the configured `match_criteria`."""
-
-    def __init__(self: Self) -> None:
-        """Initialize the policy."""
-        pass
 
     def __call__(
         self: Self,
@@ -404,8 +400,8 @@ class MatchCriteria(RecognitionPolicy):
         terminal_states: dict[str, str | None] = {
             lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
         }
-        # TODO: Either configure the `match_criterion` on the policy itself,
-        #       or provide configurable policies for each criterion.
+        # TODO: Either configure the `match_criterion` on the strategy itself,
+        #       or provide configurable strategies for each criterion.
         is_done = model._match_criterion(terminal_states)
         if is_done:
             logger.info(
@@ -415,18 +411,18 @@ class MatchCriteria(RecognitionPolicy):
         return RecognitionResult(is_done=is_done, time_out_lms=is_done)
 
 
-class MinimumLMs(RecognitionPolicy):
+class MinimumLMs(RecognitionStrategy):
     """`min_lms` have reached a conclusion."""
 
     _min_lms: int
     """The minimum number of LMs that must reach a conclusion."""
 
     def __init__(self: Self, min_lms: int) -> None:
-        """Initialize the policy.
+        """Initialize the strategy.
 
         Args:
             min_lms: The number of Learning Modules that must reach a conclusion for
-                the policy to be satisfied.
+                the strategy to be satisfied.
 
         Raises:
             ValueError: If `min_lms` is not positive.
@@ -452,7 +448,7 @@ class MinimumLMs(RecognitionPolicy):
         return RecognitionResult(is_done)
 
 
-class NaiveScan(RecognitionPolicy):
+class NaiveScan(RecognitionStrategy):
     """`steps >= step_limit`, with `step_limit` derived from `fixed_amount`.
 
     The `step_limit` is the number of steps the Naive Scan motor policy takes
@@ -463,7 +459,7 @@ class NaiveScan(RecognitionPolicy):
     """The maximum number of steps before terminating the episode."""
 
     def __init__(self: Self, fixed_amount: int) -> None:
-        """Initialize the policy.
+        """Initialize the strategy.
 
         Args:
             fixed_amount: The Naive Scan step size.
@@ -488,7 +484,7 @@ class NaiveScan(RecognitionPolicy):
         return RecognitionResult(is_done)
 
 
-class ObjectRecognition(RecognitionPolicy):
+class ObjectRecognition(RecognitionStrategy):
     """Determine terminal conditions for object recognition experiments.
 
     Terminal conditions include:
@@ -509,7 +505,7 @@ class ObjectRecognition(RecognitionPolicy):
     def __init__(
         self: Self, max_train_steps: int, max_eval_steps: int, max_total_steps: int
     ) -> None:
-        """Initialize the policy.
+        """Initialize the strategy.
 
         Args:
             max_train_steps: The maximum steps to take in training mode.
@@ -560,35 +556,35 @@ class ObjectRecognition(RecognitionPolicy):
         return result
 
 
-class AnyPolicy(RecognitionPolicy):
+class AnyStrategy(RecognitionStrategy):
     """Combine multiple terminal conditions for Experiments.
 
-    Terminal condition is reached if _any_ `RecognitionPolicy` says so.
+    Terminal condition is reached if _any_ `RecognitionStrategy` says so.
     """
 
-    _policies: Sequence[RecognitionPolicy]
+    _policies: Sequence[RecognitionStrategy]
     """The policies to check (in order)."""
 
-    def __init__(self: Self, policies: Sequence[RecognitionPolicy]) -> None:
-        """Initialize the policy.
+    def __init__(self: Self, strategies: Sequence[RecognitionStrategy]) -> None:
+        """Initialize the strategy.
 
         Args:
-            policies: The policies to check (in order).
+            strategies: The strategies to check (in order).
 
         Raises:
-            ValueError: If `len(policies) < 1`.
+            ValueError: If `len(strategies) < 1`.
         """
-        if len(policies) < 1:
-            raise ValueError("no policies to check")
+        if len(strategies) < 1:
+            raise ValueError("no strategies to check")
 
-        self._policies = policies
+        self._policies = strategies
 
     def __call__(
         self: Self, model: MontyBase, count: RecognitionCounter
     ) -> RecognitionResult:
         result = RecognitionResult()
-        for policy in self._policies:
-            rr = policy(model, count)
+        for strategy in self._policies:
+            rr = strategy(model, count)
             result = RecognitionResult(
                 is_done=result.is_done or rr.is_done,
                 time_out_lms=result.time_out_lms or rr.time_out_lms,
@@ -597,5 +593,5 @@ class AnyPolicy(RecognitionPolicy):
             if result.is_done:
                 break
         if result.is_done:
-            logger.info("AnyPolicy is done, with %s", result)
+            logger.info("AnyStrategy is done, with %s", result)
         return result

@@ -3,14 +3,14 @@
 match_criterion:
   _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
   count: 1
-recognition_policy:
-  _target_: tbp.monty.experiment.recognition_policy.AnyPolicy
+recognition_strategy:
+  _target_: tbp.monty.experiment.recognition_strategy.AnyStrategy
   policies:
-  - _target_: tbp.monty.experiment.recognition_policy.StepLimit
+  - _target_: tbp.monty.experiment.recognition_strategy.StepLimit
     min_train_steps: 3
     num_exploring_steps: 1000
     max_train_steps: 1000
     max_eval_steps: 500
-  - _target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps
+  - _target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps
     max_total_steps: 6000
-  - _target_: tbp.monty.experiment.recognition_policy.MontyIsDone
+  - _target_: tbp.monty.experiment.recognition_strategy.MontyIsDone

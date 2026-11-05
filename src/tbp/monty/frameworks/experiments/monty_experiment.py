@@ -30,10 +30,10 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
-from tbp.monty.experiment.recognition_policy import (
+from tbp.monty.experiment.recognition_strategy import (
     MontyIsDone,
     RecognitionCounter,
-    RecognitionPolicy,
+    RecognitionStrategy,
 )
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.positioning_procedures import (
@@ -72,7 +72,7 @@ class MontyExperiment:
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
     _step_hook: StepHook
-    _recognition_policy: RecognitionPolicy
+    _recognition_strategy: RecognitionStrategy
 
     def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
@@ -119,7 +119,7 @@ class MontyExperiment:
         self._rng_seed_history: list[int] = []
 
         self._step_hook = config.pop("step_hook", NoOpStepHook())
-        self._recognition_policy = config.pop("recognition_policy", MontyIsDone())
+        self._recognition_strategy = config.pop("recognition_strategy", MontyIsDone())
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -534,7 +534,7 @@ class MontyExperiment:
         return count.step
 
     def _recognition_complete(self, count: RecognitionCounter) -> bool:
-        result = self._recognition_policy(self.model, count)
+        result = self._recognition_strategy(self.model, count)
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
         if result.time_out_lms:
