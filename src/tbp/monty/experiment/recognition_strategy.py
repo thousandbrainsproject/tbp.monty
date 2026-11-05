@@ -561,8 +561,8 @@ class AnyStrategy(RecognitionStrategy):
     Terminal condition is reached if _any_ `RecognitionStrategy` says so.
     """
 
-    _policies: Sequence[RecognitionStrategy]
-    """The policies to check (in order)."""
+    _strategies: Sequence[RecognitionStrategy]
+    """The strategies to check (in order)."""
 
     def __init__(self: Self, strategies: Sequence[RecognitionStrategy]) -> None:
         """Initialize the strategy.
@@ -576,13 +576,13 @@ class AnyStrategy(RecognitionStrategy):
         if len(strategies) < 1:
             raise ValueError("no strategies to check")
 
-        self._policies = strategies
+        self._strategies = strategies
 
     def __call__(
         self: Self, ctx: RecognitionContext, model: MontyBase
     ) -> RecognitionResult:
         result = RecognitionResult()
-        for strategy in self._policies:
+        for strategy in self._strategies:
             rr = strategy(ctx, model)
             result = RecognitionResult(
                 is_done=result.is_done or rr.is_done,
