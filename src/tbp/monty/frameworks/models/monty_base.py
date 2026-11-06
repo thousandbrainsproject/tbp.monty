@@ -112,8 +112,7 @@ class MontyBase(Monty):
         self.experiment_mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
         )
-        # Number of overall steps. Counts also steps where no LM update was performed.
-        self.episode_steps = 0
+
         # Number of steps in which at least 1 LM received information during exploration
         self.exploratory_steps = 0
         # Number of steps in which at least 1 LM was updated. It is not the same as each
@@ -214,7 +213,6 @@ class MontyBase(Monty):
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
         self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
-        self.episode_steps += 1
         # For each of the learning modules, update the list of processed
         # steps, and the stepwise target object
         for ii in range(len(self.learning_modules)):
@@ -541,13 +539,10 @@ class MontyBase(Monty):
         return self.step_type_count > self.min_steps
 
     def reset_episode_steps(self):
-        self.episode_steps = 0
         self.matching_steps = 0
         self.exploratory_steps = 0
 
     def update_step_counters(self):
-        self.episode_steps += 1
-
         if self.step_type == "matching_step":
             self.matching_steps += 1
             logger.info(f"--- Global Matching Step {self.matching_steps} ---")
@@ -559,9 +554,9 @@ class MontyBase(Monty):
         elif self.step_type == "exploratory_step":
             self.exploratory_steps += 1
 
-    def switch_to_matching_step(self):
+    def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"
-        logger.debug(f"Going into matching mode after {self.episode_steps} steps")
+        logger.debug("Going into matching mode")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
