@@ -112,7 +112,6 @@ class MontyBase(Monty):
         self.experiment_mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
         )
-        self.total_steps = 0
         # Number of overall steps. Counts also steps where no LM update was performed.
         self.episode_steps = 0
         # Number of steps in which at least 1 LM received information during exploration
@@ -215,7 +214,6 @@ class MontyBase(Monty):
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
         self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
-        self.total_steps += 1
         self.episode_steps += 1
         # For each of the learning modules, update the list of processed
         # steps, and the stepwise target object
@@ -548,7 +546,6 @@ class MontyBase(Monty):
         self.exploratory_steps = 0
 
     def update_step_counters(self):
-        self.total_steps += 1
         self.episode_steps += 1
 
         if self.step_type == "matching_step":
