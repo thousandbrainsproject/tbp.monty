@@ -25,7 +25,6 @@ from omegaconf import DictConfig
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.recognition_strategy import RecognitionContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
