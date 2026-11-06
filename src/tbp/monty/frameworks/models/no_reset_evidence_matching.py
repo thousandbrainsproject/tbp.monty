@@ -11,12 +11,12 @@ from __future__ import annotations
 import copy
 import logging
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
 from tbp.monty.cmp import Message, location_mean
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.models.evidence_matching.burst_sampling import (
     BurstSamplingHypothesesUpdater,
@@ -104,7 +104,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
 
     def fixme_set_ground_truth(
         self,
-        primary_target: dict[str, Any] | None = None,
+        primary_target: PrimaryTarget | None = None,
         semantic_id_to_label: dict[SemanticID, str] | None = None,
     ) -> None:
         if not self._super_set_ground_truth_called:
@@ -115,8 +115,8 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         self.primary_target = primary_target
         self.semantic_id_to_label = semantic_id_to_label
         for lm in self.learning_modules:
-            lm.primary_target = primary_target["object"]
-            lm.primary_target_rotation_quat = primary_target["quat_rotation"]
+            lm.primary_target = primary_target.object
+            lm.primary_target_rotation_quat = primary_target.quat_rotation
 
     def _reset_terminal_states(self):
         for lm in self.learning_modules:
