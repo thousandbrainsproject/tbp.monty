@@ -84,10 +84,7 @@ class _LiveViewStepHook:
         experiment._check_abort_request()
 
         if experiment.broadcaster:
-            if experiment.experiment_mode == ExperimentMode.TRAIN:
-                cumulative_step = experiment.total_train_steps + step
-            else:
-                cumulative_step = experiment.total_eval_steps + step
+            cumulative_step, _episode = experiment._calculate_cumulative_step(step)
             experiment.broadcaster.publish_state(
                 {"current_step": cumulative_step}
             )
@@ -412,19 +409,28 @@ class MontyExperimentWithLiveView(MontyExperiment):
     def _calculate_cumulative_step(self, step: int) -> tuple[int, int]:
         """Calculate cumulative step and current episode based on experiment mode.
 
+        `step` counts inside the episode; the chart's x axis counts inside the
+        *run*, which is its training phase and then its evaluation phase. Monty
+        keeps a total per phase (`total_train_steps`, `total_eval_steps`), so
+        counting the mode's own total is cumulative within a phase and restarts
+        at zero when the phase changes — the evaluation episodes were drawn from
+        the left edge again, on top of the training curve: "the last episodes
+        jump back to the beginning of the graph".
+
         Args:
             step: Current step number within the episode
 
         Returns:
             Tuple of (cumulative_step, current_episode)
         """
+        done = self.total_train_steps + self.total_eval_steps
+
         if self.experiment_mode == ExperimentMode.TRAIN:
-            cumulative_step = self.total_train_steps + step
             current_episode = self.train_episodes + 1
         else:
-            cumulative_step = self.total_eval_steps + step
             current_episode = self.eval_episodes + 1
-        return cumulative_step, current_episode
+
+        return done + step, current_episode
 
     def _aggregate_evidence_from_lms(self) -> dict[str, float]:
         """Aggregate evidence from all learning modules.
