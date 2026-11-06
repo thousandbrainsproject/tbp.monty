@@ -111,9 +111,17 @@ class GraphObjectModel(ObjectModel):
             self.add_ppf_to_graph()
 
     def add_ppf_to_graph(self) -> None:
-        """Add point pair features to graph edges."""
+        """Add point pair features to graph edges.
+
+        Raises:
+            ValueError: If no graph has been built yet.
+        """
         g = self._graph
-        row, col = g.edge_index
+        if g is None:
+            raise ValueError(
+                "Cannot add point pair features: no graph has been built yet."
+            )
+        row, col = self.edge_index
         g.edge_attr = point_pair_features(
             g.pos[row], g.pos[col], g.norm[row], g.norm[col]
         )
