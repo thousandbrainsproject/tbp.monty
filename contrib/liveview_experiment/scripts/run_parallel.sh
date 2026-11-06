@@ -63,32 +63,36 @@ if ! uv run python -c "import hydra" 2>/dev/null; then
     exit 1
 fi
 
-# Check if LiveView config exists in contrib directory first (preferred)
-# Use absolute paths to ensure it works from any directory
-CONFIG_PATH="${LIVEVIEW_DIR}/conf/experiment/${EXPERIMENT_NAME}.yaml"
+# Find the config the name means, the same way `run.sh` does: Monty's
+# `conf/experiment` is a tree, and a nested experiment's name is its whole path.
+LIVEVIEW_CONF="${LIVEVIEW_DIR}/conf/experiment"
+MONTY_CONF="${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment"
+# shellcheck source=experiment_lookup.sh
+. "${SCRIPT_DIR}/experiment_lookup.sh"
+
 IS_LIVEVIEW_CONFIG=false
-if [ ! -f "$CONFIG_PATH" ]; then
-    # Fall back to main experiment directory
-    CONFIG_PATH="${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment/${EXPERIMENT_NAME}.yaml"
-    if [ ! -f "$CONFIG_PATH" ]; then
-        echo "Error: Experiment config not found:" >&2
-        echo "  ${LIVEVIEW_DIR}/conf/experiment/${EXPERIMENT_NAME}.yaml" >&2
-        echo "  ${CONFIG_PATH}" >&2
-        echo "" >&2
-        echo "Available experiments:" >&2
-        if [ -d "${LIVEVIEW_DIR}/conf/experiment" ]; then
-            echo "  In contrib:" >&2
-            ls -1 "${LIVEVIEW_DIR}/conf/experiment"/*.yaml 2>/dev/null | sed 's|.*/|    |' | sed 's|\.yaml$||' || true
-        fi
-        if [ -d "${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment" ]; then
-            echo "  In main:" >&2
-            ls -1 "${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment"/*.yaml 2>/dev/null | sed 's|.*/|    |' | sed 's|\.yaml$||' || true
-        fi
-        exit 1
+RESOLVED=""
+if RESOLVED=$(resolve_experiment "$EXPERIMENT_NAME"); then
+    SOURCE=$(printf '%s' "$RESOLVED" | awk '{ print $1 }')
+    EXPERIMENT_NAME=$(printf '%s' "$RESOLVED" | awk '{ print $2 }')
+    if [ "$SOURCE" = "contrib" ]; then
+        CONFIG_PATH="${LIVEVIEW_CONF}/${EXPERIMENT_NAME}.yaml"
+        IS_LIVEVIEW_CONFIG=true
+    else
+        CONFIG_PATH="${MONTY_CONF}/${EXPERIMENT_NAME}.yaml"
     fi
 else
-    # Config is in contrib directory, so it's a LiveView config with values already defined
-    IS_LIVEVIEW_CONFIG=true
+    STATUS=$?
+    echo "Error: Experiment config not found: ${EXPERIMENT_NAME}" >&2
+    if [ "$STATUS" -eq 1 ]; then
+        echo "" >&2
+        echo "That name fits more than one experiment. Say which:" >&2
+        printf '%s\n' "$RESOLVED" | awk '{ print "    " $2 }' >&2
+    fi
+    echo "" >&2
+    echo "Available experiments (a path is the name Hydra knows):" >&2
+    experiment_configs | awk '{ print "    " $2 }' >&2
+    exit 1
 fi
 
 echo "✓ Environment: uv" >&2
@@ -237,12 +241,24 @@ else
     # Also disable wandb and excessive logging
     # Allow custom run name suffix via LIVEVIEW_RUN_NAME_SUFFIX env var
     RUN_NAME_SUFFIX="${LIVEVIEW_RUN_NAME_SUFFIX:-_with_liveview}"
+    RUN_NAME="${EXPERIMENT_NAME//\//_}"
+
+    BASE_EXPERIMENT_CLASS=$(uv run python run.py \
+        "experiment=${EXPERIMENT_NAME}" \
+        "hydra.searchpath=[${TBP_MONTY_ROOT}/src/tbp/monty/conf,${LIVEVIEW_DIR}/conf]" \
+        --cfg job 2>/dev/null |
+        uv run python -c 'import sys,yaml; print(yaml.safe_load(sys.stdin)["experiment"]["_target_"])' 2>/dev/null) || true
+    if [ -z "$BASE_EXPERIMENT_CLASS" ]; then
+        echo "Error: could not read the experiment class of ${EXPERIMENT_NAME}." >&2
+        exit 1
+    fi
     uv run python run_parallel.py \
         "experiment=${EXPERIMENT_NAME}" \
         "$SEARCHPATH_OVERRIDE" \
         "${NUM_PARALLEL_OVERRIDE[@]}" \
         "${EPISODES_OVERRIDE[@]}" \
-        "experiment._target_=contrib.liveview_experiment.src.monty_experiment_with_liveview.MontyExperimentWithLiveView" \
+        "experiment._target_=contrib.liveview_experiment.src.experiment_factory.monty_experiment_with_liveview" \
+        "+experiment.base_experiment_class=${BASE_EXPERIMENT_CLASS}" \
         "+experiment.config.liveview_host=${LIVEVIEW_HOST}" \
         "+experiment.config.liveview_port=${LIVEVIEW_PORT}" \
         "+experiment.config.zmq_port=${ZMQ_PORT}" \
@@ -250,7 +266,7 @@ else
         "+experiment.config.sensor_image_throttle_ms=100" \
         "experiment.config.monty_config.sensor_modules.sensor_module_0.save_raw_obs=true" \
         "logging=basic_warning_monty_runs" \
-        "experiment.config.logging.run_name=${EXPERIMENT_NAME}${RUN_NAME_SUFFIX}" || {
+        "experiment.config.logging.run_name=${RUN_NAME}${RUN_NAME_SUFFIX}" || {
         EXPERIMENT_EXIT_CODE=$?
         cleanup
         exit $EXPERIMENT_EXIT_CODE

@@ -41,11 +41,30 @@ The scripts support two modes:
 
 2. **With base config** — parameterized, works with ANY upstream experiment:
    - If no LiveView-specific config exists, the script takes the base config from `src/tbp/monty/conf/experiment/` and automatically layers LiveView settings via Hydra CLI overrides:
-     - Sets `_target_` to `MontyExperimentWithLiveView`
+     - Keeps the experiment class the config names, with the broadcasting mixed
+       into it (`experiment_factory.monty_experiment_with_liveview`), so a
+       `MontyObjectRecognitionExperiment` or a supervised pretraining experiment
+       stays itself instead of being replaced by the generic class
      - Adds `liveview_host`, `liveview_port`, `zmq_port`, `enable_liveview`, `sensor_image_throttle_ms`
      - Disables wandb and monty handlers (`wandb_handlers=[]`, `monty_handlers=[]`)
      - Auto-suffixes `run_name` with `_with_liveview` (customizable via `LIVEVIEW_RUN_NAME_SUFFIX` env var)
    - No per-experiment YAML files needed
+
+**Any experiment in the tree, by any name it has.** Monty's `conf/experiment` is
+a tree — `test/evidence_lm/evidence_mujoco` is an experiment — so the scripts
+answer the whole path, and a file name that fits exactly one config:
+
+```bash
+# All of these are the same experiment
+./contrib/liveview_experiment/scripts/run.sh test/evidence_lm/evidence_mujoco
+./contrib/liveview_experiment/scripts/run.sh evidence_mujoco
+
+# What fits a word, when you are not sure of the name
+./contrib/liveview_experiment/scripts/run.sh -l evidence
+
+# A name that fits more than one config is refused, and the candidates are listed;
+# a name that fits none lists everything there is.
+```
 
 **Examples — all 77-object benchmark experiments:**
 
