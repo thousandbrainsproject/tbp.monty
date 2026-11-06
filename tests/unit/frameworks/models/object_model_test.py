@@ -406,7 +406,7 @@ class GraphObjectModelGoldenTest(unittest.TestCase):
             "pose_vectors": np.vstack(
                 [
                     orthonormal_pose_vectors(np.array(n), np.array(c))
-                    for n, c in zip(normals, cds)
+                    for n, c in zip(normals, cds, strict=True)
                 ]
             ),
             "pose_fully_defined": np.array([True, True, True, True]),
