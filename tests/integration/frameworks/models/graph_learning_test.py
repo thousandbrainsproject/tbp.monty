@@ -25,6 +25,7 @@ from omegaconf import DictConfig
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.recognition_strategy import RecognitionContext
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
@@ -403,8 +404,8 @@ class GraphLearningTest(BaseGraphTest):
                 exp.model.primary_target = str(e)
                 for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
-                last_step = exp.run_episode_steps()
-                exp.post_episode(last_step)
+                exp.run_episode_steps()
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
@@ -978,7 +979,11 @@ class GraphLearningTest(BaseGraphTest):
                     monty._vote()
                     monty._pass_goals()
                     monty._set_step_type_and_check_if_done()
-                exp.post_episode(num_steps)
+                # TODO: This test does too much manually and does not incorporate how
+                #       we run episodes with RecognitionContext. Below we mock
+                #       recognition_ctx so that post_episode() has access to it.
+                exp._recognition_ctx.step = num_steps
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
