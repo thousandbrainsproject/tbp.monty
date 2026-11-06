@@ -210,11 +210,10 @@ To create a new category, simply create a new folder inside the `/docs` folder a
 
 In our documentation sync tool there is a flag to check internal links, image references and hierarchy file references.  This is a good way to ensure that all links are working correctly before submitting a PR.
 
-To check the links, [activate the conda environment](../how-to-use-monty/getting-started.md#miniconda), and then run the following command
-from the `tbp.monty` directory:
+To check the links, first ensure you have [the `uv` environment set up](../how-to-use-monty/getting-started.md#2-set-up-your-environment), and then run the following command from the `tbp.monty` directory:
 
 ```
-python -m tools.github_readme_sync.cli check docs
+uv run --extra github_readme_sync_tool python -m tools.github_readme_sync.cli check docs
 ```
 
 > [!NOTE]
@@ -224,16 +223,10 @@ python -m tools.github_readme_sync.cli check docs
 
 The future work widget tool processes future work documentation and displays it in a filterable HTML table. This tool also allows for previewing how future work items will appear in the widget interface locally.
 
-To view the widget locally, first ensure you have [activated the conda environment](../how-to-use-monty/getting-started.md#2-set-up-your-environment). Then, from the root Monty directory, install this tool's dependencies:
+To view the widget locally, first ensure you have [the `uv` environment set up](../how-to-use-monty/getting-started.md#2-set-up-your-environment), and then run the following command from the `tbp.monty` directory:
 
 ```bash
-pip install -e '.[github_readme_sync_tool,future_work_widget_tool]'
-```
-
-Then run:
-
-```bash
-python tools/future_work_widget/run_local.py
+uv run --extra github_readme_sync_tool --extra future_work_widget_tool python tools/future_work_widget/run_local.py
 ```
 
 Then point your browser to http://localhost:8080 to view the widget.
@@ -251,7 +244,7 @@ See the [Style Guide videos](style-guide.md#videos) section for details about cr
 
 > 👍 You have access to VS Code snippets
 
-When you checkout the repository, you have access to markdown snippets for tables, code blocks, warnings and more.  While your cursor is in a markdown file, press `CMD + Shift + P` and select `Insert snippet` to select a desired documentation snippet.
+When you check out the repository, you have access to markdown snippets for tables, code blocks, warnings and more.  While your cursor is in a markdown file, press `CMD + Shift + P` and select `Insert snippet` to select a desired documentation snippet.
 
 # Style Guide
 

@@ -15,53 +15,36 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Artificial Intelligence'
 ]
 dependencies = [
-    'eval_type_backport', # Needed to make pydantic work with future annotations, can be removed when we get to python 3.10
     'hydra-core>=1.3.2',
-    'importlib_resources', # imported via conda (conda-forge::importlib_resources)
-    'matplotlib>=3.7.3', # imported via conda (conda-forge::matplotlib)
-    'numpy', # imported via conda (conda-forge::numpy)
+    'importlib_resources',
+    'matplotlib>=3.7.3',
+    'numpy',
     'opencv-python==4.13.0.92',
     'omegaconf>=2.3.0',
-    'pandas', # imported via conda (conda-forge::pandas)
-    'pillow', # imported via conda (conda-forge::pillow)
+    'pandas',
+    'pillow',
     'pydantic>=2.10.6',
-    'numpy-quaternion==2023.0.3;python_version=="3.8"', # imported via conda (conda-forge::quaternion)
-    'numpy-quaternion;python_version>="3.10"',
-    'scikit-image', # imported via conda (conda-forge::scikit-image)
-    'scikit-learn==1.3.2;python_version=="3.8"', # imported via conda (conda-forge::scikit-learn)
-    'scikit-learn;python_version>="3.9"', # for uv environment
-    'scipy>=1.10.1', # imported via conda (conda-forge::scipy)
-    'sympy', # imported via conda (conda-forge::sympy)
-    'torch==1.13.1;python_version=="3.8"', # imported via conda (pytorch::pytorch)
-    'torch;python_version>="3.9"',
-    'torch-geometric==2.1.0.post1;python_version=="3.8"', # imported via conda (pyg::pyg)
-    'torch-sparse==0.6.15;python_version=="3.8"', # imported via conda (pytorch::pytorch-sparse)
-    'torch-scatter==2.0.9;python_version=="3.8"', # imported via conda (pytorch::pytorch-scatter)
-    'torch-geometric>=2.1.0.post1;python_version>="3.9"', # for uv environment
-    'torch-sparse>=0.6.15;python_version>="3.9"', # for uv environment
-    'torch-scatter>=2.0.9;python_version>="3.9"', # for uv environment
-    'tqdm', # imported via conda (conda-forge::tqdm)
+    'numpy-quaternion',
+    'scikit-image',
+    'scikit-learn',
+    'scipy>=1.10.1',
+    'sympy',
+    'torch',
+    'torch-geometric>=2.1.0.post1',
+    'torch-sparse>=0.6.15',
+    'torch-scatter>=2.0.9',
+    'tqdm',
     'typing-extensions',
-    'wandb==0.24.2;python_version>="3.8"',
-    'wandb;python_version>="3.10"',
+    'wandb',
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']
 license = { file = 'LICENSE' }
 name = 'tbp.monty'
 readme = 'README.md'
-requires-python = '>=3.8'
+requires-python = '>=3.13'
 
 [project.optional-dependencies]
-simulator_habitat = [
-    # HabitatSim is only installable via conda. These dependencies are listed here for
-    # documentation and consistency.
-    # NOTE: The version constraint is to prevent `uv` from failing trying to check all
-    # optional dependency sets are valid. This is because there isn't a version of
-    # HabitatSim on PyPI that works for 3.8, and so it tries to solve for a 3.8 environment
-    # and fails.
-    'habitat_sim;python_version=="3.9"', # imported via conda (aihabitat::habitat-sim)
-]
 simulator_mujoco = [
     'mujoco'
 ]
@@ -75,30 +58,18 @@ build = [
 dev = [
     # Check for undeclared dependencies
     'deptry',
-    # Python == 3.8, i.e. conda environment
-    # Python static type checker
-    'mypy==1.11.2;python_version=="3.8"',
     'types-PyYAML',
-    # Testing, code style, etc...
-    'hypothesis==6.113.0;python_version=="3.8"',
-    'parameterized==0.9.0;python_version=="3.8"', # Supports Python 3.8
-    'pytest==7.1.1;python_version=="3.8"',
-    'pytest-xdist==2.5.0;python_version=="3.8"',
-    'pytest-cov==3.0.0;python_version=="3.8"',
-    # Python linter and formatter
-    'ruff==0.14.2;python_version=="3.8"',
-    # Python >= 3.9, i.e. uv environment
     # Python static type checker
-    'mypy;python_version>="3.9"',
+    'mypy',
     # Testing, code style, etc...
-    'hypothesis;python_version>="3.9"',
-    'parameterized;python_version>="3.9"',
-    'pytest;python_version>="3.9"',
-    'pytest-xdist;python_version>="3.9"',
-    'pytest-cov;python_version>="3.9"',
+    'hypothesis',
+    'parameterized',
+    'pytest',
+    'pytest-xdist',
+    'pytest-cov',
     'unittest-parametrize',
     # Python linter and formatter
-    'ruff;python_version>="3.9"',
+    'ruff',
 ]
 generate_api_docs_tool = [
     'docutils>=0.17',
@@ -137,9 +108,7 @@ exclude = ['venv', '\.venv', '\.direnv', '\.git', 'setup\.py']
 experimental_namespace_package = true # recognize tbp.monty as a namespace package
 ignore = ['DEP002']
 known_first_party = [
-    'attr', # transitive dependency bundled with habitat-sim
-    'magnum', # transitive dependency bundled with habitat-sim
-    'quaternion', # transitive add-on for numpy installed via conda (conda-forge::quaternion)
+    'quaternion',
     'tests',
     'tools'
 ]
@@ -159,7 +128,6 @@ testpaths = [
 ]
 norecursedirs = [
     'src/tbp/monty/frameworks/utils', # ignore where 'seaborn' module is required
-    'src/tbp/monty/simulators/mujoco', # ignore where 'mujoco' module is required
 ]
 filterwarnings = [
     'ignore:.*:DeprecationWarning'
@@ -172,7 +140,6 @@ junit_family = 'xunit1'
 "nn" = "import torch.nn as nn"
 "pd" = "import panda as pd"
 "qt" = "import quaternion as qt"
-"mn" = "import magnum as mn"
 
 [tool.coverage.run]
 branch = true
@@ -198,7 +165,7 @@ plugins = ["pydantic.mypy"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py313"
 
 [tool.ruff.format]
 indent-style = "space"
@@ -235,6 +202,9 @@ ignore = [
     "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
     "PLR1711", # PLR1711: Useless `return` statement at end of function
     "FURB110", # FURB110: Replace ternary `if` expression with `or` operator
+    # Hydra dies when we use these fixes as it introspects the types at runtime
+    # TODO: Change these to use lazy imports on Python 3.15
+    "TC003", # TC003: Move standard library import into a type-checking block
     # End of deliberately ignored rules
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings

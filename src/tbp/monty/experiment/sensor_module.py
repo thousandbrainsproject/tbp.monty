@@ -8,10 +8,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Protocol, Sequence, runtime_checkable
+from collections.abc import Sequence
+from typing import Annotated, Protocol, runtime_checkable
 
 from pydantic import BeforeValidator, ConfigDict, validate_call
-from typing_extensions import Annotated
 
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.sensor_modules.sensor_module import (

@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: displacement_5lm
   - /monty/sensor_module: 5sm_camera
   - /monty/connectivity: 5lm_5sm
-  - /environment: habitat_dist_agent_sensors5
+  - /environment: mujoco_dist_agent_sensors5
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6

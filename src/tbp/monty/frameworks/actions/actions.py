@@ -10,15 +10,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from json import JSONDecoder, JSONEncoder
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from numpy.random import RandomState
 from pydantic.alias_generators import to_snake
-from typing_extensions import (
-    Protocol,  # Enables default __init__ in Protocol classes
-    runtime_checkable,  # For JSONEncoder instance checks
-)
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.agents import AgentID

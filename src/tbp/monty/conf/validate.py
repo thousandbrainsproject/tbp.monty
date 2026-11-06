@@ -8,8 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import os
-
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
@@ -22,9 +20,6 @@ def validate(cfg: DictConfig):
     # Force resolving of the config to get errors
     OmegaConf.to_object(cfg)
     print(OmegaConf.to_yaml(cfg))
-
-    os.environ["MAGNUM_LOG"] = "quiet"
-    os.environ["HABITAT_SIM_LOG"] = "quiet"
 
     app = instantiate_experiment(cfg.experiment)
     with app:

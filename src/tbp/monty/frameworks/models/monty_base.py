@@ -11,7 +11,8 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from tbp.monty import telemetry
 from tbp.monty.attention.attention_system import (
@@ -66,7 +67,7 @@ class MontyBase(Monty):
                 of learning modules and decides next action. Conceptually, this is
                 the subcortical motor area.
             sm_to_agent_dict: dictionary mapping each sensor module id to the
-                list of habitat agents it receives input from. This is to simulate
+                list of agents it receives input from. This is to simulate
                 columns with wide receptive fields that receive input from multiple
                 sensors. TODO: Do we still need this?
             sm_to_lm_matrix: nested array that governs which sensor modules a
