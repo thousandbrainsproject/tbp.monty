@@ -25,7 +25,7 @@ The following is a discussion summarizing some of the content of the above video
 Depth estimation is classically divided into monocular and binocular techniques. Given the sensorimotor nature of Monty, the discussion below first emphasizes whether methods are sensorimotor or not.
 
 ### Depth Cameras
-- This is what an "as-is" implementation of Monty would use, as these match the nature of the RGB-D camera that we simulate in Habitat.
+- This is what an "as-is" implementation of Monty would use, as these match the nature of the RGB-D camera that we simulate.
 - The most common methods, unlike biological vision, are very passive.
 - In particular, Time-of-Flight and Structured-Light emit light and process the returning signal. However, the nature of the output/"action" is always the same (a fixed light signal), and does not vary in an active way.
 - These methods can fail in conditions such as bright sunlight or reflective surfaces, both of which can disrupt the nature of the returning light signal that they measure.

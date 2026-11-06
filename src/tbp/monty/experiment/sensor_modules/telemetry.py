@@ -8,11 +8,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 import quaternion as qt
-from typing_extensions import Self
 
 from tbp.monty.experiment.sensor_module import ExperimentTransform
 from tbp.monty.observations import SensorObservation

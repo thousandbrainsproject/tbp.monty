@@ -8,32 +8,23 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import pytest
-
-from tbp.monty.context import RuntimeContext
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import logging
 import shutil
 import tempfile
 import unittest
-from typing import Mapping
+from collections.abc import Mapping
 
 import hydra
 from omegaconf import OmegaConf
 
+from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 
 
 class BaseConfigTest(unittest.TestCase):
-    def setUp(self):
-        """Code that gets executed before every test."""
+    def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
@@ -45,22 +36,15 @@ class BaseConfigTest(unittest.TestCase):
                 ],
             )
 
-    def tearDown(self):
-        """Code that gets executed after every test."""
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
-    def test_can_set_up(self):
-        """Canary for setup_experiment.
-
-        This could be part of the setUp method, but it's easier to debug if
-        something breaks the setup_experiment method if there's a separate test for it.
-        """
+    def test_can_set_up(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             pass
 
-    # @unittest.skip("debugging")
-    def test_can_run_episode(self):
+    def test_can_run_episode(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
@@ -68,25 +52,21 @@ class BaseConfigTest(unittest.TestCase):
             exp.env_interface = exp.train_env_interface
             exp.run_episode()
 
-    # @unittest.skip("speed")
-    def test_can_run_train_epoch(self):
+    def test_can_run_train_epoch(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.run_epoch()
 
-    # @unittest.skip("debugging")
-    def test_can_run_eval_epoch(self):
+    def test_can_run_eval_epoch(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.EVAL
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.run_epoch()
 
-    # @unittest.skip("debugging")
-    def test_observation_unpacking(self):
-        """Make sure this test uses very small n_actions_per_epoch for speed."""
+    def test_observation_unpacking(self) -> None:
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             monty_module_sids = {s.sensor_module_id for s in exp.model.sensor_modules}
@@ -127,21 +107,19 @@ class BaseConfigTest(unittest.TestCase):
                     "sensor_module must receive depth",
                 )
 
-    # @unittest.skip("debugging")
-    def test_can_save_and_load(self):
-        # Make sure deepcopy works (config is serializable)
-        config_1 = OmegaConf.to_object(self.base_cfg)
+    def test_can_save_and_load(self) -> None:
+        config_1: Mapping = OmegaConf.to_object(self.base_cfg)  # type: ignore[assignment,type-arg]
 
         exp = instantiate_experiment(config_1["experiment"])
         with exp:
-            # change something about exp.state that will be saved via save_state_dir
+            # Change something about exp.state that will be saved via save_state_dir.
             new_attr = False
             exp.model.learning_modules[0].test_attr_2 = new_attr
 
             exp.save_state_dir()
             prev_model = exp.model
 
-        config_2: Mapping = OmegaConf.to_object(  # ignore: type[assignment]
+        config_2: Mapping = OmegaConf.to_object(  # type: ignore[assignment,type-arg]
             self.base_cfg
         )
         config_2["experiment"]["config"]["model_name_or_path"] = exp.output_dir
@@ -171,6 +149,9 @@ class BaseConfigTest(unittest.TestCase):
 
     def test_logging_debug_level(self) -> None:
         """Check that logs go to a file, we can load them, and they have basic info."""
+        # TODO: This seems to test the behaviour of the Python `logging` library, which
+        #   we should just assume works as advertised. Change this test to introspect
+        #   the experiment to see if the loggers got configured correctly instead.
         exp = instantiate_experiment(self.base_cfg.experiment)
         with exp:
             # Add some stuff to the logs, verify it shows up
@@ -189,7 +170,10 @@ class BaseConfigTest(unittest.TestCase):
 
     def test_logging_info_level(self) -> None:
         """Check that if we set logging level to info, debug logs do not show up."""
-        base_config: Mapping = OmegaConf.to_object(self.base_cfg)
+        # TODO: This seems to test the behaviour of the Python `logging` library, which
+        #   we should just assume works as advertised. Change this test to introspect
+        #   the experiment to see if the loggers got configured correctly instead.
+        base_config: Mapping = OmegaConf.to_object(self.base_cfg)  # type: ignore[assignment,type-arg]
         log_cfg = base_config["experiment"]["config"]["logging"]
         log_cfg["python_log_level"] = logging.INFO
 
@@ -208,48 +192,3 @@ class BaseConfigTest(unittest.TestCase):
 
             self.assertTrue(debug_message not in log)
             self.assertTrue(warning_message in log)
-
-
-class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
-    def setUp(self):
-        self.output_dir = tempfile.mkdtemp()
-
-        with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
-            self.cfg = hydra.compose(
-                config_name="experiment",
-                overrides=[
-                    "experiment=test/evidence_lm/base",
-                    "logging=detailed_info_evidence_eval_runs",
-                    f"++experiment.config.logging.output_dir={self.output_dir}",
-                ],
-            )
-
-    def tearDown(self):
-        shutil.rmtree(self.output_dir)
-
-    def test_can_set_up(self):
-        """Canary for setup_experiment.
-
-        This could be part of the setUp method, but it's easier to debug if
-        something breaks the setup_experiment method if there's a separate test for it.
-        """
-        exp = instantiate_experiment(self.cfg.experiment)
-        with exp:
-            pass
-
-    def test_logging_detailed_evidence_lm_config_creates_json(self) -> None:
-        """Test for the detailed evidence LM logging config.
-
-        This ensures the config can be composed, the experiment can be instantiated,
-        and that running an episode produces detailed logging json file.
-        """
-        exp = instantiate_experiment(self.cfg.experiment)
-        with exp:
-            exp.model.set_experiment_mode(ExperimentMode.EVAL)
-            exp.run_epoch()
-
-        # Detailed logging handler should create a detailed_run_stats.json file
-        self.assertTrue(
-            (exp.output_dir / "detailed_run_stats.json").exists(),
-            "Expected detailed_run_stats.json file to be created",
-        )

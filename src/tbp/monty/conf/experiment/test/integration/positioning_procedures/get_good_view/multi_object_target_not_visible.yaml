@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_dist
   - /monty/connectivity: 1lm_1sm
-  - /environment: habitat_dist_agent_semantics1
+  - /environment: mujoco_dist_agent_semantics1
   - /env_interface: test_train_2obj_predefined_eval_distractors_cubeSolid_predefined
   - /env_interface/positioning_procedures_train: getgoodview_mop1_viewfinder_patch
   - /env_interface/positioning_procedures_eval: getgoodview_mop1_viewfinder_patch

@@ -9,14 +9,14 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Literal, Mapping
+from typing import Any, Literal, Protocol
 
 import numpy as np
 import numpy.typing as npt
 import quaternion as qt
 import scipy.ndimage
-from typing_extensions import Protocol
 
 from tbp.monty.frameworks.actions.actions import Action, LookDown, MoveForward, TurnLeft
 from tbp.monty.frameworks.agents import AgentID

@@ -8,15 +8,13 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 
-Voxel = Tuple[int, int, int]
+Voxel = tuple[int, int, int]
 
 
 VOXEL_LEVELS = ("x", "y", "z")
