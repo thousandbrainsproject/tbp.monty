@@ -27,6 +27,7 @@ from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.actions.actions import (
     Action,
     LookDown,
@@ -984,9 +985,14 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         lm.reset_stm()
         lm.fixme_reset_ground_truth(
-            primary_target=dict(
+            primary_target=PrimaryTarget(
+                euler_rotation=np.array([0, 0, 0]),
                 object="dummy_object",
-                quat_rotation=[1.0, 0.0, 0.0, 0.0],  # Filler value
+                position=(0.0, 0.0, 0.0),
+                quat_rotation=np.array([1, 0, 0, 0]),
+                rotation=(1.0, 0.0, 0.0, 0.0),
+                scale=(1.0, 1.0, 1.0),
+                semantic_id=None,
             ),
         )
 

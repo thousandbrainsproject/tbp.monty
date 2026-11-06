@@ -17,6 +17,7 @@ from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.learning_module import ExperimentLearningModule
 from tbp.monty.experiment.monty import ExperimentMonty
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.experiment.sensor_module import ResettableSensorModule
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -273,7 +274,7 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def fixme_set_ground_truth(
         self,
-        primary_target: dict[str, Any] | None = None,
+        primary_target: PrimaryTarget | None = None,
         semantic_id_to_label: dict[SemanticID, str] | None = None,
     ) -> None:
         pass
@@ -370,7 +371,9 @@ class LearningModule(
         pass
 
     @abc.abstractmethod
-    def fixme_reset_ground_truth(self, primary_target=None) -> None:
+    def fixme_reset_ground_truth(
+        self, primary_target: PrimaryTarget | None = None
+    ) -> None:
         pass
 
     @abc.abstractmethod

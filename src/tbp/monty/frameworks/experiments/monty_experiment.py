@@ -29,6 +29,7 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.experiment.recognition_strategy import (
     MontyIsDone,
     RecognitionContext,
@@ -39,6 +40,7 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
     ObjectNotVisibleError,
 )
 from tbp.monty.frameworks.experiments.hooks import NoOpStepHook, StepHook
+from tbp.monty.frameworks.experiments.logger_args import LoggerArgs
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import LoggingCallbackHandler
@@ -236,7 +238,7 @@ class MontyExperiment:
         self.train_epochs = 0
 
     @property
-    def logger_args(self):
+    def logger_args(self) -> LoggerArgs:
         """Get current status of counters for the logger.
 
         Returns:
@@ -247,7 +249,7 @@ class MontyExperiment:
             if self._rng_seed_history
             else self.config["seed"]
         )
-        args = dict(
+        return LoggerArgs(
             episode_steps=self._recognition_ctx.step,
             total_train_steps=self.total_train_steps,
             train_episodes=self.train_episodes,
@@ -256,12 +258,11 @@ class MontyExperiment:
             eval_episodes=self.eval_episodes,
             eval_epochs=self.eval_epochs,
             episode_seed=current_rng_seed,
+            # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
+            target=self.env_interface.primary_target
+            if isinstance(self.env_interface, OneObjectPerEpisodeInterface)
+            else None,
         )
-        # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
-        if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
-            target = self.env_interface.primary_target
-            args.update(target=target)
-        return args
 
     def init_loggers(
         self, logging_config: dict[str, Any], telemetry_config: dict[str, Any]
@@ -496,12 +497,12 @@ class MontyExperiment:
                 or self.experiment_mode is not ExperimentMode.TRAIN
             ):
                 raise
-            target = self.env_interface.primary_target
+            target: PrimaryTarget = self.env_interface.primary_target
             logger.warning(
                 "Skipping training pose: object=%s position=%s rotation=%s reason=%s",
-                target["object"],
-                target["position"],
-                target["euler_rotation"],
+                target.object,
+                target.position,
+                target.euler_rotation,
                 error,
             )
             self.train_episodes += 1
