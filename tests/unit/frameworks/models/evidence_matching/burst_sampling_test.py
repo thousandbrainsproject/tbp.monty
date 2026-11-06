@@ -8,8 +8,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Any
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch, sentinel
 
 import numpy as np
 from hypothesis import given
@@ -28,7 +29,9 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     InvalidEvidenceThresholdConfig,
 )
-from tbp.monty.geometry import Rotation, SurfacePoseVectors
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
+from tests.strategies import sentinels
+from tests.strategies.geometry import orientation_matrix, surface_pose_vectors
 
 
 class BurstSamplingHypothesesUpdaterTest(TestCase):
@@ -854,3 +857,201 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         )
         expected_tiled = np.repeat(expected_rot_mats, num_selected_nodes, axis=0)
         np.testing.assert_array_almost_equal(result.poses, expected_tiled, decimal=5)
+
+
+class BurstSamplingNumHypsPerNodeTest(TestCase):
+    @given(st.lists(st.none()))
+    def test_returns_len_initial_possible_poses_if_not_none(
+        self, initial_possible_poses: list[None]
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        updater.initial_possible_poses = initial_possible_poses  # type: ignore[assignment]
+
+        result = updater._num_hyps_per_node(MagicMock())
+
+        self.assertIs(result, len(initial_possible_poses))
+
+    def test_returns_one_if_pose_vector_is_orientation_matrix(self) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+
+        result = updater._num_hyps_per_node(
+            {"pose_vectors": OrientationMatrix(np.identity(3))}
+        )
+
+        self.assertEqual(result, 1)
+
+    def test_returns_two_if_pose_vector_is_surface_pose_vector_and_pose_fully_defined(
+        self,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+
+        result = updater._num_hyps_per_node(
+            {
+                "pose_vectors": SurfacePoseVectors(np.identity(3)),
+                "pose_fully_defined": True,
+            }
+        )
+
+        self.assertEqual(result, 2)
+
+    def test_returns_umbilical_num_poses_if_pose_vector_is_surface_pose_vector_and_pose_not_fully_defined(  # noqa: E501
+        self,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        updater.umbilical_num_poses = sentinel.umbilical_num_poses
+
+        result = updater._num_hyps_per_node(
+            {
+                "pose_vectors": SurfacePoseVectors(np.identity(3)),
+                "pose_fully_defined": False,
+            }
+        )
+
+        self.assertIs(result, sentinel.umbilical_num_poses)
+
+    def test_raises_type_error_if_pose_vector_is_unsupported(self) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+
+        with self.assertRaises(
+            TypeError, msg="Unsupported pose type: <class 'unittest.mock.MagicMock'>"
+        ):
+            updater._num_hyps_per_node({"pose_vectors": MagicMock()})
+
+
+class BurstSamplingSampleFromChannelTest(TestCase):
+    @given(
+        possible_s_d=sentinels.distinct(prefix="s_d", min_size=1),
+        sensed_directions=surface_pose_vectors(),
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.burst_sampling.align_multiple_orthonormal_vectors"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.burst_sampling.possible_sensed_directions"
+    )
+    def test_calls_possible_sensed_direction_for_surface_pose_vectors(
+        self,
+        possible_sensed_directions_mock: MagicMock,
+        align_multiple_orthonormal_vectors_mock: MagicMock,
+        possible_s_d: list[Any],
+        sensed_directions: SurfacePoseVectors,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        num_hyps_per_node_stub = 1
+        updater._num_hyps_per_node = MagicMock()  # type: ignore[method-assign]
+        updater._num_hyps_per_node.return_value = num_hyps_per_node_stub
+        updater._feature_evidence_scorer = MagicMock()
+        updater._feature_evidence_scorer.return_value = np.array([])
+        possible_sensed_directions_mock.return_value = possible_s_d
+
+        updater._sample_from_channel(
+            features={"pose_vectors": sensed_directions},
+            count=MagicMock(),
+            graph_id=MagicMock(),
+            input_channel=MagicMock(),
+        )
+
+        possible_sensed_directions_mock.assert_called_once_with(
+            sensed_directions, num_hyps_per_node_stub
+        )
+        self.assertEqual(
+            align_multiple_orthonormal_vectors_mock.call_count, len(possible_s_d)
+        )
+        for idx, s_d in enumerate(possible_s_d):
+            call_args = align_multiple_orthonormal_vectors_mock.call_args_list[idx]
+            assert call_args.args[1] is s_d
+
+    @given(sensed_directions=orientation_matrix())
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.burst_sampling.align_multiple_orthonormal_vectors"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.burst_sampling.possible_sensed_directions"
+    )
+    def test_uses_sensed_directions_for_orientation_matrix(
+        self,
+        possible_sensed_directions_mock: MagicMock,
+        align_multiple_orthonormal_vectors_mock: MagicMock,
+        sensed_directions: OrientationMatrix,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        updater._feature_evidence_scorer = MagicMock()
+        updater._feature_evidence_scorer.return_value = np.array([])
+
+        updater._sample_from_channel(
+            features={"pose_vectors": sensed_directions},
+            count=MagicMock(),
+            graph_id=MagicMock(),
+            input_channel=MagicMock(),
+        )
+
+        possible_sensed_directions_mock.assert_not_called()
+        align_multiple_orthonormal_vectors_mock.assert_called_once_with(
+            ANY, sensed_directions, as_scipy=False
+        )
+
+    def test_raises_type_error_for_unsupported_pose_vector_type(
+        self,
+    ) -> None:
+        updater = BurstSamplingHypothesesUpdater(
+            feature_weights=MagicMock(),
+            graph_memory=MagicMock(),
+            max_match_distance=MagicMock(),
+            tolerances=MagicMock(),
+            evidence_threshold_config="all",
+        )
+        updater._num_hyps_per_node = MagicMock()  # type: ignore[method-assign]
+        updater._num_hyps_per_node.return_value = 1
+        updater._feature_evidence_scorer = MagicMock()
+        updater._feature_evidence_scorer.return_value = np.array([])
+
+        with self.assertRaises(TypeError) as error:
+            updater._sample_from_channel(
+                features={"pose_vectors": "unsupported_type"},
+                count=MagicMock(),
+                graph_id=MagicMock(),
+                input_channel=MagicMock(),
+            )
+        self.assertIn("Unsupported pose_vector type:", str(error.exception))

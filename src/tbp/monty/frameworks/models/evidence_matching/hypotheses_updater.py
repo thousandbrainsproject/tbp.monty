@@ -44,7 +44,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
 )
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 
 logger = logging.getLogger(__name__)
 
@@ -329,18 +329,19 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         return Hypotheses.concatenate([hypotheses, *new_hyps])
 
     def _get_all_informed_possible_poses(
-        self, graph_id: str, sensed_channel_features: dict, input_channel: str
-    ):
+        self, graph_id: str, sensed_channel_features: dict[str, Any], input_channel: str
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """Initialize hypotheses on possible rotations for each location.
 
         This is similar to _get_informed_possible_poses but doesn't require looping
         over nodes.
 
-        For this, we use the surface normal and curvature directions and check how
-        they would have to be rotated to match between sensed and stored vectors
-        at each node. If principal curvature is similar in both directions, the
-        direction vectors cannot inform this and we have to uniformly sample multiple
-        possible rotations along this plane.
+        For this, we check how the sensed pose vectors would have to be rotated to
+        match the stored ones at each node. For ``SurfacePoseVectors``, the PCs have no
+        sign, so we test both directions. If PC is similar in both directions, the
+        direction vectors cannot inform this, and we have to uniformly sample multiple
+        possible rotations along this plane. ``OrientationMatrix`` is a signed
+        orientation, so a single rotation per node aligns them.
 
         Note:
             In general this initialization of hypotheses determines how well the
@@ -348,8 +349,16 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             should think about whether this is the most robust way to initialize
             hypotheses.
 
+        Args:
+            graph_id: The ID of the graph to initialize hypotheses for.
+            sensed_channel_features: Sensed features of the input channel.
+            input_channel: Input channel to initialize hypotheses for.
+
         Returns:
             The possible locations and rotations.
+
+        Raises:
+            TypeError: If unsupported pose_vector type.
         """
         all_possible_locations = np.zeros((1, 3))
         all_possible_rotations = np.zeros((1, 3, 3))
@@ -359,16 +368,22 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             graph_id, input_channel
         )
         sensed_directions = sensed_channel_features["pose_vectors"]
-        # Check if PCs in patch are similar -> need to sample more directions
-        if (
-            "pose_fully_defined" in sensed_channel_features
-            and not sensed_channel_features["pose_fully_defined"]
-        ):
-            possible_s_d = possible_sensed_directions(
-                sensed_directions, self.umbilical_num_poses
-            )
+        # TODO: Replace with match statement
+        if isinstance(sensed_directions, OrientationMatrix):
+            possible_s_d: list[npt.NDArray[np.float64]] = [sensed_directions]  # type: ignore[list-item]
+        elif isinstance(sensed_directions, SurfacePoseVectors):
+            # Check if PCs in patch are similar -> need to sample more directions
+            if (
+                "pose_fully_defined" in sensed_channel_features
+                and not sensed_channel_features["pose_fully_defined"]
+            ):
+                possible_s_d = possible_sensed_directions(
+                    sensed_directions, self.umbilical_num_poses
+                )
+            else:
+                possible_s_d = possible_sensed_directions(sensed_directions, 2)
         else:
-            possible_s_d = possible_sensed_directions(sensed_directions, 2)
+            raise TypeError(f"Unsupported pose_vector type: {type(sensed_directions)}")
 
         for s_d in possible_s_d:
             # Since we have orthonormal vectors and know their correspondence we can
