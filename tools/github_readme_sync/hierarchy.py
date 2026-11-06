@@ -84,6 +84,13 @@ def check_hierarchy_file(folder: str):
         content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         lines = content.splitlines()
 
+    # Collect all published paths first so links to later entries are valid.
+    published_paths = {
+        (folder / extract_file_path(line)).resolve()
+        for line in lines
+        if line.lstrip().startswith(DOCUMENT_PREFIX)
+    }
+
     parent_stack = []
     current_category = None
     unique_slugs = {}
@@ -116,12 +123,16 @@ def check_hierarchy_file(folder: str):
             parent_stack.append(new_doc)
 
             slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
-            errors = sanity_check_slugs(slug_path.with_suffix(".md"), folder)
+            errors = sanity_check_slugs(
+                slug_path.with_suffix(".md"), folder, published_paths
+            )
             if errors:
                 link_check_errors.extend(errors)
 
             file_path = folder.joinpath(extract_file_path(line))
-            file_path_errors = sanity_check_file_path(file_path, folder)
+            file_path_errors = sanity_check_file_path(
+                file_path, folder, published_paths
+            )
             if file_path_errors:
                 link_check_errors.extend(file_path_errors)
 
@@ -140,7 +151,7 @@ def extract_slug(line: str):
     return match.group(1)
 
 
-def sanity_check_slugs(path, folder):
+def sanity_check_slugs(path, folder, published_paths=None):
     # Path casing is checked relative to the docs folder. Absolute prefixes
     # (e.g. macOS tempfile /var/folders/.../T/) are outside our control and
     # may contain uppercase segments even when all docs paths are lowercase.
@@ -158,10 +169,10 @@ def sanity_check_slugs(path, folder):
             "check what's in the [] in hierarchy.md"
         ]
 
-    return check_links(path)
+    return check_links(path, published_paths)
 
 
-def sanity_check_file_path(path, folder):
+def sanity_check_file_path(path, folder, published_paths=None):
     # Path casing is checked relative to the docs folder. Absolute prefixes
     # (e.g. macOS tempfile /var/folders/.../T/) are outside our control and
     # may contain uppercase segments even when all docs paths are lowercase.
@@ -179,10 +190,10 @@ def sanity_check_file_path(path, folder):
             "check what's in the () in hierarchy.md"
         ]
 
-    return check_links(path)
+    return check_links(path, published_paths)
 
 
-def check_links(path):
+def check_links(path, published_paths=None):
     path = Path(path)
     with path.open() as f:
         content = f.read()
@@ -231,6 +242,13 @@ def check_links(path):
         logger.debug(f"{GREEN}  {path_to_check.name}{RESET}")
         if not path_to_check.exists():
             errors.append(f"  Linked {match[1]} does not exist")
+        elif (
+            published_paths is not None
+            and path_to_check.resolve() not in published_paths
+        ):
+            errors.append(
+                f"  Linked {match[1]} exists but is not listed in {HIERARCHY_FILE}"
+            )
 
     for match in image_link_matches:
         path_to_check = current_dir / match.split("#")[0]
