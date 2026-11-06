@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -169,3 +171,94 @@ def test_normalize_status_allows_abort_states() -> None:
     assert normalize_status("running") == "running"
     assert normalize_status("completed") == "completed"
     assert normalize_status(None) == "initializing"
+
+
+def test_every_open_page_receives_every_new_evidence_point() -> None:
+    """Regression: a second viewer must not starve the first viewer's chart.
+
+    Charts only update from points streamed to a connection, so what a
+    connection has already received is tracked per connection rather than
+    globally. Otherwise the page that renders first consumes each batch and all
+    other open pages freeze while their images keep updating.
+    """
+    pytest.importorskip("pyview")
+    from contrib.liveview_experiment.src.liveview_experiment import (  # noqa: PLC0415
+        ExperimentLiveView,
+    )
+    from contrib.liveview_experiment.src.state_manager import (  # noqa: PLC0415
+        ExperimentStateManager,
+    )
+
+    manager = ExperimentStateManager(route_path="/")
+    view = ExperimentLiveView(manager)
+    manager.visualization.process_evidence_data({"step": 1, "evidences": {"mug": 0.5}})
+
+    first_page = _connected_page(view, manager)
+    second_page = _connected_page(view, manager)
+
+    assert _steps_rendered_to(view, first_page) == [1]
+    assert _steps_rendered_to(view, second_page) == [1]
+
+    manager.visualization.process_evidence_data({"step": 2, "evidences": {"mug": 0.6}})
+
+    assert _steps_rendered_to(view, first_page) == [2]
+    assert _steps_rendered_to(view, second_page) == [2]
+
+
+def _connected_page(view: object, manager: object) -> SimpleNamespace:
+    """A freshly connected page, holding its own stream cursors."""
+    return SimpleNamespace(context=view._create_context_from_state(manager.experiment_state))
+
+
+def test_follow_live_is_per_connection_and_survives_a_rerender() -> None:
+    """The chart mode is server state, so it outlives patches and stays per page."""
+    pytest.importorskip("pyview")
+    from contrib.liveview_experiment.src.liveview_experiment import (  # noqa: PLC0415
+        ExperimentLiveView,
+    )
+    from contrib.liveview_experiment.src.state_manager import (  # noqa: PLC0415
+        ExperimentStateManager,
+    )
+
+    manager = ExperimentStateManager(route_path="/")
+    view = ExperimentLiveView(manager)
+    first_page = _connected_page(view, manager)
+    second_page = _connected_page(view, manager)
+
+    asyncio.run(view.handle_event("toggle_follow_live", {}, first_page))
+
+    view._update_context_from_state(first_page)
+    view._update_context_from_state(second_page)
+
+    assert view._build_template_assigns(first_page.context)["follow_live"] is True
+    assert view._build_template_assigns(second_page.context)["follow_live"] is False
+
+
+def test_stream_item_of_point_without_episode_has_empty_episode() -> None:
+    """A missing episode must reach the chart as empty, not as the text "None"."""
+    pytest.importorskip("pyview")
+    from contrib.liveview_experiment.src.liveview_experiment import (  # noqa: PLC0415
+        ExperimentLiveView,
+    )
+    from contrib.liveview_experiment.src.state_manager import (  # noqa: PLC0415
+        ExperimentStateManager,
+    )
+    from contrib.liveview_experiment.src.visualization_state import (  # noqa: PLC0415
+        EvidencePoint,
+    )
+
+    view = ExperimentLiveView(ExperimentStateManager(route_path="/"))
+
+    [item] = view._build_stream_items(
+        "demo", [EvidencePoint(step=1, evidences={"mug": 0.5})]
+    )
+
+    assert item["episode"] == ""
+    assert item["timestamp"] == ""
+
+
+def _steps_rendered_to(view: object, page: SimpleNamespace) -> list[int]:
+    """Steps one page receives in a single update, taken from its assigns."""
+    view._update_context_from_state(page)
+    assigns = view._build_template_assigns(page.context)
+    return [point["step"] for _dom_id, point in assigns["evidence_stream"]]

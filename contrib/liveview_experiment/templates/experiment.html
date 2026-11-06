@@ -392,7 +392,14 @@
 
             <!-- Evidence Chart (only for evidence publishers) -->
             {% if publisher.chart_point_count > 0 %}
-            <div phx-hook="EvidenceChart" id="evidence-chart-wrapper-{{ publisher.run_name }}" style="margin-top: 12px;">
+            <div phx-hook="EvidenceChart" id="evidence-chart-wrapper-{{ publisher.run_name }}" data-follow="{{ follow_live }}" style="margin-top: 12px;">
+                <!-- Follow mode is a Python assign; this only forwards the click -->
+                <div style="display: flex; justify-content: flex-end;">
+                    <label style="font-size: 11px; color: #6b7280; cursor: pointer;">
+                        <input type="checkbox" id="evidence-follow-{{ publisher.run_name }}" phx-click="toggle_follow_live" style="margin-right: 4px; vertical-align: middle;"{% if follow_live %} checked{% endif %} />
+                        Follow latest steps
+                    </label>
+                </div>
                 <div id="evidence-chart-container-{{ publisher.run_name }}" 
                      phx-update="ignore"
                      style="height: 250px; width: 100%; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px;">
@@ -471,7 +478,14 @@
                 </span>
             </div>
             <!-- Chart wrapper with hook -->
-            <div phx-hook="EvidenceChart" id="evidence-chart-wrapper">
+            <div phx-hook="EvidenceChart" id="evidence-chart-wrapper" data-follow="{{ follow_live }}">
+                <!-- Follow mode is a Python assign; this only forwards the click -->
+                <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                    <label style="font-size: 11px; color: #6b7280; cursor: pointer;">
+                        <input type="checkbox" id="evidence-follow" phx-click="toggle_follow_live" style="margin-right: 4px; vertical-align: middle;"{% if follow_live %} checked{% endif %} />
+                        Follow latest steps
+                    </label>
+                </div>
                 <!-- Visible chart with phx-update="ignore" -->
                 <div id="evidence-chart-container" 
                      phx-update="ignore"

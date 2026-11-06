@@ -171,52 +171,29 @@ class TestVisualizationState:
         state = VisualizationState()
         assert state.latest_step is None
 
-    def test_get_unsent_data_returns_none_when_nothing_new(self) -> None:
-        """get_unsent_data returns None if all data has been sent."""
+    def test_points_since_zero_returns_all_points(self) -> None:
+        """A connection that has received nothing gets the whole history."""
         state = VisualizationState()
-        state.append_evidence(EvidencePoint(step=1, evidences={"mug": 0.5}))
-        state.mark_as_sent()
-
-        # No new data since last send
-        assert state.get_unsent_data() is None
-
-    def test_get_unsent_data_returns_only_new_points(self) -> None:
-        """get_unsent_data returns only points added since last send."""
-        state = VisualizationState()
-
-        # Add first batch and mark sent
         state.append_evidence(EvidencePoint(step=1, evidences={"mug": 0.5}))
         state.append_evidence(EvidencePoint(step=2, evidences={"mug": 0.6}))
-        state.mark_as_sent()
 
-        # Add second batch
-        state.append_evidence(EvidencePoint(step=3, evidences={"mug": 0.7}))
-        state.append_evidence(EvidencePoint(step=4, evidences={"mug": 0.8}))
+        assert [point.step for point in state.points_since(0)] == [1, 2]
 
-        unsent = state.get_unsent_data()
-        assert unsent is not None
-        assert len(unsent["new_points"]) == 2
-        assert unsent["new_points"][0]["step"] == 3
-        assert unsent["new_points"][1]["step"] == 4
-        assert unsent["total_points"] == 4
-
-    def test_reset_sent_tracking_allows_resending_all(self) -> None:
-        """reset_sent_tracking allows all data to be sent again."""
+    def test_points_since_returns_only_points_after_cursor(self) -> None:
+        """Points already sent to a connection are not sent again."""
         state = VisualizationState()
         state.append_evidence(EvidencePoint(step=1, evidences={"mug": 0.5}))
-        state.mark_as_sent()
+        state.append_evidence(EvidencePoint(step=2, evidences={"mug": 0.6}))
+        state.append_evidence(EvidencePoint(step=3, evidences={"mug": 0.7}))
 
-        # Should have nothing to send
-        assert state.get_unsent_data() is None
+        assert [point.step for point in state.points_since(2)] == [3]
 
-        # Reset tracking
-        state.reset_sent_tracking()
+    def test_points_since_returns_nothing_when_connection_is_up_to_date(self) -> None:
+        """An up-to-date connection has no new points."""
+        state = VisualizationState()
+        state.append_evidence(EvidencePoint(step=1, evidences={"mug": 0.5}))
 
-        # Now should have all data to send
-        unsent = state.get_unsent_data()
-        assert unsent is not None
-        assert len(unsent["new_points"]) == 1
-        assert unsent["new_points"][0]["step"] == 1
+        assert state.points_since(state.point_count) == []
 
 
 class TestVisualizationStateManager:

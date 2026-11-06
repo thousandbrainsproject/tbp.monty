@@ -154,9 +154,6 @@ class VisualizationState:
     current_mesh_url: str | None = None
     object_names: set[str] = field(default_factory=set)
     sensor_images: SensorImages = field(default_factory=SensorImages)
-    # Track what's been sent via push_event (for incremental updates)
-    _last_sent_count: int = field(default=0, repr=False)
-    _last_sent_episode_count: int = field(default=0, repr=False)
 
     def __post_init__(self) -> None:
         """Initialize deque with maxlen from config."""
@@ -191,8 +188,6 @@ class VisualizationState:
         self.object_names.clear()
         self.current_mesh_url = None
         self.sensor_images = SensorImages()
-        # Reset sent tracking for new experiment
-        self.reset_sent_tracking()
 
     def update_sensor_images(self, images: SensorImages) -> None:
         """Update current sensor images, preserving existing when new data is None.
@@ -264,56 +259,16 @@ class VisualizationState:
         max_object = max(latest_point.evidences.items(), key=lambda x: x[1])
         return (max_object[0], max_object[1])
 
-    def get_unsent_data(self) -> dict[str, Any] | None:
-        """Get only data points that haven't been sent via push_event yet.
+    def points_since(self, cursor: int) -> list[EvidencePoint]:
+        """Return the evidence points a connection has not received yet.
+
+        Args:
+            cursor: Number of points already sent to that connection.
 
         Returns:
-            Dictionary with new points and markers, or None if nothing new.
+            Points appended after ``cursor``; empty when nothing is new.
         """
-        current_count = len(self.evidence_history)
-        current_episode_count = len(self.episode_markers)
-
-        if (
-            current_count <= self._last_sent_count
-            and current_episode_count <= self._last_sent_episode_count
-        ):
-            return None
-
-        # Get new points (handle deque properly - can't slice directly by index
-        # if buffer wrapped around, so convert to list for new items)
-        new_points_start = max(0, self._last_sent_count)
-        history_list = list(self.evidence_history)
-        new_points = history_list[new_points_start:]
-
-        # Get new episode markers
-        new_markers = self.episode_markers[self._last_sent_episode_count :]
-
-        # Get current max evidence
-        max_evidence = self.current_max_evidence
-        max_evidence_data = None
-        if max_evidence is not None:
-            max_evidence_data = {
-                "object": max_evidence[0],
-                "value": max_evidence[1],
-            }
-
-        return {
-            "new_points": [p.to_dict() for p in new_points],
-            "new_markers": [m.to_dict() for m in new_markers],
-            "new_object_names": sorted(self.object_names),
-            "total_points": current_count,
-            "current_max_evidence": max_evidence_data,
-        }
-
-    def mark_as_sent(self) -> None:
-        """Mark all current data as sent (after push_event)."""
-        self._last_sent_count = len(self.evidence_history)
-        self._last_sent_episode_count = len(self.episode_markers)
-
-    def reset_sent_tracking(self) -> None:
-        """Reset sent tracking (e.g., for new connections that need full data)."""
-        self._last_sent_count = 0
-        self._last_sent_episode_count = 0
+        return list(self.evidence_history)[cursor:]
 
 
 class VisualizationStateManager:

@@ -21,6 +21,7 @@ from .state_normalizer import StateNormalizer
 
 if TYPE_CHECKING:
     from .liveview_types import MessagePayload, TemplateAssigns
+    from .visualization_state import EvidencePoint, VisualizationState
 
 if TYPE_CHECKING:
     from .state_manager import ExperimentStateManager
@@ -43,7 +44,11 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         # so it can call handle_info directly
         state_manager.liveview_instance = self
 
-    def _create_context_from_state(self, state: ExperimentState) -> ExperimentState:
+    def _create_context_from_state(
+        self,
+        state: ExperimentState,
+        previous: ExperimentState | None = None,
+    ) -> ExperimentState:
         """Create a new ExperimentState from the shared state.
 
         Creates a copy with normalized values for use as socket context.
@@ -51,12 +56,19 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
         Args:
             state: Source experiment state
+            previous: This connection's context from the previous render. Its
+                per-connection fields (stream cursors, view preferences) are
+                carried over, because they are not part of the shared state.
 
         Returns:
             New ExperimentState instance for socket context
         """
         normalized_status = self._normalize_status(state.status)
-        return StateNormalizer.normalize(state, normalized_status)
+        context = StateNormalizer.normalize(state, normalized_status)
+        if previous is not None:
+            context.stream_cursors = dict(previous.stream_cursors)
+            context.follow_live = previous.follow_live
+        return context
 
     def _extract_model_name(self, model_path: str | None) -> str:
         """Extract a readable model name from a model path.
@@ -106,7 +118,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         # Replace the entire context object
         # (PyView detects object identity changes)
         # This ensures PyView detects the change and triggers a re-render
-        socket.context = self._create_context_from_state(state)
+        socket.context = self._create_context_from_state(state, socket.context)
 
     def _normalize_status(self, status: str | None) -> str:
         """Normalize status to a value understood by the UI.
@@ -335,6 +347,9 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         assigns.update(self._build_optional_numeric_assigns(state))
         assigns.update(self._build_boolean_assigns(state))
 
+        # Chart view mode belongs to this connection, not to the experiment
+        assigns["follow_live"] = bool(state.follow_live)
+
         # Status and mode
         assigns.update(
             {
@@ -365,65 +380,63 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         )
 
         # Visualization data
-        assigns.update(self._build_visualization_assigns())
+        assigns.update(
+            self._build_visualization_assigns(self._stream_publishers(state))
+        )
 
         return assigns
 
     def _build_stream_items(
-        self, run_name: str, unsent_data: dict[str, Any] | None
+        self, run_name: str, points: list[EvidencePoint]
     ) -> list[dict[str, Any]]:
-        """Build stream items from unsent visualization data.
+        """Build stream items for the evidence chart.
 
         Args:
             run_name: Name of the publisher/run
-            unsent_data: Dictionary containing new data points
+            points: Points this connection has not received yet
 
         Returns:
             List of stream items for the evidence chart
         """
-        if unsent_data is None:
-            return []
+        return [
+            {
+                "id": f"evidence-{run_name}-{point.step}",
+                "step": point.step,
+                "evidences": json.dumps(point.evidences),
+                "target_object": point.target_object,
+                # Empty, not None, so the chart reads a missing value as "none"
+                # instead of parsing the string "None" into NaN.
+                "episode": point.episode if point.episode is not None else "",
+                "timestamp": point.timestamp if point.timestamp is not None else "",
+            }
+            for point in points
+        ]
 
-        stream_items = []
-        for point in unsent_data.get("new_points", []):
-            stream_items.append(
-                {
-                    "id": f"evidence-{run_name}-{point['step']}",
-                    "step": point["step"],
-                    "evidences": json.dumps(point["evidences"]),
-                    "target_object": point.get("target_object", ""),
-                    "episode": point.get("episode", ""),
-                    "timestamp": point.get("timestamp", ""),
-                }
-            )
-        return stream_items
-
-    def _build_publisher_data(self, run_name: str, viz_state: Any) -> dict[str, Any]:
+    def _build_publisher_data(
+        self, run_name: str, viz_state: VisualizationState, stream_cursor: int
+    ) -> dict[str, Any]:
         """Build data dictionary for a single publisher.
 
         Args:
             run_name: Name of the publisher/run
             viz_state: Visualization state for this publisher
+            stream_cursor: Number of points already streamed to this connection
 
         Returns:
             Dictionary containing all visualization data for this publisher
         """
         sensor_images = viz_state.sensor_images
-        unsent_data = viz_state.get_unsent_data()
-
-        new_stream_items = self._build_stream_items(run_name, unsent_data)
-
-        # Mark as sent after building stream
-        if new_stream_items:
-            viz_state.mark_as_sent()
+        new_points = viz_state.points_since(stream_cursor)
 
         current_max = viz_state.current_max_evidence
         return {
             "run_name": run_name,
             "evidence_stream": Stream(
-                new_stream_items, name=f"evidence_stream_{run_name}"
+                self._build_stream_items(run_name, new_points),
+                name=f"evidence_stream_{run_name}",
             ),
             "chart_point_count": viz_state.point_count,
+            "stream_cursor": viz_state.point_count,
             "current_max_evidence_object": (
                 current_max[0] if current_max is not None else ""
             ),
@@ -465,29 +478,57 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             "has_sensor_images": first_publisher["has_sensor_images"],
         }
 
-    def _build_visualization_assigns(self) -> dict[str, Any]:
+    def _build_visualization_assigns(
+        self, publishers: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Build visualization-related template assigns.
 
-        Uses phx-update='stream' pattern with PyView Stream API.
         Returns data partitioned by run_name for multi-publisher support.
+
+        Args:
+            publishers: Per-publisher data built by ``_stream_publishers``
 
         Returns:
             Dictionary with per-publisher chart data and metadata for template.
         """
-        all_states = self.state_manager.visualization.get_all_states()
-
-        # Build per-publisher data
-        publishers = [
-            self._build_publisher_data(run_name, viz_state)
-            for run_name, viz_state in sorted(all_states.items())
-        ]
-
         # Backward compatibility: if only one publisher, expose it at top level
         if len(publishers) == 1:
             return self._build_single_publisher_assigns(publishers)
 
         # Multi-publisher mode: only return publishers array
         return {"publishers": publishers, "multiple_publishers": True}
+
+    def _stream_publishers(self, state: ExperimentState) -> list[dict[str, Any]]:
+        """Build per-publisher stream data and advance this connection's cursors.
+
+        Uses phx-update='stream' pattern with PyView Stream API.
+
+        Every connection renders independently, so the number of points already
+        sent is tracked in the socket context (``state.stream_cursors``). Keeping
+        it on the shared visualization state instead would mean the first
+        connection to render consumes the new points and every other
+        connection's chart silently stops updating.
+
+        Args:
+            state: State of the connection being rendered
+
+        Returns:
+            List of per-publisher data dictionaries
+        """
+        all_states = self.state_manager.visualization.get_all_states()
+
+        publishers = [
+            self._build_publisher_data(
+                run_name, viz_state, state.stream_cursors.get(run_name, 0)
+            )
+            for run_name, viz_state in sorted(all_states.items())
+        ]
+
+        state.stream_cursors = {
+            publisher["run_name"]: publisher["stream_cursor"]
+            for publisher in publishers
+        }
+        return publishers
 
     def _set_socket_context(self, socket: LiveViewSocket[ExperimentState]) -> None:
         """Set socket context with current state (like mvg_departures).
@@ -529,7 +570,11 @@ class ExperimentLiveView(LiveView[ExperimentState]):
     async def _subscribe_to_broadcast_topic(
         self, socket: LiveViewSocket[ExperimentState], socket_id: str
     ) -> None:
-        """Subscribe socket to broadcast topic."""
+        """Subscribe socket to broadcast topic.
+
+        A new connection starts with empty stream cursors, so its first render
+        streams the whole accumulated evidence history.
+        """
         try:
             await socket.subscribe(self.state_manager.broadcast_topic)
             logger.info(
@@ -537,10 +582,6 @@ class ExperimentLiveView(LiveView[ExperimentState]):
                 socket_id,
                 self.state_manager.broadcast_topic,
             )
-            # Reset sent tracking for all publishers so first render sends
-            # all accumulated data
-            for viz_state in self.state_manager.visualization.get_all_states().values():
-                viz_state.reset_sent_tracking()
         except Exception as e:
             logger.exception(
                 "Failed to subscribe socket %s to topic %s: %s",
@@ -701,6 +742,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
         if event == "abort_experiment":
             await self._handle_abort_event(socket)
+        elif event == "toggle_follow_live":
+            socket.context.follow_live = not socket.context.follow_live
         else:
             logger.debug("Unknown event: %s", event)
 

@@ -23,6 +23,9 @@ const OBJECT_COLORS = {
 // Default color for unknown objects
 const DEFAULT_COLOR = '#888888';
 
+// Steps of history visible while following the newest data
+const FOLLOW_WINDOW_STEPS = 100;
+
 /**
  * Get color for an object name.
  * @param {string} objectName - Name of the object
@@ -52,8 +55,8 @@ class EvidenceChart {
         }
         
         this.options = {
-            liveFollow: options.liveFollow !== false,
-            xRangeWindow: options.xRangeWindow || 100,
+            liveFollow: options.liveFollow === true,
+            xRangeWindow: options.xRangeWindow || FOLLOW_WINDOW_STEPS,
         };
         
         // Client-side data accumulation (no more server-side full history)
@@ -175,6 +178,9 @@ class EvidenceChart {
             shapes: shapes,
             xaxis: {
                 ...this.container.layout.xaxis,
+                // Explicit, because Plotly keeps a previously pinned range when
+                // autorange is merely omitted from an update.
+                autorange: xRange === null,
                 range: xRange,
             },
         });
@@ -346,8 +352,26 @@ window.Hooks.EvidenceChart = {
             return;
         }
         
+        // The chart mode is a Python assign; the wrapper carries it as data-follow.
+        this.following = false;
+        
         // Initialize empty chart
-        this.initializeChart();
+        this.ready = false;
+        this.initializeChart().then(() => {
+            this.ready = true;
+            
+            // Zooming or autoscaling leaves follow mode, which Python owns.
+            this.chartEl.on('plotly_relayout', (event) => {
+                const touchedXAxis = Object.keys(event).some((key) => key.startsWith('xaxis'));
+                if (touchedXAxis && this.following) {
+                    this.pushEvent('toggle_follow_live', {});
+                }
+            });
+            
+            // The page may already carry points (loaded mid-run); draw them now
+            // rather than waiting for a patch that may never come.
+            this.updated();
+        });
     },
     
     initializeChart() {
@@ -382,28 +406,42 @@ window.Hooks.EvidenceChart = {
             modeBarButtonsToRemove: ['lasso2d', 'select2d'],
         };
         
-        Plotly.newPlot(this.chartEl, [], layout, config);
+        this.baseLayout = layout;
+        return Plotly.newPlot(this.chartEl, [], layout, config);
     },
     
     updated() {
+        // Plotly ignores drawing calls until the initial plot has settled.
+        if (!this.ready) return;
+        
+        this.following = String(this.el.dataset.follow).toLowerCase() === 'true';
+        
         // On each update, read all data points from stream and update chart
         const points = this.getAllDataPoints();
         
         if (points.length === 0) return;
         
-        // Build traces from all points
-        const traces = this.buildTraces(points);
-        const shapes = this.buildEpisodeShapes(points);
-        
         // Use Plotly.react for efficient updates (only changes what's different)
-        Plotly.react(this.chartEl, traces, {
-            ...this.chartEl.layout,
+        Plotly.react(this.chartEl, this.buildTraces(points), this.buildLayout(points));
+    },
+    
+    buildLayout(points) {
+        const layout = {
+            ...this.baseLayout,
+            shapes: this.buildEpisodeShapes(points),
             xaxis: {
-                ...this.chartEl.layout.xaxis,
-                range: this.calculateXRange(points),
+                ...this.baseLayout.xaxis,
+                // Explicit, because Plotly keeps a previously pinned range when
+                // autorange is merely omitted from an update.
+                autorange: !this.following,
             },
-            shapes,
-        });
+        };
+        
+        if (this.following) {
+            layout.xaxis.range = this.calculateXRange(points);
+        }
+        
+        return layout;
     },
     
     getAllDataPoints() {
@@ -500,7 +538,7 @@ window.Hooks.EvidenceChart = {
         if (points.length === 0) return null;
         const steps = points.map(p => p.step || 0);
         const maxStep = Math.max(...steps);
-        const minStep = Math.max(0, maxStep - 100);  // Show last 100 steps
+        const minStep = Math.max(0, maxStep - FOLLOW_WINDOW_STEPS);
         return [minStep, maxStep + 5];
     },
 

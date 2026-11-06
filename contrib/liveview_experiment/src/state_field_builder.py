@@ -101,6 +101,7 @@ class StateFieldBuilder:
             "do_train": safe_bool(state.do_train),
             "do_eval": safe_bool(state.do_eval),
             "show_sensor_output": safe_bool(state.show_sensor_output),
+            "follow_live": safe_bool(state.follow_live),
         }
 
     @staticmethod
@@ -125,4 +126,7 @@ class StateFieldBuilder:
                 state.recent_logs.copy() if state.recent_logs is not None else []
             ),
             "max_log_history": safe_int(state.max_log_history) or 100,
+            "stream_cursors": (
+                state.stream_cursors.copy() if state.stream_cursors is not None else {}
+            ),
         }

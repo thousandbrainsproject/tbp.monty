@@ -74,3 +74,12 @@ class ExperimentState:
 
     # Setup message (cached initial configuration for display)
     setup_message: str | None = None
+
+    # Per-connection bookkeeping: how many evidence points were already streamed
+    # to this connection, keyed by publisher run name. Each connection renders
+    # independently, so this must not live on the shared visualization state.
+    stream_cursors: dict[str, int] = field(default_factory=dict)
+
+    # Per-connection view preference: pin the evidence chart to the newest steps
+    # instead of showing the whole history.
+    follow_live: bool = False
