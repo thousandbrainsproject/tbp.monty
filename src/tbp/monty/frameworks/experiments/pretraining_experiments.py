@@ -80,9 +80,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
 
-    def post_episode(self, steps) -> None:
+    def post_episode(self) -> None:
         self._pass_target_info_to_model()
-        return super().post_episode(steps)
+        return super().post_episode()
 
     def _pass_target_info_to_model(self) -> None:
         # Pass target info to model --> will overwrite (where specified)

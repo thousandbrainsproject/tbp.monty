@@ -71,6 +71,7 @@ class MontyExperiment:
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
     _step_hook: StepHook
+    _recognition_ctx: RecognitionContext
     _recognition_strategy: RecognitionStrategy
 
     def __init__(self, config: DictConfig) -> None:
@@ -119,6 +120,7 @@ class MontyExperiment:
 
         self._step_hook = config.pop("step_hook", NoOpStepHook())
         self._recognition_strategy = config.pop("recognition_strategy", MontyIsDone())
+        self._recognition_ctx = RecognitionContext()
 
     def reset_episode_rng(self):
         """Resets the random number generator using episode-specific seed."""
@@ -246,6 +248,7 @@ class MontyExperiment:
             else self.config["seed"]
         )
         args = dict(
+            episode_steps=self._recognition_ctx.step,
             total_train_steps=self.total_train_steps,
             train_episodes=self.train_episodes,
             train_epochs=self.train_epochs,
@@ -454,6 +457,8 @@ class MontyExperiment:
 
     def pre_episode(self) -> None:
         """Call pre_episode on elements in experiment and set mode."""
+        self._recognition_ctx = RecognitionContext(mode=self.experiment_mode)
+
         if self.experiment_mode is ExperimentMode.TRAIN:
             logger.info(
                 f"running train epoch {self.train_epochs} "
@@ -476,7 +481,7 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter.initialize_online_plotting()
 
-    def run_episode(self):
+    def run_episode(self) -> None:
         """Run an episode, optionally skipping invisible training targets at setup.
 
         Raises:
@@ -502,38 +507,33 @@ class MontyExperiment:
             self.train_episodes += 1
             self.env_interface.post_episode()
             return
-        last_step = self.run_episode_steps()
-        self.post_episode(last_step)
+        self.run_episode_steps()
+        self.post_episode()
 
-    def run_episode_steps(self) -> int:
+    def run_episode_steps(self) -> None:
         """Runs the steps of an episode.
 
         At each step, observations are collected from the env_interface and either
         passed to the model or sent directly to the motor system. We also check if a
         terminal condition was reached at each step and increment step counters.
-
-        Returns:
-            The number of total steps taken in the episode.
         """
-        recognition_ctx = RecognitionContext(mode=self.experiment_mode)
         ctx = RuntimeContext(rng=self.rng)
         actions: list[Action] = []
-        while not self._recognition_complete(recognition_ctx):
-            actions = self.run_step(ctx, recognition_ctx.step, actions)
-            recognition_ctx.step += 1
+        while not self._recognition_complete():
+            actions = self.run_step(ctx, self._recognition_ctx.step, actions)
+            self._recognition_ctx.step += 1
             if self._check_if_any_lms_updated():
                 if self.model.is_exploring:
-                    recognition_ctx.exploring_steps += 1
+                    self._recognition_ctx.exploring_steps += 1
                 else:
-                    recognition_ctx.matching_steps += 1
-        if recognition_ctx.step < 3:
-            logger.warning("Episode only ran %d steps!", recognition_ctx.step)
+                    self._recognition_ctx.matching_steps += 1
+        if self._recognition_ctx.step < 3:
+            logger.warning("Episode only ran %d steps!", self._recognition_ctx.step)
         else:
-            logger.info("Episode ran %d steps.", recognition_ctx.step)
-        return recognition_ctx.step
+            logger.info("Episode ran %d steps.", self._recognition_ctx.step)
 
-    def _recognition_complete(self, ctx: RecognitionContext) -> bool:
-        result = self._recognition_strategy(ctx, self.model)
+    def _recognition_complete(self) -> bool:
+        result = self._recognition_strategy(self._recognition_ctx, self.model)
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
         if result.time_out_lms:
@@ -594,7 +594,7 @@ class MontyExperiment:
             is_saccade_on_image_data_loader,
         )
 
-    def post_episode(self, steps) -> None:
+    def post_episode(self) -> None:
         """Call post_episode on elements in experiment and increment counters.
 
         General order of post episode should be:
@@ -614,10 +614,10 @@ class MontyExperiment:
 
         if self.experiment_mode is ExperimentMode.TRAIN:
             self.train_episodes += 1
-            self.total_train_steps += steps
+            self.total_train_steps += self._recognition_ctx.step
         else:
             self.eval_episodes += 1
-            self.total_eval_steps += steps
+            self.total_eval_steps += self._recognition_ctx.step
 
         # move down here, otherwise env_interface.primary_target is already changed
         self.env_interface.post_episode()

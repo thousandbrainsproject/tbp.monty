@@ -9,6 +9,7 @@
 # https://opensource.org/licenses/MIT.
 
 import copy
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
+from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.utils.logging_utils import (
     get_stats_per_lm,
     target_data_to_dict,
@@ -198,7 +200,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, model):
+    def update_episode_data(self, logger_args: dict[str, Any], model: Monty) -> None:
         """Run get_stats_per_lm and add to overall stats.
 
         Store stats ~
@@ -207,7 +209,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                     stats
         """
         performance_dict = get_stats_per_lm(
-            model, logger_args["target"], logger_args["episode_seed"]
+            model,
+            logger_args["episode_steps"],
+            logger_args["target"],
+            logger_args["episode_seed"],
         )
         target_dict = target_data_to_dict(logger_args["target"])
         if len(self.lms) == 0:  # first time function is called
@@ -222,7 +227,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.data["BASIC"][f"{mode}_stats"][episode] = performance_dict
 
         self.update_overall_stats(
-            mode, episode, model.episode_steps, model.matching_steps
+            mode, episode, logger_args["episode_steps"], model.matching_steps
         )
         overall_stats = self.get_formatted_overall_stats(mode, episode)
 
