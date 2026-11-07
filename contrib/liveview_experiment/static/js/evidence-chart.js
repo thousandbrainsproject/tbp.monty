@@ -489,31 +489,7 @@ window.Hooks.EvidenceChart = {
         let index = 0;
         
         objectNames.forEach(objName => {
-            const x = [];
-            const y = [];
-            
-            let lastEpisode = null;
-            points.forEach(point => {
-                if (point.evidences[objName] !== undefined) {
-                    // Insert gap to create vertical drop on episode change
-                    if (
-                        lastEpisode !== null &&
-                        point.episode !== null &&
-                        point.episode !== undefined &&
-                        point.episode !== lastEpisode
-                    ) {
-                        x.push(point.step || 0);
-                        y.push(NaN);
-                    }
-
-                    x.push(point.step || 0);
-                    y.push(point.evidences[objName]);
-
-                    if (point.episode !== null && point.episode !== undefined) {
-                        lastEpisode = point.episode;
-                    }
-                }
-            });
+            const { x, y } = this.collectSeries(points, objName);
             
             if (x.length > 0) {
                 traces.push({
@@ -532,6 +508,49 @@ window.Hooks.EvidenceChart = {
         });
         
         return traces;
+    },
+    
+    /**
+     * Collect one object's evidence, broken at every episode boundary.
+     *
+     * The break is inserted at the boundary itself, whether or not this object
+     * has a value on that step: an object that is silent for a while must not
+     * have a straight line drawn from its last value in one episode to its
+     * first value in the next, because that line would cross the boundary.
+     *
+     * Note that the evidence itself is not reset by every experiment: the
+     * unsupervised-inference models keep their hypothesis space across objects
+     * on purpose, so a curve can leave an episode exactly where the next one
+     * starts. Cutting is what keeps each band readable as one object's episode.
+     *
+     * @param {Array} points - Data points, sorted in time
+     * @param {string} objName - Object whose evidence to collect
+     * @returns {{x: Array, y: Array}} Step/evidence series with NaN gaps
+     */
+    collectSeries(points, objName) {
+        const x = [];
+        const y = [];
+        
+        let lastEpisode = null;
+        points.forEach(point => {
+            const episode = point.episode ?? null;
+            const startsNewEpisode = episode !== null && lastEpisode !== null && episode !== lastEpisode;
+            
+            if (startsNewEpisode) {
+                x.push(point.step || 0);
+                y.push(NaN);
+                lastEpisode = episode;
+            } else if (episode !== null) {
+                lastEpisode = episode;
+            }
+            
+            if (point.evidences[objName] !== undefined) {
+                x.push(point.step || 0);
+                y.push(point.evidences[objName]);
+            }
+        });
+        
+        return { x, y };
     },
     
     calculateXRange(points) {
@@ -575,6 +594,7 @@ window.Hooks.EvidenceChart = {
                     opacity: 0.08,
                     line: { width: 0 },
                 });
+                shapes.push(this.buildBoundaryShape(step));
                 currentEpisode = ep;
                 startStep = step;
                 targetObject = point.target_object || '';
@@ -599,6 +619,35 @@ window.Hooks.EvidenceChart = {
         });
 
         return shapes;
+    },
+    
+    /**
+     * Vertical rule at an episode boundary.
+     *
+     * The evidence curves are cut at the boundary, but a cut between two equal
+     * values is invisible; the rule is what tells the eye where one episode
+     * ends and the next begins.
+     *
+     * @param {number} step - Step at which the new episode starts
+     * @returns {Object} Plotly shape
+     */
+    buildBoundaryShape(step) {
+        return {
+            type: 'line',
+            xref: 'x',
+            yref: 'paper',
+            x0: step,
+            x1: step,
+            y0: 0,
+            y1: 1,
+            line: {
+                color: '#6b7280',
+                width: 1,
+                dash: 'dot',
+            },
+            opacity: 0.5,
+            layer: 'below',
+        };
     },
     
     destroyed() {
