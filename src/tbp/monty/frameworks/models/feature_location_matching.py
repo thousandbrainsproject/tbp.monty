@@ -13,7 +13,6 @@ import logging
 from typing import Any
 
 import numpy as np
-import torch
 from sklearn.neighbors import KDTree
 
 from tbp.monty.context import RuntimeContext
@@ -612,8 +611,6 @@ class FeatureGraphLM(GraphLM):
             List of possible, unique, recent paths
         """
         possible_paths = self.get_possible_paths()[object_id]
-        if isinstance(possible_paths[0], torch.Tensor):
-            possible_paths = [path.clone().numpy() for path in possible_paths]
 
         if len(np.array(possible_paths).shape) == 1:
             unique_recent_paths = np.array(possible_paths)
@@ -769,7 +766,7 @@ class FeatureGraphMemory(GraphMemory):
         )
 
         if list_of_lists:
-            loc_lists = [[loc.numpy()] for loc in all_node_locs[possible_nodes_idx]]
+            loc_lists = [[loc] for loc in all_node_locs[possible_nodes_idx]]
             return all_node_ids[possible_nodes_idx], loc_lists
 
         return (
