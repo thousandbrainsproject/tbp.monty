@@ -14,8 +14,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol, Self
 
+from sympy import re
+
 from tbp.monty import telemetry
+from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
@@ -553,6 +557,224 @@ class ObjectRecognition(RecognitionStrategy):
         else:
             result = RecognitionResult()
         return result
+
+
+class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
+    """Recognition strategy that duplicates `_set_step_type_and_check_if_done`."""
+
+    _match_criterion: MatchCriterion
+    _min_train_steps: int
+    _min_eval_steps: int
+    _num_exploratory_steps: int
+
+    def __init__(
+        self: Self,
+        match_criterion: MatchCriterion,
+        min_train_steps: int,
+        min_eval_steps: int,
+        num_exploratory_steps: int,
+    ) -> None:
+        """Initialize the strategy.
+
+        Args:
+            match_criterion: The criterion used for deciding if all LMs match.
+            min_train_steps: The minimum number of training steps before checking for
+                terminal conditions.
+            min_eval_steps: The minimum number of evaluation steps before checking for
+                terminal conditions.
+            num_exploratory_steps: The number of exploratory steps required by the
+                exploratory phase.
+        """
+        self._match_criterion = match_criterion
+        self._min_train_steps = min_train_steps
+        self._min_eval_steps = min_eval_steps
+        self._num_exploratory_steps = num_exploratory_steps
+
+    def __call__(
+        self: Self, ctx: RecognitionContext, model: MontyBase
+    ) -> RecognitionResult:
+        learning_modules = model.learning_modules
+        any_lms_updated = self._check_if_any_lms_updated(learning_modules)
+
+        match model.step_type:
+            case "matching_step":
+                if any_lms_updated and self._check_terminal_conditions(
+                    ctx, learning_modules, model
+                ):
+                    return RecognitionResult(
+                        is_done=ctx.mode is ExperimentMode.EVAL
+                        and ctx.matching_steps > self._min_eval_steps,
+                        time_out_lms=True,
+                        start_exploring=ctx.mode is ExperimentMode.TRAIN,
+                    )
+            case "exploratory_step":
+                if (
+                    any_lms_updated
+                    and ctx.exploring_steps >= self._num_exploratory_steps
+                ):
+                    return RecognitionResult(is_done=True)
+
+        return RecognitionResult()
+
+    def _check_if_any_lms_updated(
+        self: Self, learning_modules: Sequence[LearningModule]
+    ) -> bool:
+        """Returns True if any LM received sensory information on current step."""
+        return any(lm.buffer.get_last_obs_processed() for lm in learning_modules)
+
+    def _check_terminal_conditions(
+        self,
+        ctx: RecognitionContext,
+        learning_modules: Sequence[LearningModule],
+        model: MontyBase,
+    ) -> bool:
+        """Check if all LMs have reached a terminal state.
+
+        This could be no_match, match, or time_out. If all LMs have reached one of these
+        states, end the episode.
+
+        Currently the episode just ends if
+            - the configured `match_criterion` is satisfied by the LMs that have
+              reached "match"
+            - all lms have reached "no_match"
+            - We have exceeded max_total_steps
+
+        Note:
+            In the future we may want to allow ending an episode when all states are
+            either match or no_match. Right now, the match lms will have to convince the
+            no_match lms of their detected object and pose for the episode to end which
+            may be more difficult if not all LMs know about all objects.
+
+        Returns:
+            True if the match criterion is satisfied, False otherwise.
+        """
+        # First check if all LMs have no match (for example in the first episode when
+        # we have no objects in memory yet). If that is the case there is no need to
+        # take max_steps or to spend time updating the lms terminal conditions. We could
+        # also reset the hypotheses of the no_match LMs to give them another chance to
+        # recover.
+        all_lms_no_match = True
+        for lm in learning_modules:
+            if lm.terminal_state != "no_match":
+                all_lms_no_match = False
+
+        if all_lms_no_match:
+            # No need to check any other conditions if all LMs have no_match
+            return True
+
+        # No need to check pose consensus if we haven't moved min steps yet.
+        if not self._exceeded_min_steps(ctx, model):
+            return False
+
+        # Check if LMs satisfy the match criterion
+        # TODO: we may also want to count no_match as done.
+        terminal_states: dict[str, str | None] = {}
+        for lm in learning_modules:
+            lm.update_terminal_condition()
+            logger.debug(
+                f"{lm.learning_module_id} has terminal state: {lm.terminal_state}"
+            )
+            terminal_states[lm.learning_module_id] = lm.terminal_state
+
+        if self._match_criterion(terminal_states):
+            logger.info("\n\nMONTY DETECTED MATCH\n\n")
+            return True
+
+        return False
+
+    def _exceeded_min_steps(self, ctx: RecognitionContext, model: MontyBase) -> bool:
+        return self._step_type_count(ctx, model) > self._min_steps(ctx, model)
+
+    def _min_steps(self, ctx: RecognitionContext, model: MontyBase) -> int:
+        match model.step_type:
+            case "matching_step":
+                match ctx.mode:
+                    case ExperimentMode.TRAIN:
+                        return self._min_train_steps
+                    case ExperimentMode.EVAL:
+                        return self._min_eval_steps
+            case "exploratory_step":
+                return self._num_exploratory_steps
+            case _:
+                raise ValueError(f"Unknown step type: {model.step_type}")
+
+    def _step_type_count(self, ctx: RecognitionContext, model: MontyBase) -> int:
+        match model.step_type:
+            case "matching_step":
+                return ctx.matching_steps
+            case "exploratory_step":
+                return ctx.exploring_steps
+            case _:
+                raise ValueError(f"Unknown step type: {model.step_type}")
+
+
+class MontyBaseSetStepTypeAndCheckIfDone(RecognitionStrategy):
+    """Recognition strategy that duplicates `_set_step_type_and_check_if_done`."""
+
+    _min_train_steps: int
+    _min_eval_steps: int
+    _num_exploratory_steps: int
+
+    def __init__(
+        self: Self,
+        min_train_steps: int,
+        min_eval_steps: int,
+        num_exploratory_steps: int,
+    ) -> None:
+        """Initialize the strategy.
+
+        Args:
+            min_train_steps: The minimum number of training steps before checking for
+                terminal conditions.
+            min_eval_steps: The minimum number of evaluation steps before checking for
+                terminal conditions.
+            num_exploratory_steps: The number of exploratory steps required by the
+                exploratory phase.
+        """
+        self._min_train_steps = min_train_steps
+        self._min_eval_steps = min_eval_steps
+        self._num_exploratory_steps = num_exploratory_steps
+
+    def __call__(
+        self: Self, ctx: RecognitionContext, model: MontyBase
+    ) -> RecognitionResult:
+        if self._exceeded_min_steps(ctx, model):
+            match model.step_type:
+                case "exploratory_step":
+                    return RecognitionResult(is_done=True)
+                case "matching_step":
+                    match ctx.mode:
+                        case ExperimentMode.TRAIN:
+                            return RecognitionResult(start_exploring=True)
+                        case ExperimentMode.EVAL:
+                            return RecognitionResult(is_done=True)
+
+        return RecognitionResult()
+
+    def _exceeded_min_steps(self, ctx: RecognitionContext, model: MontyBase) -> bool:
+        return self._step_type_count(ctx, model) > self._min_steps(ctx, model)
+
+    def _min_steps(self, ctx: RecognitionContext, model: MontyBase) -> int:
+        match model.step_type:
+            case "matching_step":
+                match ctx.mode:
+                    case ExperimentMode.TRAIN:
+                        return self._min_train_steps
+                    case ExperimentMode.EVAL:
+                        return self._min_eval_steps
+            case "exploratory_step":
+                return self._num_exploratory_steps
+            case _:
+                raise ValueError(f"Unknown step type: {model.step_type}")
+
+    def _step_type_count(self, ctx: RecognitionContext, model: MontyBase) -> int:
+        match model.step_type:
+            case "matching_step":
+                return ctx.matching_steps
+            case "exploratory_step":
+                return ctx.exploring_steps
+            case _:
+                raise ValueError(f"Unknown step type: {model.step_type}")
 
 
 class Any(RecognitionStrategy):

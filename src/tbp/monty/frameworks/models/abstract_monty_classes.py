@@ -144,7 +144,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         self._vote()
         self._pass_goals()
         self._step_motor_system(ctx, observations, proprioceptive_state)
-        self._set_step_type_and_check_if_done()
 
     def _exploratory_step(
         self,
@@ -165,7 +164,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         self._step_learning_modules(ctx)
         self._pass_goals()
         self._step_motor_system(ctx, observations, proprioceptive_state)
-        self._set_step_type_and_check_if_done()
 
     @abc.abstractmethod
     def step(
