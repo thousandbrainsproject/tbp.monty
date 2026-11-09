@@ -1148,7 +1148,7 @@ class GraphMemory(LMMemory):
         self,
         locations: npt.NDArray,
         features: dict[str, dict[str, npt.NDArray]],
-        graph_id: str | None,
+        graph_id: str,
         object_location_rel_body: npt.NDArray,
         location_rel_model: npt.NDArray,
         object_rotation: Rotation | None,
@@ -1169,10 +1169,6 @@ class GraphMemory(LMMemory):
            graph.
 
         """
-        if graph_id is None:
-            logger.info("no match found in time, not updating memory")
-            return
-
         # Determine this before the loop: channels added by this call must not
         # make the object look like it was already in memory (and thus has a
         # reference frame to transform into) for channels later in the loop.

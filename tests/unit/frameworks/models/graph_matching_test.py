@@ -77,22 +77,6 @@ class GraphLMProposeRegionTest(unittest.TestCase):
 
 
 class GraphMemoryUpdateMemoryTest(unittest.TestCase):
-    def test_if_graph_id_is_none_does_not_update_memory(self) -> None:
-        gm = GraphMemory()
-        gm._build_graph = MagicMock()  # type: ignore[method-assign]
-        gm._extend_graph = MagicMock()  # type: ignore[method-assign]
-
-        gm.update_memory(
-            locations=MagicMock(),
-            features=MagicMock(),
-            graph_id=None,
-            object_location_rel_body=MagicMock(),
-            location_rel_model=MagicMock(),
-            object_rotation=MagicMock(),
-        )
-
-        gm._build_graph.assert_not_called()
-        gm._extend_graph.assert_not_called()
 
     def test_if_unknown_object_builds_graph_from_features(self) -> None:
         features_mock = MagicMock()

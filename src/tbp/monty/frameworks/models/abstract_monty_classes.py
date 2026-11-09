@@ -449,7 +449,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
         self,
         locations: npt.NDArray[np.float64],
         features: dict[str, dict[str, npt.NDArray[np.float64]]],
-        graph_id: str | None,
+        graph_id: str,
         object_location_rel_body: npt.NDArray[np.float64],
         location_rel_model: npt.NDArray[np.float64],
         object_rotation: Rotation | None,
@@ -460,7 +460,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
             locations: Observed locations, one row per step, in body coordinates.
             features: Nested dict, input channel -> feature name -> array with one
                 row per step.
-            graph_id: ID of the recognized object or None.
+            graph_id: ID of the recognized object.
             object_location_rel_body: Detected location of the object relative to
                 the body.
             location_rel_model: Location of the last observation relative to the
