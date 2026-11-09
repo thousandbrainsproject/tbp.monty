@@ -77,7 +77,6 @@ class GraphLMProposeRegionTest(unittest.TestCase):
 
 
 class GraphMemoryUpdateMemoryTest(unittest.TestCase):
-
     def test_if_unknown_object_builds_graph_from_features(self) -> None:
         features_mock = MagicMock()
         features_mock.items.return_value = [
