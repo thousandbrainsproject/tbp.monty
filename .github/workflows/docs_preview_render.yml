@@ -28,6 +28,7 @@ jobs:
       - name: Checkout tbp.monty (trusted repository)
         uses: actions/checkout@v7
         with:
+          ref: main
           fetch-depth: 0
           path: tbp.monty
           persist-credentials: false

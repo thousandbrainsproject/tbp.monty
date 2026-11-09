@@ -1,7 +1,7 @@
 name: Docs Preview Publish
 
 # Serialize writes for this source branch. An old re-run must not cancel
-# a newer publish; the freshness checks below reject obsolete runs.
+# a newer publish. The freshness checks below reject out-of-date runs.
 concurrency:
   group: docs-preview-publish-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
@@ -114,7 +114,7 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            Publishing documentation preview... ⏳
+            Running publishing documentation preview workflow... ⏳
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
 
@@ -202,7 +202,7 @@ jobs:
             Last updated: ${{ steps.preview_info.outputs.monty_date }}
 
       - name: Update PR comment on failure
-        if: failure()
+        if: failure() && steps.source.outputs.pr_number != ''
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
