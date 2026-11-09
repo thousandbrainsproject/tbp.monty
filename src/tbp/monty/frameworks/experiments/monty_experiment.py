@@ -29,7 +29,6 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageInterface,
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
-from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.experiment.recognition_strategy import (
     MontyIsDone,
     RecognitionContext,
