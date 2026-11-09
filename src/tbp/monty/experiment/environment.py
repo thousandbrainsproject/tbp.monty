@@ -245,6 +245,7 @@ class OneObjectPerEpisodeInterface(Interface):
 
         assert self.primary_target is not None, "Primary target not set"
         target_semantic_id = self.primary_target.semantic_id
+        assert target_semantic_id is not None, "Primary target must have a semantic ID"
 
         success = False
         for factory in self._positioning_procedures:
@@ -265,7 +266,7 @@ class OneObjectPerEpisodeInterface(Interface):
         if self.num_distractors == 0 and not success:
             raise RuntimeError(
                 f"Primary target '{self.primary_target.object}' "
-                f"with rotation {self.primary_target.euler_rotation} "
+                f"with rotation {tuple(self.primary_target.euler_rotation)} "
                 f"not visible at start of episode"
             )
 
@@ -481,7 +482,7 @@ class OmniglotInterface(OneObjectPerEpisodeInterface):
         self.primary_target = PrimaryTarget(
             euler_rotation=np.array([0, 0, 0]),
             object=self.object_names[idx],
-            position=np.array([0, 0, 0]),
+            position=(0.0, 0.0, 0.0),
             quat_rotation=np.array([1, 0, 0, 0]),
             rotation=(1.0, 0.0, 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
@@ -573,7 +574,7 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
         self.primary_target = PrimaryTarget(
             euler_rotation=np.array([0, 0, 0]),
             object=target_object_formatted,
-            position=np.array([0, 0, 0]),
+            position=(0.0, 0.0, 0.0),
             quat_rotation=[1, 0, 0, 0],
             rotation=(1.0, 0.0, 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
@@ -648,7 +649,7 @@ class SaccadeOnImageFromStreamInterface(SaccadeOnImageInterface):
         self.primary_target = PrimaryTarget(
             euler_rotation=np.array([0, 0, 0]),
             object="no_label",
-            position=np.array([0, 0, 0]),
+            position=(0.0, 0.0, 0.0),
             quat_rotation=[1, 0, 0, 0],
             rotation=(1.0, 0.0, 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
