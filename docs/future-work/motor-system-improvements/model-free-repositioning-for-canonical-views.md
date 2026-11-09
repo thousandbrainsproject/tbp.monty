@@ -23,4 +23,4 @@ If the model-free system can consistently view an object with the same apparent 
 
 
 **Possible Follow-Up: Replacing/Emulating Positioning Procedures.**
-If the model-free repositioning behaviors are sufficiently powerful, then there may be an opportunity to use these features in place of positioning procedures used in our experiments. The goal isn't necessarily to eliminate positioning procedures -- they are still a valuable tool for initializing expriments. But there may be value in de-duplicating repositioning behaviors, especially if we expect them to be useful in platform code.
+If the model-free repositioning behaviors are sufficiently powerful, then there may be an opportunity to use these features in place of positioning procedures used in our experiments. The goal isn't necessarily to eliminate positioning procedures -- they are still a valuable tool for initializing experiments. But there may be value in de-duplicating repositioning behaviors, especially if we expect them to be useful in platform code.
