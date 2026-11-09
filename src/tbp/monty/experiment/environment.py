@@ -575,7 +575,7 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
             euler_rotation=np.array([0, 0, 0]),
             object=target_object_formatted,
             position=(0.0, 0.0, 0.0),
-            quat_rotation=[1, 0, 0, 0],
+            quat_rotation=np.array([1, 0, 0, 0]),
             rotation=(1.0, 0.0, 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
         )
@@ -650,7 +650,7 @@ class SaccadeOnImageFromStreamInterface(SaccadeOnImageInterface):
             euler_rotation=np.array([0, 0, 0]),
             object="no_label",
             position=(0.0, 0.0, 0.0),
-            quat_rotation=[1, 0, 0, 0],
+            quat_rotation=np.array([1, 0, 0, 0]),
             rotation=(1.0, 0.0, 0.0, 0.0),
             scale=(1.0, 1.0, 1.0),
         )
