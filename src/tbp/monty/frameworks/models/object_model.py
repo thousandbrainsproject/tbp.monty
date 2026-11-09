@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -269,9 +269,9 @@ class GraphObjectModel(ObjectModel):
     def _build_adjacency_graph(
         self,
         locations: npt.NDArray[np.float64],
-        features: Mapping[str, npt.NDArray],
+        features: Mapping[str, npt.NDArray[np.float64]],
         k_n: int | None,
-        graph_delta_thresholds,
+        graph_delta_thresholds: Mapping[str, Any] | None,
         old_graph_index: int,
     ) -> NumpyGraph:
         """Build graph from observations with nodes linking to the n nearest neighbors.
