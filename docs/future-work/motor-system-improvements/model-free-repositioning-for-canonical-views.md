@@ -1,6 +1,6 @@
 ---
 title: Model-Free Repositioning for Canonical Views
-description: Let sensor modules propose the agent's pose to obtain "cleaner" object views so that an object is viewed from a cleaner or canonical view.
+description: Let sensor modules propose the agent's pose so that an object is viewed from a cleaner or canonical view.
 rfc: optional
 estimated-scope: medium
 improved-metric: accuracy, speed, learning, goal-policy
@@ -12,7 +12,7 @@ status: open
 **Repositioning to obtain face-on views of planar surfaces.**
 When viewing an object's surface from a steeply oblique angle, sensor modules are given data that is effectively compressed along an axis. This means that features, such as the color or principle curvatures, are necessarily computed over a larger physical area, and this skew is often along only one physical axis. In other words, features can be view-dependent, which introduces extra difficulty when comparing observed features to features stored in learned models. Furthermore, viewing a surface from an oblique angle makes it more difficult to evenly saccade across the surface, thereby reducing the effective coverage of an object's faces.
 
-This can be addressed allowing sensor modules to propose agent poses. In particular, an SM may detect that it is viewing a surface from an oblique angle based on its observed surface normals. The SM can then propose a goal that would place the agent and sensor(s) such that it will view the surface "face-on". Here, "face-on" means viewing directly down the surface normal.
+This can be addressed by allowing sensor modules to propose agent poses. In particular, an SM may detect that it is viewing a surface from an oblique angle based on its observed surface normals. The SM can then propose a goal that would place the agent and sensor(s) such that it will view the surface "face-on". Here, "face-on" means viewing directly down the surface normal.
 ![Left: Monty sees the face of a cube from an oblique angle. Right: After repositioning according to the computed surface normal, Monty obtains a face-on view of the cube's face. Bottom rows The bottom row shows the view finder image from each pose.](../../figures/future-work/model_free_face_on_view.png#width=600px)
 
 
