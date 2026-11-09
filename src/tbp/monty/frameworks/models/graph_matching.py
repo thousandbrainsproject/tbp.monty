@@ -1156,9 +1156,7 @@ class GraphMemory(LMMemory):
     ) -> None:
         """Determine how to update memory and call corresponding function.
 
-        Nothing is stored when ``graph_id`` is None (no object was recognized in
-        time) or `features` is empty. Otherwise, how each channel's data is handled
-        falls into one of three cases:
+        How each channel's data is handled falls into one of three cases:
 
         1. Unknown object: Points are stored as-is (i.e., untransformed) for all
            channels.
