@@ -1,18 +1,18 @@
-name: Docs Preview
+name: Docs Preview Render
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
     branches:
       - main
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
-      - '.github/workflows/docs_preview.yml'
+      - '.github/workflows/docs_preview_render.yml'
       - 'benchmarks/**'
 
 permissions:
