@@ -26,7 +26,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import ObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.frameworks.utils.object_model_utils import (
     NumpyGraph,
-    as_numpy_graph,
     build_point_cloud_graph,
     circular_mean,
     expand_index_dims,
@@ -188,16 +187,9 @@ class GraphObjectModel(ObjectModel):
         if self._graph is not None:
             return self._graph.feature_mapping.keys()
 
-    def __setstate__(self, state: dict) -> None:
-        """Restore a pickled model, converting legacy torch_geometric graphs."""
-        # TODO: remove once existing .pt models have been migrated to NumpyGraph.
-        self.__dict__.update(state)
-        if self._graph is not None:
-            self._graph = as_numpy_graph(self._graph)
-
     def set_graph(self, graph):
         """Set self._graph property with given graph (i.e. from pretraining)."""
-        self._graph = as_numpy_graph(graph)
+        self._graph = graph
 
     def get_values_for_feature(self, feature):
         featue_idx = self.feature_mapping[feature]
@@ -519,8 +511,7 @@ class GridObjectModel(GraphObjectModel):
 
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):
-        """Set self._graph property and convert input graph to right format."""
-        graph = as_numpy_graph(graph)
+        """Set self._graph property from the given graph."""
         if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
             self._graph = graph

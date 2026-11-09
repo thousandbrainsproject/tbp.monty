@@ -56,51 +56,6 @@ class NumpyGraph:
         return self.x.shape[1]
 
 
-def torch_graph_to_numpy(torch_graph):
-    """Turn a torch geometric data structure into a dict with numpy arrays.
-
-    Args:
-        torch_graph: Torch geometric data structure.
-
-    Returns:
-        NumpyGraph.
-    """
-    numpy_graph = {}
-
-    # Newer versions of torch_geometric change `keys` from a
-    # property to a function.
-    # TODO: remove check and use keys function once upgraded to Python 3.10
-    if callable(torch_graph.keys):
-        keys = torch_graph.keys()
-    else:
-        keys = torch_graph.keys
-
-    for key in keys:
-        if isinstance(torch_graph[key], torch.Tensor):
-            numpy_graph[key] = np.array(torch_graph[key])
-        else:
-            numpy_graph[key] = torch_graph[key]
-    return NumpyGraph(numpy_graph)
-
-
-def as_numpy_graph(graph):
-    """Return graph as a NumpyGraph, converting legacy torch_geometric graphs.
-
-    Models saved before the NumpyGraph refactor store a torch_geometric `Data`
-    graph. TODO: remove once existing .pt models have been migrated.
-
-    Args:
-        graph: NumpyGraph or legacy torch_geometric data structure.
-
-    Returns:
-        The graph as a NumpyGraph.
-    """
-    if isinstance(graph, NumpyGraph):
-        return graph
-    logger.debug(f"turning graph of type {type(graph)} into numpy graph")
-    return torch_graph_to_numpy(graph)
-
-
 def already_in_list(
     existing_points, new_point, features, clean_ids, query_id, graph_delta_thresholds
 ) -> bool:
