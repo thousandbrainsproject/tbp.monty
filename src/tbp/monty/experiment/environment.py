@@ -174,7 +174,7 @@ class OneObjectPerEpisodeInterface(Interface):
     sampled from the same object list, can be added.
     """
 
-    primary_target: PrimaryTarget | None = None
+    primary_target: PrimaryTarget | None
 
     def __init__(
         self,
@@ -234,6 +234,7 @@ class OneObjectPerEpisodeInterface(Interface):
         )
         self.current_object = 0
         self.n_objects = len(self.object_names)
+        self.primary_target = None
         self._positioning_procedures = positioning_procedures
 
     def pre_episode(self, rng: np.random.RandomState):

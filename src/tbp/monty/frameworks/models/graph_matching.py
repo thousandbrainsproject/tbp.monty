@@ -503,7 +503,7 @@ class GraphLM(LearningModule):
     """Cache of goals for ``propose_region`` to reference."""
     possible_paths: dict[str, Any]
     detected_rotation_r: Rotation | None
-    primary_target: str | None = None
+    primary_target: str | None
 
     def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.
@@ -531,6 +531,7 @@ class GraphLM(LearningModule):
         # and which graphs correspond to each target object
         self.target_to_graph_id = {}
         self.graph_id_to_target = {}
+        self.primary_target = None
         self.possible_matches = {}
         self.possible_paths = {}
         # Will always be set during experiment setup, just setting here for unit tests

@@ -249,6 +249,10 @@ class MontyExperiment:
             if self._rng_seed_history
             else self.config["seed"]
         )
+        # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
+        target = None
+        if isinstance(self.env_interface, OneObjectPerEpisodeInterface):
+            target = self.env_interface.primary_target
         return LoggerArgs(
             episode_steps=self._recognition_ctx.step,
             total_train_steps=self.total_train_steps,
@@ -258,10 +262,7 @@ class MontyExperiment:
             eval_episodes=self.eval_episodes,
             eval_epochs=self.eval_epochs,
             episode_seed=current_rng_seed,
-            # FIXME: 'target' attribute is specific to `OneObjectPerEpisodeInterface`
-            target=self.env_interface.primary_target
-            if isinstance(self.env_interface, OneObjectPerEpisodeInterface)
-            else None,
+            target=target,
         )
 
     def init_loggers(
@@ -497,7 +498,7 @@ class MontyExperiment:
                 or self.experiment_mode is not ExperimentMode.TRAIN
             ):
                 raise
-            target: PrimaryTarget = self.env_interface.primary_target
+            target = self.env_interface.primary_target
             logger.warning(
                 "Skipping training pose: object=%s position=%s rotation=%s reason=%s",
                 target.object,
