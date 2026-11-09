@@ -242,7 +242,7 @@ def check_rotation_accuracy(stats, last_n_step=1):
     pose_stats = []
     for episode in stats:
         if len(stats[episode]["LM_0"]["possible_poses"]) >= last_n_step:
-            target_object = stats[episode]["LM_0"]["target"]["object"]
+            target_object = stats[episode]["LM_0"]["target"]["object_name"]
             target_rotation = stats[episode]["LM_0"]["target"]["euler_rotation"]
             detected_rotations = stats[episode]["LM_0"]["possible_poses"][-last_n_step][
                 target_object
@@ -333,7 +333,7 @@ def check_detection_accuracy_at_step(stats, last_n_step=1):
     for episode in stats:
         possible_matches = stats[episode]["LM_0"]["possible_matches"]
         if len(possible_matches) >= last_n_step:
-            target_object = stats[episode]["LM_0"]["target"]["object"]
+            target_object = stats[episode]["LM_0"]["target"]["object_name"]
             matches_at_step = possible_matches[-last_n_step]
             if len(matches_at_step) == 0:
                 performance = "no matches"
@@ -848,7 +848,7 @@ def target_data_to_dict(
         dict with target params
     """
     output_dict: dict[str, str | npt.NDArray[np.float64] | float] = {}
-    output_dict["primary_target_object"] = target.object
+    output_dict["primary_target_object"] = target.object_name
     # Convert values to NumPy arrays to get consistent string rendering.
     output_dict["primary_target_position"] = np.array(target.position)
     output_dict["primary_target_rotation_euler"] = np.array(target.euler_rotation)

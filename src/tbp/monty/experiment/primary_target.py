@@ -18,7 +18,7 @@ from tbp.monty.math import EulerAnglesXYZ, QuaternionWXYZ, VectorXYZ
 @dataclass
 class PrimaryTarget:
     euler_rotation: npt.NDArray[np.float64] | EulerAnglesXYZ
-    object: str
+    object_name: str
     position: VectorXYZ
     rotation: QuaternionWXYZ
     scale: VectorXYZ

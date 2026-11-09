@@ -577,7 +577,7 @@ class GraphLM(LearningModule):
                 primary_target)
         """
         if primary_target is not None:
-            self.primary_target = primary_target.object
+            self.primary_target = primary_target.object_name
             self.primary_target_rotation_quat = primary_target.quat_rotation
         self.stepwise_target_object = None
         self.stepwise_targets_list = []

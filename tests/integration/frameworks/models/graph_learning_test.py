@@ -516,7 +516,7 @@ class GraphLearningTest(BaseGraphTest):
         for row in range(train_stats.shape[0]):
             self.assertEqual(
                 train_stats.loc[row]["primary_target_object"],
-                detailed_stats[str(row)]["LM_0"]["target"]["object"],
+                detailed_stats[str(row)]["LM_0"]["target"]["object_name"],
                 "targets in train_stats and detailed stats don't match.",
             )
 
@@ -524,7 +524,7 @@ class GraphLearningTest(BaseGraphTest):
             detailed_id = train_stats.shape[0] + row - 1
             self.assertEqual(
                 eval_stats.loc[row]["primary_target_object"],
-                detailed_stats[str(detailed_id)]["LM_0"]["target"]["object"],
+                detailed_stats[str(detailed_id)]["LM_0"]["target"]["object_name"],
                 "targets in eval_stats and detailed stats don't match.",
             )
         self.assertEqual(

@@ -987,7 +987,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         lm.fixme_reset_ground_truth(
             primary_target=PrimaryTarget(
                 euler_rotation=np.array([0, 0, 0]),
-                object="dummy_object",
+                object_name="dummy_object",
                 position=(0.0, 0.0, 0.0),
                 quat_rotation=np.array([1, 0, 0, 0]),
                 rotation=(1.0, 0.0, 0.0, 0.0),

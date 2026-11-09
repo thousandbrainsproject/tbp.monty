@@ -115,7 +115,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         self.primary_target = primary_target
         self.semantic_id_to_label = semantic_id_to_label
         for lm in self.learning_modules:
-            lm.primary_target = primary_target.object
+            lm.primary_target = primary_target.object_name
             lm.primary_target_rotation_quat = primary_target.quat_rotation
 
     def _reset_terminal_states(self):

@@ -167,7 +167,7 @@ class BaseGraphTest(TestCase):
 
         self.placeholder_target = PrimaryTarget(
             euler_rotation=np.array([0, 0, 0]),
-            object="placeholder",
+            object_name="placeholder",
             position=(0.0, 0.0, 0.0),
             quat_rotation=np.array([1, 0, 0, 0]),
             rotation=(1.0, 0.0, 0.0, 0.0),

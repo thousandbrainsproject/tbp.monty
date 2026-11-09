@@ -265,7 +265,7 @@ class OneObjectPerEpisodeInterface(Interface):
 
         if self.num_distractors == 0 and not success:
             raise RuntimeError(
-                f"Primary target '{self.primary_target.object}' "
+                f"Primary target '{self.primary_target.object_name}' "
                 f"with rotation {tuple(self.primary_target.euler_rotation)} "
                 f"not visible at start of episode"
             )
@@ -359,7 +359,7 @@ class OneObjectPerEpisodeInterface(Interface):
         self.current_object = idx
         self.primary_target = PrimaryTarget(
             euler_rotation=self.object_params["euler_rotation"],
-            object=self.object_names[idx],
+            object_name=self.object_names[idx],
             position=self.object_params["position"],
             quat_rotation=self.object_params.get("quat_rotation", None),
             semantic_id=self.semantic_label_to_id[self.object_names[idx]],
@@ -481,7 +481,7 @@ class OmniglotInterface(OneObjectPerEpisodeInterface):
         self.current_object = idx
         self.primary_target = PrimaryTarget(
             euler_rotation=np.array([0, 0, 0]),
-            object=self.object_names[idx],
+            object_name=self.object_names[idx],
             position=(0.0, 0.0, 0.0),
             quat_rotation=np.array([1, 0, 0, 0]),
             rotation=(1.0, 0.0, 0.0, 0.0),
@@ -573,7 +573,7 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
         target_object_formatted = "_".join(target_object.split("_")[1:])
         self.primary_target = PrimaryTarget(
             euler_rotation=np.array([0, 0, 0]),
-            object=target_object_formatted,
+            object_name=target_object_formatted,
             position=(0.0, 0.0, 0.0),
             quat_rotation=np.array([1, 0, 0, 0]),
             rotation=(1.0, 0.0, 0.0, 0.0),
@@ -648,7 +648,7 @@ class SaccadeOnImageFromStreamInterface(SaccadeOnImageInterface):
         # targets corresponding to the current scene ?
         self.primary_target = PrimaryTarget(
             euler_rotation=np.array([0, 0, 0]),
-            object="no_label",
+            object_name="no_label",
             position=(0.0, 0.0, 0.0),
             quat_rotation=np.array([1, 0, 0, 0]),
             rotation=(1.0, 0.0, 0.0, 0.0),

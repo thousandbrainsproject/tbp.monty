@@ -158,12 +158,12 @@ class EvidenceLMTest(BaseGraphTest):
 
         # Train on second object
         obj_two_target = copy.deepcopy(self.placeholder_target)
-        obj_two_target.object = "new_object1"
+        obj_two_target.object_name = "new_object1"
         graph_lm.reset_stm()
         graph_lm.fixme_reset_ground_truth(primary_target=obj_two_target)
         for observation in fake_obs_two:
             graph_lm.exploratory_step(self.ctx, [observation])
-        graph_lm.detected_object = obj_two_target.object
+        graph_lm.detected_object = obj_two_target.object_name
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
             graph_lm.buffer.current_location()

@@ -501,7 +501,7 @@ class MontyExperiment:
             target = self.env_interface.primary_target
             logger.warning(
                 "Skipping training pose: object=%s position=%s rotation=%s reason=%s",
-                target.object,
+                target.object_name,
                 target.position,
                 target.euler_rotation,
                 error,
