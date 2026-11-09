@@ -9,9 +9,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, Sequence
+from typing import TYPE_CHECKING, Any, Protocol, Self, override
 
 from mujoco import (
     MjData,
@@ -25,7 +26,6 @@ from mujoco import (
     mjtTexture,
     mjtTextureRole,
 )
-from typing_extensions import Self, override
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID

@@ -12,9 +12,10 @@ from __future__ import annotations
 import copy
 import shutil
 import tempfile
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import hydra
 import numpy as np
@@ -333,7 +334,7 @@ class GraphLearningTest(BaseGraphTest):
                     exp.pre_epoch()
                 if e >= 2:
                     # Set max steps low & raise mmd to get pose time outs
-                    exp._recognition_policy._max_train_steps = 3
+                    exp._recognition_strategy._max_train_steps = 3
                     if exp._recreation_mode:
                         lm_cfg = exp._monty_cfg["learning_modules"]["learning_module_0"]
                         lm_cfg["max_match_distance"] = 0.1
@@ -402,8 +403,8 @@ class GraphLearningTest(BaseGraphTest):
                 exp.model.primary_target = str(e)
                 for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
-                last_step = exp.run_episode_steps()
-                exp.post_episode(last_step)
+                exp.run_episode_steps()
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
@@ -977,7 +978,11 @@ class GraphLearningTest(BaseGraphTest):
                     monty._vote()
                     monty._pass_goals()
                     monty._set_step_type_and_check_if_done()
-                exp.post_episode(num_steps)
+                # TODO: This test does too much manually and does not incorporate how
+                #       we run episodes with RecognitionContext. Below we mock
+                #       recognition_ctx so that post_episode() has access to it.
+                exp._recognition_ctx.step = num_steps
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)

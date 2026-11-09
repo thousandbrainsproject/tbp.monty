@@ -8,13 +8,13 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
-from typing import Any, Collection, Protocol, Sequence, runtime_checkable
+from typing import Annotated, Any, Protocol, runtime_checkable
 
 import numpy as np
 import quaternion as qt
 from pydantic import BeforeValidator, ConfigDict, validate_call
-from typing_extensions import Annotated
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext

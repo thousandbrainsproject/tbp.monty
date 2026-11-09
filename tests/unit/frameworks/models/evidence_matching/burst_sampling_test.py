@@ -793,7 +793,7 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
             tracker=EvidenceSlopeTracker(),
         )
 
-        for channel, num_nodes in zip(channels, channel_nodes):
+        for channel, num_nodes in zip(channels, channel_nodes, strict=True):
             capped = min(sampling_multiplier, num_hyps_per_node)
             expected = round(num_nodes * capped)
             expected -= expected % num_hyps_per_node
