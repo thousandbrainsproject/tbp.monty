@@ -9,8 +9,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, NewType, Protocol, Sequence
+from typing import TYPE_CHECKING, NewType, Protocol
 
 from tbp.monty.math import (
     IDENTITY_QUATERNION,

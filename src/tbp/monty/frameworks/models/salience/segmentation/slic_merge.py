@@ -115,14 +115,14 @@ class SlicMerge(SegmentationStrategy):
 
         # Find each region's left and right neighbors.
         h_neighbors = region_image[:, :-1] != region_image[:, 1:]
-        for i, j in zip(*np.where(h_neighbors)):
+        for i, j in zip(*np.where(h_neighbors), strict=True):
             a, b = region_image[i, j], region_image[i, j + 1]
             adj[a].add(b)
             adj[b].add(a)
 
         # Find each region's top and bottom neighbors.
         v_neighbors = region_image[:-1, :] != region_image[1:, :]
-        for i, j in zip(*np.where(v_neighbors)):
+        for i, j in zip(*np.where(v_neighbors), strict=True):
             a, b = region_image[i, j], region_image[i + 1, j]
             adj[a].add(b)
             adj[b].add(a)

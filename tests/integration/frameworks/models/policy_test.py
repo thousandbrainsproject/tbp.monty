@@ -13,8 +13,9 @@ import copy
 import shutil
 import tempfile
 import unittest
+from collections.abc import MutableMapping
 from functools import partial
-from typing import Any, MutableMapping, cast
+from typing import Any, cast
 from unittest.mock import Mock
 
 import hydra
