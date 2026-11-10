@@ -21,6 +21,7 @@ from tbp.monty import telemetry
 from tbp.monty.cmp import AttentionRegion, Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.match_criteria import MatchCriterion
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
     RecognitionStatus,
@@ -60,7 +61,7 @@ class MontyForGraphMatching(MontyBase):
 
     def fixme_set_ground_truth(
         self,
-        primary_target: dict[str, Any] | None = None,
+        primary_target: PrimaryTarget | None = None,
         semantic_id_to_label: dict[SemanticID, str] | None = None,
     ) -> None:
         self.primary_target = primary_target
@@ -506,6 +507,7 @@ class GraphLM(LearningModule):
     """Cache of goals for ``propose_region`` to reference."""
     possible_paths: dict[str, Any]
     detected_rotation_r: Rotation | None
+    primary_target: str | None
 
     def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.
@@ -566,8 +568,7 @@ class GraphLM(LearningModule):
 
     def fixme_reset_ground_truth(
         self,
-        # TODO: Create a specific type for `primary_target`.
-        primary_target: dict[str, Any] | None = None,
+        primary_target: PrimaryTarget | None = None,
     ) -> None:
         """Set target object var and reset others from last episode.
 
@@ -580,8 +581,8 @@ class GraphLM(LearningModule):
                 primary_target)
         """
         if primary_target is not None:
-            self.primary_target = primary_target["object"]
-            self.primary_target_rotation_quat = primary_target["quat_rotation"]
+            self.primary_target = primary_target.object_name
+            self.primary_target_rotation_quat = primary_target.quat_rotation
         self.stepwise_target_object = None
         self.stepwise_targets_list = []
 
