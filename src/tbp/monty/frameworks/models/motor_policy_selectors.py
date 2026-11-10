@@ -9,7 +9,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Protocol
 
 from tbp.monty.cmp import Goal, Message
 from tbp.monty.context import RuntimeContext

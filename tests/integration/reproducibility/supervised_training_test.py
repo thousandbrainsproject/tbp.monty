@@ -8,15 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import tempfile
 import unittest
 from pathlib import Path
@@ -24,16 +15,17 @@ from pathlib import Path
 import hydra
 import torch
 
+from tests import HYDRA_ROOT
 from tests.integration.reproducibility.asserts import assert_trained_models_equal
 from tests.integration.reproducibility.config import hydra_config
 from tests.integration.reproducibility.run import parallel_run, serial_run
 
 
 class SupervisedTrainingTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.output_dir = Path(tempfile.mkdtemp())
 
-    def test_training_results_are_equal(self):
+    def test_training_results_are_equal(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config(
                 "reproducibility_supervised_training", self.output_dir

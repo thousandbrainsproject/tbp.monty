@@ -21,6 +21,7 @@ from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
 
@@ -164,10 +165,15 @@ class BaseGraphTest(TestCase):
             Message(**fp_house_5),
         ]
 
-        self.placeholder_target = {
-            "object": "placeholder",
-            "quat_rotation": [1, 0, 0, 0],
-        }
+        self.placeholder_target = PrimaryTarget(
+            euler_rotation=np.array([0, 0, 0]),
+            object_name="placeholder",
+            position=(0.0, 0.0, 0.0),
+            quat_rotation=np.array([1, 0, 0, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+            scale=(1.0, 1.0, 1.0),
+            semantic_id=None,
+        )
 
         self.ctx = RuntimeContext(rng=np.random.RandomState())
 
@@ -404,7 +410,7 @@ class BaseGraphTest(TestCase):
             )
 
     def check_possible_paths_or_poses(self, stats_1, stats_2, key):
-        for paths1, paths2 in zip(stats_1[key], stats_2[key]):
+        for paths1, paths2 in zip(stats_1[key], stats_2[key], strict=True):
             possible_objects_1 = set(paths1.keys())
             possible_objects_2 = set(paths2.keys())
             self.assertEqual(possible_objects_1, possible_objects_2)
@@ -414,7 +420,7 @@ class BaseGraphTest(TestCase):
 
     def convert_to_numpy_and_check_equal(self, list1, list2):
         if len(list1) > 0 and isinstance(list1[0], (list, np.ndarray)):
-            for v1, v2 in zip(list1, list2):
+            for v1, v2 in zip(list1, list2, strict=True):
                 self.convert_to_numpy_and_check_equal(v1, v2)
 
         else:
@@ -440,11 +446,11 @@ class BaseGraphTest(TestCase):
         ]
 
         key = "possible_matches"
-        for matches_1, matches_2 in zip(stats_1[key], stats_2[key]):
+        for matches_1, matches_2 in zip(stats_1[key], stats_2[key], strict=True):
             self.assertEqual(set(matches_1), set(matches_2))
 
         key = "stepwise_targets_list"
-        for matches_1, matches_2 in zip(stats_1[key], stats_2[key]):
+        for matches_1, matches_2 in zip(stats_1[key], stats_2[key], strict=True):
             self.assertEqual(set(matches_1), set(matches_2))
 
         key = "possible_paths"

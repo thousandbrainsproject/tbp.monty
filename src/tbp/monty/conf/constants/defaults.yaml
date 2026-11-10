@@ -37,7 +37,9 @@ pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v14}
 # v6 : Uses 3LM architecture (with TwoDSensorModule + burst sampling) trained on compositional_objects_1.2
 # v7 : Trained on compositional_objects_1.4 (darker marble background + expanded dataset)
 # v8 : First models trained on MuJoCo
-compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v8}
+# v9 : Trained with euclidean distance and object pose evidence for OrientationMatrix inputs (PR#1266)
+# v10 : Applied transform fix from PR#1280
+compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v10}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.

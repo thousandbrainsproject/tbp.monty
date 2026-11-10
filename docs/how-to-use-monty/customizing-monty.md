@@ -29,7 +29,7 @@ defaults:
   - /monty/learning_module: my_custom_learning_module
   - /monty/sensor_module: camera_dist_delta
   - /monty/connectivity: 1lm_1sm
-  - /environment: habitat_ycb_dist_agent_semantics0
+  - /environment: mujoco_ycb_dist_agent
   - /env_interface: eval_distinctobj_predefined
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
