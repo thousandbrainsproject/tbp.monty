@@ -11,7 +11,7 @@ recognition_strategy:
         _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
         count: 1
       min_train_steps: 3
-      min_eval_steps: ${constants.min_eval_steps}
+      min_eval_steps: 3
       num_exploratory_steps: 1000
     # Duplicates strategy above except max_train_steps is set to 1000
     - _target_: tbp.monty.experiment.recognition_strategy.StepLimit
