@@ -10,7 +10,7 @@ defaults:
   - /env_interface: eval_cows_small_random
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
-  - /termination: named_lm2_objectrecognition_t1000_e100_tot6000
+  - /termination: named_lm2_any_mfgm_t3ecexp1000_t1000e100tot6000
   - /logging: basic_warning_wandb_evidence_eval_runs
 
 experiment:

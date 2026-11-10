@@ -9,7 +9,7 @@ defaults:
   - /environment: two_d_data_hand_intrusion
   - /env_interface: eval_worldimages
   - /env_interface/transform: none
-  - /termination: any1_objectrecognition_t1000_e500_tot6000
+  - /termination: any1_any_mfgm_t3ecexp1000_t1000e500tot6000
   - /logging: basic_warning_wandb_evidence_eval_runs
 
 experiment:
