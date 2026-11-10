@@ -9,8 +9,9 @@ recognition_strategy:
   strategies:
     - _target_: tbp.monty.experiment.recognition_strategy.MontyForGraphMatchingSetStepTypeAndCheckIfDone
       match_criterion:
-        _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-        count: 1
+        _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+        ids:
+          - learning_module_2
       min_train_steps: 3
       min_eval_steps: ${constants.min_eval_steps}
       num_exploratory_steps: 1000
