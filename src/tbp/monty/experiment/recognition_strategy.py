@@ -247,7 +247,7 @@ class MaxTotalSteps(RecognitionStrategy):
 
 
 class MaximumSteps(RecognitionStrategy):
-    """`model.matching_steps >= {max_train_steps | max_eval_steps}`."""
+    """`ctx.matching_steps >= {max_train_steps | max_eval_steps}`."""
 
     _max_train_steps: int
     """The maximum steps to take in training mode."""
@@ -284,7 +284,7 @@ class MaximumSteps(RecognitionStrategy):
             if ctx.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        is_done = (not model.is_exploring) and (model.matching_steps >= max_steps)
+        is_done = (not model.is_exploring) and (ctx.matching_steps >= max_steps)
         result = RecognitionResult(
             is_done=is_done,
             time_out_lms=is_done,
@@ -292,9 +292,9 @@ class MaximumSteps(RecognitionStrategy):
         if result.is_done:
             logger.info(
                 "MaximumSteps is done, "
-                "with model.is_exploring=%s model.matching_steps=%d",
+                "with model.is_exploring=%s ctx.matching_steps=%d",
                 model.is_exploring,
-                model.matching_steps,
+                ctx.matching_steps,
             )
         return result
 
@@ -489,7 +489,7 @@ class ObjectRecognition(RecognitionStrategy):
     """Determine terminal conditions for object recognition experiments.
 
     Terminal conditions include:
-    - `model.matching_steps >= {max_train_steps | max_eval_steps}`
+    - `ctx.matching_steps >= {max_train_steps | max_eval_steps}`
     - `ctx.step >= max_total_steps`
     - `model.is_done`
     """
