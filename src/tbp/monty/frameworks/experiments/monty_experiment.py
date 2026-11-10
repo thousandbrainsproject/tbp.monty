@@ -254,6 +254,7 @@ class MontyExperiment:
             target = self.env_interface.primary_target
         return LoggerArgs(
             episode_steps=self._recognition_ctx.step,
+            matching_steps=self._recognition_ctx.matching_steps,
             total_train_steps=self.total_train_steps,
             train_episodes=self.train_episodes,
             train_epochs=self.train_epochs,

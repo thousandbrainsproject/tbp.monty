@@ -739,13 +739,18 @@ def add_pose_lm_episode_stats(lm, stats):
 
 
 def get_stats_per_lm(
-    model: Monty, episode_steps: int, target: PrimaryTarget, episode_seed: int
+    model: Monty,
+    episode_steps: int,
+    matching_steps: int,
+    target: PrimaryTarget,
+    episode_seed: int,
 ) -> dict[str, dict[str, Any]]:
     """Loop through lms and get stats.
 
     Args:
         model: model instance
         episode_steps: number of steps taken in the episode
+        matching_steps: number of matching steps taken in the episode
         target: target object
         episode_seed: RNG seed used for the episode
 
@@ -762,7 +767,7 @@ def get_stats_per_lm(
             lm_stats = add_pose_lm_episode_stats(lm, lm_stats)
         lm_stats = add_policy_episode_stats(lm, lm_stats)
         lm_stats["monty_steps"] = episode_steps
-        lm_stats["monty_matching_steps"] = model.matching_steps
+        lm_stats["monty_matching_steps"] = matching_steps
         lm_stats["episode_seed"] = episode_seed
         performance_dict[f"LM_{i}"] = lm_stats
         performance_dict[f"LM_{i}"].update(primary_target_dict)

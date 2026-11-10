@@ -14,8 +14,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol, Self
 
-from sympy import re
-
 from tbp.monty import telemetry
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
