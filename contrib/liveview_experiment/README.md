@@ -51,13 +51,13 @@ The scripts support two modes:
    - No per-experiment YAML files needed
 
 **Any experiment in the tree, by any name it has.** Monty's `conf/experiment` is
-a tree — `test/evidence_lm/evidence_mujoco` is an experiment — so the scripts
+a tree — `test/evidence_lm/evidence` is an experiment — so the scripts
 answer the whole path, and a file name that fits exactly one config:
 
 ```bash
 # All of these are the same experiment
-./contrib/liveview_experiment/scripts/run.sh test/evidence_lm/evidence_mujoco
-./contrib/liveview_experiment/scripts/run.sh evidence_mujoco
+./contrib/liveview_experiment/scripts/run.sh test/evidence_lm/evidence
+./contrib/liveview_experiment/scripts/run.sh evidence
 
 # What fits a word, when you are not sure of the name
 ./contrib/liveview_experiment/scripts/run.sh -l evidence

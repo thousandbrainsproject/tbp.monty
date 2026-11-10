@@ -20,7 +20,7 @@ cd "$TBP_MONTY_ROOT" || {
 EXPERIMENT_NAME="${1:-randrot_noise_77obj_surf_agent}"
 
 # Find the config the name means. Monty's `conf/experiment` is a tree, so
-# `evidence_mujoco` is a file under `test/evidence_lm/` and its Hydra name is the
+# `evidence` is a file under `test/evidence_lm/` and its Hydra name is the
 # whole path; both are answered. The lookup is shared with `run_parallel.sh`.
 LIVEVIEW_CONF="${LIVEVIEW_DIR}/conf/experiment"
 MONTY_CONF="${TBP_MONTY_ROOT}/src/tbp/monty/conf/experiment"
@@ -170,8 +170,15 @@ fi
 echo "Press Ctrl+C to stop" >&2
 echo "" >&2
 
-# Cleanup function to kill LiveView server and tail process on exit
+# Cleanup function to kill LiveView server and tail process on exit.
+# Both TERM and EXIT reach it — a Ctrl+C ends with both — so it runs once.
+CLEANUP_DONE=""
 cleanup() {
+    if [ -n "$CLEANUP_DONE" ]; then
+        return
+    fi
+    CLEANUP_DONE=1
+
     echo "" >&2
     echo "Cleaning up..." >&2
     
@@ -210,7 +217,6 @@ if [ "$IS_LIVEVIEW_CONFIG" = "true" ]; then
         "experiment=${EXPERIMENT_NAME}" \
         "hydra.searchpath=[${TBP_MONTY_ROOT}/src/tbp/monty/conf,${LIVEVIEW_DIR}/conf]" || {
         EXPERIMENT_EXIT_CODE=$?
-        cleanup
         exit $EXPERIMENT_EXIT_CODE
     }
 else
@@ -239,7 +245,7 @@ else
     echo "✓ Experiment class: ${BASE_EXPERIMENT_CLASS}" >&2
 
     # The run's name is also a directory name, so a nested experiment's slashes
-    # become dashes: `test/evidence_lm/evidence_mujoco` is one run, not a tree.
+    # become dashes: `test/evidence_lm/evidence` is one run, not a tree.
     RUN_NAME="${EXPERIMENT_NAME//\//_}"
     LITTERAL_RUN_NAME="${RUN_NAME}${RUN_NAME_SUFFIX}"
 
@@ -257,14 +263,10 @@ else
         "logging=basic_warning_monty_runs" \
         "experiment.config.logging.run_name=${LITTERAL_RUN_NAME}" || {
         EXPERIMENT_EXIT_CODE=$?
-        cleanup
         exit $EXPERIMENT_EXIT_CODE
     }
 fi
 
-EXPERIMENT_EXIT_CODE=$?
-
-# Cleanup will be called by trap on exit, but explicit cleanup here too
-cleanup
-exit $EXPERIMENT_EXIT_CODE
+# The EXIT trap runs cleanup once, on any exit path.
+exit
 

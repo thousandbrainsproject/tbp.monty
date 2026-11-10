@@ -1,8 +1,8 @@
 #!/bin/bash
 # Finding the experiment a person named.
 #
-# Monty's `conf/experiment` is a tree, not a directory: `evidence_mujoco` lives
-# at `test/evidence_lm/evidence_mujoco`, and that whole path — not the file name
+# Monty's `conf/experiment` is a tree, not a directory: `evidence` lives
+# at `test/evidence_lm/evidence`, and that whole path — not the file name
 # — is the name Hydra knows it by. This resolves what somebody types into the
 # one config it means, and says which tree it came from, because a config in
 # `contrib/liveview_experiment/conf` is already a LiveView experiment and one in
@@ -46,8 +46,8 @@ resolve_experiment() {
         return 0
     fi
 
-    # A bare file name is how people say a nested experiment — `evidence_mujoco`
-    # for `test/evidence_lm/evidence_mujoco` — so it is answered when it is
+    # A bare file name is how people say a nested experiment — `evidence`
+    # for `test/evidence_lm/evidence` — so it is answered when it is
     # unambiguous and refused when it is not: picking one of two configs with the
     # same name would be running an experiment nobody asked for.
     fit=$(experiment_configs | awk -v want="$name" '{ n = split($2, parts, "/"); if (parts[n] == want) print }')

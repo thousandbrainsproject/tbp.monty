@@ -788,9 +788,9 @@ class MontyExperimentWithLiveView(MontyExperiment):
             logger.debug("Failed to encode depth image: %s", e)
             return None
 
-    def post_episode(self, steps: int) -> None:
+    def post_episode(self) -> None:
         """Update state after each episode."""
-        super().post_episode(steps)
+        super().post_episode()
         self._update_state_from_experiment()
 
     def pre_epoch(self) -> None:

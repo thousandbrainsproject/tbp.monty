@@ -79,16 +79,16 @@ class TestExperimentLookup:
         )
 
     def test_a_nested_experiment_is_found_by_its_own_name(self):
-        found = self.resolve("evidence_mujoco")
+        found = self.resolve("evidence")
 
         assert found.returncode == 0
-        assert found.stdout.strip() == "main test/evidence_lm/evidence_mujoco"
+        assert found.stdout.strip() == "main test/evidence_lm/evidence"
 
     def test_a_whole_path_is_found_as_it_stands(self):
-        found = self.resolve("test/evidence_lm/evidence_mujoco")
+        found = self.resolve("test/evidence_lm/evidence")
 
         assert found.returncode == 0
-        assert found.stdout.strip() == "main test/evidence_lm/evidence_mujoco"
+        assert found.stdout.strip() == "main test/evidence_lm/evidence"
 
     def test_a_contrib_experiment_is_found_in_the_contrib_tree(self):
         found = self.resolve("randrot_10distinctobj_surf_agent_with_liveview")
