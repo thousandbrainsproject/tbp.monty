@@ -14,6 +14,7 @@ from typing import Any
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.memento import Memento
@@ -55,7 +56,9 @@ class FakeLearningModule(LearningModule):
     def reset_stm(self) -> None:
         pass
 
-    def fixme_reset_ground_truth(self, primary_target=None) -> None:
+    def fixme_reset_ground_truth(
+        self, primary_target: PrimaryTarget | None = None
+    ) -> None:
         pass
 
     def update_ltm_from_stm(self):
