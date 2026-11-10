@@ -3,7 +3,7 @@
 defaults:
   - /monty: evidencegraph_exp1000_e3_t3
   - /monty/motor_system_config: naive_scan_5
-  - /monty/learning_module: evidence_3lm_heterarchy
+  - /monty/learning_module: evidence_3lm_heterarchy_pretrain
   - /monty/sensor_module: 3sm_2d3d_dist_raw0
   - /monty/connectivity: 3lm_3sm_monolithic
   - /environment: mujoco_dist_agent_sensors3
