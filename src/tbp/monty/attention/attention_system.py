@@ -70,7 +70,7 @@ class DefaultAttentionSystem(AttentionSystem):
 
     def __init__(
         self,
-        voxel_size: float = 0.05,
+        voxel_size: float = 0.005,
         weight_pooler: WeightPooler = negative_priority_max_pool,
         decay: VoxelGridWeightDecay | None = None,
         merge: VoxelGridMerge | None = None,

@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: evidence_3lm_heterarchy_pretrain
   - /monty/sensor_module: 3sm_2d3d_dist_slic
   - /monty/connectivity: 3lm_3sm_heterarchy
-  - /monty/attention_system: voxel5mm
+  - /monty/attention_system: default
   - /environment: mujoco_dist_agent_sensors3_256
   - /env_interface: train_cows_small_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0

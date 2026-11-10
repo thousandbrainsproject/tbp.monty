@@ -215,14 +215,6 @@ experiment:
       lm_to_lm_vote_matrix: null
       attention_system:
         _target_: tbp.monty.attention.attention_system.DefaultAttentionSystem
-        voxel_size: 0.005
-        decay:
-          _target_: tbp.monty.attention.decay.LinearWeightDecay
-          rate: 0.1
-        merge:
-          _target_: tbp.monty.attention.merge.Union
-        goal_filter:
-          _target_: tbp.monty.attention.goal_filter.HardGoalFilter
     environment:
       env_init_args:
         data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
