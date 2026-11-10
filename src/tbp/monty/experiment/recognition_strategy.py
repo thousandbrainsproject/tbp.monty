@@ -538,13 +538,13 @@ class ObjectRecognition(RecognitionStrategy):
             if ctx.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        if (not model.is_exploring) and (model.matching_steps >= max_steps):
+        if (not model.is_exploring) and (ctx.matching_steps >= max_steps):
             result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info(
                 "ObjectRecognition is done, "
-                "with model.is_exploring=%s model.matching_steps=%d",
+                "with model.is_exploring=%s ctx.matching_steps=%d",
                 model.is_exploring,
-                model.matching_steps,
+                ctx.matching_steps,
             )
         elif ctx.step >= self._max_total_steps:
             result = RecognitionResult(is_done=True, time_out_lms=True)
