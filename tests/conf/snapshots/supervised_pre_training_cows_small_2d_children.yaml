@@ -340,6 +340,7 @@ experiment:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
       run_name: supervised_pre_training_cows_small_2d_children
+    skip_on_object_not_visible: true
     show_sensor_output: false
     n_train_epochs: 7
     n_eval_epochs: 7
