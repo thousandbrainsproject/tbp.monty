@@ -13,6 +13,9 @@ import abc
 from collections.abc import Collection, Sequence
 from typing import Any, Protocol
 
+import numpy as np
+import numpy.typing as npt
+
 from tbp.monty.cmp import AttentionRegion, Goal, Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.learning_module import ExperimentLearningModule
@@ -27,6 +30,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento, Snapshotable
 from tbp.monty.observations import SensorObservation
 
@@ -442,8 +446,28 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
     # Methods that define the algorithm
     ###
     @abc.abstractmethod
-    def update_memory(self, observations):
-        """Update models stored in memory given new observation & classification."""
+    def update_memory(
+        self,
+        locations: npt.NDArray[np.float64],
+        features: dict[str, dict[str, npt.NDArray[np.float64]]],
+        graph_id: str,
+        object_location_rel_body: npt.NDArray[np.float64],
+        location_rel_model: npt.NDArray[np.float64],
+        object_rotation: Rotation | None,
+    ) -> None:
+        """Update models stored in memory given an episode's observations.
+
+        Args:
+            locations: Observed locations, one row per step, in body coordinates.
+            features: Nested dict, input channel -> feature name -> array with one
+                row per step.
+            graph_id: ID of the recognized object.
+            object_location_rel_body: Detected location of the object relative to
+                the body.
+            location_rel_model: Location of the last observation relative to the
+                object model.
+            object_rotation: Rotation of the object relative to the world.
+        """
         pass
 
     ###
