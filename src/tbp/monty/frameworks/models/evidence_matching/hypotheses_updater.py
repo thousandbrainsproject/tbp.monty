@@ -10,11 +10,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, ContextManager, Dict, Literal, Optional, Protocol
+from contextlib import AbstractContextManager
+from typing import Any, Literal, Protocol, Self
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.channels import (
     all_usable_input_channels,
@@ -48,11 +48,12 @@ from tbp.monty.geometry import Rotation
 
 logger = logging.getLogger(__name__)
 
-HypothesesUpdateTelemetry = Optional[Dict[str, Any]]
-HypothesesUpdaterTelemetry = Dict[str, Any]
+
+HypothesesUpdateTelemetry = dict[str, Any] | None
+HypothesesUpdaterTelemetry = dict[str, Any]
 
 
-class HypothesesUpdater(ContextManager[Self], Protocol):
+class HypothesesUpdater(AbstractContextManager, Protocol):
     def reset(self) -> None:
         """Resets updater at the beginning of an episode."""
 

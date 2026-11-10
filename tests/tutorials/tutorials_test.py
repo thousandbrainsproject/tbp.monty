@@ -8,25 +8,33 @@
 # https://opensource.org/licenses/MIT.
 
 
-import pytest
-
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 from unittest import TestCase
 
 import hydra
 
 from tbp.monty.frameworks.run import output_dir_from_run_name
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 
 
 class TutorialsTest(TestCase):
-    def test_first_experiment(self):
+    """Tests of the configurations that we have in our tutorial documentation.
+
+    The purpose of these tests is to ensure that the tutorial configs load properly
+    and run to completion without error so that any users of Monty aren't surprised
+    by broken tutorials. We aren't actually testing the results against any expected
+    values, though we could do that if we decide we need to.
+
+    Note: since we aren't checking the results of these experiments, we don't
+    need to run the full training and inference. Limiting the number of steps cuts
+    down on the runtime of these tests. If we start checking the results, we'll
+    need to change these.
+    """
+
+    # TODO: Find a way to make these test configs be the source of truth for the
+    #   documentation rather than having to manually keep them in sync.
+
+    def test_first_experiment(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
@@ -36,7 +44,7 @@ class TutorialsTest(TestCase):
             with experiment:
                 experiment.run()
 
-    def test_training_and_inference(self):
+    def test_training_and_inference(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
@@ -44,8 +52,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_train",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy=null",
-                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
+                    "experiment.config.recognition_strategy=null",
+                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.Any, strategies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             config.experiment.config.logging.output_dir = str(
@@ -63,15 +71,15 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
-    def test_unsupervised_continual_learning(self):
+    def test_unsupervised_continual_learning(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
@@ -79,20 +87,22 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_unsupervised",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy.max_train_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_train_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
-    def test_multiple_learning_modules(self):
+    def test_multiple_learning_modules(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
                 overrides=[
                     "experiment=tutorial/dist_agent_5lm_2obj_train",
+                    # Non-interactive
+                    "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
                 ],
@@ -110,15 +120,15 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/dist_agent_5lm_2obj_eval",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
-    def test_omniglot_training_and_inference(self):
+    def test_omniglot_training_and_inference(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
@@ -126,7 +136,7 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/omniglot_training",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_policy={_target_: tbp.monty.experiment.recognition_policy.AnyPolicy, policies: [{_target_: tbp.monty.experiment.recognition_policy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_policy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
+                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.Any, strategies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyIsDone}, {_target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps, max_total_steps: 3}]}",  # noqa: E501
                 ],
             )
             inference_output_dir = str(output_dir_from_run_name(config))
@@ -142,15 +152,15 @@ class TutorialsTest(TestCase):
                     f"experiment.config.model_name_or_path={inference_output_dir}/pretrained/",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
             with experiment:
                 experiment.run()
 
-    def test_monty_meets_world_2dimage_inference(self):
+    def test_monty_meets_world_2dimage_inference(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra.compose(
                 config_name="experiment",
@@ -161,8 +171,8 @@ class TutorialsTest(TestCase):
                     "experiment.config.show_sensor_output=false",
                     # We don't need to run the whole thing.
                     "experiment.config.n_eval_epochs=1",
-                    "experiment.config.recognition_policy.max_eval_steps=3",
-                    "experiment.config.recognition_policy.max_total_steps=3",
+                    "experiment.config.recognition_strategy.max_eval_steps=3",
+                    "experiment.config.recognition_strategy.max_total_steps=3",
                     "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )

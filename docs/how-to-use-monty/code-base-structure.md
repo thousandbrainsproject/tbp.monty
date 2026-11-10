@@ -29,13 +29,6 @@ The basic repository structure looks as follows:
 |   |   |-- models              # LMs, SMs, motor system, & CMP
 |   |   `-- utils
 |   |-- simulators/
-|   |   |-- habitat/            # Habitat simulator code
-|   |   |   |-- actions.py
-|   |   |   |-- actuator.py
-|   |   |   |-- agents.py
-|   |   |   |-- environment.py
-|   |   |   |-- sensors.py
-|   |   |   `-- simulator.py
 |   |   `-- mujoco/             # MuJoCo simulator code
 |   |-- cmp.py                  # Cortical Message Protocol code
 |   |-- context.py              # Runtime context code

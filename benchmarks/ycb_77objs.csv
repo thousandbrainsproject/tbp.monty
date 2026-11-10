@@ -3,4 +3,4 @@ base_77obj_dist_agent,98.70,7.79,69,14.71,11,24,231
 base_77obj_surf_agent,100.00,3.03,42,3.44,17,39,231
 randrot_noise_77obj_dist_agent,95.67,17.32,121,31.73,16,44,231
 randrot_noise_77obj_surf_agent,98.27,15.15,89,20.45,42,131,231
-randrot_noise_77obj_5lms_dist_agent,92.21,1.3,42,49.39,9,78,77
+randrot_noise_77obj_5lms_dist_agent,92.21,0.00,38,24.43,10,78,77

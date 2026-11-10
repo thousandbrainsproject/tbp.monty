@@ -11,12 +11,12 @@ from __future__ import annotations
 
 import logging
 import multiprocessing as mp
-import os
 import re
 import shutil
 import time
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 import hydra
 import numpy as np
@@ -775,10 +775,6 @@ def run_episodes_parallel(
 
 @hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
-    if cfg.quiet_habitat_logs:
-        os.environ["MAGNUM_LOG"] = "quiet"
-        os.environ["HABITAT_SIM_LOG"] = "quiet"
-
     print_config(cfg)
 
     if cfg.experiment.config.do_train:

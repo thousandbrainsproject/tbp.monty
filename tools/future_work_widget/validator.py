@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import nh3
 from pydantic import (
@@ -22,7 +22,6 @@ from pydantic import (
     ValidationInfo,
     field_validator,
 )
-from typing_extensions import Annotated
 
 if TYPE_CHECKING:
     from pathlib import Path

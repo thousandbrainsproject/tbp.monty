@@ -306,8 +306,8 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
       ids:
       - learning_module_2
-    recognition_policy:
-      _target_: tbp.monty.experiment.recognition_policy.ObjectRecognition
+    recognition_strategy:
+      _target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition
       max_train_steps: 1000
       max_eval_steps: 100
       max_total_steps: 500
@@ -340,7 +340,6 @@ experiment:
 episodes: all
 num_parallel: 16
 print_cfg: false
-quiet_habitat_logs: true
 constants:
   default_all_noise_params:
     features:
@@ -357,7 +356,7 @@ constants:
   - principal_curvatures_log
   min_eval_steps: 20
   pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v14}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v8}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v10}
   rotations_all_count: 14
   rotations_all:
   - - 0

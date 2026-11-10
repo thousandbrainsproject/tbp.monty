@@ -161,4 +161,4 @@ class SomeSimulator(MyActuator):
         # ...
 ```
 
-For an example of an actuator, see `src/tbp/monty/simulators/habitat/simulator.py`
+For an example of an actuator, see the various agents defined in `src/tbp/monty/simulators/mujoco/agents.py`

@@ -13,7 +13,7 @@ Our model will have one surface agent connected to one sensor module connected t
 > [!NOTE]
 > **Don't have the YCB Dataset Downloaded?**
 >
-> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the built-in Habitat primitives, such as `capsule3DSolid` and `cubeSolid`. Simply change the items in the  `object_names` list.
+> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the built-in simulator primitives, such as `capsule3DSolid` and `cubeSolid`. Simply change the items in the  `object_names` list.
 >
 
 
@@ -44,7 +44,7 @@ Monty experiments are defined and configured using [Hydra](https://hydra.cc/). T
     - `eval_env_interface_class`: environment `Interface`
     - `eval_env_interface_args`: Same purpose as `train_env_interface_args` but allows for presenting Monty with different conditions between training and evaluation.
     - `match_criterion`: The match criterion decides which learning modules must recognize the object.
-    - `recognition_policy`: The recognition policy decides when an experiment episode is over.
+    - `recognition_strategy`: The recognition strategy decides when an experiment episode is over.
 
 # Setting up the Experiment Config for Pretraining
 
