@@ -10,7 +10,7 @@ defaults:
   - /env_interface: train_cows_small_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4
-  - /termination: any3_naivescan_fixed5_tot6000
+  - /termination: any3_any_mfgm_t3e3exp1000_naivescan_fixed5_tot6000
   - /logging: silent_info_train
 
 experiment:
