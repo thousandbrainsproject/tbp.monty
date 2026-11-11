@@ -508,6 +508,7 @@ class GraphLM(LearningModule):
     possible_paths: dict[str, Any]
     detected_rotation_r: Rotation | None
     primary_target: str | None
+    terminal_state: str | None
 
     def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.
@@ -547,7 +548,7 @@ class GraphLM(LearningModule):
 
     def _init_GraphLM(self) -> None:  # noqa: N802
         self._goals = []
-        self.terminal_state: str | None = None
+        self.terminal_state = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
