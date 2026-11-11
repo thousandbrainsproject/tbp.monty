@@ -233,9 +233,9 @@ class MontyBase(Monty):
                 exploration mode anymore (if we timed out we didn't recognize an object
                 so exploration makes no sense since we won't add anything to memory).
                 This is set to False, if Monty didn't reach a global time out (exceeded
-                max_steps) but instead, the match criterion was satisfied by the LMs that
-                recognized an object. Then the other LMs will be set to time_out, but we
-                still want to explore.
+                max_steps) but instead, the match criterion was satisfied by the LMs
+                that recognized an object. Then the other LMs will be set to time_out,
+                but we still want to explore.
         """
         pass
 
