@@ -538,8 +538,7 @@ class EvidenceGraphLM(GraphLM):
         pass_message is False unless the LM has reached a "match" terminal state,
         its sensor is on the object, and the most likely hypothesis lies within
         max_match_distance of the recognized object's stored points, i.e. it is
-        still supported by the model. The evidence requirement is the one "match"
-        already imposes through object_evidence_threshold.
+        still supported by the model.
         """
         mlh = self._get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
