@@ -68,12 +68,10 @@ def _model_with_conclusions(
 def _model_with_recognition(
     is_done: bool,
     is_exploring: bool,
-    matching_steps: int,
 ) -> MagicMock:
     model = MagicMock()
     model.is_done = is_done
     model.is_exploring = is_exploring
-    model.matching_steps = matching_steps
     return model
 
 
@@ -293,11 +291,9 @@ class MaximumStepsTest(unittest.TestCase):
     def test_times_out_at_or_after_max_steps(
         self, is_done: bool, matching_steps: int, max_steps: int
     ) -> None:
-        model = _model_with_recognition(
-            is_done, is_exploring=False, matching_steps=matching_steps
-        )
+        model = _model_with_recognition(is_done, is_exploring=False)
         strategy = MaximumSteps(max_steps, max_steps)
-        ctx = RecognitionContext()
+        ctx = RecognitionContext(matching_steps=matching_steps)
         result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
@@ -313,11 +309,9 @@ class MaximumStepsTest(unittest.TestCase):
         matching_steps: int,
         max_steps: int,
     ) -> None:
-        model = _model_with_recognition(
-            is_done=is_done, is_exploring=True, matching_steps=matching_steps
-        )
+        model = _model_with_recognition(is_done=is_done, is_exploring=True)
         strategy = MaximumSteps(max_steps, max_steps)
-        ctx = RecognitionContext()
+        ctx = RecognitionContext(matching_steps=matching_steps)
         result = strategy(ctx, model)
         self.assertFalse(result.is_done)
 
@@ -335,11 +329,9 @@ class MaximumStepsTest(unittest.TestCase):
         max_eval_steps: int,
     ) -> None:
         max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
-        model = _model_with_recognition(
-            is_done=False, is_exploring=False, matching_steps=matching_steps
-        )
+        model = _model_with_recognition(is_done=False, is_exploring=False)
         strategy = MaximumSteps(max_train_steps, max_eval_steps)
-        ctx = RecognitionContext(mode=mode)
+        ctx = RecognitionContext(mode=mode, matching_steps=matching_steps)
         result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
@@ -569,11 +561,9 @@ class ObjectRecognitionTest(unittest.TestCase):
         step_asc: tuple[int, int],
     ) -> None:
         (step, max_total_steps) = step_asc
-        model = _model_with_recognition(
-            is_done=False, is_exploring=False, matching_steps=matching_steps
-        )
+        model = _model_with_recognition(is_done=False, is_exploring=False)
         strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
-        ctx = RecognitionContext(step)
+        ctx = RecognitionContext(step=step, matching_steps=matching_steps)
         result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
@@ -588,14 +578,19 @@ class ObjectRecognitionTest(unittest.TestCase):
     ) -> None:
         max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
         strategy = ObjectRecognition(max_train_steps, max_eval_steps, 5000)
-        at_limit = _model_with_recognition(
-            is_done=False, is_exploring=False, matching_steps=max_steps
+        at_limit = _model_with_recognition(is_done=False, is_exploring=False)
+        self.assertTrue(
+            strategy(
+                RecognitionContext(mode=mode, matching_steps=max_steps), at_limit
+            ).is_done
         )
-        self.assertTrue(strategy(RecognitionContext(mode=mode), at_limit).is_done)
-        before_limit = _model_with_recognition(
-            is_done=False, is_exploring=False, matching_steps=max_steps - 1
+        before_limit = _model_with_recognition(is_done=False, is_exploring=False)
+        self.assertFalse(
+            strategy(
+                RecognitionContext(mode=mode, matching_steps=max_steps - 1),
+                before_limit,
+            ).is_done
         )
-        self.assertFalse(strategy(RecognitionContext(mode=mode), before_limit).is_done)
 
     @given(
         max_total_steps=st.integers(min_value=1),
@@ -611,11 +606,11 @@ class ObjectRecognitionTest(unittest.TestCase):
         matching_steps: int,
     ) -> None:
         max_steps = 1000
-        model = _model_with_recognition(
-            is_done=False, is_exploring=is_exploring, matching_steps=matching_steps
-        )
+        model = _model_with_recognition(is_done=False, is_exploring=is_exploring)
         strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
-        ctx = RecognitionContext(max_total_steps + extra)
+        ctx = RecognitionContext(
+            step=max_total_steps + extra, matching_steps=matching_steps
+        )
         result = strategy(ctx, model)
         self.assertTrue(result.is_done)
 
@@ -634,11 +629,9 @@ class ObjectRecognitionTest(unittest.TestCase):
     ) -> None:
         max_steps = 1000
         max_total_steps = 5000
-        model = _model_with_recognition(
-            is_done=is_done, is_exploring=is_exploring, matching_steps=matching_steps
-        )
+        model = _model_with_recognition(is_done=is_done, is_exploring=is_exploring)
         strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
-        ctx = RecognitionContext(step)
+        ctx = RecognitionContext(step=step, matching_steps=matching_steps)
         result = strategy(ctx, model)
         self.assertEqual(result.is_done, is_done)
 

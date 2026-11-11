@@ -404,10 +404,20 @@ experiment:
       ids:
       - learning_module_2
     recognition_strategy:
-      _target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition
-      max_train_steps: 1000
-      max_eval_steps: 100
-      max_total_steps: 6000
+      _target_: tbp.monty.experiment.recognition_strategy.Any
+      strategies:
+      - _target_: tbp.monty.experiment.recognition_strategy.MontyForGraphMatchingSetStepTypeAndCheckIfDone
+        match_criterion:
+          _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+          ids:
+          - learning_module_2
+        min_train_steps: 3
+        min_eval_steps: ${constants.min_eval_steps}
+        num_exploratory_steps: 1000
+      - _target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition
+        max_train_steps: 1000
+        max_eval_steps: 100
+        max_total_steps: 6000
     logging:
       python_log_level: WARNING
       python_log_to_file: true
