@@ -225,8 +225,18 @@ class MontyBase(Monty):
         self._step_motor_system(ctx, observations, proprioceptive_state)
         return self._actions
 
-    def deal_with_time_out(self):
-        """Call any functions and logging in case of a time out."""
+    def deal_with_time_out(self, global_time_out: bool) -> None:
+        """Call any functions and logging in case of a time out.
+
+        Args:
+            global_time_out: If True, set Monty state to done so we don't go into
+                exploration mode anymore (if we timed out we didn't recognize an object
+                so exploration makes no sense since we won't add anything to memory).
+                This is set to False, if Monty didn't reach a global time out (exceeded
+                max_steps) but instead, the match criterion was satisfied by the LMs that
+                recognized an object. Then the other LMs will be set to time_out, but we
+                still want to explore.
+        """
         pass
 
     def _step_learning_modules(self, ctx: RuntimeContext):

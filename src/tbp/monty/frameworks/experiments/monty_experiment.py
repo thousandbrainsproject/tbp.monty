@@ -539,7 +539,7 @@ class MontyExperiment:
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
         if result.time_out_lms:
-            self.model.deal_with_time_out()
+            self.model.deal_with_time_out(global_time_out=result.global_time_out)
         return result.is_done
 
     def _check_if_any_lms_updated(self: Self) -> bool:

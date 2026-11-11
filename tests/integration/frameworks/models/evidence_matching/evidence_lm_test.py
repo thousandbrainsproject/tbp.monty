@@ -249,7 +249,7 @@ class EvidenceLMTest(BaseGraphTest):
             # Overwrite target with a false name to test confused logging.
             for e in range(4):
                 exp.pre_episode()
-                exp.model.primary_target = str(e)
+                exp.model.primary_target.object_name = str(e)
                 for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
                 exp.run_episode_steps()

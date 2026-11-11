@@ -112,9 +112,8 @@ class MontyForGraphMatching(MontyBase):
         # Otherwise return False
         return False
 
-    def deal_with_time_out(self):
-        """Set LM terminal states to time_out."""
-        self._set_time_outs(global_time_out=True)
+    def deal_with_time_out(self, global_time_out: bool = True) -> None:
+        self._set_time_outs(global_time_out=global_time_out)
 
     def check_terminal_conditions(self) -> bool:
         """Check if all LMs have reached a terminal state.
@@ -478,7 +477,7 @@ class MontyForGraphMatching(MontyBase):
         # Add logging information : TODO use the buffer to log this appropriately
         lm.stepwise_targets_list.append(lm.stepwise_target_object)
 
-    def _set_time_outs(self, global_time_out=False):
+    def _set_time_outs(self, global_time_out: bool = False) -> None:
         """Set terminal state of LMs that are not done yet to time_out.
 
         Args:
