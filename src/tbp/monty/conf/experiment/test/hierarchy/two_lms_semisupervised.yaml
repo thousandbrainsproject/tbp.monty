@@ -9,7 +9,7 @@ defaults:
   - /experiment/test/hierarchy/environment: test_2lm_dist_transforms
   - /env_interface: test_train_2obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor3
-  - /termination: test_any2_naivescan_fixed10_tot6000
+  - /termination: test_any2_any_mfgm_t3e3exp50_naivescan_fixed10_tot6000
   - /logging: silent_info_monty_runs
 
 experiment:

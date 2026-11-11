@@ -9,7 +9,7 @@ defaults:
   - /environment: test_mujoco
   - /env_interface: test_train_3obj_default_eval_3obj_default
   - /env_interface/transform: none
-  - /termination: test_any1_montyisdone
+  - /termination: test_any1_any_t3e3exp1000_montyisdone
   - /logging: base_debug_monty_runs
 
 experiment:

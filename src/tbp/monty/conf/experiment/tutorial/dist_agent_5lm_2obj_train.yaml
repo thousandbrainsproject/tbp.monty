@@ -10,7 +10,7 @@ defaults:
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
-  - /termination: any1_naivescan_fixed5_tot6000
+  - /termination: any1_any_mfgm_t3e3exp500_naivescan_fixed5_tot6000
   - /logging: silent_warning_train
   - /telemetry: info
 
