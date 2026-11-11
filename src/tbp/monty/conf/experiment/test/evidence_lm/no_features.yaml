@@ -9,7 +9,7 @@ defaults:
   - /environment: test_mujoco_offset_dist_agent
   - /env_interface: test_train_2obj_predefined_eval_1obj_predefined
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0
-  - /termination: test_any1_objectrecognition_t30_e30_tot60
+  - /termination: test_any1_any_mfgm_t3e3exp10_t30e30tot60
   - /logging: detailed_debug_monty_runs
 
 experiment:

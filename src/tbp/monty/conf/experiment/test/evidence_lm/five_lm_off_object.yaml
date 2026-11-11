@@ -11,7 +11,7 @@ defaults:
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
-  - /termination: test_any5_objectrecognition_t30_e30_tot110
+  - /termination: test_any5_any_mfgm_t12e12exp80_t30e30tot110
   - /logging: detailed_debug_monty_runs
 
 experiment:
