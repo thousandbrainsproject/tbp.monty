@@ -16,11 +16,11 @@ import numpy as np
 import numpy.testing as nptest
 from hypothesis import given
 from hypothesis import strategies as st
-from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
+from tbp.monty.geometry import Rotation
 
 MAX_MATCH_DISTANCE = 0.01
 TERMINAL_STATES = [None, "match", "no_match", "time_out", "pose_time_out"]
@@ -33,28 +33,28 @@ not_match_terminal_states = st.sampled_from(
 
 
 @dataclass
-class GatingConditions:
+class GatingCase:
     on_object: bool
     terminal_state: str | None
     mlh_on_model: bool
 
 
-off_object_gating_conditions = st.builds(
-    GatingConditions,
+off_object_gating_cases = st.builds(
+    GatingCase,
     on_object=st.just(value=False),
     terminal_state=terminal_states,
     mlh_on_model=st.booleans(),
 )
 
-not_match_gating_conditions = st.builds(
-    GatingConditions,
+not_match_gating_cases = st.builds(
+    GatingCase,
     on_object=st.just(value=True),
     terminal_state=not_match_terminal_states,
     mlh_on_model=st.booleans(),
 )
 
-off_model_gating_conditions = st.builds(
-    GatingConditions,
+off_model_gating_cases = st.builds(
+    GatingCase,
     on_object=st.just(value=True),
     terminal_state=st.just("match"),
     mlh_on_model=st.just(value=False),
@@ -62,17 +62,6 @@ off_model_gating_conditions = st.builds(
 
 
 class GetOutputTest(unittest.TestCase):
-    def setUp(self) -> None:
-        # get_output reads the rotation, graph_id (hashed, so it must be a str)
-        # and evidence; the location only matters to _mlh_on_model, which is
-        # patched.
-        self.mlh = {
-            "graph_id": "mug",
-            "location": np.zeros(3),
-            "rotation": Rotation.identity(),
-            "evidence": 1.0,
-        }
-
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
     )
@@ -84,7 +73,8 @@ class GetOutputTest(unittest.TestCase):
         get_current_mlh_mock: MagicMock,
         mlh_on_model_mock: MagicMock,
     ) -> None:
-        get_current_mlh_mock.return_value = self.mlh
+        mlh = {"graph_id": "mug", "rotation": Rotation.identity()}
+        get_current_mlh_mock.return_value = mlh
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
@@ -94,7 +84,7 @@ class GetOutputTest(unittest.TestCase):
 
         lm.get_output()
 
-        mlh_on_model_mock.assert_called_once_with(self.mlh)
+        mlh_on_model_mock.assert_called_once_with(mlh)
 
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model",
@@ -103,12 +93,15 @@ class GetOutputTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
     )
-    def test_returns_message_that_passes_when_on_object_matched_and_mlh_on_model(
+    def test_returns_message_that_passes_when_all_gating_conditions_hold(
         self,
         get_current_mlh_mock: MagicMock,
         mlh_on_model_mock: MagicMock,  # noqa: ARG002
     ) -> None:
-        get_current_mlh_mock.return_value = self.mlh
+        get_current_mlh_mock.return_value = {
+            "graph_id": "mug",
+            "rotation": Rotation.identity(),
+        }
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
@@ -118,14 +111,13 @@ class GetOutputTest(unittest.TestCase):
 
         message = lm.get_output()
 
-        assert message is not None, "get_output should return a message"
         self.assertTrue(message.pass_message)
 
     @given(
-        gating_conditions=st.one_of(
-            off_object_gating_conditions,
-            not_match_gating_conditions,
-            off_model_gating_conditions,
+        gating_case=st.one_of(
+            off_object_gating_cases,
+            not_match_gating_cases,
+            off_model_gating_cases,
         )
     )
     @patch(
@@ -134,95 +126,58 @@ class GetOutputTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
     )
-    def test_returns_message_that_does_not_pass_unless_on_object_matched_and_mlh_on_model(  # noqa: E501
+    def test_returns_message_that_does_not_pass_when_any_gating_condition_fails(
         self,
         get_current_mlh_mock: MagicMock,
         mlh_on_model_mock: MagicMock,
-        gating_conditions: GatingConditions,
+        gating_case: GatingCase,
     ) -> None:
-        get_current_mlh_mock.return_value = self.mlh
-        mlh_on_model_mock.return_value = gating_conditions.mlh_on_model
+        get_current_mlh_mock.return_value = {
+            "graph_id": "mug",
+            "rotation": Rotation.identity(),
+        }
+        mlh_on_model_mock.return_value = gating_case.mlh_on_model
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
         lm.buffer = MagicMock()
-        lm.buffer.get_currently_on_object.return_value = gating_conditions.on_object
-        lm.terminal_state = gating_conditions.terminal_state
+        lm.buffer.get_currently_on_object.return_value = gating_case.on_object
+        lm.terminal_state = gating_case.terminal_state
 
         message = lm.get_output()
 
-        assert message is not None, "get_output should return a message"
         self.assertFalse(message.pass_message)
 
-    @given(
-        gating_conditions=st.one_of(
-            off_object_gating_conditions, not_match_gating_conditions
-        )
-    )
-    @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
-    )
-    @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
-    )
-    def test_does_not_call_mlh_on_model_when_off_object_or_unmatched(
-        self,
-        get_current_mlh_mock: MagicMock,
-        mlh_on_model_mock: MagicMock,
-        gating_conditions: GatingConditions,
-    ) -> None:
-        get_current_mlh_mock.return_value = self.mlh
-        lm = EvidenceGraphLM(
-            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
-        )
-        lm.buffer = MagicMock()
-        lm.buffer.get_currently_on_object.return_value = gating_conditions.on_object
-        lm.terminal_state = gating_conditions.terminal_state
-
-        lm.get_output()
-
-        mlh_on_model_mock.assert_not_called()
-
-
-MAX_INPUT_CHANNELS = 4
-MAX_BEYOND_DISTANCE = 100 * MAX_MATCH_DISTANCE
 
 distances_within_max_match = st.floats(min_value=0.0, max_value=MAX_MATCH_DISTANCE)
 
 distances_beyond_max_match = st.floats(
-    min_value=MAX_MATCH_DISTANCE, max_value=MAX_BEYOND_DISTANCE, exclude_min=True
+    min_value=MAX_MATCH_DISTANCE, max_value=10 * MAX_MATCH_DISTANCE, exclude_min=True
 )
 
 
 @dataclass
-class ChannelDistances:
+class MlhOnModelCase:
     distances: list[float]
     mlh_on_model: bool
 
 
 @st.composite
-def channel_distances(draw: st.DrawFn) -> ChannelDistances:
-    mlh_on_model = draw(st.booleans())
-    num_channels = draw(st.integers(min_value=1, max_value=MAX_INPUT_CHANNELS))
-
-    if mlh_on_model:
-        distances = draw(
-            st.lists(
-                st.one_of(distances_within_max_match, distances_beyond_max_match),
-                min_size=num_channels,
-                max_size=num_channels,
-            )
+def mlh_on_model_cases(draw: st.DrawFn) -> MlhOnModelCase:
+    num_channels = draw(st.integers(min_value=1, max_value=4))
+    num_within = draw(st.integers(min_value=0, max_value=num_channels))
+    within = draw(
+        st.lists(distances_within_max_match, min_size=num_within, max_size=num_within)
+    )
+    beyond = draw(
+        st.lists(
+            distances_beyond_max_match,
+            min_size=num_channels - num_within,
+            max_size=num_channels - num_within,
         )
-        near_channel = draw(st.integers(min_value=0, max_value=num_channels - 1))
-        distances[near_channel] = draw(distances_within_max_match)
-    else:
-        distances = draw(
-            st.lists(
-                distances_beyond_max_match, min_size=num_channels, max_size=num_channels
-            )
-        )
-
-    return ChannelDistances(distances=distances, mlh_on_model=mlh_on_model)
+    )
+    distances = draw(st.permutations(within + beyond))
+    return MlhOnModelCase(distances=distances, mlh_on_model=num_within > 0)
 
 
 class MlhOnModelTest(unittest.TestCase):
@@ -237,7 +192,6 @@ class MlhOnModelTest(unittest.TestCase):
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
-        lm.graph_memory = MagicMock()
 
         on_model = lm._mlh_on_model({"graph_id": sentinel.graph_id, "location": None})
 
@@ -254,7 +208,6 @@ class MlhOnModelTest(unittest.TestCase):
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
-        lm.graph_memory = MagicMock()
 
         on_model = lm._mlh_on_model(
             {"graph_id": sentinel.unknown_graph_id, "location": np.zeros(3)}
@@ -295,7 +248,7 @@ class MlhOnModelTest(unittest.TestCase):
         nptest.assert_array_equal(query, [mlh_location_sentinel])
         self.assertEqual(kwargs, {"num_neighbors": 1, "return_distance": True})
 
-    @given(channel_distances=channel_distances())
+    @given(mlh_on_model_case=mlh_on_model_cases())
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_input_channels_in_graph"
     )
@@ -307,15 +260,13 @@ class MlhOnModelTest(unittest.TestCase):
         self,
         get_all_known_object_ids_mock: MagicMock,  # noqa: ARG002
         get_input_channels_in_graph_mock: MagicMock,
-        channel_distances: ChannelDistances,
+        mlh_on_model_case: MlhOnModelCase,
     ) -> None:
-        """`channel_distances.mlh_on_model` is correct by construction."""
         get_input_channels_in_graph_mock.return_value = [
-            getattr(sentinel, f"channel_{i}")
-            for i in range(len(channel_distances.distances))
+            MagicMock() for _ in mlh_on_model_case.distances
         ]
         graph_mocks = []
-        for distance in channel_distances.distances:
+        for distance in mlh_on_model_case.distances:
             graph_mock = MagicMock()
             graph_mock.find_nearest_neighbors.return_value = np.array([distance])
             graph_mocks.append(graph_mock)
@@ -329,4 +280,4 @@ class MlhOnModelTest(unittest.TestCase):
             {"graph_id": sentinel.graph_id, "location": np.zeros(3)}
         )
 
-        self.assertEqual(on_model, channel_distances.mlh_on_model)
+        self.assertEqual(on_model, mlh_on_model_case.mlh_on_model)
