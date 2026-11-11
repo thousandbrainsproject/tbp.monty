@@ -547,7 +547,7 @@ class GraphLM(LearningModule):
 
     def _init_GraphLM(self) -> None:  # noqa: N802
         self._goals = []
-        self.terminal_state = None
+        self.terminal_state: str | None = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
