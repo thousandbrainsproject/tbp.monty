@@ -148,6 +148,7 @@
   - [interpret-goal-states-in-motor-system-switch-policies](future-work/motor-system-improvements/interpret-goal-states-in-motor-system-switch-policies.md)
   - [policy-to-recognize-an-object-before-moving-on-to-a-new-object](future-work/motor-system-improvements/policy-to-recognize-an-object-before-moving-on-to-a-new-object.md)
   - [policy-to-quickly-move-to-a-new-object](future-work/motor-system-improvements/policy-to-quickly-move-to-a-new-object.md)
+  - [model-free-repositioning-for-canonical-views](future-work/motor-system-improvements/model-free-repositioning-for-canonical-views.md)
 - [voting-improvements](future-work/voting-improvements.md)
   - [clean-up-and-simplify-voting](future-work/voting-improvements/clean-up-and-simplify-voting.md)
   - [outline-how-to-apply-attention](future-work/voting-improvements/outline-how-to-apply-attention.md)
