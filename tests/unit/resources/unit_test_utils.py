@@ -20,6 +20,7 @@ from tbp.monty.conf.make_environment import (
     make_sensor_positions_on_grid,
 )
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.utils.object_model_utils import NumpyGraph
 from tbp.monty.geometry import Rotation, SurfacePoseVectors
 
@@ -164,10 +165,15 @@ class BaseGraphTest(TestCase):
             Message(**fp_house_5),
         ]
 
-        self.placeholder_target = {
-            "object": "placeholder",
-            "quat_rotation": [1, 0, 0, 0],
-        }
+        self.placeholder_target = PrimaryTarget(
+            euler_rotation=np.array([0, 0, 0]),
+            object_name="placeholder",
+            position=(0.0, 0.0, 0.0),
+            quat_rotation=np.array([1, 0, 0, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+            scale=(1.0, 1.0, 1.0),
+            semantic_id=None,
+        )
 
         self.ctx = RuntimeContext(rng=np.random.RandomState())
 

@@ -25,6 +25,7 @@ from omegaconf import DictConfig
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
@@ -87,8 +88,7 @@ class TrainedGraphLM:
         """Reset short-term memory buffer."""
         self.learning_module.reset_stm()
 
-    # TODO: fix primary_target's type
-    def fixme_reset_ground_truth(self, primary_target: dict[str, Any]) -> None:
+    def fixme_reset_ground_truth(self, primary_target: PrimaryTarget | None) -> None:
         """Reset internal state based on ground truth."""
         self.learning_module.fixme_reset_ground_truth(primary_target)
 
@@ -516,7 +516,7 @@ class GraphLearningTest(BaseGraphTest):
         for row in range(train_stats.shape[0]):
             self.assertEqual(
                 train_stats.loc[row]["primary_target_object"],
-                detailed_stats[str(row)]["LM_0"]["target"]["object"],
+                detailed_stats[str(row)]["LM_0"]["target"]["object_name"],
                 "targets in train_stats and detailed stats don't match.",
             )
 
@@ -524,7 +524,7 @@ class GraphLearningTest(BaseGraphTest):
             detailed_id = train_stats.shape[0] + row - 1
             self.assertEqual(
                 eval_stats.loc[row]["primary_target_object"],
-                detailed_stats[str(detailed_id)]["LM_0"]["target"]["object"],
+                detailed_stats[str(detailed_id)]["LM_0"]["target"]["object_name"],
                 "targets in eval_stats and detailed stats don't match.",
             )
         self.assertEqual(
