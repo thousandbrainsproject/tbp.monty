@@ -24,7 +24,7 @@ It is best practice (and required if you ever want to contribute code) first to 
 
 ## 1.2 (Windows) Install Git for Windows
 
-[Git for Windows](https://git-scm.com/install/windows) includes a **Git Bash** terminal, accessible from the start menu. This Linux-like terminal will allow you to run all of the commands from the rest of the tutorial.
+[Git for Windows](https://git-scm.com/install/windows) includes a **Git Bash** terminal, accessible from the start menu. This Linux-like terminal will allow you to run all of the commands from the rest of this tutorial.
 
 ## 1.3 Clone the Repository
 
@@ -121,15 +121,26 @@ Note that by the time you read that, there may be more or less unit tests in the
 
 In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `src/tbp/monty/conf/experiment` folder.
 
+> [!WARNING]
+> If you are on **Windows**, make sure to use **Git Bash** for the commands in this section. Some of them do not work in PowerShell.
+
 ## 4.1 Download the YCB Dataset
 
-A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in MuJoCo. To download the dataset, run
+A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in MuJoCo.
+
+To download the dataset, run
 
 ```shell tgz
-mkdir -p ~/tbp/data/mujoco/objects/ycb && curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/ycb_objects_1.0.tgz | tar -xzf - -C "$_"
+mkdir -p ~/tbp/data/mujoco/objects/ycb
+
+cd ~/tbp/data/mujoco/objects/ycb
+
+curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/ycb_objects_1.0.tgz | tar -xvf -
 ```
 ```shell zip
-mkdir -p ~/tbp/data/mujoco/objects/ycb && cd "$_"
+mkdir -p ~/tbp/data/mujoco/objects/ycb
+
+cd ~/tbp/data/mujoco/objects/ycb
 
 curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/ycb_objects_1.0.zip
 
@@ -146,10 +157,16 @@ unzip ycb_objects_1.0.zip
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
 ```shell tgz
-mkdir -p ~/tbp/results/monty/pretrained_models/ && curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.tgz | tar -xzf - -C "$_"
+mkdir -p ~/tbp/results/monty/pretrained_models/
+
+cd ~/tbp/results/monty/pretrained_models/
+
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.tgz | tar -xzf -
 ```
 ```shell zip
-mkdir -p ~/tbp/results/monty/pretrained_models/ && cd "$_"
+mkdir -p ~/tbp/results/monty/pretrained_models/
+
+cd ~/tbp/results/monty/pretrained_models/
 
 curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.zip
 

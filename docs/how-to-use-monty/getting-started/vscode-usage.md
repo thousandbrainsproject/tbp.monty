@@ -36,11 +36,11 @@ You can create a run configuration to debug experiments and benchmarks.
    * Run > Add Configuration
    * Python Debugger
    * Python File with Arguments
-1. Change both `"name"` and `"program"` to `"run.py"`
-1. Optionally, change `"args"` to an experiment or benchmark of your choice, e.g. `"experiment=randrot_noise_10distinctobj_surf_agent"`, or leave the default value if you want a popup box to manually specify the arguments on every run.
+1. Change the `"name"` and `"program"` values to `"run.py"`
+1. Optionally, change the `"args"` value to an experiment or benchmark of your choice, e.g. `"experiment=randrot_noise_10distinctobj_surf_agent"`, or leave the default value if you want a popup box on every run to manually specify the arguments.
 1. In the top menu, select: View > Run
 1. In the bottom left, under "Breakpoints", enable "User Uncaught Exceptions"
-1. To test, select in the top menu: Run > Start Debugging
+1. Launch it by selecting in the top menu: Run > Start Debugging
 1. Use the debug controls at the top as needed.
 
 Multiple configurations can be created for different experiments and benchmarks.
