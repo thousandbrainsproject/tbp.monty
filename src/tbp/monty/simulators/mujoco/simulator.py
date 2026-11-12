@@ -196,27 +196,28 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             raise_actuate_missing: whether to raise an exception when an agent
               does not have an actuate method for an Action.
         """
-        self.spec = MjSpec()
-        self.model = self.spec.compile()
-        self.data = MjData(self.model)
-        self.id_to_semantic_id = self._default_id_mapping()
-
         self._data_path = Path(data_path) if data_path else None
         self._loaded_custom_types = {}
         self._raise_actuate_missing = raise_actuate_missing
         self._renderers = {}
         self._agent_partials = [] if agents is None else agents
         self._agents = {}
-
         # Track how many objects we add to the environment.
         # This is used to give added objects unique names.
         self._object_count = 0
 
+        self.id_to_semantic_id = self._default_id_mapping()
+        self.spec = MjSpec()
         self._initialize_new_spec()
-        self._recompile()
+        self.model = self.spec.compile()
+        self.data = MjData(self.model)
 
     def _recompile(self) -> None:
-        """Recompile the MuJoCo model while retaining any state data."""
+        """Recompile the MuJoCo model while retaining any state data.
+
+        DO NOT call after recreating a new MjSpec object. Otherwise, we'll get
+        SIGBUS errors due to bad memory accesses inside MuJoCo.
+        """
         self.model, self.data = self.spec.recompile(self.model, self.data)
         # The renderers have to be recreated when the model is updated.
         self._close_renderers()
@@ -330,9 +331,13 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         return Resolution2D(height=max_height, width=max_width)
 
     def remove_all_objects(self) -> None:
+        # We start from a fresh MjSpec object and reinitialize rather
+        # than try to find the objects to remove
+        # TODO: Consider NOT recreating the spec.
         self.spec = MjSpec()
         self._initialize_new_spec()
-        self._recompile()
+        self.model = self.spec.compile()
+        self.data = MjData(self.model)
         self.id_to_semantic_id = self._default_id_mapping()
         self._object_count = 0
         self._loaded_custom_types = {}
