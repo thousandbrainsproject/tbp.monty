@@ -211,6 +211,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self._initialize_new_spec()
         self.model = self.spec.compile()
         self.data = MjData(self.model)
+        # Step the simulation so new objects are in their initial positions.
+        mj_forward(self.model, self.data)
 
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data.
@@ -221,7 +223,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.model, self.data = self.spec.recompile(self.model, self.data)
         # The renderers have to be recreated when the model is updated.
         self._close_renderers()
-        # Step the simulation so all objects are in their initial positions.
+        # Step the simulation so any new objects are in their initial positions.
         mj_forward(self.model, self.data)
 
     def _initialize_new_spec(self):
@@ -341,6 +343,8 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         self.id_to_semantic_id = self._default_id_mapping()
         self._object_count = 0
         self._loaded_custom_types = {}
+        # Step the simulation so all new objects are in their initial positions.
+        mj_forward(self.model, self.data)
 
     @override
     def add_object(
