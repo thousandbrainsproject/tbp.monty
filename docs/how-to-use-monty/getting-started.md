@@ -85,24 +85,14 @@ winget install Microsoft.VisualStudio.BuildTools --override "--passive --wait --
 ```
 
 ## 2.3 Set up Monty
-To set up Monty, **use the uv command below**.
+To set up Monty, you can create and activate the environment with the uv command below.
 
-**Make sure to `cd` into the `tbp.monty` directory beforehand:**
+**Make sure to `cd` into your `tbp.monty` directory beforehand.**
 
 ```shell
 cd ~/tbp
-```
 
-You can create and activate the environment with the following command:
-
-#### macOS / Linux
-```shell
 uv sync --extra=dev --extra=simulator_mujoco
-```
-
-#### Windows (in Git Bash terminal)
-```shell
-CL=/std:c++20  uv sync --extra=dev --extra=simulator_mujoco  --no-build-isolation-package=torch-scatter --no-build-isolation-package=torch-sparse
 ```
 
 > [!NOTE]
