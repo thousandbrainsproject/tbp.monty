@@ -167,7 +167,6 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     recompile the model and data from whenever an object is added or removed.
     """
 
-    # These instance variables are public because agents access them
     spec: MjSpec
     model: MjModel
     data: MjData
