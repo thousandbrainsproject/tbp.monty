@@ -508,6 +508,7 @@ class GraphLM(LearningModule):
     possible_paths: dict[str, Any]
     detected_rotation_r: Rotation | None
     primary_target: str | None
+    terminal_state: str | None
 
     def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.

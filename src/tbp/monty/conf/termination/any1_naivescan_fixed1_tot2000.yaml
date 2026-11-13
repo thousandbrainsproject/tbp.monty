@@ -10,4 +10,4 @@ recognition_strategy:
   - _target_: tbp.monty.experiment.recognition_strategy.NaiveScan
     fixed_amount: 1
   - _target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps
-    max_total_steps: 500
+    max_total_steps: 2000

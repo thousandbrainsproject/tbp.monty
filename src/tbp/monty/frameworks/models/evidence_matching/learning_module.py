@@ -528,20 +528,25 @@ class EvidenceGraphLM(GraphLM):
             }
         return vote
 
-    def get_output(self) -> Message | None:
+    def get_output(self) -> Message:
         """Return the most likely hypothesis in same format as LM input.
 
         The input to an LM at the moment is a dict of features at a location. The
         output therefore has the same format to keep the messaging protocol
         consistent and make it easy to stack multiple LMs on top of each other.
 
-        If the LM has not reached a "match" terminal state, pass_message == False.
+        pass_message is False unless the LM has reached a "match" terminal state,
+        its sensor is on the object, and the most likely hypothesis lies within
+        max_match_distance of the recognized object's stored points, i.e. it is
+        still supported by the model.
         """
         mlh = self._get_current_mlh()
         pose_features = self._object_pose_to_features(mlh["rotation"].inv())
         object_id_features = self._object_id_to_features(mlh["graph_id"])
         pass_message = bool(
-            self.buffer.get_currently_on_object() and self.terminal_state == "match"
+            self.buffer.get_currently_on_object()
+            and self.terminal_state == "match"
+            and self._mlh_on_model(mlh)
         )
         # TODO H: is this a good way to scale evidence to [0, 1]?
         confidence = (
@@ -1170,6 +1175,30 @@ class EvidenceGraphLM(GraphLM):
             return OrientationMatrix(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
         return OrientationMatrix(pose.as_matrix().T)
+
+    def _mlh_on_model(self, mlh: dict[str, Any]) -> bool:
+        """Whether the MLH location lies near the stored points of its object.
+
+        Args:
+            mlh: The most likely hypothesis, with ``graph_id`` and ``location``
+                in the object's reference frame.
+
+        Returns:
+            Whether the MLH's location lies near the stored points of its object.
+            In the case of unknown objects (i.e., the MLH's graph_id is not in
+            memory) or when the MLH has no location, False is returned.
+        """
+        graph_id, location = mlh["graph_id"], mlh["location"]
+        if location is None or graph_id not in self.get_all_known_object_ids():
+            return False
+        query = np.asarray(location, dtype=float).reshape(1, 3)
+        distances = [
+            self.graph_memory.get_graph(graph_id, channel).find_nearest_neighbors(
+                query, num_neighbors=1, return_distance=True
+            )[0]
+            for channel in self.get_input_channels_in_graph(graph_id)
+        ]
+        return bool(min(distances) <= self.max_match_distance)
 
     def _object_id_to_features(self, object_id):
         """Convert an object ID to a stable categorical feature.
