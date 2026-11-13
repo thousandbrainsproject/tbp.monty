@@ -45,6 +45,7 @@ from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import LoggingCallbackHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.graph_matching import MontyForGraphMatching
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 from tbp.monty.memento import Memento
@@ -524,7 +525,7 @@ class MontyExperiment:
         while not self._recognition_complete():
             actions = self.run_step(ctx, self._recognition_ctx.step, actions)
             self._recognition_ctx.step += 1
-            if self._check_if_any_lms_updated():
+            if self._should_update_step_counter():
                 if self.model.is_exploring:
                     self._recognition_ctx.exploring_steps += 1
                 else:
@@ -542,17 +543,20 @@ class MontyExperiment:
             self.model.deal_with_time_out(global_time_out=result.global_time_out)
         return result.is_done
 
-    def _check_if_any_lms_updated(self: Self) -> bool:
-        # TODO: Find a better way to determine this condition.
-        #       The `check_if_any_lms_updated` method is defined in
-        #       `MontyForGraphMatching` rather than `MontyBase`,
-        #       so the distinction between `step` and `matching_steps`
-        #       (or `exploring_steps`) only applies to `MontyForGraphMatching`
-        #       and its subclasses.
-        try:
+    def _should_update_step_counter(self: Self) -> bool:
+        """Determine if the step counter should be updated.
+
+        Captures the current convention that for `MontyForGraphMatching`, the step
+        counter is only updated if any LMs have been updated. In other cases, for
+        example `MontyBase` during tests, step counters are always updated.
+
+        Returns:
+            True if the step counter should be updated, False otherwise.
+        """
+        if isinstance(self.model, MontyForGraphMatching):
             return self.model.check_if_any_lms_updated()
-        except AttributeError:
-            return False
+
+        return True
 
     def run_step(
         self, ctx: RuntimeContext, step: int, actions: list[Action]

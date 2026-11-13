@@ -97,7 +97,7 @@ class MontyForGraphMatching(MontyBase):
             # made it have possible matches now.
             lm.set_individual_ts(terminal_state=None)
 
-    def check_if_any_lms_updated(self):
+    def check_if_any_lms_updated(self) -> bool:
         """True if any LM received sensory information on the current episode step.
 
         Returns:
