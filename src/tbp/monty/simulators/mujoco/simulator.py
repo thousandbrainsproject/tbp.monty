@@ -167,18 +167,32 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
     recompile the model and data from whenever an object is added or removed.
     """
 
+    # These instance variables are public because agents access them
     spec: MjSpec
     model: MjModel
     data: MjData
     id_to_semantic_id: dict[ObjectID, SemanticID]
+    """Mapping from internal object IDs to semantic IDs."""
 
     _data_path: Path | None
+    """Path to load custom object assets from."""
     _raise_actuate_missing: bool
+    """Whether calling a missing actuate method on a Agent should raise an exception."""
     _agent_partials: Sequence[MuJoCoAgentFactory]
+    """Partially applied Agent constructors.
+    These are expected to take a single argument, the simulator instance.
+    """
     _agents: dict[AgentID, Agent]
+    """Dictionary of AgentIDs to Agents"""
     _loaded_custom_types: dict[LoadedObjectKey, ModelMetadata]
+    """Dictionary of custom loaded types, used to make sure we only add custom
+    assets once."""
     _object_count: int
+    """Count of the objects added the the scene, used for generating unique names."""
+    _object_names: set[str]
+    """A set of the object names added to the scene."""
     _renderers: dict[tuple[int, int], Renderer]
+    """A dictionary cache of resolutions to Renderers."""
 
     def __init__(
         self,
@@ -197,44 +211,32 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
               does not have an actuate method for an Action.
         """
         self._data_path = Path(data_path) if data_path else None
-        self._loaded_custom_types = {}
         self._raise_actuate_missing = raise_actuate_missing
         self._renderers = {}
         self._agent_partials = [] if agents is None else agents
         self._agents = {}
-        # Track how many objects we add to the environment.
-        # This is used to give added objects unique names.
+
         self._object_count = 0
-
+        self._object_names = set()
+        self._loaded_custom_types = {}
         self.id_to_semantic_id = self._default_id_mapping()
+
         self.spec = MjSpec()
-        self._initialize_new_spec()
-        self.model = self.spec.compile()
-        self.data = MjData(self.model)
-        # Step the simulation so new objects are in their initial positions.
-        mj_forward(self.model, self.data)
-
-    def _recompile(self) -> None:
-        """Recompile the MuJoCo model while retaining any state data.
-
-        DO NOT call after recreating a new MjSpec object. Otherwise, we'll get
-        SIGBUS errors due to bad memory accesses inside MuJoCo.
-        """
-        self.model, self.data = self.spec.recompile(self.model, self.data)
-        # The renderers have to be recreated when the model is updated.
-        self._close_renderers()
-        # Step the simulation so any new objects are in their initial positions.
-        mj_forward(self.model, self.data)
-
-    def _initialize_new_spec(self):
-        """Initializes a freshly created spec object.
-
-        Sets all the relevant global settings for the spec object, configures
-        the lights in the scene, and (re)creates the agents.
-        """
         self._configure_spec_settings()
         self._configure_lights()
         self._create_agents()
+        self.model = self.spec.compile()
+        self.data = MjData(self.model)
+        # Step the simulation so the agents are in their initial positions.
+        mj_forward(self.model, self.data)
+
+    def _recompile(self) -> None:
+        """Recompile the MuJoCo model while retaining any state data."""
+        self.model, self.data = self.spec.recompile(self.model, self.data)
+        # The renderers have to be recreated when the model is updated.
+        self._close_renderers()
+        # Step the simulation so any newly added objects are in their initial positions.
+        mj_forward(self.model, self.data)
 
     def _configure_spec_settings(self) -> None:
         """Set all the relevant global settings on the spec object."""
@@ -333,18 +335,29 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
         return Resolution2D(height=max_height, width=max_width)
 
     def remove_all_objects(self) -> None:
-        # We start from a fresh MjSpec object and reinitialize rather
-        # than try to find the objects to remove
-        # TODO: Consider NOT recreating the spec.
-        self.spec = MjSpec()
-        self._initialize_new_spec()
-        self.model = self.spec.compile()
-        self.data = MjData(self.model)
+        """Removes all objects from the scene.
+
+        Note: this does NOT reset the agents to their initial positions. Call
+        `reset()` to do that.
+        """
+        for name in self._object_names:
+            geom = self.spec.geom(name)
+            self.spec.delete(geom)
+        self._remove_assets()
         self.id_to_semantic_id = self._default_id_mapping()
         self._object_count = 0
+        self._object_names = set()
+        self._recompile()
+
+    def _remove_assets(self) -> None:
+        """Removes all meshes, materials, and textures for custom objects."""
+        for mesh in self.spec.meshes:
+            self.spec.delete(mesh)
+        for material in self.spec.materials:
+            self.spec.delete(material)
+        for texture in self.spec.textures:
+            self.spec.delete(texture)
         self._loaded_custom_types = {}
-        # Step the simulation so all new objects are in their initial positions.
-        mj_forward(self.model, self.data)
 
     @override
     def add_object(
@@ -384,6 +397,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             semantic_id = SemanticID(added_obj.type[0])
         object_id = ObjectID(added_obj.id)
         self.id_to_semantic_id[object_id] = semantic_id
+        self._object_names.add(obj_name)
 
         return ObjectInfo(
             object_id=object_id,
