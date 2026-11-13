@@ -93,7 +93,7 @@ class GetOutputTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
     )
-    def test_returns_message_that_passes_when_all_gating_conditions_hold(
+    def test_returns_message_that_passes_when_all_gating_conditions_true(
         self,
         get_current_mlh_mock: MagicMock,
         mlh_on_model_mock: MagicMock,  # noqa: ARG002
@@ -126,7 +126,7 @@ class GetOutputTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
     )
-    def test_returns_message_that_does_not_pass_when_any_gating_condition_fails(
+    def test_returns_message_that_does_not_pass_when_any_gating_condition_false(
         self,
         get_current_mlh_mock: MagicMock,
         mlh_on_model_mock: MagicMock,
