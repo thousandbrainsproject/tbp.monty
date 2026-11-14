@@ -115,61 +115,6 @@ class MontyForGraphMatching(MontyBase):
     def deal_with_time_out(self, global_time_out: bool = True) -> None:
         self._set_time_outs(global_time_out=global_time_out)
 
-    def check_terminal_conditions(self) -> bool:
-        """Check if all LMs have reached a terminal state.
-
-        This could be no_match, match, or time_out. If all LMs have reached one of these
-        states, end the episode.
-
-        Currently the episode just ends if
-            - the configured `match_criterion` is satisfied by the LMs that have
-              reached "match"
-            - all lms have reached "no_match"
-            - We have exceeded max_total_steps
-
-        Note:
-            In the future we may want to allow ending an episode when all states are
-            either match or no_match. Right now, the match lms will have to convince the
-            no_match lms of their detected object and pose for the episode to end which
-            may be more difficult if not all LMs know about all objects.
-
-        Returns:
-            True if the match criterion is satisfied, False otherwise.
-        """
-        # First check if all LMs have no match (for example in the first episode when
-        # we have no objects in memory yet). If that is the case there is no need to
-        # take max_steps or to spend time updating the lms terminal conditions. We could
-        # also reset the hypotheses of the no_match LMs to give them another chance to
-        # recover.
-        all_lms_no_match = True
-        for lm in self.learning_modules:
-            if lm.terminal_state != "no_match":
-                all_lms_no_match = False
-
-        if all_lms_no_match:
-            # No need to check any other conditions if all LMs have no_match
-            return True
-
-        # No need to check pose consensus if we haven't moved min steps yet.
-        if not self.exceeded_min_steps:
-            return False
-
-        # Check if LMs satisfy the match criterion
-        # TODO: we may also want to count no_match as done.
-        terminal_states: dict[str, str | None] = {}
-        for lm in self.learning_modules:
-            lm.update_terminal_condition()
-            logger.debug(
-                f"{lm.learning_module_id} has terminal state: {lm.terminal_state}"
-            )
-            terminal_states[lm.learning_module_id] = lm.terminal_state
-
-        if self._match_criterion(terminal_states):
-            logger.info("\n\nMONTY DETECTED MATCH\n\n")
-            return True
-
-        return False
-
     # ------------------ Logging & Saving ----------------------
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
         lm_dict = {}
