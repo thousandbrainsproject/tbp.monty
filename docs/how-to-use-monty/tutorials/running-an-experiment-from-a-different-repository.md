@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
 The above scripts let you run the existing `tbp.monty` experiments from your own project. For example:
 ```
-uv run python run.py experiment=tutorial/first_experiment_mujoco
+uv run python run.py experiment=tutorial/first_experiment
 ```
 
 To run your own experiment, you need to configure it using [Hydra](https://hydra.cc/) (`hydra-core>=1.3.2`). For the purpose of this tutorial, we'll assume that your Hydra configuration is stored in `src/project/conf`:

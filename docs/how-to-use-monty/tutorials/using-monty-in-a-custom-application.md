@@ -129,7 +129,7 @@ An experiment config for training on the Omniglot dataset can then look like thi
 # @package _global_
 
 defaults:
-  - /monty: graph_exp1000_emin_t3
+  - /monty: graph
   - /monty/motor_system_config: informed_random_walk_1
   - /monty/learning_module: displacement_1lm
   - /monty/sensor_module: camera_dist_omniglot_tutorial
@@ -194,7 +194,7 @@ And a config for inference on those trained models could look like this:
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_e3_t3
+  - /monty: evidencegraph
   - /monty/motor_system_config: informed_random_walk_5
   - /monty/learning_module: evidence_omniglot_tutorial
   - /monty/sensor_module: camera_dist_omniglot_tutorial
@@ -269,7 +269,7 @@ An experiment config can then look like this:
 # @package _global_
 
 defaults:
-  - /monty: graph_exp1000_emin_t3
+  - /monty: graph
   - /monty/motor_system_config: informed_random_walk_20 # move 20 pixels at a time
   - /monty/learning_module: evidence_1lm_nn10_dod003_dts02_gsg0
   - /monty/sensor_module: camera_dist
