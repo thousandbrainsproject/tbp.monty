@@ -106,9 +106,6 @@ class MontyBase(Monty):
 
         # Number of steps in which at least 1 LM received information during exploration
         self.exploratory_steps = 0
-        # Number of steps in which at least 1 LM was updated. It is not the same as each
-        # individual LM's number of matching steps.
-        self.matching_steps = 0
 
         if self.sm_to_lm_matrix is None:
             raise ValueError("sm_to_lm_matrix must be defined")
@@ -495,25 +492,14 @@ class MontyBase(Monty):
 
     @property
     def step_type_count(self):
-        if self.step_type == "matching_step":
-            return self.matching_steps
         if self.step_type == "exploratory_step":
             return self.exploratory_steps
 
     def reset_episode_steps(self):
-        self.matching_steps = 0
         self.exploratory_steps = 0
 
     def update_step_counters(self):
-        if self.step_type == "matching_step":
-            self.matching_steps += 1
-            logger.info(f"--- Global Matching Step {self.matching_steps} ---")
-            telemeter.info(
-                TelemetryEvent(
-                    kind="GlobalMatchingStep", matching_steps=self.matching_steps
-                )
-            )
-        elif self.step_type == "exploratory_step":
+        if self.step_type == "exploratory_step":
             self.exploratory_steps += 1
 
     def switch_to_matching_step(self) -> None:
@@ -522,4 +508,3 @@ class MontyBase(Monty):
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
-        logger.info(f"Going into exploratory mode after {self.matching_steps} steps")
