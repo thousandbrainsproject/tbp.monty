@@ -152,6 +152,7 @@
 \b[pP]retrain(ed|ing)?\b
 \bprofiler\b
 \bPurdy\b
+\bPyrefly\b
 \bPyTorch\b
 \bRao\b
 \brdme\b

@@ -124,6 +124,8 @@ dmypy.json
 launch.json
 .vscode/*
 !.vscode/markdown.code-snippets
+!.vscode/settings.example.json
+!.vscode/extensions.json
 
 # Pyre type checker
 .pyre/

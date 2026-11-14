@@ -300,5 +300,10 @@ where = ["src"]
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv.extra-build-dependencies]
-torch-scatter = ["setuptools", "torch"]
-torch-sparse = ["torch"]
+torch-scatter = [{ requirement = "torch", match-runtime = true }, "setuptools"]
+torch-sparse = [{ requirement = "torch", match-runtime = true }]
+
+# Needed by Windows
+[tool.uv.extra-build-variables]
+torch-scatter = { _CL_ = "/std:c++20" }
+torch-sparse = { _CL_ = "/std:c++20" }
