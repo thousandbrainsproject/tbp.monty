@@ -352,7 +352,6 @@ class MontyBase(Monty):
     def reset(self) -> None:
         # TODO: move most (all?) of this logic to Experiment
         self._is_done = False
-        self.reset_episode_steps()
         self.switch_to_matching_step()
         for lm in self.learning_modules:
             lm.reset_stm()
@@ -485,16 +484,6 @@ class MontyBase(Monty):
 
     def set_done(self) -> None:
         self._is_done = True
-
-    @property
-    def step_type_count(self):
-        pass  # TODO delete
-
-    def reset_episode_steps(self):
-        pass  # TODO delete
-
-    def update_step_counters(self):
-        pass  # TODO delete
 
     def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"
