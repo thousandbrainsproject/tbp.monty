@@ -7,10 +7,9 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-
 from typing import cast
 
-import torch
+import numpy as np
 
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 
@@ -33,30 +32,21 @@ def assert_graph_object_models_equal(
     if left._graph is None or right._graph is None:
         raise AssertionError("One of the GraphObjectModel instances has no graph.")
 
-    # Newer versions of torch_geometric change `keys` from a
-    # property to a function.
-    # TODO: remove check and use keys function once upgraded to Python 3.10
-    if callable(left._graph.keys):
-        left_keys = left._graph.keys()
-    else:
-        left_keys = left._graph.keys
-    if callable(right._graph.keys):
-        right_keys = right._graph.keys()
-    else:
-        right_keys = right._graph.keys
+    left_keys = set(vars(left._graph))
+    right_keys = set(vars(right._graph))
 
-    if set(left_keys) != set(right_keys):
+    if left_keys != right_keys:
         raise AssertionError(
             "The keys of the two GraphObjectModel instances are not equal.\n"
-            f"Left keys: {set(left_keys)}\n"
-            f"Right keys: {set(right_keys)}\n"
+            f"Left keys: {left_keys}\n"
+            f"Right keys: {right_keys}\n"
         )
 
     for key in left_keys:
-        v_left, v_right = left._graph[key], right._graph[key]
+        v_left, v_right = getattr(left._graph, key), getattr(right._graph, key)
 
-        if torch.is_tensor(v_left):
-            if not torch.equal(v_left, v_right):
+        if isinstance(v_left, np.ndarray):
+            if not np.array_equal(v_left, v_right):
                 raise AssertionError(
                     f"The {key} values of the two GraphObjectModel instances are not "
                     f"equal.\nLeft value: {v_left}\n"

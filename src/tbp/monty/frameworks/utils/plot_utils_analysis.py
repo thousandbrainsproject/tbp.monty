@@ -273,7 +273,7 @@ def plot_detection_animation(
     ax3 = fig.add_subplot(1, 4, 3, projection="3d")
 
     ax4 = fig.add_subplot(1, 4, 4, projection="3d")
-    num_points = model.x.shape[0]
+    num_points = model.num_nodes
     colors = np.zeros(num_points)
 
     num_steps = len(all_obs)
@@ -408,7 +408,7 @@ def plot_feature_matching_animation(
     for i, object_n in enumerate(objects):
         # epoch -1 because we want the model at the end of the previous epoch
         model_pos = lm_models[model_id][lm_num][object_n].pos
-        all_model_pos = np.vstack([all_model_pos, model_pos.numpy()])
+        all_model_pos = np.vstack([all_model_pos, model_pos])
         # Add axes for 3d model plots
         ax = fig.add_subplot(1, len(objects) + 1, i + 2, projection="3d")
         ax.set_title(object_names[i])
