@@ -33,7 +33,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.memento import Memento
-from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = ["MontyBase"]
 
@@ -103,9 +102,6 @@ class MontyBase(Monty):
         self.experiment_mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
         )
-
-        # Number of steps in which at least 1 LM received information during exploration
-        self.exploratory_steps = 0
 
         if self.sm_to_lm_matrix is None:
             raise ValueError("sm_to_lm_matrix must be defined")
@@ -492,15 +488,13 @@ class MontyBase(Monty):
 
     @property
     def step_type_count(self):
-        if self.step_type == "exploratory_step":
-            return self.exploratory_steps
+        pass  # TODO delete
 
     def reset_episode_steps(self):
-        self.exploratory_steps = 0
+        pass  # TODO delete
 
     def update_step_counters(self):
-        if self.step_type == "exploratory_step":
-            self.exploratory_steps += 1
+        pass  # TODO delete
 
     def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"
