@@ -24,6 +24,3 @@ experiment:
     logging:
       python_log_level: INFO
       run_name: ""
-    monty_config:
-      monty_args:
-        min_train_steps: 12
