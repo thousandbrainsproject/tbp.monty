@@ -17,7 +17,7 @@ In this tutorial we will introduce the basic mechanics of Monty experiment confi
 >
 > Below instructions assume you'll be running an experiment within the checked out `tbp.monty` repository. This is the recommended way to start. Once you are familiar with Monty, if you'd rather setup your experiment in your own repository, then take a look at [Running An Experiment From A Different Repository](./running-an-experiment-from-a-different-repository.md).
 
-Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf` directory serves as the root configuration directory, and experiment configs are located under `src/tbp/monty/conf/experiment`. The experiment config for this tutorial is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment_mujoco.yaml` which contains the following:
+Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf` directory serves as the root configuration directory, and experiment configs are located under `src/tbp/monty/conf/experiment`. The experiment config for this tutorial is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment.yaml` which contains the following:
 
 ```yaml
 # @package _global_
@@ -33,7 +33,7 @@ Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf
 defaults:
   # /monty defines what Monty we will use and how many exploration, evaluation,
   # training, and total steps to configure it with.
-  - /monty: graph_exp1000_e3_t3
+  - /monty: graph
 
   # /monty/motor_system_config specifies what motor system and motor policy to
   # use within Monty. We use a motor system with an InformedPolicyRandomWalk where
@@ -106,7 +106,7 @@ experiment:
     logging:
       # Every experiment has a unique run name. This is used to identify the
       # experiment in the logs and to save a trained model.
-      run_name: first_experiment_mujoco
+      run_name: first_experiment
 ```
 
 # Running the Experiment
@@ -114,16 +114,16 @@ experiment:
 Monty experiments are run with `run.py` (or `run_parallel.py`) located directly under `tbp.monty`. To run the experiment defined above, `cd` into `tbp.monty`, make sure the `tbp.monty` environment is up-to-date (via `uv sync --extra dev --extra simulator_mujoco`), and enter
 
 ```shell
-uv run python run.py experiment=tutorial/first_experiment_mujoco
+uv run python run.py experiment=tutorial/first_experiment
 ```
 
-The `experiment` argument is determined by the location of the experiment config, relative to the `src/tbp/monty/conf/experiment` directory. This experiment is named `tutorial/first_experiment_mujoco` since the config is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment_mujoco.yaml`.
+The `experiment` argument is determined by the location of the experiment config, relative to the `src/tbp/monty/conf/experiment` directory. This experiment is named `tutorial/first_experiment` since the config is located at `src/tbp/monty/conf/experiment/tutorial/first_experiment.yaml`.
 
 # What Just Happened?
 
 Now that you have run your first experiment, let's unpack what happened. This first section involves a lot of text, but rest assured, once you grok this first experiment, the rest of the tutorials will be much more interactive and will focus on running experiments and using tooling. This first experiment is virtually the simplest one possible, but it is designed to familiarize you with all the pieces and parts of the experimental workflow to give you a good foundation for further experimentation.
 
-Experiments are implemented as Python classes with a `run` method. In essence, `run.py` creates an experiment from a config and calls the experiment's `run` method. For the purpose of this tutorial, `first_experiment_mujoco` is configured to only run training and does not run inference.
+Experiments are implemented as Python classes with a `run` method. In essence, `run.py` creates an experiment from a config and calls the experiment's `run` method. For the purpose of this tutorial, `first_experiment` is configured to only run training and does not run inference.
 
 ## Experiment Structure: Epochs, Episodes, and Steps
 
@@ -153,20 +153,16 @@ If you examine the `MontyExperiment` class, the parent class of `MontySupervised
         - Do post-epoch logging.
     - Do post-train logging.
 
-and **this is exactly the procedure that was executed when you ran** `uv run python run.py experiment=tutorial/first_experiment_mujoco`. (Please note that we're writing `MontyExperiment` in the above sequence rather than `MontySupervisedObjectPretrainingExperiment` for the sake of generality). When we run Monty in evaluation mode, `MontyExperiment.run` calls `MontyExperiment.evaluate`, resulting in the same sequence of calls minus the model updating step in `MontyExperiment.post_episode`. See the [experiment description in the How Monty Works section](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
+and **this is exactly the procedure that was executed when you ran** `uv run python run.py experiment=tutorial/first_experiment`. (Please note that we're writing `MontyExperiment` in the above sequence rather than `MontySupervisedObjectPretrainingExperiment` for the sake of generality). When we run Monty in evaluation mode, `MontyExperiment.run` calls `MontyExperiment.evaluate`, resulting in the same sequence of calls minus the model updating step in `MontyExperiment.post_episode`. See the [experiment description in the How Monty Works section](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
 
 ## Model
 
-The model is specified in the `/monty` section of `defaults`. In the case it is the `graph_exp1000_e3_t3` model, which is a `MontyForGraphMatching` model with 1 000 exploratory steps, 3 minimum eval steps, and 3 minimum train steps.
+The model is specified in the `/monty` section of `defaults`. In the case it is the `graph` model, which is a `MontyForGraphMatching` model.
 
 ```yaml
 # @package experiment.config.monty_config
 
 monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
-monty_args:
-  num_exploratory_steps: 1000
-  min_eval_steps: 3
-  min_train_steps: 3
 ```
 
 The model requires additional configuration in form of the motor system, learning modules, sensor modules, and the overall connectivity. These are specified respectively in the `/monty/motor_system_config`, `/monty/learning_module`, `/monty/sensor_module`, and `/monty/connectivity` sections of `defaults`. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
@@ -183,9 +179,9 @@ The environment is specified in the `/environment` section of `defaults`. In thi
 
 By now, we know that an experiment starts with the `run` method calling `train` and `evaluate` methods, that each of these runs one or more `epochs`, which consists of one or more `episodes`, and finally each `episode` repeatedly calls `model.step`. Now we will start unpacking each of these levels, starting with the innermost loop over `steps`.
 
-As mentioned previously, in `/monty: graph_exp1000_e3_t3`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
+As mentioned previously, in `/monty: graph`, notice that the model class is specified as `${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}` (it uses the `monty.class` resolver that passes the Python class itself to the config), which is a subclass of `tbp.monty.frameworks.models.monty_base.MontyBase`, which in turn is a subclass of `tbp.monty.frameworks.models.abstract_monty_classes.Monty`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
 
-You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
+To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use a custom `RecognitionStrategy` in your experiment configuration.
 
 **In this particular experiment, `n_train_epochs` was set to 1, and `/termination: any1_min_e0_t0_exp3_max_e1_t1_tot5` limits each episode to between 0 and 1 training steps. This means a single epoch was run, with one training matching step ("`max_*_t1`") per episode on the single object**. In the next section, we go up a level from the model step to understand episodes and epochs.
 

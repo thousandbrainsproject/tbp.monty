@@ -149,7 +149,7 @@ experiment:
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
-      run_name: surf_agent_1lm_2obj_train
+      run_name: surf_agent_2obj_train
     telemetry:
       formatters:
         telemetry_formatter:

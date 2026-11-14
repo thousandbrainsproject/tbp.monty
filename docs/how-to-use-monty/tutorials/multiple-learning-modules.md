@@ -18,13 +18,13 @@ In this tutorial, we will show how Monty can be used to learn and recognize obje
 In this section, we'll show how to perform supervised pretraining with a model containing six sensor modules, of which five are connected in a 1:1 fashion to five learning modules (one sensor module is a viewfinder for experiment setup and visualization and is not connected to a learning module). By default, the sensor modules are arranged in cross shape, where four sensor modules are displaced a small distance from the center sensor module like so:
 ![](../../figures/how-to-use-monty/multi_lm_sensor_arrangement.png)
 
-To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_train_mujoco.yaml` file.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_train.yaml` file.
 
 ```yaml
 # @package _global_
 
 defaults:
-  - /monty: graph_exp500_e3_t3
+  - /monty: graph
   - /monty/motor_system_config: naive_scan_5
   - /monty/learning_module: displacement_5lm
   - /monty/sensor_module: 5sm_camera
@@ -33,7 +33,7 @@ defaults:
   - /env_interface: tutorial_train_2obj_predefined
   - /env_interface/positioning_procedures_train: getgoodview_viewfinder_patch0
   - /env_interface/transform: missing_depthto3d_sensor6
-  - /termination: any1_naivescan_fixed5_tot6000
+  - /termination: any1_any_mfgm_t3e3exp500_naivescan_fixed5_tot6000
   - /logging: silent_warning_train
   - /telemetry: info
 
@@ -48,8 +48,7 @@ experiment:
     supervised_lm_ids: all
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: dist_agent_5lm_2obj_train_mujoco
-
+      run_name: dist_agent_5lm_2obj_train
 ```
 
 If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `silent_warning_train` logging configuration. However, we are now using a Monty model configuration that specifies everything we need to have five `CameraSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `/monty/connectivity` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `/monty/connectivity/5lm_5sm` configuration which contains the following lines:
@@ -93,19 +92,19 @@ Finally, we have also set the `/environment` to `mujoco_dist_agent_sensors5`. Th
 
 To run this experiment, call the `run.py` script like so:
 ```bash
-uv run python run.py experiment=tutorial/dist_agent_5lm_2obj_train_mujoco
+uv run python run.py experiment=tutorial/dist_agent_5lm_2obj_train
 ```
 
 # Setting up and Running a Multi-LM Evaluation Experiment
 
 We will now specify an experiment config to perform inference.
-To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_eval_mujoco.yaml` file.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/dist_agent_5lm_2obj_eval.yaml` file.
 
 ```yaml
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_emin_t3
+  - /monty: evidencegraph
   - /monty/motor_system_config: distant_5
   - /monty/learning_module: tutorial_evidence_5lm
   - /monty/sensor_module: 5sm_camera
@@ -123,15 +122,14 @@ experiment:
   config:
     n_train_epochs: 1 # unused but required
     n_eval_epochs: 1
-    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train_mujoco/pretrained"}
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/dist_agent_5lm_2obj_train/pretrained"}
     python_log_level: DEBUG
     seed: 42
     show_sensor_output: false
     supervised_lm_ids: []
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: dist_agent_5lm_2obj_eval_mujoco
-
+      run_name: dist_agent_5lm_2obj_eval
 ```
 
 As usual, we set up our imports, save/load paths, and specify which objects to use and what rotations they'll be in. For simplicity, we'll only perform inference on each of the two objects once but you could easily test more by adding more rotations to the `config.train_env_interface_args.object_init_sampler.rotations` array specified in `/env_interface/tutorial_eval_2obj_predefined_r1`.
@@ -169,12 +167,12 @@ These are then imported as `/monty/learning_module: tutorial_evidence_5lm` defau
 
 Finally, run the experiment.
 ```bash
-uv run python run.py experiment=tutorial/dist_agent_5lm_2obj_eval_mujoco
+uv run python run.py experiment=tutorial/dist_agent_5lm_2obj_eval
 ```
 
 # Inspecting the Results
 
-Let's have a look at part of the `eval_stats.csv` file located at `~/tbp/results/monty/projects/dist_agent_5lm_2obj_eval_mujoco/eval_stats.csv`.
+Let's have a look at part of the `eval_stats.csv` file located at `~/tbp/results/monty/projects/dist_agent_5lm_2obj_eval/eval_stats.csv`.
 ![](../../figures/how-to-use-monty/multi_lm_eval_stats.png)
 
 Each row corresponds to one learning module during one episode, and so each episode now occupies a 5-row block in the table. On the far right, the **primary_target_object** indicates the object being recognized. On the far left, the **primary_performance** column indicates the learning module's success. In episode 0, all LMs correctly decided that the mug was the object being shown. In episode 1, all LMs terminate with  `correct`  while LM_1 terminated with `correct_mlh` (correct most-likely hypothesis). In short, this means that LM_1 had not yet met its evidence thresholds to make a decision, but the right object was its leading candidate. Had LM_1 been able to continue observing the object, it may well have met the threshold needed to make a final decision. However, the episode was terminated as soon as three learning modules met the evidence threshold needed to make a decision. We can require any number of learning modules to meet their evidence thresholds by changing the `count` on the configured `AnyLMsMatch` criterion. See [here](../../how-monty-works/learning-module/evidence-based-learning-module.md#terminal-condition) for a more thorough discussion on how learning modules reach terminal conditions and [here](../../how-monty-works/learning-module/evidence-based-learning-module.md#voting-with-evidence) to learn about how voting works with the evidence LM.
@@ -197,7 +195,7 @@ from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Get path to pretrained model
 project_dir = Path("~/tbp/results/monty/projects").expanduser()
-model_name = "dist_agent_5lm_2obj_train_mujoco"
+model_name = "dist_agent_5lm_2obj_train"
 model_path = project_dir / model_name / "pretrained" / "model.pt"
 state_dict = torch.load(model_path, weights_only=False)
 

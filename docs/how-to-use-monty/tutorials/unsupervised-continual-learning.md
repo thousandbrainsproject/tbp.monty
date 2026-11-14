@@ -14,17 +14,13 @@ Our model will have one surface agent connected to one sensor module connected t
 
 # Setting up the Experiment Config for Continual Learning
 
-To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_unsupervised_mujoco.yaml` file.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_unsupervised.yaml` file.
 
 ```yaml
 # @package _global_
 
 defaults:
-  # This configuration will take 1000 exploratory steps (`exp1000`) after recognizing the object to
-  # collect more information about it. It also requires at least 100 train steps (`t100`) before
-  # recognizing an object to avoid early misclassifications when we have few objects in
-  # memory.
-  - /monty: graph_exp1000_e3_t100
+  - /monty: graph
   - /monty/motor_system_config: surface
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj_unsupervised
   # We will use the default surface sensor modules
@@ -33,7 +29,11 @@ defaults:
   - /environment: mujoco_ycb_surf_agent
   - /env_interface: tutorial_train_2obj_random
   - /env_interface/transform: missing_depthto3d_sensor2_semantic0_clip
-  - /termination: any1_objectrecognition_t2000_e500_tot5000
+  # This configuration will take 1000 exploratory steps (`exp1000`) after recognizing the object to
+  # collect more information about it. It also requires at least 100 train steps (`t100`) before
+  # recognizing an object to avoid early misclassifications when we have few objects in
+  # memory.
+  - /termination: any1_any_mfgm_t100e3exp1000_t2000e500tot5000
   - /logging: basic_info_monty_runs
   - /telemetry: info
 
@@ -49,7 +49,7 @@ experiment:
     do_eval: false
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: surf_agent_2obj_unsupervised_mujoco
+      run_name: surf_agent_2obj_unsupervised
 ```
 
 Looking into the details of learning module configuration in `src/tbp/monty/conf/monty/learning_module/evidence_tutorial_surf_agent_2obj_unsupervised.yaml`:
@@ -127,11 +127,11 @@ Besides these crucial changes, we have also made a few minor adjustments to simp
 To run this experiment, call the `run.py` script with an experiment name as the `experiment` argument like so:
 
 ```shell
-uv run python run.py experiment=tutorial/surf_agent_2obj_unsupervised_mujoco
+uv run python run.py experiment=tutorial/surf_agent_2obj_unsupervised
 ```
 
 # Inspecting the Results
-Once complete, you can inspect the simulation results and visualize the learned models. The logs are located at `~/tbp/results/monty/projects/surf_agent_2obj_unsupervised_mujoco`. Open `train_stats.csv`, and you should see a table with six rows--one row for each episode. The first 7 columns should look something like this:
+Once complete, you can inspect the simulation results and visualize the learned models. The logs are located at `~/tbp/results/monty/projects/surf_agent_2obj_unsupervised`. Open `train_stats.csv`, and you should see a table with six rows--one row for each episode. The first 7 columns should look something like this:
 
 ![](../../figures/how-to-use-monty/unsupervised_stats.png)
 
@@ -158,7 +158,7 @@ def load_graph(exp_dir: Path, epoch: int, object_name: str) -> GraphObjectModel:
     return state_dict["lm_dict"][0]["graph_memory"][object_name]["patch"]
 
 
-exp_dir = Path("~/tbp/results/monty/projects/surf_agent_2obj_unsupervised_mujoco").expanduser()
+exp_dir = Path("~/tbp/results/monty/projects/surf_agent_2obj_unsupervised").expanduser()
 n_epochs = 3
 obj_name = "new_object1"   # The generated object ID corresponding to the bowl
 
