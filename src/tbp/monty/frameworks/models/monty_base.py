@@ -53,7 +53,6 @@ class MontyBase(Monty):
         sm_to_lm_matrix,
         lm_to_lm_matrix,
         lm_to_lm_vote_matrix,
-        min_eval_steps,
         min_train_steps,
         attention_system: AttentionSystem | None = None,
     ) -> None:
@@ -81,7 +80,6 @@ class MontyBase(Monty):
             lm_to_lm_vote_matrix: describes lateral coupling between learning
                 modules. This matrix is used for voting. Assumes no lateral voting if
                 `None` is passed.
-            min_eval_steps: Minimum number of steps required for evaluations.
             min_train_steps: Minimum number of steps required for training.
             attention_system: The attention system to be used.
                 If `None`, a NoopAttentionSystem will be used.
@@ -101,7 +99,6 @@ class MontyBase(Monty):
         self.sm_to_lm_matrix = sm_to_lm_matrix
         self.lm_to_lm_matrix = lm_to_lm_matrix
         self.lm_to_lm_vote_matrix = lm_to_lm_vote_matrix
-        self.min_eval_steps = min_eval_steps
         self.min_train_steps = min_train_steps
 
         # Counters, logging, default step_type

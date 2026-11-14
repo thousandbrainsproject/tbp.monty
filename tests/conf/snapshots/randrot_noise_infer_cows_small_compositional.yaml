@@ -5,7 +5,6 @@ experiment:
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
       monty_args:
-        min_eval_steps: ${constants.min_eval_steps}
         min_train_steps: 3
       motor_system_config:
         _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
