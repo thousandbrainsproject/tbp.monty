@@ -55,7 +55,6 @@ class MontyBase(Monty):
         lm_to_lm_vote_matrix,
         min_eval_steps,
         min_train_steps,
-        num_exploratory_steps,
         attention_system: AttentionSystem | None = None,
     ) -> None:
         """Initialize the base class.
@@ -84,7 +83,6 @@ class MontyBase(Monty):
                 `None` is passed.
             min_eval_steps: Minimum number of steps required for evaluations.
             min_train_steps: Minimum number of steps required for training.
-            num_exploratory_steps: Number of steps required by the exploratory phase.
             attention_system: The attention system to be used.
                 If `None`, a NoopAttentionSystem will be used.
 
@@ -105,7 +103,6 @@ class MontyBase(Monty):
         self.lm_to_lm_vote_matrix = lm_to_lm_vote_matrix
         self.min_eval_steps = min_eval_steps
         self.min_train_steps = min_train_steps
-        self.num_exploratory_steps = num_exploratory_steps
 
         # Counters, logging, default step_type
         self.step_type = "matching_step"
@@ -355,29 +352,6 @@ class MontyBase(Monty):
             self._goals,
         )
 
-    def _set_step_type_and_check_if_done(self):
-        """Check terminal conditions and decide if we change the step type.
-
-        In the base case, we just run until min_{exploratory, train, eval} steps is
-        reached, and then either change step type or end the experiment. NOTE: it is up
-        to you to override this method and define your experimental flow.
-        """
-        self.update_step_counters()
-
-        if self.exceeded_min_steps:
-            if self.step_type == "exploratory_step":
-                self._is_done = True
-                logger.info(f"finished exploring after {self.exploratory_steps} steps")
-
-            elif self.step_type == "matching_step":
-                if self.experiment_mode is ExperimentMode.TRAIN:
-                    self.switch_to_exploratory_step()
-                else:
-                    self._is_done = True
-                    logger.info(
-                        f"finished evaluating after {self.matching_steps} steps"
-                    )
-
     ###
     # Methods (other than step) that interact with the experiment
     ###
@@ -526,27 +500,11 @@ class MontyBase(Monty):
         self._is_done = True
 
     @property
-    def min_steps(self):
-        if self.step_type == "matching_step":
-            if self.experiment_mode is ExperimentMode.TRAIN:
-                return self.min_train_steps
-
-            if self.experiment_mode is ExperimentMode.EVAL:
-                return self.min_eval_steps
-
-        elif self.step_type == "exploratory_step":
-            return self.num_exploratory_steps
-
-    @property
     def step_type_count(self):
         if self.step_type == "matching_step":
             return self.matching_steps
         if self.step_type == "exploratory_step":
             return self.exploratory_steps
-
-    @property
-    def exceeded_min_steps(self):
-        return self.step_type_count > self.min_steps
 
     def reset_episode_steps(self):
         self.matching_steps = 0

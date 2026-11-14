@@ -397,52 +397,6 @@ class MontyForGraphMatching(MontyBase):
             )
             logger.info(f"Possible matches for {lm.learning_module_id}: {pm}")
 
-    def _set_step_type_and_check_if_done(self):
-        """Check terminal conditions and decide if we change the step type."""
-        self.update_step_counters()
-
-        if self.step_type == "matching_step":
-            # Check that at least one LM has processed information, such that we should
-            # run check_terminal_conditions(); note in particular that
-            # check_terminal_conditions will e.g. increment symmetry evidence, so we
-            # should only run it if there was new information received
-            if self.check_if_any_lms_updated():
-                # Decide if we switch to exploratory step
-                enough_lms_done = self.check_terminal_conditions()
-
-                if enough_lms_done:
-                    # set terminal state of lms that are not done yet to time_out or
-                    # pose_time out. Other terminal states remain the same.
-                    self._set_time_outs(global_time_out=False)
-
-                    if self.experiment_mode is ExperimentMode.TRAIN:
-                        self.switch_to_exploratory_step()
-
-                    elif (
-                        self.experiment_mode is ExperimentMode.EVAL
-                        and self.matching_steps > self.min_eval_steps
-                    ):
-                        self._is_done = True
-
-            else:
-                self.matching_steps -= 1
-
-        elif self.step_type == "exploratory_step":
-            if self.check_if_any_lms_updated():
-                if self.exploratory_steps >= self.num_exploratory_steps:
-                    self._is_done = True
-
-            else:
-                # If information was not passed to the LMs, then don't count as a true
-                # exploratory step
-                self.exploratory_steps -= 1
-
-                # Note that as for matching steps in MontyObjectRecognitionExperiment,
-                # Monty experiment classes handle the case where
-                # exploratory_steps is never being incremented (e.g. because we're in
-                # a void without any objects), ensuring that we eventually time-out
-                # according to max_total_steps
-
     # ------------------------ Helper --------------------------
     def _set_stepwise_targets(self, lm, sensory_inputs):
         """Set the "stepwise" target for each learning module.

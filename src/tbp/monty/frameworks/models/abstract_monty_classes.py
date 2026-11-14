@@ -237,14 +237,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractmethod
-    def _set_step_type_and_check_if_done(self):
-        """Check terminal conditions and decide if to change the step type.
-
-        Update what self.is_done returns to the experiment.
-        """
-        pass
-
     ###
     # Saving, loading, and logging
     ###

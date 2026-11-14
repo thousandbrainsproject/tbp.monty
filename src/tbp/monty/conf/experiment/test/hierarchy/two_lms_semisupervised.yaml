@@ -24,6 +24,3 @@ experiment:
       - learning_module_1
     logging:
       run_name: ""
-    monty_config:
-      monty_args:
-        num_exploratory_steps: 0

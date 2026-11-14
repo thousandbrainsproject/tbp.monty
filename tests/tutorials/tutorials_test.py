@@ -173,7 +173,6 @@ class TutorialsTest(TestCase):
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.recognition_strategy.max_eval_steps=3",
                     "experiment.config.recognition_strategy.max_total_steps=3",
-                    "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)

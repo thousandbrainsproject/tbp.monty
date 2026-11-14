@@ -38,7 +38,6 @@ class MontyBasePrivateTest(unittest.TestCase):
             lm_to_lm_vote_matrix=[[], [], []],
             min_eval_steps=10,
             min_train_steps=10,
-            num_exploratory_steps=10,
             attention_system=self.attention_system,
         )
 

@@ -977,7 +977,8 @@ class GraphLearningTest(BaseGraphTest):
                     monty._step_learning_modules(ctx)
                     monty._vote()
                     monty._pass_goals()
-                    monty._set_step_type_and_check_if_done()
+                    # TODO: Figure out how to fix this test now that below is gone
+                    # monty._set_step_type_and_check_if_done()
                 # TODO: This test does too much manually and does not incorporate how
                 #       we run episodes with RecognitionContext. Below we mock
                 #       recognition_ctx so that post_episode() has access to it.

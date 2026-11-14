@@ -2,6 +2,5 @@
 
 monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
 monty_args:
-  num_exploratory_steps: 10
   min_eval_steps: 3
   min_train_steps: 3
