@@ -1,0 +1,77 @@
+name: Docs Preview Render
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'benchmarks/**'
+      - 'tools/github_readme_sync/**'
+      - '.github/workflows/docs_preview*.yml'
+  
+permissions:
+  contents: read
+
+jobs:
+  render:
+    name: docs-preview-render
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout tbp.monty (trusted repository)
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          path: tbp.monty
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: false
+
+      - name: Install trusted dependencies
+        working-directory: tbp.monty
+        run: uv sync --frozen --extra github_readme_sync_tool
+
+      - name: Checkout exact PR head as input data
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr_docs
+          persist-credentials: false
+
+      - name: Render docs preview without secrets
+        working-directory: pr_docs
+        env:
+          PREVIEW_REPOSITORY: ${{ github.repository }}
+          PREVIEW_PR_NUMBER: ${{ github.event.pull_request.number }}
+          PREVIEW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PREVIEW_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          IMAGE_PATH: ${{ github.event.pull_request.head.repo.full_name }}/${{ github.event.pull_request.head.sha }}/docs/figures          
+        run: |
+          "$GITHUB_WORKSPACE/tbp.monty/.venv/bin/python" -I \
+            "$GITHUB_WORKSPACE/tbp.monty/tools/github_readme_sync/cli.py" \
+            render-preview docs "$RUNNER_TEMP/docs-preview/preview.json" \
+            --repository "$PREVIEW_REPOSITORY" \
+            --pr-number "$PREVIEW_PR_NUMBER" \
+            --head-sha "$PREVIEW_HEAD_SHA" \
+            --base-ref "$PREVIEW_BASE_REF"
+
+      - name: Upload render docs preview JSON artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: docs-preview-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/docs-preview/preview.json
+          if-no-files-found: error
+          retention-days: 1
+      
