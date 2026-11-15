@@ -14,17 +14,14 @@ Sets up LiveView experiment monitoring with separate Python environments.
 ```
 
 **Prerequisites:**
-- tbp.monty conda environment must exist and be set up (Python 3.8)
-- Core dependencies (hydra-core, torch) must be installed
-- Python 3.14+ (or 3.11+) available for LiveView server (preferred)
+- [uv](https://docs.astral.sh/uv/) installed
+- Python 3.13, which is what tbp.monty's `.python-version` pins (pyview-web requires 3.11–3.14, MuJoCo supports 3.11+)
 
 **What it does:**
-- Verifies tbp.monty environment exists
-- Checks core dependencies are installed
-- Installs `pyzmq` in main Python 3.8 environment (for ZMQ communication)
-- Creates separate Python 3.14+ virtual environment (`.liveview_venv`) for LiveView server
-- Installs `pyview-web>=0.8.1` and `uvicorn[standard]>=0.32.0` only in the venv
-- Installs dev dependencies (black, ruff, mypy, pytest) in the venv
+- Runs `uv sync --extra dev --extra simulator_mujoco` for the experiment
+- Installs `pyzmq` into the tbp.monty environment (for ZMQ communication)
+- Creates `.liveview_venv` on the same Python for the LiveView server, recreating it when the interpreter changes
+- Installs `pyview-web>=0.8.1`, `uvicorn[standard]>=0.32.0` and the dev tools (ruff, mypy, pytest, radon, vulture) only in that venv
 
 ## Run Script
 
@@ -37,38 +34,34 @@ Runs a Monty experiment with LiveView monitoring.
 ./contrib/liveview_experiment/scripts/run.sh [experiment_name]
 ```
 
-**Default:** `tutorial_surf_agent_2obj_with_liveview`
+**Default:** `randrot_noise_77obj_surf_agent`
 
 **What it does:**
-- Automatically detects and activates `tbp.monty` environment
-- Starts LiveView server in Python 3.14+ venv (if available)
-- Runs the experiment with LiveView dashboard at http://127.0.0.1:8000
+- Resolves the experiment name against `src/tbp/monty/conf/experiment` (a path is the name Hydra knows; `-l WORD` lists what fits)
+- Starts the LiveView server from `.liveview_venv` (against `scripts/setup.sh` if it is missing)
+- Runs the experiment with `uv run` and the LiveView dashboard at http://127.0.0.1:8000
 
 ### Running a bigger experiment
 
-The default `tutorial_surf_agent_2obj_with_liveview` is a small, fast tutorial
-configuration. To stress‑test the LiveView (more objects, more steps), you can
-run one of the larger contrib experiments. For example, from the `tbp.monty`
-repo root:
+The default `randrot_noise_77obj_surf_agent` is a full benchmark run. For a
+small, fast tutorial configuration, name one of the tutorial experiments. For
+example, from the `tbp.monty` repo root:
 
 ```bash
-./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent_with_liveview
+./contrib/liveview_experiment/scripts/run.sh tutorial/surf_agent_2obj_train
 ```
 
 This will:
 
 - Start the standalone LiveView server on `http://127.0.0.1:8000`
-- Run the `randrot_10distinctobj_surf_agent_with_liveview` experiment in the
-  `tbp.monty` conda environment
+- Run the named experiment in the `tbp.monty` uv environment
 - Stream live evidence curves and sensor images into the dashboard
 
 ## Quick Start
 
 ```bash
 # 1. Set up tbp.monty environment (if not already done)
-conda env create
-conda activate tbp.monty
-pip install -e .
+uv sync --extra dev --extra simulator_mujoco
 
 # 2. Setup LiveView (one-time)
 ./contrib/liveview_experiment/scripts/setup.sh

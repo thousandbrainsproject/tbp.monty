@@ -6,11 +6,11 @@ import asyncio
 import json
 import logging
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from pyview import LiveView, LiveViewSocket, Stream
+from pyview import LiveView, LiveViewSocket, Session, Stream
 from pyview.events import InfoEvent
 from pyview.template.live_template import LiveRender, LiveTemplate
 from pyview.vendor import ibis
@@ -178,7 +178,7 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         """
         if not start_time:
             return "N/A"
-        elapsed = datetime.now(timezone.utc) - start_time
+        elapsed = datetime.now(UTC) - start_time
         return str(elapsed).split(".")[0]  # Remove microseconds
 
     def _format_last_update(self, last_update: datetime | None) -> str:
@@ -551,9 +551,12 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         socket.context = self._create_context_from_state(state)
 
     async def mount(
-        self, socket: LiveViewSocket[ExperimentState], _session: dict
+        self, socket: LiveViewSocket[ExperimentState], _session: Session
     ) -> None:
-        """Mount the LiveView and register socket for updates."""
+        """Mount the LiveView and register socket for updates.
+
+        The session is injected by pyview's type binding and is not used here.
+        """
         if not self.state_manager.register_socket(socket):
             return
 
@@ -721,14 +724,14 @@ class ExperimentLiveView(LiveView[ExperimentState]):
     async def handle_event(
         self,
         event: str,
-        _payload: Any = None,
+        payload: Any = None,
         socket: LiveViewSocket[ExperimentState] | None = None,
     ) -> None:
         """Handle UI events from the client.
 
         Args:
             event: Event name (e.g., "abort_experiment").
-            _payload: Event payload data (optional, may be None for phx-click events).
+            payload: Event payload data (optional, may be None for phx-click events).
             socket: The socket that triggered the event (required).
         """
         if socket is None:
@@ -737,8 +740,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
 
         # Normalize payload to empty dict if None
         # (pyview may pass None for events without payload)
-        if _payload is None:
-            _payload = {}
+        if payload is None:
+            payload = {}
 
         if event == "abort_experiment":
             await self._handle_abort_event(socket)

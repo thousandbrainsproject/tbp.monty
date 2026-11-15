@@ -12,9 +12,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 try:
+    # PyView's own pub/sub, which the server process always has.
     from pyview.live_socket import pub_sub_hub
     from pyview.vendor.flet.pubsub import PubSub
 except ImportError:
+    # Without pyview (the tests run in tbp.monty's environment), a stand-in
+    # with the same interface keeps broadcasting usable.
     from .pubsub_compat import PubSub, pub_sub_hub
 
 

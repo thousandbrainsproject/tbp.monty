@@ -44,8 +44,8 @@ EPISODES_INPUT="${3:-}"  # empty -> all
 echo "Starting LiveView Parallel Experiment Monitor..." >&2
 echo "" >&2
 
-# Check if uv is available (MuJoCo requires a native arm64 Python 3.11+ env,
-# which this repo now manages via uv).
+# Check if uv is available (MuJoCo and pyview-web both need the Python 3.13
+# that tbp.monty's .python-version pins).
 if ! command -v uv >/dev/null 2>&1; then
     echo "Error: uv not found. Please install uv (https://docs.astral.sh/uv/)." >&2
     exit 1
@@ -114,37 +114,22 @@ if ! uv run python -c "import zmq" 2>/dev/null; then
     echo "✓ pyzmq installed" >&2
 fi
 
-# Start LiveView server early as a separate process (if Python 3.11+ available)
+# Start LiveView server early as a separate process
 LIVEVIEW_SERVER_PID=""
 TAIL_PID=""
 LIVEVIEW_HOST="${LIVEVIEW_HOST:-127.0.0.1}"
 LIVEVIEW_PORT="${LIVEVIEW_PORT:-8000}"
 ZMQ_PORT="${ZMQ_PORT:-5555}"
 
-# Auto-create LiveView venv if missing (needs Python 3.11+ on host)
+# Auto-create the LiveView venv if missing. It runs on tbp.monty's own
+# interpreter (`.python-version`, 3.13), which pyview-web supports.
 LIVEVIEW_VENV="${LIVEVIEW_DIR}/.liveview_venv"
-if [ ! -d "$LIVEVIEW_VENV" ]; then
-    # Find a Python 3.11+ on the host (prefer newest)
-    LIVEVIEW_PYTHON_CMD=""
-    for cmd in python3.14 python3.13 python3.12 python3.11 python3; do
-        if command -v "$cmd" >/dev/null 2>&1; then
-            ver=$($cmd --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
-            maj=$(echo "$ver" | cut -d. -f1)
-            min=$(echo "$ver" | cut -d. -f2)
-            if [ "$maj" -ge 3 ] && [ "$min" -ge 11 ]; then
-                LIVEVIEW_PYTHON_CMD="$cmd"
-                echo "Creating LiveView venv with Python $ver..." >&2
-                break
-            fi
-        fi
-    done
-    if [ -n "$LIVEVIEW_PYTHON_CMD" ]; then
-        "$LIVEVIEW_PYTHON_CMD" -m venv "$LIVEVIEW_VENV" >&2 || true
-        if [ -d "$LIVEVIEW_VENV" ]; then
-            "$LIVEVIEW_VENV/bin/pip" install --upgrade --quiet pip >&2 || true
-            "$LIVEVIEW_VENV/bin/pip" install --quiet -e "${LIVEVIEW_DIR}[liveview]" >&2 || true
-            echo "✓ LiveView venv ready" >&2
-        fi
+if [ ! -x "$LIVEVIEW_VENV/bin/python" ]; then
+    echo "Creating the LiveView venv..." >&2
+    uv venv --python "$(cat "$TBP_MONTY_ROOT/.python-version")" "$LIVEVIEW_VENV" >&2 || true
+    if [ -x "$LIVEVIEW_VENV/bin/python" ]; then
+        uv pip install --python "$LIVEVIEW_VENV/bin/python" --quiet -e "${LIVEVIEW_DIR}[liveview]" >&2 || true
+        echo "✓ LiveView venv ready" >&2
     fi
 fi
 
@@ -178,7 +163,7 @@ echo "Starting parallel experiment..." >&2
 if [ -n "$LIVEVIEW_SERVER_PID" ]; then
     echo "LiveView dashboard available at: http://${LIVEVIEW_HOST}:${LIVEVIEW_PORT}" >&2
 else
-    echo "Note: LiveView server not started (Python 3.11+ not available, prefer 3.14+)" >&2
+    echo "Note: LiveView server not started (no .liveview_venv); run scripts/setup.sh" >&2
     echo "      Experiment will still publish to ZMQ (if server started separately)" >&2
 fi
 echo "Press Ctrl+C to stop" >&2

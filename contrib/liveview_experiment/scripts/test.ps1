@@ -1,136 +1,65 @@
 # Test script for LiveView Experiment
 # Runs all CI checks: formatting, linting, type checking, and tests
-# Uses Python 3.14+ environment (LiveView venv) if available, otherwise tbp.monty (prefer latest)
+# Formatting, linting and typing run in tbp.monty's uv environment; the tests
+# prefer the dashboard venv, which is the only place pyview lives.
 
 $ErrorActionPreference = "Stop"
 
 # Get the directory where this script is located
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LiveViewDir = Split-Path -Parent $ScriptDir
+$TbpMontyRoot = Split-Path -Parent (Split-Path -Parent $LiveViewDir)
+$Config = "contrib/liveview_experiment"
 
-Set-Location $LiveViewDir
+# `uv run` finds its project by walking up from the working directory, and the
+# contrib directory has a pyproject.toml of its own.
+Set-Location $TbpMontyRoot
 
-# Check for LiveView venv (Python 3.11+) first
-$liveViewVenv = Join-Path $LiveViewDir ".liveview_venv"
-
-# Handle both Windows (Scripts) and Unix (bin) paths
-if ($IsWindows -or $env:OS -eq "Windows_NT") {
-    $venvPython = Join-Path $liveViewVenv "Scripts\python.exe"
-    $venvPip = Join-Path $liveViewVenv "Scripts\pip.exe"
-} else {
-    $venvPython = Join-Path $liveViewVenv "bin\python"
-    $venvPip = Join-Path $liveViewVenv "bin\pip"
-}
-
-if ((Test-Path $liveViewVenv) -and (Test-Path $venvPython)) {
-    $env:PYTHON = $venvPython
-    $env:PIP = $venvPip
-    $pythonCmd = $venvPython
-    $pipCmd = $venvPip
-    
-    Write-Host "Using LiveView Python 3.14+ environment (prefer latest)" -ForegroundColor Cyan
-    
-    # Install dev dependencies if not present
-    # Note: In venv, we need both liveview and dev extras
-    $blackCheck = & $pythonCmd -m black --version 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Installing dev dependencies in LiveView environment..." -ForegroundColor Cyan
-        & $pipCmd install -e ".[liveview,dev]" 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "Error: Failed to install dev dependencies. Please run .\scripts\setup.ps1 first or install dependencies manually." -ForegroundColor Red
-            exit 1
-        }
-    }
-} else {
-    # Fall back to conda environment (tbp.monty)
-    if (-not (Get-Command conda -ErrorAction SilentlyContinue)) {
-        Write-Host "Error: conda not found and LiveView venv not available." -ForegroundColor Red
-        exit 1
-    }
-    
-    # Activate conda environment
-    conda activate tbp.monty
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Could not activate tbp.monty environment." -ForegroundColor Red
-        exit 1
-    }
-    
-    $pythonCmd = "python"
-    $pipCmd = "pip"
-    
-    # Check if dependencies are installed
-    # Note: In Python 3.8 environment, we only install dev tools (no liveview extras)
-    $blackCheck = python -m black --version 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Dependencies not found. Installing dev tools (without LiveView dependencies)..." -ForegroundColor Cyan
-        # Install dev tools individually (pyview-web requires Python 3.11+)
-        pip install "black>=24.0.0" "ruff>=0.4.0" "mypy>=1.0.0" "pytest>=8.0.0" "vulture>=2.0.0" 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "Error: Failed to install dev tools. Please run .\scripts\setup.ps1 first or install dependencies manually." -ForegroundColor Red
-            exit 1
-        }
-    }
-}
-
-# Function to run Python module
-function Run-PythonModule {
-    param([string[]]$Args)
-    & $pythonCmd -u -m $Args
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
-
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "Formatting..." -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Check if reformat script exists
-$reformatScript = Join-Path $ScriptDir "reformat.ps1"
-if (Test-Path $reformatScript) {
-    & $reformatScript
-} else {
-    Write-Host "Note: reformat.ps1 not found, skipping auto-formatting" -ForegroundColor Yellow
-}
-
-# Run all CI checks
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "Running CI checks..." -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Check code formatting with Black
-Write-Host "1. Checking code formatting with Black..." -ForegroundColor Cyan
-Run-PythonModule @("black", "--check", "src", "scripts")
+Write-Host "1. Checking code formatting with ruff..." -ForegroundColor Cyan
+uv run ruff format --check "$Config/src" "$Config/tests" "$Config/scripts"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host "✓ Formatting check passed" -ForegroundColor Green
 Write-Host ""
 
-# 2. Lint with Ruff
-Write-Host "2. Linting with Ruff..." -ForegroundColor Cyan
-Run-PythonModule @("ruff", "check", "src", "scripts")
+Write-Host "2. Linting with ruff..." -ForegroundColor Cyan
+# The tests insert the project root into sys.path before importing, so only the
+# source and the tooling scripts are linted.
+uv run ruff check "$Config/src" "$Config/scripts"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host "✓ Linting passed" -ForegroundColor Green
 Write-Host ""
 
-# 3. Type check with mypy
 Write-Host "3. Type checking with mypy..." -ForegroundColor Cyan
-Run-PythonModule @("mypy", "src")
+uv run mypy --config-file "$Config/pyproject.toml" "$Config/src"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host "✓ Type checking passed" -ForegroundColor Green
 Write-Host ""
 
-# 4. Run tests (if tests directory exists)
-$testsDir = Join-Path $LiveViewDir "tests"
-if (Test-Path $testsDir) {
-    Write-Host "4. Running tests..." -ForegroundColor Cyan
-    $testArgs = @("pytest", "-m", "not integration")
-    if ($args.Count -gt 0) {
-        $testArgs += $args
-    }
-    Run-PythonModule $testArgs
-    Write-Host "✓ Tests passed" -ForegroundColor Green
+Write-Host "4. Running tests..." -ForegroundColor Cyan
+$TestsDir = Join-Path $LiveViewDir "tests"
+$venvPython = Join-Path (Join-Path (Join-Path $LiveViewDir ".liveview_venv") "Scripts") "python.exe"
+if (-not (Test-Path $venvPython)) {
+    $venvPython = Join-Path (Join-Path (Join-Path $LiveViewDir ".liveview_venv") "bin") "python"
+}
+uv run python -m pytest -m "not integration" $TestsDir --ignore (Join-Path $TestsDir "test_template_parsing.py") @args
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Write-Host "✓ Tests passed" -ForegroundColor Green
+Write-Host ""
+
+# The template tests import pyview, which only the dashboard venv has.
+if (Test-Path $venvPython) {
+    Write-Host "5. Running the template tests in the dashboard venv..." -ForegroundColor Cyan
+    & $venvPython -m pytest (Join-Path $TestsDir "test_template_parsing.py") @args
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Write-Host "✓ Template tests passed" -ForegroundColor Green
     Write-Host ""
 } else {
-    Write-Host "4. No tests directory found, skipping tests" -ForegroundColor Yellow
+    Write-Host "5. Skipping the template tests (no .liveview_venv; run .\scripts\setup.ps1)" -ForegroundColor Yellow
     Write-Host ""
 }
 

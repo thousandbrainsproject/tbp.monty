@@ -106,7 +106,9 @@ class TestVisualizationState:
     def test_tracks_object_names_from_evidences(self) -> None:
         state = VisualizationState()
         state.append_evidence(EvidencePoint(step=1, evidences={"mug": 0.5}))
-        state.append_evidence(EvidencePoint(step=2, evidences={"bowl": 0.3, "mug": 0.7}))
+        state.append_evidence(
+            EvidencePoint(step=2, evidences={"bowl": 0.3, "mug": 0.7})
+        )
 
         assert state.object_names == {"mug", "bowl"}
 
@@ -134,7 +136,9 @@ class TestVisualizationState:
     def test_clear_resets_all_data(self) -> None:
         state = VisualizationState()
         state.append_evidence(EvidencePoint(step=1, evidences={"mug": 0.5}))
-        state.add_episode_marker(EpisodeMarker(start_step=0, target_object="mug", episode=1))
+        state.add_episode_marker(
+            EpisodeMarker(start_step=0, target_object="mug", episode=1)
+        )
         state.current_mesh_url = "/mesh/mug.glb"
 
         state.clear()
@@ -147,7 +151,9 @@ class TestVisualizationState:
     def test_get_chart_data_returns_serializable_dict(self) -> None:
         state = VisualizationState()
         state.append_evidence(EvidencePoint(step=1, evidences={"mug": 0.8}))
-        state.add_episode_marker(EpisodeMarker(start_step=0, target_object="mug", episode=1))
+        state.add_episode_marker(
+            EpisodeMarker(start_step=0, target_object="mug", episode=1)
+        )
 
         data = state.get_chart_data()
 
@@ -202,11 +208,13 @@ class TestVisualizationStateManager:
     def test_processes_evidence_data(self) -> None:
         manager = VisualizationStateManager()
 
-        manager.process_evidence_data({
-            "step": 10,
-            "evidences": {"mug": 0.6, "bowl": 0.4},
-            "target_object": "mug",
-        })
+        manager.process_evidence_data(
+            {
+                "step": 10,
+                "evidences": {"mug": 0.6, "bowl": 0.4},
+                "target_object": "mug",
+            }
+        )
 
         assert manager.state.point_count == 1
         assert manager.state.latest_step == 10
@@ -215,28 +223,34 @@ class TestVisualizationStateManager:
         manager = VisualizationStateManager()
 
         # First episode
-        manager.process_evidence_data({
-            "step": 0,
-            "evidences": {"mug": 0.5},
-            "target_object": "mug",
-            "episode": 1,
-        })
+        manager.process_evidence_data(
+            {
+                "step": 0,
+                "evidences": {"mug": 0.5},
+                "target_object": "mug",
+                "episode": 1,
+            }
+        )
 
         # Same episode
-        manager.process_evidence_data({
-            "step": 1,
-            "evidences": {"mug": 0.6},
-            "target_object": "mug",
-            "episode": 1,
-        })
+        manager.process_evidence_data(
+            {
+                "step": 1,
+                "evidences": {"mug": 0.6},
+                "target_object": "mug",
+                "episode": 1,
+            }
+        )
 
         # New episode
-        manager.process_evidence_data({
-            "step": 2,
-            "evidences": {"bowl": 0.5},
-            "target_object": "bowl",
-            "episode": 2,
-        })
+        manager.process_evidence_data(
+            {
+                "step": 2,
+                "evidences": {"bowl": 0.5},
+                "target_object": "bowl",
+                "episode": 2,
+            }
+        )
 
         assert len(manager.state.episode_markers) == 2
         assert manager.state.episode_markers[0].episode == 1
@@ -259,11 +273,13 @@ class TestVisualizationStateManager:
 
     def test_clear_resets_state_and_episode_tracking(self) -> None:
         manager = VisualizationStateManager()
-        manager.process_evidence_data({
-            "step": 0,
-            "evidences": {"mug": 0.5},
-            "episode": 1,
-        })
+        manager.process_evidence_data(
+            {
+                "step": 0,
+                "evidences": {"mug": 0.5},
+                "episode": 1,
+            }
+        )
 
         manager.clear()
 
@@ -287,4 +303,3 @@ class TestVisualizationStateManager:
         assert manager.state.point_count == 2
         steps = [p.step for p in manager.state.evidence_history]
         assert steps == [3, 4]
-

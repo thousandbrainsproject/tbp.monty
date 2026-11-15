@@ -67,9 +67,12 @@ class TestLiveViewExperimentClass:
 class TestExperimentLookup:
     """`scripts/experiment_lookup.sh`: the name a person types, to a config."""
 
-    def resolve(self, name: str) -> subprocess.CompletedProcess:
+    def resolve(
+        self, name: str, contrib_dir: Path | None = None
+    ) -> subprocess.CompletedProcess:
+        contrib = contrib_dir or LIVEVIEW_DIR / "conf" / "experiment"
         script = (
-            f'LIVEVIEW_CONF="{LIVEVIEW_DIR}/conf/experiment"; '
+            f'LIVEVIEW_CONF="{contrib}"; '
             f'MONTY_CONF="{LIVEVIEW_DIR.parent.parent}/src/tbp/monty/conf/experiment"; '
             f'source "{LIVEVIEW_DIR}/scripts/experiment_lookup.sh"; '
             f'resolve_experiment "{name}"'
@@ -90,11 +93,15 @@ class TestExperimentLookup:
         assert found.returncode == 0
         assert found.stdout.strip() == "main test/evidence_lm/evidence"
 
-    def test_a_contrib_experiment_is_found_in_the_contrib_tree(self):
-        found = self.resolve("randrot_10distinctobj_surf_agent_with_liveview")
+    def test_a_config_in_the_contrib_tree_is_answered_as_the_contrib_one(
+        self, tmp_path
+    ):
+        (tmp_path / "evidence.yaml").write_text("defaults: []\n")
+
+        found = self.resolve("evidence", contrib_dir=tmp_path)
 
         assert found.returncode == 0
-        assert found.stdout.startswith("contrib ")
+        assert found.stdout.strip() == "contrib evidence"
 
     def test_a_name_nothing_has_is_refused(self):
         found = self.resolve("no_such_experiment")

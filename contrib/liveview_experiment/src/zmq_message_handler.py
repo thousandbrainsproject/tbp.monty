@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -228,7 +228,7 @@ class ZmqMessageHandler:
         critical_update = self._is_critical_update(snapshot)
 
         # Update last_update timestamp
-        self.state_manager.experiment_state.last_update = datetime.now(timezone.utc)
+        self.state_manager.experiment_state.last_update = datetime.now(UTC)
 
         # Force immediate broadcast for critical signals to ensure browser gets updates
         # especially important for fast experiments and status transitions

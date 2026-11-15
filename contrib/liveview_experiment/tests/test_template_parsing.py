@@ -29,7 +29,7 @@ class TestTemplateParsing:
 
     def _load_template(self) -> ibis.Template:
         """Load the experiment.html template using the same method as LiveView.
-        
+
         Returns the underlying ibis.Template directly for testing.
         """
         current_file_path = Path(__file__).resolve()
@@ -59,6 +59,7 @@ class TestTemplateParsing:
         # Create minimal visualization state
         from collections import deque
         from markupsafe import Markup
+
         viz_state = VisualizationState(
             evidence_history=deque(evidence_history),
             sensor_images=SensorImages(),
@@ -133,7 +134,9 @@ class TestTemplateParsing:
         assert len(result) > 0
 
         # Verify key elements are present
-        assert "experiment.html" in result or "<html" in result.lower() or "<div" in result
+        assert (
+            "experiment.html" in result or "<html" in result.lower() or "<div" in result
+        )
 
     def test_template_renders_with_empty_evidence_history(self) -> None:
         """Test that the template renders correctly with empty evidence history."""
@@ -142,8 +145,11 @@ class TestTemplateParsing:
 
         # Set empty evidence history in visualization state
         from collections import deque
-        from contrib.liveview_experiment.src.visualization_state import VisualizationState
+        from contrib.liveview_experiment.src.visualization_state import (
+            VisualizationState,
+        )
         from markupsafe import Markup
+
         empty_viz_state = VisualizationState(evidence_history=deque())
         assigns["chart_data_json"] = Markup(empty_viz_state.get_chart_data_json())
         assigns["chart_point_count"] = 0
@@ -169,6 +175,7 @@ class TestTemplateParsing:
             for i in range(5)
         ]
         from collections import deque
+
         evidence_history = deque(points)
         assigns["evidence_history"] = evidence_history
         assigns["chart_point_count"] = 5
@@ -179,7 +186,7 @@ class TestTemplateParsing:
         assert isinstance(result, str)
 
         # Verify stream container is present (phx-update="stream" pattern)
-        assert 'evidence-stream' in result or 'phx-update="stream"' in result
+        assert "evidence-stream" in result or 'phx-update="stream"' in result
 
     def test_template_handles_missing_optional_fields(self) -> None:
         """Test that the template handles missing optional fields gracefully."""
@@ -204,7 +211,7 @@ class TestTemplateParsing:
     def test_evidence_point_to_dict_serialization(self) -> None:
         """Test that EvidencePoint.to_dict produces valid JSON-serializable data."""
         import json
-        
+
         # Create a point with various data types
         point = EvidencePoint(
             step=42,
@@ -214,22 +221,22 @@ class TestTemplateParsing:
             episode=10,
             timestamp=1234567890.123,
         )
-        
+
         # Convert to dict and serialize to JSON
         point_dict = point.to_dict()
         json_str = json.dumps(point_dict)
-        
+
         # Should be valid JSON
         assert isinstance(json_str, str)
         assert len(json_str) > 0
-        
+
         # JSONL format requirement: no newlines (single-line JSON)
-        assert '\n' not in json_str, "JSONL format must not contain newlines"
-        assert '\r' not in json_str, "JSONL format must not contain carriage returns"
-        
+        assert "\n" not in json_str, "JSONL format must not contain newlines"
+        assert "\r" not in json_str, "JSONL format must not contain carriage returns"
+
         # Parse directly
         parsed = json.loads(json_str)
-        
+
         # Verify all fields are present and correct
         assert parsed["step"] == 42
         assert parsed["evidences"] == {"object1": 0.75, "object2": 0.25}
@@ -237,35 +244,35 @@ class TestTemplateParsing:
         assert parsed["hypothesis_count"] == 5
         assert parsed["episode"] == 10
         assert parsed["timestamp"] == 1234567890.123
-        
+
         # Verify special characters are preserved (JSON-escaped, not HTML-escaped)
         point_with_special = EvidencePoint(
             step=1,
-            evidences={"obj<test>": 0.5, "obj\"quote\"": 0.3},
+            evidences={"obj<test>": 0.5, 'obj"quote"': 0.3},
             target_object="target&value",
         )
         json_str_special = json.dumps(point_with_special.to_dict())
-        
+
         # Should be valid JSON (special chars are JSON-escaped, not HTML-escaped)
         parsed_special = json.loads(json_str_special)
         assert "obj<test>" in parsed_special["evidences"]
-        assert "obj\"quote\"" in parsed_special["evidences"]
+        assert 'obj"quote"' in parsed_special["evidences"]
         assert parsed_special["target_object"] == "target&value"
 
     def test_chart_data_json_in_template_rendering(self) -> None:
         """Characterization test: Verify evidence stream rendering in template."""
         import json
-        
+
         from pyview import Stream
-        
+
         template = self._load_template()
         assigns = self._create_minimal_template_assigns()
-        
+
         # Create evidence points with special characters
         points = [
             EvidencePoint(
                 step=1,
-                evidences={"obj<test>": 0.5, "obj\"quote\"": 0.3},
+                evidences={"obj<test>": 0.5, 'obj"quote"': 0.3},
                 target_object="target&value",
             ),
             EvidencePoint(
@@ -274,7 +281,7 @@ class TestTemplateParsing:
                 target_object="</pre><script>alert(1)</script><pre>",  # XSS attempt
             ),
         ]
-        
+
         # Build stream items (matches actual implementation)
         evidence_stream = [
             {
@@ -288,17 +295,17 @@ class TestTemplateParsing:
         ]
         assigns["evidence_stream"] = Stream(evidence_stream, name="evidence_stream")
         assigns["chart_point_count"] = len(points)
-        
+
         # Render template
         result = template.render(**assigns)
-        
+
         # Verify stream container is present
         assert 'id="evidence-stream"' in result
         assert 'phx-update="stream"' in result
-        
+
         # Verify stream items are in the output
-        assert 'evidence-1' in result
-        assert 'evidence-2' in result
+        assert "evidence-1" in result
+        assert "evidence-2" in result
         assert 'data-step="1"' in result
         assert 'data-step="2"' in result
 
@@ -306,12 +313,12 @@ class TestTemplateParsing:
         """Test that evidence stream is correctly embedded in template output."""
         import json
         import re
-        
+
         from pyview import Stream
-        
+
         template = self._load_template()
         assigns = self._create_minimal_template_assigns()
-        
+
         # Create multiple evidence points
         points = [
             EvidencePoint(
@@ -322,7 +329,7 @@ class TestTemplateParsing:
             )
             for i in range(2)
         ]
-        
+
         # Build stream items (matches actual implementation)
         evidence_stream = [
             {
@@ -336,16 +343,15 @@ class TestTemplateParsing:
         ]
         assigns["evidence_stream"] = Stream(evidence_stream, name="evidence_stream")
         assigns["chart_point_count"] = len(points)
-        
+
         # Render template
         result = template.render(**assigns)
-        
+
         # Verify stream container is used
         assert 'id="evidence-stream"' in result
         assert 'phx-update="stream"' in result
-        
+
         # Stream rendering with Ibis may not work the same as LiveView context
         # Just verify the container structure is present
         assert 'phx-hook="EvidenceChart"' in result
-        assert 'evidence-chart-container' in result
-
+        assert "evidence-chart-container" in result

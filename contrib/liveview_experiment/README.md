@@ -4,16 +4,14 @@ A demonstration of server-side web UI patterns for monitoring Monty experiments,
 
 ## Overview
 
-This contrib demonstrates how to build interactive web interfaces for experiments without complex client-side JavaScript or polling. The architecture separates concerns: the experiment runs in one process (Python 3.8), while the web server runs in another (Python 3.11+), communicating via ZeroMQ pub/sub.
+This contrib demonstrates how to build interactive web interfaces for experiments without complex client-side JavaScript or polling. The architecture separates concerns: the experiment runs in one process, while the web server runs in another, communicating via ZeroMQ pub/sub. Both run on the Python that tbp.monty pins (3.13); the two processes exist so the dashboard can be restarted, or crash, without touching a running experiment.
 
 ## Quick Start
 
-**Prerequisites:** tbp.monty conda environment must be set up:
+**Prerequisites:** the tbp.monty uv environment must be set up:
 
 ```bash
-conda env create
-conda activate tbp.monty
-pip install -e .
+uv sync --extra dev --extra simulator_mujoco
 ```
 
 **Setup (one-time):**
@@ -32,23 +30,19 @@ pip install -e .
 ./contrib/liveview_experiment/scripts/run_parallel.sh [experiment_name] [num_parallel] [episodes]
 ```
 
-The scripts support two modes:
+Both scripts take a base config from `src/tbp/monty/conf/experiment/` and automatically layer LiveView settings on top of it via Hydra CLI overrides:
 
-1. **With LiveView config** (for custom setups with explicit config):
+- Keeps the experiment class the config names, with the broadcasting mixed
+  into it (`experiment_factory.monty_experiment_with_liveview`), so a
+  `MontyObjectRecognitionExperiment` or a supervised pretraining experiment
+  stays itself instead of being replaced by the generic class
+- Adds `liveview_host`, `liveview_port`, `zmq_port`, `enable_liveview`, `sensor_image_throttle_ms`
+- Disables wandb and monty handlers (`wandb_handlers=[]`, `monty_handlers=[]`)
+- Auto-suffixes `run_name` with `_with_liveview` (customizable via `LIVEVIEW_RUN_NAME_SUFFIX` env var)
 
-   - If a config exists in `contrib/liveview_experiment/conf/experiment/`, it is used as-is
-   - Example: `./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent_with_liveview`
-
-2. **With base config** — parameterized, works with ANY upstream experiment:
-   - If no LiveView-specific config exists, the script takes the base config from `src/tbp/monty/conf/experiment/` and automatically layers LiveView settings via Hydra CLI overrides:
-     - Keeps the experiment class the config names, with the broadcasting mixed
-       into it (`experiment_factory.monty_experiment_with_liveview`), so a
-       `MontyObjectRecognitionExperiment` or a supervised pretraining experiment
-       stays itself instead of being replaced by the generic class
-     - Adds `liveview_host`, `liveview_port`, `zmq_port`, `enable_liveview`, `sensor_image_throttle_ms`
-     - Disables wandb and monty handlers (`wandb_handlers=[]`, `monty_handlers=[]`)
-     - Auto-suffixes `run_name` with `_with_liveview` (customizable via `LIVEVIEW_RUN_NAME_SUFFIX` env var)
-   - No per-experiment YAML files needed
+No per-experiment YAML files are involved. A config of your own placed in
+`contrib/liveview_experiment/conf/experiment/` is used when you name it, taking
+precedence over an upstream config of the same name.
 
 **Any experiment in the tree, by any name it has.** Monty's `conf/experiment` is
 a tree — `test/evidence_lm/evidence` is an experiment — so the scripts
@@ -99,7 +93,7 @@ http://127.0.0.1:8000
 
 ## Architecture
 
-The system uses a **two-process, message-driven architecture** to bridge Python version constraints and enable real-time monitoring:
+The system uses a **two-process, message-driven architecture** to keep the dashboard out of the experiment's way and to enable real-time monitoring:
 
 ```mermaid
 flowchart LR
@@ -108,13 +102,13 @@ flowchart LR
         User2("fa:fa-user User 2")
     end
 
-    subgraph LiveViewServer["`Live View (py 3.11)`"]
+    subgraph LiveViewServer["`Live View (py 3.13)`"]
         StateManager@{ shape: das, label: "ExperimentStateManager\n(ZMQ SUB)" }
         LiveView1[LiveView 1] -- subscribed to --> StateManager
         LiveView2[LiveView 2] -- subscribed to --> StateManager
     end
 
-    subgraph MontyExperiment["Monty Experiment (py 3.8)"]
+    subgraph MontyExperiment["Monty Experiment (py 3.13)"]
         %% Sensors[Sensors] -- publishes via --> ZmqBroadcaster
         %% LearningModules[Learning Modules] -- publishes via --> ZmqBroadcaster
         %% ProgressLoggers[Progress Loggers] -- publishes via --> ZmqBroadcaster
@@ -139,7 +133,7 @@ flowchart LR
 
 ### Design Overview
 
-1. **Two-process separation**: Experiment (Python 3.8) and web server (Python 3.11+) run independently
+1. **Two-process separation**: experiment and web server run independently, on the same Python (3.13)
 2. **Message-driven communication**: ZeroMQ pub/sub for inter-process updates
 3. **Server-side rendering**: pyview handles state management and UI updates in Python
 4. **No client-side polling**: WebSocket-based updates eliminate JavaScript polling loops
@@ -152,14 +146,14 @@ flowchart LR
 
 ### Code Flow
 
-**LiveView Server (Python 3.11+):**
+**LiveView Server (dashboard venv, Python 3.13):**
 
 - [`main()`](src/liveview_server_standalone.py) - Entry point, starts server
   - [`ServerOrchestrator.run_with_zmq()`](src/server_orchestrator.py) - Orchestrates server and ZMQ subscriber
   - [`LiveViewServerSetup.create_app()`](src/server_setup.py) - Creates PyView app with [`ExperimentLiveView`](src/liveview_experiment.py)
   - [`ExperimentStateManager`](src/state_manager.py) - Manages shared state, receives updates via [`ZmqMessageProcessor`](src/zmq_message_processor.py)
 
-**Experiment Process (Python 3.8):**
+**Experiment Process (tbp.monty uv environment, Python 3.13):**
 
 - [`run.py`](../run.py) → [`main()`](../src/tbp/monty/frameworks/run.py) - Hydra instantiates experiment from config
   - [`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) - Extends [`MontyExperiment`](../src/tbp/monty/frameworks/experiments/monty_experiment.py)
@@ -168,22 +162,9 @@ flowchart LR
 
 **Configuration:**
 
-The script supports two configuration approaches:
+Any experiment in Monty's `conf/experiment` runs as it is. The script reads the class the config names and mixes the LiveView behaviour into it through [`experiment_factory.monty_experiment_with_liveview`](src/experiment_factory.py), so a `MontyObjectRecognitionExperiment` or a supervised pretraining experiment stays itself instead of being replaced by a generic class. LiveView settings (`liveview_host`, `liveview_port`, `zmq_port`, `enable_liveview`, `sensor_image_throttle_ms`) are passed as Hydra overrides, and the run name gets the `_with_liveview` suffix.
 
-1. **LiveView configs** (in `contrib/liveview_experiment/conf/experiment/`):
-
-   - Extend base configs and add LiveView-specific settings
-   - Set `_target_` to `MontyExperimentWithLiveView`
-   - Configure `zmq_port`, `liveview_port`, `enable_liveview`, and disable wandb
-   - Example: [`randrot_10distinctobj_surf_agent_with_liveview.yaml`](conf/experiment/randrot_10distinctobj_surf_agent_with_liveview.yaml)
-
-2. **Base configs** (in `conf/experiment/`):
-   - Use any existing experiment config directly
-   - The script automatically adds LiveView support via command-line options:
-     - Sets `_target_` to `MontyExperimentWithLiveView`
-     - Adds LiveView configuration fields
-     - Disables wandb and excessive logging handlers
-   - Example: `randrot_noise_77obj_5lms_dist_agent`
+A YAML of your own under `contrib/liveview_experiment/conf/experiment/` is used when you name it; it takes precedence over an upstream config of the same name. Nothing ships there, because the base-config mode already covers every experiment.
 
 [`MontyExperimentWithLiveView`](src/monty_experiment_with_liveview.py) reads config and initializes [`ZmqBroadcaster`](src/zmq_broadcaster.py) accordingly
 
@@ -213,17 +194,11 @@ This is a demonstration/prototype implementation. The patterns shown here (two-p
 
 ## All Available Experiments
 
-Every upstream experiment can be run with LiveView via mode 2 (no per-experiment YAML needed). Dashboard at http://127.0.0.1:8000.
+Every upstream experiment can be run with LiveView (no per-experiment YAML needed). Dashboard at http://127.0.0.1:8000.
 
 > **Legend:** 📷 = shows camera/sensor images in dashboard | 📊 = evidence chart (all experiments show this)
 
 > **Multi-sensor views:** Experiments with multiple sensor modules (e.g., `dist_agent` with 5+ patches + view_finder) show each sensor as a separate publisher section in the dashboard, with its own Camera and Depth image pair. The 5-LM dist_agent experiment shows 7 publisher sections (main evidence chart + 6 sensor views).
-
-**LiveView-specific configs** (in `contrib/liveview_experiment/conf/experiment/`):
-```bash
-./contrib/liveview_experiment/scripts/run.sh randrot_10distinctobj_surf_agent_with_liveview
-./contrib/liveview_experiment/scripts/run.sh tutorial_surf_agent_2obj_with_liveview
-```
 
 **77-object benchmarks:**
 ```bash

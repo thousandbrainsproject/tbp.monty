@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Standalone LiveView server that can run in a separate Python 3.11+ process.
+"""Standalone LiveView server, run as its own process.
 
-This allows the main experiment to run in Python 3.8 while the LiveView
-server runs in Python 3.11+ with pyview-web.
+It runs from `.liveview_venv` (see scripts/setup.sh), on the same Python as the
+experiment, and talks to the experiment over ZMQ.
 """
 
 from __future__ import annotations
@@ -40,16 +40,13 @@ try:
 except ImportError as e:
     print(f"Error: pyview-web not available: {e}", file=sys.stderr)
     print(
-        "This LiveView server requires Python >= 3.11 and pyview-web", file=sys.stderr
-    )
-    print(
-        "Please run setup.sh to install dependencies in the LiveView "
-        "virtual environment",
+        "This LiveView server needs pyview-web, which scripts/setup.sh installs "
+        "into .liveview_venv",
         file=sys.stderr,
     )
     sys.exit(1)
 
-# Import must happen after pyview is available (Python 3.11+)
+# Import must happen after pyview is available
 # The liveview_experiment module will import pyview, which is fine here
 # These are conditional imports (inside try block), so PLC0415 doesn't apply
 try:
@@ -98,7 +95,7 @@ async def handle_pubsub_request(request: Request) -> dict[str, str]:
     state_manager = request.app.state.state_manager
     response = await PubSubEndpointHandler.handle_request(request, state_manager)
     # response.body() is an async method that returns bytes
-    body_bytes = await response.body()  # type: ignore[operator]
+    body_bytes = await response.body()
     result: dict[str, str] = json.loads(body_bytes.decode())
     return result
 

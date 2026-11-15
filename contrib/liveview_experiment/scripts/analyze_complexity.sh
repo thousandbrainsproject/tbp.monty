@@ -12,13 +12,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIVEVIEW_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ANALYZE_SCRIPT="$SCRIPT_DIR/analyze_complexity.py"
 
-# Check for LiveView venv (Python 3.14+) first, fallback to system Python
+# Prefer the LiveView venv (it has vulture and radon); otherwise tbp.monty's uv
+# environment.
 LIVEVIEW_VENV="${LIVEVIEW_DIR}/.liveview_venv"
 if [ -d "$LIVEVIEW_VENV" ] && [ -f "$LIVEVIEW_VENV/bin/python" ]; then
     PYTHON_BIN="$LIVEVIEW_VENV/bin/python"
-    echo "Using LiveView Python 3.14+ environment for analysis" >&2
+    echo "Using the LiveView venv for analysis" >&2
 else
-    # Fallback to whatever `python` is on PATH (usually conda env when activated)
     PYTHON_BIN="${PYTHON:-python}"
 fi
 

@@ -19,6 +19,7 @@ try:
         PubSubEndpointHandler,
     )
 except ImportError:
+    # Without pyview there is no endpoint handler to register.
     PubSubEndpointHandler = None  # type: ignore[assignment, misc]
 
 try:
@@ -26,9 +27,9 @@ try:
     from starlette.responses import JSONResponse
     from starlette.routing import Route
 except ImportError:
-    Request = None  # type: ignore[assignment, misc]
-    JSONResponse = None  # type: ignore[assignment, misc]
-    Route = None  # type: ignore[assignment, misc]
+    Request = None
+    JSONResponse = None
+    Route = None
 
 
 class EndpointRegistrar:
@@ -36,7 +37,8 @@ class EndpointRegistrar:
 
     @staticmethod
     def register_pubsub_endpoint(
-        app: Any, state_manager: ExperimentStateManager  # PyView
+        app: Any,
+        state_manager: ExperimentStateManager,  # PyView
     ) -> None:
         """Register HTTP pub/sub endpoint.
 

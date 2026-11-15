@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 try:
     import uvicorn
 except ImportError:
-    uvicorn = None  # type: ignore[assignment]
+    uvicorn = None
 
 
 @dataclass

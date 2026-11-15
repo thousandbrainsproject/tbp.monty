@@ -58,7 +58,9 @@ class TestExperimentMetadata:
 class TestMetadataExtractor:
     """Test MetadataExtractor high-level behavior."""
 
-    def test_extract_environment_name_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_extract_environment_name_from_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test that environment name is extracted from environment variables."""
         monkeypatch.setenv("CONDA_DEFAULT_ENV", "test_environment")
         extractor = MetadataExtractor()
@@ -78,7 +80,9 @@ class TestMetadataExtractor:
         metadata = extractor.extract()
         assert metadata.experiment_name == "config_experiment"
 
-    def test_extract_returns_complete_metadata(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_extract_returns_complete_metadata(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test that extract returns all available metadata."""
         monkeypatch.setenv("CONDA_DEFAULT_ENV", "test_env")
         extractor = MetadataExtractor(run_name="test_run")
@@ -132,7 +136,7 @@ class TestStateNormalization:
 
 def test_normalize_status_allows_abort_states() -> None:
     """Abort-related statuses should be preserved, not mapped to 'initializing'."""
-    # Try to use real implementation if pyview is available (Python 3.11+)
+    # Use the real implementation when pyview is installed (the dashboard venv)
     try:
         from contrib.liveview_experiment.src.liveview_experiment import (
             ExperimentLiveView,
@@ -207,7 +211,9 @@ def test_every_open_page_receives_every_new_evidence_point() -> None:
 
 def _connected_page(view: object, manager: object) -> SimpleNamespace:
     """A freshly connected page, holding its own stream cursors."""
-    return SimpleNamespace(context=view._create_context_from_state(manager.experiment_state))
+    return SimpleNamespace(
+        context=view._create_context_from_state(manager.experiment_state)
+    )
 
 
 def test_follow_live_is_per_connection_and_survives_a_rerender() -> None:

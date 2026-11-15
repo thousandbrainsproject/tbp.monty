@@ -1,7 +1,7 @@
-"""Pub/sub compatibility layer for Python 3.8.
+"""Pub/sub stand-in with the interface pyview-web exposes.
 
-This provides a simple pub/sub implementation that matches the interface
-used by pyview-web, but works with Python 3.8.
+Used when pyview is not installed, which is the case for the test suite: it
+runs in tbp.monty's environment, where pyview is deliberately absent.
 """
 
 from __future__ import annotations

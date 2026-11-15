@@ -48,9 +48,7 @@ class TestCumulativeStep:
     def test_evaluation_continues_after_training_instead_of_restarting(self):
         # The training phase did 90 steps; the first evaluation episode's step 4
         # is step 94 of the run, not step 4 of the graph.
-        counters = _Counters(
-            experiment_mode=ExperimentMode.EVAL, total_train_steps=90
-        )
+        counters = _Counters(experiment_mode=ExperimentMode.EVAL, total_train_steps=90)
 
         assert cumulative(counters, 4) == 94
 

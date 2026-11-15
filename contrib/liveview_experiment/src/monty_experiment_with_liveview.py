@@ -11,7 +11,7 @@ import io
 import logging
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -67,7 +67,7 @@ class _LiveViewStepHook:
     ``StepHook`` callable instead of ``pre_step``/``post_step`` overrides.
     """
 
-    def __init__(self, experiment: "MontyExperimentWithLiveView") -> None:
+    def __init__(self, experiment: MontyExperimentWithLiveView) -> None:
         self._experiment = experiment
 
     def __call__(
@@ -85,9 +85,7 @@ class _LiveViewStepHook:
 
         if experiment.broadcaster:
             cumulative_step, _episode = experiment._calculate_cumulative_step(step)
-            experiment.broadcaster.publish_state(
-                {"current_step": cumulative_step}
-            )
+            experiment.broadcaster.publish_state({"current_step": cumulative_step})
 
         experiment._update_state_from_experiment()
         experiment._broadcast_evidence_data(step)
@@ -218,7 +216,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
     def _initialize_experiment_timing(self) -> None:
         """Initialize experiment start time and status if not already set."""
         if not hasattr(self, "_experiment_start_time"):
-            self._experiment_start_time = datetime.now(timezone.utc)
+            self._experiment_start_time = datetime.now(UTC)
             self._experiment_status = "initializing"
         # Throttle image broadcasts (expensive to encode/transmit)
         self._last_image_broadcast_time = 0.0
@@ -350,7 +348,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
             "total_eval_steps": self.total_eval_steps,
             "eval_episodes": self.eval_episodes,
             "eval_epochs": self.eval_epochs,
-            "last_update": datetime.now(timezone.utc).isoformat(),
+            "last_update": datetime.now(UTC).isoformat(),
         }
 
         mode, epoch, episode = self.get_epoch_state()
@@ -388,7 +386,8 @@ class MontyExperimentWithLiveView(MontyExperiment):
         """
         super().pre_episode()
 
-        # Call fixme_set_ground_truth (normally done by MontyObjectRecognitionExperiment)
+        # Call fixme_set_ground_truth (normally done by
+        # MontyObjectRecognitionExperiment)
         # Required to initialize LM internal state (stepwise_targets_list, etc.)
         if hasattr(self, "env_interface") and hasattr(
             self.env_interface, "primary_target"
@@ -399,9 +398,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
                     self.env_interface.semantic_id_to_label,
                 )
             else:
-                self.model.fixme_set_ground_truth(
-                    self.env_interface.primary_target
-                )
+                self.model.fixme_set_ground_truth(self.env_interface.primary_target)
 
         # Update LiveView state
         self._update_state_from_experiment()
@@ -528,7 +525,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
             # Filter out placeholder values or empty results
             if not graph_ids or graph_ids[0] == "patch_off_object":
                 return {}
-            return dict(zip(graph_ids, [float(e) for e in evidences]))
+            return dict(zip(graph_ids, [float(e) for e in evidences], strict=True))
         except (AttributeError, TypeError, ValueError, KeyError, IndexError):
             return {}
 
@@ -651,8 +648,14 @@ class MontyExperimentWithLiveView(MontyExperiment):
         """Extract base64-encoded camera image from agent observation."""
         # Look for rgba on the first CameraSM sensor (usually "patch"),
         # not on the Probe view_finder which doesn't capture camera images.
-        first_module = getattr(self.model, "sensor_modules", [None])[0] if hasattr(self.model, "sensor_modules") else None
-        patch_id = getattr(first_module, "sensor_module_id", None) if first_module else None
+        first_module = (
+            getattr(self.model, "sensor_modules", [None])[0]
+            if hasattr(self.model, "sensor_modules")
+            else None
+        )
+        patch_id = (
+            getattr(first_module, "sensor_module_id", None) if first_module else None
+        )
         if patch_id is None:
             patch_id = "patch"
 
@@ -687,7 +690,10 @@ class MontyExperimentWithLiveView(MontyExperiment):
         return self._depth_to_base64_png(depth)
 
     def _build_sensor_image_payload(
-        self, camera_b64: str | None, depth_b64: str | None, step: int,
+        self,
+        camera_b64: str | None,
+        depth_b64: str | None,
+        step: int,
         sensor_id: str | None = None,
     ) -> dict[str, Any]:
         """Build payload dictionary for sensor images.
@@ -695,9 +701,7 @@ class MontyExperimentWithLiveView(MontyExperiment):
         When sensor_id is provided, uses it as run_name suffix so the
         dashboard renders each sensor module as a separate publisher.
         """
-        run_name = (
-            f"{self.run_name}:{sensor_id}" if sensor_id else self.run_name
-        )
+        run_name = f"{self.run_name}:{sensor_id}" if sensor_id else self.run_name
         return {
             "camera_image": camera_b64,
             "depth_image": depth_b64,

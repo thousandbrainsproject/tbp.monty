@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from .broadcaster_initializer import BroadcasterInitializer
@@ -57,7 +57,7 @@ class ExperimentInitializer:
             broadcaster = ZmqBroadcaster(
                 zmq_port=params.zmq_port, zmq_host=params.zmq_host
             )
-            experiment._experiment_start_time = datetime.now(timezone.utc)
+            experiment._experiment_start_time = datetime.now(UTC)
             experiment._experiment_status = "initializing"
 
             BroadcasterInitializer.initialize_and_broadcast(

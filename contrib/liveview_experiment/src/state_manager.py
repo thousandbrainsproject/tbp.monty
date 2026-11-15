@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 try:
-    # Use PyView's actual pubsub system (Python 3.11+)
+    # PyView's own pub/sub, which the server process always has.
     from pyview.live_socket import pub_sub_hub
     from pyview.vendor.flet.pubsub import PubSub
 except ImportError:
-    # Fallback to our custom pubsub for Python 3.8
+    # Without pyview — the tests run in tbp.monty's environment, which has no
+    # pyview — a stand-in with the same interface keeps the state manager usable.
     from .pubsub_compat import PubSub, pub_sub_hub
 
 from .experiment_state import ExperimentState
@@ -202,7 +203,10 @@ class ExperimentStateManager:
         await self._broadcast_manager.broadcast_if_needed(force=force)
 
     def update_metric(
-        self, name: str, value: float, **metadata: MetricMetadata  # noqa: ARG002
+        self,
+        name: str,
+        value: float,
+        **metadata: MetricMetadata,  # noqa: ARG002
     ) -> None:
         """Update a metric in the state.
 
@@ -212,7 +216,7 @@ class ExperimentStateManager:
             **metadata: Additional metadata (e.g., epoch, step) - currently unused
         """
         self.experiment_state.metrics[name] = value
-        self.experiment_state.last_update = datetime.now(timezone.utc)
+        self.experiment_state.last_update = datetime.now(UTC)
 
     def update_data_stream(self, stream_name: str, data: MessagePayload) -> None:
         """Update a data stream in the state.
@@ -230,7 +234,7 @@ class ExperimentStateManager:
         else:
             self._update_generic_data_stream(stream_name, data)
 
-        self.experiment_state.last_update = datetime.now(timezone.utc)
+        self.experiment_state.last_update = datetime.now(UTC)
 
     def _update_visualization_stream(
         self, stream_name: str, data: MessagePayload
@@ -262,7 +266,7 @@ class ExperimentStateManager:
         log_entry = {
             "level": level,
             "message": message,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             **metadata,
         }
         self.experiment_state.recent_logs.append(log_entry)
@@ -274,4 +278,4 @@ class ExperimentStateManager:
             self.experiment_state.recent_logs = self.experiment_state.recent_logs[
                 -self.experiment_state.max_log_history :
             ]
-        self.experiment_state.last_update = datetime.now(timezone.utc)
+        self.experiment_state.last_update = datetime.now(UTC)

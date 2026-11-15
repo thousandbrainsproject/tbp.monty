@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ class BroadcasterInitializer:
             run_name: Experiment run name
             metadata: Experiment metadata
         """
-        experiment_start_time = datetime.now(timezone.utc)
+        experiment_start_time = datetime.now(UTC)
         broadcaster.publish_state(
             {
                 "run_name": run_name,
