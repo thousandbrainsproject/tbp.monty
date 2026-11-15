@@ -10,11 +10,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import Self
 
 from tbp.monty.frameworks.models.evidence_matching.channels import (
     all_usable_input_channels,

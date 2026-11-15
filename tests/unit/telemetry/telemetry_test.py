@@ -158,6 +158,6 @@ class TelemetryPublisherTest(TestCase):
 
         self.assertEqual(len(self.handler.records), len(events))
 
-        for record, (_, level, event) in zip(self.handler.records, events):
+        for record, (_, level, event) in zip(self.handler.records, events, strict=True):
             self.assertEqual(record.levelno, level)
             self.assertIs(record.msg, event)

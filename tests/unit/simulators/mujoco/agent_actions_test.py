@@ -8,9 +8,10 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import partial
-from typing import Callable, ClassVar, Generator, cast
+from typing import ClassVar, Concatenate, ParamSpec, Self, cast
 from unittest import TestCase
 
 import hypothesis.strategies as st
@@ -20,7 +21,6 @@ import pytest
 import quaternion as qt
 from hypothesis import example, given, settings
 from parameterized import parameterized_class
-from typing_extensions import Concatenate, ParamSpec, Self
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
@@ -62,10 +62,10 @@ PATCH_SENSOR_ID = SensorID("sensor_id_0")
 
 P = ParamSpec("P")
 
+type ActionsTestMethod[**P] = Callable[Concatenate[ActionsTest, P], None]
 
-def sim_reset(
-    fn: Callable[Concatenate[ActionsTest, P], None],
-) -> Callable[Concatenate[ActionsTest, P], None]:
+
+def sim_reset[**P](fn: ActionsTestMethod[P]) -> ActionsTestMethod[P]:
     """A test decorator that resets the simulator on exit.
 
     Needed because Hypothesis runs all the test cases for a @given test in one run
@@ -85,7 +85,7 @@ def sim_reset(
 
 
 @contextmanager
-def skip_on_missing_actuate() -> Generator[None, None, None]:
+def skip_on_missing_actuate() -> Generator[None]:
     """A test decorator that skips tests for missing actuate methods.
 
     Not all agents implement all actuate methods, so we skip the tests that

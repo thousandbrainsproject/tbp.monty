@@ -51,21 +51,13 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         super().setup_experiment(config)
         if "agents" in config["environment"]["env_init_args"]:
             agents_config = config["environment"]["env_init_args"]["agents"]
-            # Habitat agents are configured using `agent_args`.
-            # The way we configure Habitat agents only allows for one agent.
-            if "agent_args" in agents_config:
-                self.sensor_pos = np.array(agents_config["agent_args"]["positions"])
-            else:
-                # MuJoCo agents are configured using a list of partially applied
-                # agent constructors.
-                # TODO: support more than one agent, this assumes there's only one.
-
-                # Introspect the first agent partial to determine what the
-                # original sensor positions were.
-                sensor_cfgs = agents_config[0].keywords["sensor_configs"]
-                self.sensor_pos = np.array(
-                    [sensor["position"] for sensor in sensor_cfgs.values()]
-                )
+            # Introspect the first agent partial to determine what the
+            # original sensor positions were.
+            # TODO: Support more than one agent, this assumes there's only one.
+            sensor_cfgs = agents_config[0].keywords["sensor_configs"]
+            self.sensor_pos = np.array(
+                [sensor["position"] for sensor in sensor_cfgs.values()]
+            )
         else:
             self.sensor_pos = np.array([0, 0, 0])
 
@@ -76,10 +68,10 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         # if it's the first time this object is shown, save its location. This is
         # needed to provide the correct offset from the learned model when supervising.
-        current_object = self.env_interface.primary_target["object"]
+        current_object = self.env_interface.primary_target.object_name
         if current_object not in self.first_epoch_object_location:
             self.first_epoch_object_location[current_object] = (
-                self.env_interface.primary_target["position"]
+                self.env_interface.primary_target.position
             )
 
         # Save compute if we are providing labels to all models, so don't need to
@@ -88,30 +80,28 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
 
-    def post_episode(self, steps) -> None:
+    def post_episode(self) -> None:
         self._pass_target_info_to_model()
-        return super().post_episode(steps)
+        return super().post_episode()
 
     def _pass_target_info_to_model(self) -> None:
         # Pass target info to model --> will overwrite (where specified)
         # with the ground truth labels just before models are updated in memory.
         target = self.env_interface.primary_target
-        self.model.detected_object = self.model.primary_target["object"]
+        self.model.detected_object = self.model.primary_target.object_name
         for lm in self.model.learning_modules:
             if lm.learning_module_id in self.supervised_lm_ids:
-                lm.detected_object = target["object"]
-                lm.buffer.stats["possible_matches"] = [target["object"]]
+                lm.detected_object = target.object_name
+                lm.buffer.stats["possible_matches"] = [target.object_name]
                 lm.buffer.stats["detected_location_on_model"] = np.array(
-                    self.first_epoch_object_location[target["object"]]
+                    self.first_epoch_object_location[target.object_name]
                 )
                 lm.buffer.stats["detected_location_rel_body"] = np.array(
-                    target["position"]
+                    target.position
                 )
-                lm.buffer.stats["detected_rotation"] = target["euler_rotation"]
-                lm.detected_rotation_r = Rotation.from_quat(
-                    target["quat_rotation"]
-                ).inv()
-                lm.buffer.stats["detected_scale"] = target["scale"]
+                lm.buffer.stats["detected_rotation"] = target.euler_rotation
+                lm.detected_rotation_r = Rotation.from_quat(target.quat_rotation).inv()
+                lm.buffer.stats["detected_scale"] = target.scale
             else:
                 # wipe LMs hypotheses so we don't update those models
                 lm.possible_matches = []

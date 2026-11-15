@@ -6,7 +6,7 @@ defaults:
   - /monty/learning_module: fake_1lm
   - /monty/sensor_module: fake
   - /monty/connectivity: test_1lm_1sm
-  - /environment: test_habitat_ycb_agent
+  - /environment: test_mujoco_ycb_agent
   - /env_interface: test_train_eval
   - /env_interface/transform: none
   - /termination: test_any1_maxtotalsteps_10

@@ -10,8 +10,8 @@
 from __future__ import annotations
 
 import logging
-
-from typing_extensions import deprecated, override
+from typing import override
+from warnings import deprecated
 
 from tbp.monty.telemetry.schemas import TelemetryEvent
 

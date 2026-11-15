@@ -17,5 +17,3 @@ num_parallel: 16
 # Don't run an experiment; just print out the config for visual inspection
 # TODO: Replace with validate or similar
 print_cfg: false
-# Set logging levels in habitat to quiet
-quiet_habitat_logs: true

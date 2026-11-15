@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any, Sequence
+from collections.abc import Sequence
 
 from tbp.monty import telemetry
 from tbp.monty.attention.attention_system import (
@@ -19,6 +19,7 @@ from tbp.monty.attention.attention_system import (
     NoopAttentionSystem,
 )
 from tbp.monty.cmp import Goal, Message
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -66,7 +67,7 @@ class MontyBase(Monty):
                 of learning modules and decides next action. Conceptually, this is
                 the subcortical motor area.
             sm_to_agent_dict: dictionary mapping each sensor module id to the
-                list of habitat agents it receives input from. This is to simulate
+                list of agents it receives input from. This is to simulate
                 columns with wide receptive fields that receive input from multiple
                 sensors. TODO: Do we still need this?
             sm_to_lm_matrix: nested array that governs which sensor modules a
@@ -111,9 +112,7 @@ class MontyBase(Monty):
         self.experiment_mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
         )
-        self.total_steps = 0
-        # Number of overall steps. Counts also steps where no LM update was performed.
-        self.episode_steps = 0
+
         # Number of steps in which at least 1 LM received information during exploration
         self.exploratory_steps = 0
         # Number of steps in which at least 1 LM was updated. It is not the same as each
@@ -214,8 +213,6 @@ class MontyBase(Monty):
         proprioceptive_state: ProprioceptiveState,
     ) -> list[Action]:
         self.aggregate_sensory_inputs(ctx, observations, proprioceptive_state)
-        self.total_steps += 1
-        self.episode_steps += 1
         # For each of the learning modules, update the list of processed
         # steps, and the stepwise target object
         for ii in range(len(self.learning_modules)):
@@ -415,7 +412,7 @@ class MontyBase(Monty):
 
     def fixme_set_ground_truth(
         self,
-        primary_target: dict[str, Any] | None = None,
+        primary_target: PrimaryTarget | None = None,
         semantic_id_to_label: dict[SemanticID, str] | None = None,
     ) -> None:
         pass
@@ -542,14 +539,10 @@ class MontyBase(Monty):
         return self.step_type_count > self.min_steps
 
     def reset_episode_steps(self):
-        self.episode_steps = 0
         self.matching_steps = 0
         self.exploratory_steps = 0
 
     def update_step_counters(self):
-        self.total_steps += 1
-        self.episode_steps += 1
-
         if self.step_type == "matching_step":
             self.matching_steps += 1
             logger.info(f"--- Global Matching Step {self.matching_steps} ---")
@@ -561,9 +554,9 @@ class MontyBase(Monty):
         elif self.step_type == "exploratory_step":
             self.exploratory_steps += 1
 
-    def switch_to_matching_step(self):
+    def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"
-        logger.debug(f"Going into matching mode after {self.episode_steps} steps")
+        logger.debug("Going into matching mode")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"

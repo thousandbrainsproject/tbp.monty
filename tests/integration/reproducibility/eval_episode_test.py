@@ -8,15 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,6 +17,7 @@ import hydra
 import numpy as np
 import pandas as pd
 
+from tests import HYDRA_ROOT
 from tests.integration.reproducibility.config import hydra_config
 from tests.integration.reproducibility.run import parallel_run, serial_run
 
@@ -119,7 +111,7 @@ def load_eval_stats(path: Path) -> pd.DataFrame:
 
 
 class EvalEpisodeTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.output_dir = Path(tempfile.mkdtemp())
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             self.training_config = hydra_config(
@@ -133,7 +125,7 @@ class EvalEpisodeTest(unittest.TestCase):
             / "pretrained"
         )
 
-    def test_eval_episode_results_are_equal(self):
+    def test_eval_episode_results_are_equal(self) -> None:
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
             config = hydra_config(
                 "reproducibility_eval_episodes",

@@ -9,7 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import quaternion as qt
 from numpy import cos, pi, sin, sqrt
