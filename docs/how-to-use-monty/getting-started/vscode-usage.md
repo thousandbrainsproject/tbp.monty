@@ -19,13 +19,13 @@ This guide will enable you to develop with Monty using VS Code on any supported 
 1. Initialize the settings file using the provided example:
 
    ```shell
-   cp ~/tbp/.vscode/settings.example.json ~/tbp/.vscode/settings.json
+   cp ~/tbp/tbp.monty/.vscode/settings.example.json ~/tbp/tbp.monty/.vscode/settings.json
    ```
 
 1. Then, launch VS Code with Monty:
 
    ```shell
-   cd ~/tbp && code .
+   cd ~/tbp/tbp.monty && code .
    ```
 
 # 2. Run and Debug
@@ -45,7 +45,7 @@ You can create a run configuration to debug experiments and benchmarks.
 
 Multiple configurations can be created for different experiments and benchmarks.
 
-To pass custom environment variables to Python when running via VS Code, you can create a `.env` file in `~/tbp` containing those variables, one per line (e.g. `WANDB_MODE=offline`).
+To pass custom environment variables to Python when running via VS Code, you can create a `.env` file in `~/tbp/tbp.monty` containing those variables, one per line (e.g. `WANDB_MODE=offline`).
 
 # 3. Unit Tests
 

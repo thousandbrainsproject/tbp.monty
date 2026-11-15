@@ -33,7 +33,7 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 ![](../figures/how-to-use-monty/clone.png)
 
 > [!NOTE]
-> If you want the same setup as we use at the Thousand Brains Project by default, clone the repository at `${HOME}/tbp/`. If you don't have a `tbp` folder in your home directory yet, you can run `cd ~; mkdir tbp; cd tbp` to create it via the terminal on macOS / Linux, and Git Bash or PowerShell on Windows. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
+> If you want the same setup as we use at the Thousand Brains Project by default, clone the repository inside the `~/tbp/` directory, i.e. the checked out repository path should be `~/tbp/tbp.monty`. If you don't have a `tbp` folder in your home directory yet, you can run `cd ~; mkdir tbp; cd tbp` to create it via the terminal on macOS / Linux, and Git Bash or PowerShell on Windows. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
 
 ## 1.4 Make Sure Your Local Copy is Up-to-Date
 
@@ -90,7 +90,7 @@ To set up Monty, you can create and activate the environment with the uv command
 **Make sure to `cd` into your `tbp.monty` directory beforehand.**
 
 ```shell
-cd ~/tbp
+cd ~/tbp/tbp.monty
 
 uv sync --extra=dev --extra=simulator_mujoco
 ```
