@@ -8,14 +8,41 @@
 # https://opensource.org/licenses/MIT.
 
 
+import os
 import unittest
+from unittest import mock
 
 import pandas as pd
 
 from tbp.monty.frameworks.run_parallel import (
+    _export_thread_limits_env,
     parse_episode_spec,
     per_lm_stats,
 )
+
+THREAD_VARS = (
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
+
+
+class ExportThreadLimitsEnvTest(unittest.TestCase):
+    def test_exports_every_thread_variable(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            _export_thread_limits_env(2)
+            for var in THREAD_VARS:
+                self.assertEqual(os.environ[var], "2")
+
+    def test_does_not_override_user_values(self):
+        with mock.patch.dict(os.environ, {"MKL_NUM_THREADS": "4"}, clear=True):
+            _export_thread_limits_env(1)
+            self.assertEqual(os.environ["MKL_NUM_THREADS"], "4")
+            for var in THREAD_VARS:
+                if var != "MKL_NUM_THREADS":
+                    self.assertEqual(os.environ[var], "1")
 
 
 class PerLMStatsTest(unittest.TestCase):
