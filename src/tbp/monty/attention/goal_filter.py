@@ -8,7 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
 import numpy as np
 
@@ -77,7 +78,7 @@ class HardGoalFilter(GoalFilter):
 
         kept = [
             goal
-            for goal, voxel_weight in zip(located, voxel_weights)
+            for goal, voxel_weight in zip(located, voxel_weights, strict=True)
             if voxel_weight > 0 or (all_inhibited and np.isnan(voxel_weight))
         ]
         return kept + unlocated

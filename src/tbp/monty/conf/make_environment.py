@@ -69,7 +69,8 @@ def make_sensor_positions_on_grid(
     # Make coordinate grids, where the center is (0, 0).
     points = np.arange(-grid_size // 2 + 1, grid_size // 2 + 1)
     x, y = np.meshgrid(points, points)
-    y = np.flipud(y)  # Flip y-axis to match habitat coordinate system (positive is up).
+    # Flip y-axis to match simulator coordinate system (positive is up).
+    y = np.flipud(y)
     i_mid = grid_size // 2
 
     if order_by == "distance":

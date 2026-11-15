@@ -9,8 +9,8 @@
 from __future__ import annotations
 
 import unittest
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 from unittest.mock import Mock, patch, sentinel
 
 import cv2

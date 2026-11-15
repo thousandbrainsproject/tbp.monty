@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -45,7 +45,7 @@ class HypothesesUpdaterGraphTelemetry:
     """Rotation errors relative to the target pose."""
 
 
-HypothesesUpdaterTelemetry = Dict[str, HypothesesUpdaterGraphTelemetry]
+HypothesesUpdaterTelemetry = dict[str, HypothesesUpdaterGraphTelemetry]
 """HypothesesUpdaterGraphTelemetry indexed by graph ID."""
 
 

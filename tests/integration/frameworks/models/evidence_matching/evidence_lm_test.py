@@ -9,32 +9,22 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import shutil
 import tempfile
 from pathlib import Path
-from pprint import pprint
 
 import hydra
 import pandas as pd
 from omegaconf import DictConfig
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
 class EvidenceLMTest(BaseGraphTest):
-    def setUp(self):
-        """Code that gets executed before every test."""
+    def setUp(self) -> None:
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
@@ -70,16 +60,15 @@ class EvidenceLMTest(BaseGraphTest):
             self.noise_mixin_cfg = hydra_config("noise_mixin")
             self.noisy_sensor_cfg = hydra_config("noisy_sensor")
 
-    def tearDown(self):
-        """Code that gets executed after every test."""
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
-    def test_can_run_evidence_experiment(self):
+    def test_can_run_evidence_experiment(self) -> None:
         exp = instantiate_experiment(self.evidence_cfg.experiment)
         with exp:
             exp.run()
 
-    def test_fixed_actions_evidence(self):
+    def test_fixed_actions_evidence(self) -> None:
         """Test 3 train and 3 eval epochs with 2 objects and 2 rotations."""
         exp = instantiate_experiment(self.fixed_actions_evidence_cfg.experiment)
         with exp:
@@ -109,14 +98,13 @@ class EvidenceLMTest(BaseGraphTest):
             "When using detailed logging we should store matches at every steps.",
         )
 
-    def test_pre_episode_raises_error_when_no_object_is_present(self):
-        """Test that pre_episode raises an error when no object is present."""
+    def test_pre_episode_raises_error_when_no_object_is_present(self) -> None:
         exp = instantiate_experiment(self.fixed_actions_evidence_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
-            exp.env._env.remove_all_objects()
+            exp.env.remove_all_objects()
             with self.assertRaises(ValueError) as error:
                 exp.pre_episode()
             self.assertEqual(
@@ -124,7 +112,7 @@ class EvidenceLMTest(BaseGraphTest):
                 str(error.exception),
             )
 
-    def test_moving_off_object(self):
+    def test_moving_off_object(self) -> None:
         """Test logging when moving off the object for some steps during an episode."""
         exp = instantiate_experiment(self.evidence_off_object_cfg.experiment)
         with exp:
@@ -183,7 +171,7 @@ class EvidenceLMTest(BaseGraphTest):
             "min_train_steps was not applied correctly.",
         )
         self.assertGreater(
-            exp.model.episode_steps,
+            exp._recognition_ctx.step,
             exp.model.matching_steps + 80,
             "number of episode steps should be larger than matching steps + "
             "exploration steps since we don't count off object observations as"
@@ -196,7 +184,7 @@ class EvidenceLMTest(BaseGraphTest):
             "evidence should have increased after moving back on the object.",
         )
 
-    def test_evidence_time_out(self):
+    def test_evidence_time_out(self) -> None:
         exp = instantiate_experiment(self.evidence_times_out_cfg.experiment)
         with exp:
             exp.run()
@@ -250,7 +238,7 @@ class EvidenceLMTest(BaseGraphTest):
                 f"time out should use mlh in eval episode {i}",
             )
 
-    def test_evidence_confused_logging(self):
+    def test_evidence_confused_logging(self) -> None:
         # When the algorithm evolves, this scenario may not lead to confusion
         # anymore. Setting min_steps would also avoid this, probably.
         exp = instantiate_experiment(self.fixed_actions_evidence_cfg.experiment)
@@ -264,8 +252,8 @@ class EvidenceLMTest(BaseGraphTest):
                 exp.model.primary_target = str(e)
                 for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
-                last_step = exp.run_episode_steps()
-                exp.post_episode(last_step)
+                exp.run_episode_steps()
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
@@ -303,7 +291,7 @@ class EvidenceLMTest(BaseGraphTest):
                 "confused object id should not be in possible_match_sources.",
             )
 
-    def test_uniform_initial_poses(self):
+    def test_uniform_initial_poses(self) -> None:
         """Test same scenario as test_fixed_actions_evidence with uniform poses."""
         exp = instantiate_experiment(self.uniform_initial_poses_cfg.experiment)
         with exp:
@@ -317,7 +305,7 @@ class EvidenceLMTest(BaseGraphTest):
 
         self.check_eval_results(eval_stats)
 
-    def test_fixed_initial_poses(self):
+    def test_fixed_initial_poses(self) -> None:
         """Test same scenario as test_fixed_actions_evidence with predefined poses."""
         exp = instantiate_experiment(self.fixed_possible_poses_cfg.experiment)
         with exp:
@@ -330,7 +318,7 @@ class EvidenceLMTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
-    def test_can_run_with_no_features(self):
+    def test_can_run_with_no_features(self) -> None:
         """Standard evaluation setup but using only pose features."""
         exp = instantiate_experiment(self.no_features_cfg.experiment)
         with exp:
@@ -343,7 +331,7 @@ class EvidenceLMTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats)
 
-    def test_5lm_evidence_experiment(self):
+    def test_5lm_evidence_experiment(self) -> None:
         """Test 5 evidence LMs voting with two evaluation settings."""
         exp = instantiate_experiment(self.five_lm_cfg.experiment)
         with exp:
@@ -373,7 +361,7 @@ class EvidenceLMTest(BaseGraphTest):
 
         self.check_eval_results(eval_stats, num_lms=5)
 
-    def test_5lm_3done_evidence(self):
+    def test_5lm_3done_evidence(self) -> None:
         """Test 5 evidence LMs voting with an AnyLMsMatch count of 3."""
         exp = instantiate_experiment(self.five_lm_three_done_cfg.experiment)
         with exp:
@@ -392,7 +380,7 @@ class EvidenceLMTest(BaseGraphTest):
 
         self.check_multilm_eval_results(eval_stats, num_lms=5, min_done=3)
 
-    def test_moving_off_object_5lms(self):
+    def test_moving_off_object_5lms(self) -> None:
         """Test logging when moving off the object for some steps during an episode.
 
         TODO: This test doesn't check if the voting evidence is incremented correctly
@@ -454,15 +442,13 @@ class EvidenceLMTest(BaseGraphTest):
                 f" since it was off the object for longer than other LMs.",
             )
 
-    def test_5lms_pre_episode_raises_error_when_no_object_is_present(self):
-        """Test that pre_episode raises an error when no object is present."""
-        pprint("...parsing experiment...")
+    def test_5lms_pre_episode_raises_error_when_no_object_is_present(self) -> None:
         exp = instantiate_experiment(self.five_lm_cfg.experiment)
         with exp:
             exp.experiment_mode = ExperimentMode.TRAIN
             exp.model.set_experiment_mode(exp.experiment_mode)
             exp.pre_epoch()
-            exp.env._env.remove_all_objects()
+            exp.env.remove_all_objects()
             with self.assertRaises(ValueError) as error:
                 exp.pre_episode()
             self.assertEqual(
@@ -470,8 +456,7 @@ class EvidenceLMTest(BaseGraphTest):
                 str(error.exception),
             )
 
-    def test_5lm_basic_logging(self):
-        """Test that 5LM setup works with BASIC logging and stores correct data."""
+    def test_5lm_basic_logging(self) -> None:
         exp = instantiate_experiment(self.five_lm_basic_logging_cfg.experiment)
         with exp:
             exp.run()
@@ -492,7 +477,7 @@ class EvidenceLMTest(BaseGraphTest):
                 "When using basic logging we don't append stats for every step.",
             )
 
-    def test_can_run_with_no_multithreading_5lms(self):
+    def test_can_run_with_no_multithreading_5lms(self) -> None:
         """Standard evaluation setup but using only pose features.
 
         Testing with 5LMs since voting also uses multithreading.
@@ -508,7 +493,7 @@ class EvidenceLMTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
 
-    def test_can_run_with_maxnn1_5lms(self):
+    def test_can_run_with_maxnn1_5lms(self) -> None:
         """Standard evaluation setup but using max_nneighbors=1.
 
         Testing with 5LMs since voting also uses max_nneighbors.
@@ -524,8 +509,7 @@ class EvidenceLMTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
 
-    def test_can_run_with_bounded_evidence_5lms(self):
-        """Standard evaluation setup with 5lm and bounded evidence."""
+    def test_can_run_with_bounded_evidence_5lms(self) -> None:
         exp = instantiate_experiment(self.five_lm_bounded.experiment)
         with exp:
             exp.run()
@@ -537,7 +521,7 @@ class EvidenceLMTest(BaseGraphTest):
         eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
         self.check_eval_results(eval_stats, num_lms=5)
 
-    def test_noise_mixing_evidence(self):
+    def test_noise_mixing_evidence(self) -> None:
         """Test standard fixed action setting with noisy sensor module.
 
         NOTE: This test only checks that noise is being applied. It doesnt check
@@ -570,7 +554,7 @@ class EvidenceLMTest(BaseGraphTest):
                 "Is noise being applied correctly?",
             )
 
-    def test_raw_sensor_noise_evidence(self):
+    def test_raw_sensor_noise_evidence(self) -> None:
         """Test standard fixed action setting with raw sensor noise.
 
         NOTE: Same as above, this test only checks that noise is being applied.

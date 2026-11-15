@@ -14,7 +14,8 @@ import hashlib
 import logging
 import threading
 import time
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -508,7 +509,7 @@ class EvidenceGraphLM(GraphLM):
                             location=graph_hyps.locations[hyp_id],  # location rel. body
                             morphological_features={
                                 "pose_vectors": OrientationMatrix(
-                                    graph_hyps.poses[hyp_id].T
+                                    graph_hyps.poses[hyp_id]
                                 ),
                                 "pose_fully_defined": True,
                             },

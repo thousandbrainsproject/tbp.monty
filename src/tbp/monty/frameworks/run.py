@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from pathlib import Path
 
@@ -51,10 +50,6 @@ def output_dir_from_run_name(config: DictConfig) -> Path:
 
 @hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
-    if cfg.quiet_habitat_logs:
-        os.environ["MAGNUM_LOG"] = "quiet"
-        os.environ["HABITAT_SIM_LOG"] = "quiet"
-
     print_config(cfg)
 
     cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))

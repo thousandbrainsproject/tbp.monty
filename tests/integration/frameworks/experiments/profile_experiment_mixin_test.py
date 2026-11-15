@@ -8,16 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import shutil
 import tempfile
 from pathlib import Path
@@ -30,6 +20,8 @@ from tbp.monty.frameworks.experiments.monty_experiment import MontyExperiment
 from tbp.monty.frameworks.experiments.profile import (
     ProfileExperimentMixin,
 )
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 
 
 class ProfiledExperiment(ProfileExperimentMixin, MontyExperiment):
@@ -37,7 +29,7 @@ class ProfiledExperiment(ProfileExperimentMixin, MontyExperiment):
 
 
 class ProfileExperimentMixinTest(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
@@ -49,7 +41,7 @@ class ProfileExperimentMixinTest(TestCase):
                 ],
             )
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(self.output_dir)
 
     def get_profile_files(self) -> set[str]:

@@ -11,12 +11,13 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping, Sequence
 from pprint import pformat
-from typing import Mapping, Sequence, cast
 
 import numpy as np
 from omegaconf import ListConfig
 
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.actions.actions import (
     Action,
 )
@@ -173,6 +174,8 @@ class OneObjectPerEpisodeInterface(Interface):
     sampled from the same object list, can be added.
     """
 
+    primary_target: PrimaryTarget | None
+
     def __init__(
         self,
         object_names: list[str] | ListConfig | MultiObjectNames,
@@ -241,7 +244,8 @@ class OneObjectPerEpisodeInterface(Interface):
             return
 
         assert self.primary_target is not None, "Primary target not set"
-        target_semantic_id = cast("SemanticID", self.primary_target["semantic_id"])
+        target_semantic_id = self.primary_target.semantic_id
+        assert target_semantic_id is not None, "Primary target must have a semantic ID"
 
         success = False
         for factory in self._positioning_procedures:
@@ -261,8 +265,8 @@ class OneObjectPerEpisodeInterface(Interface):
 
         if self.num_distractors == 0 and not success:
             raise RuntimeError(
-                f"Primary target '{self.primary_target['object']}' "
-                f"with rotation {self.primary_target['euler_rotation']} "
+                f"Primary target '{self.primary_target.object_name}' "
+                f"with rotation {tuple(self.primary_target.euler_rotation)} "
                 f"not visible at start of episode"
             )
 
@@ -286,7 +290,7 @@ class OneObjectPerEpisodeInterface(Interface):
     def create_semantic_mapping(self):
         """Create a unique semantic ID (positive integer) for each object.
 
-        Used by Habitat for the semantic sensor.
+        Used by the simulator for the semantic sensor.
 
         In addition, create a dictionary mapping back and forth between these IDs and
         the corresponding name of the object
@@ -296,7 +300,7 @@ class OneObjectPerEpisodeInterface(Interface):
         )
 
         starting_integer = 1  # Start at 1 so that we can distinguish on-object semantic
-        # IDs (>0) from being off object (semantic_id == 0 in Habitat by default)
+        # IDs (>0) from being off object (semantic_id == 0 in the simulator by default)
         self.semantic_id_to_label = {
             SemanticID(i + starting_integer): label
             for i, label in enumerate(self.source_object_list)
@@ -353,11 +357,15 @@ class OneObjectPerEpisodeInterface(Interface):
             )
 
         self.current_object = idx
-        self.primary_target = {
-            "object": self.object_names[idx],
-            "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
-            **self.object_params,
-        }
+        self.primary_target = PrimaryTarget(
+            euler_rotation=self.object_params["euler_rotation"],
+            object_name=self.object_names[idx],
+            position=self.object_params["position"],
+            quat_rotation=self.object_params.get("quat_rotation", None),
+            semantic_id=self.semantic_label_to_id[self.object_names[idx]],
+            rotation=self.object_params["rotation"],
+            scale=self.object_params["scale"],
+        )
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
@@ -435,7 +443,6 @@ class OmniglotInterface(OneObjectPerEpisodeInterface):
         self.n_objects = len(characters)
         self.episodes = 0
         self.epochs = 0
-        self.primary_target = None
         self.object_names = [
             str(self.env.alphabet_names[alphabets[i]]) + "_" + str(self.characters[i])
             for i in range(self.n_objects)
@@ -472,14 +479,14 @@ class OmniglotInterface(OneObjectPerEpisodeInterface):
             self.alphabets[idx], self.characters[idx], self.versions[idx]
         )
         self.current_object = idx
-        self.primary_target = {
-            "object": self.object_names[idx],
-            "rotation": (1.0, 0.0, 0.0, 0.0),
-            "euler_rotation": np.array([0, 0, 0]),
-            "quat_rotation": [1, 0, 0, 0],
-            "position": np.array([0, 0, 0]),
-            "scale": [1.0, 1.0, 1.0],
-        }
+        self.primary_target = PrimaryTarget(
+            euler_rotation=np.array([0, 0, 0]),
+            object_name=self.object_names[idx],
+            position=(0.0, 0.0, 0.0),
+            quat_rotation=np.array([1, 0, 0, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+            scale=(1.0, 1.0, 1.0),
+        )
 
 
 class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
@@ -523,7 +530,6 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
         self.n_versions = len(versions)
         self.episodes = 0
         self.epochs = 0
-        self.primary_target = None
         self._positioning_procedures = positioning_procedures
 
     def post_episode(self):
@@ -565,14 +571,14 @@ class SaccadeOnImageInterface(OneObjectPerEpisodeInterface):
         target_object = self.object_names[self.scenes[idx]]
         # remove scene index from name
         target_object_formatted = "_".join(target_object.split("_")[1:])
-        self.primary_target = {
-            "object": target_object_formatted,
-            "rotation": (1.0, 0.0, 0.0, 0.0),
-            "euler_rotation": np.array([0, 0, 0]),
-            "quat_rotation": [1, 0, 0, 0],
-            "position": np.array([0, 0, 0]),
-            "scale": [1.0, 1.0, 1.0],
-        }
+        self.primary_target = PrimaryTarget(
+            euler_rotation=np.array([0, 0, 0]),
+            object_name=target_object_formatted,
+            position=(0.0, 0.0, 0.0),
+            quat_rotation=np.array([1, 0, 0, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+            scale=(1.0, 1.0, 1.0),
+        )
 
 
 class SaccadeOnImageFromStreamInterface(SaccadeOnImageInterface):
@@ -640,11 +646,11 @@ class SaccadeOnImageFromStreamInterface(SaccadeOnImageInterface):
         # TODO: Currently not differentiating between different poses/views
         # TODO: Are the targets important here ? How can we provide the proper
         # targets corresponding to the current scene ?
-        self.primary_target = {
-            "object": "no_label",
-            "rotation": (1.0, 0.0, 0.0, 0.0),
-            "euler_rotation": np.array([0, 0, 0]),
-            "quat_rotation": [1, 0, 0, 0],
-            "position": np.array([0, 0, 0]),
-            "scale": [1.0, 1.0, 1.0],
-        }
+        self.primary_target = PrimaryTarget(
+            euler_rotation=np.array([0, 0, 0]),
+            object_name="no_label",
+            position=(0.0, 0.0, 0.0),
+            quat_rotation=np.array([1, 0, 0, 0]),
+            rotation=(1.0, 0.0, 0.0, 0.0),
+            scale=(1.0, 1.0, 1.0),
+        )

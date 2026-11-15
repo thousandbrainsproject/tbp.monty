@@ -15,11 +15,10 @@ import copy
 import json
 import logging
 import os
+from collections.abc import Container
 from pathlib import Path
 from pprint import pformat
-from typing import Container, Literal
-
-from typing_extensions import override
+from typing import Literal, override
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.buffer import BufferEncoder

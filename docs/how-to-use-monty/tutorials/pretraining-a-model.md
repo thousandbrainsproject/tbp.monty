@@ -44,7 +44,7 @@ Monty experiments are defined and configured using [Hydra](https://hydra.cc/). T
     - `eval_env_interface_class`: environment `Interface`
     - `eval_env_interface_args`: Same purpose as `train_env_interface_args` but allows for presenting Monty with different conditions between training and evaluation.
     - `match_criterion`: The match criterion decides which learning modules must recognize the object.
-    - `recognition_policy`: The recognition policy decides when an experiment episode is over.
+    - `recognition_strategy`: The recognition strategy decides when an experiment episode is over.
 
 # Setting up the Experiment Config for Pretraining
 
