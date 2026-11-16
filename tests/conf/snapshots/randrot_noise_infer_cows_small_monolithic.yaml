@@ -162,13 +162,13 @@ experiment:
           salience_strategy:
             _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.Vocus2
             color:
-              _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.ColorChannelSalience
+              _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.ColorChannelSalience
               center_sigma: 1.0
               surround_sigma: 3.0
               n_scales: 2
               max_octaves: 10
               operating_limits:
-                _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.vocus2.NoOperatingLimits
+                _target_: tbp.monty.frameworks.models.salience.strategies.vocus2.NoOperatingLimits
             depth: null
             orientation: null
           segmentation_strategy:

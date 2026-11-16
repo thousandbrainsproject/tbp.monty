@@ -62,7 +62,6 @@ off_model_gating_cases = st.builds(
 
 
 class GetOutputTest(unittest.TestCase):
-
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
     )
