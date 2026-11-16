@@ -81,11 +81,27 @@ class EvidenceChart {
                 title: 'Step',
                 showgrid: true,
                 gridcolor: '#e5e7eb',
+                // A pointer is compared against the whole run, not one line: a
+                // spike marks the step top to bottom, and the label below names
+                // every theory that had a value there.
+                showspikes: true,
+                spikemode: 'across',
+                spikethickness: 1,
+                spikedash: 'dot',
+                spikecolor: '#9ca3af',
             },
             yaxis: {
                 title: 'Evidence Score',
                 showgrid: true,
                 gridcolor: '#e5e7eb',
+            },
+            // One label for the step under the pointer, listing every trace, so
+            // two peaks can be read against each other while scrolling.
+            hovermode: 'x unified',
+            hoverlabel: {
+                bgcolor: 'rgba(255, 255, 255, 0.95)',
+                bordercolor: '#e5e7eb',
+                font: { size: 11 },
             },
             showlegend: true,
             legend: {
@@ -226,8 +242,19 @@ class EvidenceChart {
                     line: {
                         color: getObjectColor(objName, index),
                         width: 2,
+                        // A step's evidence holds until the next step begins, so
+                        // the line holds its height and drops at the step: `hv`
+                        // is horizontal, then vertical. A straight segment would
+                        // draw a fall that never happened, between two steps
+                        // the module was certain about.
+                        shape: 'hv',
                     },
                     connectgaps: false,  // Don't connect across NaN gaps
+                    // The name is the theory (the object a module was weighing), and
+                    // it is what the pointer reads: without a template Plotly falls
+                    // back to the trace's own name in a box of its own and the step
+                    // is not named at all.
+                    hovertemplate: '%{y:.3f}<extra></extra>',
                 });
             }
         });
