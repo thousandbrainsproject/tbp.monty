@@ -87,21 +87,21 @@ class GetOutputTest(unittest.TestCase):
         mlh_on_model_mock.assert_called_once_with(mlh)
 
     @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model",
-        return_value=True,
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
     )
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
     )
-    def test_returns_message_that_passes_when_all_gating_conditions_true(
+    def test_returns_message_with_pass_message_true_when_all_gating_conditions_met(
         self,
         get_current_mlh_mock: MagicMock,
-        mlh_on_model_mock: MagicMock,  # noqa: ARG002
+        mlh_on_model_mock: MagicMock,
     ) -> None:
         get_current_mlh_mock.return_value = {
             "graph_id": "mug",
             "rotation": Rotation.identity(),
         }
+        mlh_on_model_mock.return_value = True
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
@@ -126,7 +126,7 @@ class GetOutputTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
     )
-    def test_returns_message_that_does_not_pass_when_any_gating_condition_false(
+    def test_returns_message_with_pass_message_false_when_any_gating_condition_fails(
         self,
         get_current_mlh_mock: MagicMock,
         mlh_on_model_mock: MagicMock,
@@ -182,13 +182,13 @@ def mlh_on_model_cases(draw: st.DrawFn) -> MlhOnModelCase:
 
 class MlhOnModelTest(unittest.TestCase):
     @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids",
-        return_value=[sentinel.graph_id],
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
     )
     def test_returns_false_when_mlh_has_no_location(
         self,
-        get_all_known_object_ids_mock: MagicMock,  # noqa: ARG002
+        get_all_known_object_ids_mock: MagicMock,
     ) -> None:
+        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
@@ -198,13 +198,13 @@ class MlhOnModelTest(unittest.TestCase):
         self.assertFalse(on_model)
 
     @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids",
-        return_value=[sentinel.graph_id],
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
     )
     def test_returns_false_when_mlh_object_is_unknown(
         self,
-        get_all_known_object_ids_mock: MagicMock,  # noqa: ARG002
+        get_all_known_object_ids_mock: MagicMock,
     ) -> None:
+        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
@@ -216,18 +216,18 @@ class MlhOnModelTest(unittest.TestCase):
         self.assertFalse(on_model)
 
     @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_input_channels_in_graph",
-        return_value=[sentinel.channel_0],
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_input_channels_in_graph"
     )
     @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids",
-        return_value=[sentinel.graph_id],
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
     )
     def test_calls_find_nearest_neighbors_with_mlh_location(
         self,
-        get_all_known_object_ids_mock: MagicMock,  # noqa: ARG002
-        get_input_channels_in_graph_mock: MagicMock,  # noqa: ARG002
+        get_all_known_object_ids_mock: MagicMock,
+        get_input_channels_in_graph_mock: MagicMock,
     ) -> None:
+        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
+        get_input_channels_in_graph_mock.return_value = [sentinel.channel_0]
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
@@ -253,15 +253,15 @@ class MlhOnModelTest(unittest.TestCase):
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_input_channels_in_graph"
     )
     @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids",
-        return_value=[sentinel.graph_id],
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
     )
     def test_returns_whether_any_input_channel_graph_nearest_neighbor_is_within_max_match_distance(  # noqa: E501
         self,
-        get_all_known_object_ids_mock: MagicMock,  # noqa: ARG002
+        get_all_known_object_ids_mock: MagicMock,
         get_input_channels_in_graph_mock: MagicMock,
         mlh_on_model_case: MlhOnModelCase,
     ) -> None:
+        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
         get_input_channels_in_graph_mock.return_value = [
             MagicMock() for _ in mlh_on_model_case.distances
         ]
