@@ -12,7 +12,6 @@ from __future__ import annotations
 import copy
 import logging
 from collections.abc import Sequence
-from typing import Any
 
 from tbp.monty import telemetry
 from tbp.monty.attention.attention_system import (
@@ -20,6 +19,7 @@ from tbp.monty.attention.attention_system import (
     NoopAttentionSystem,
 )
 from tbp.monty.cmp import Goal, Message
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -412,7 +412,7 @@ class MontyBase(Monty):
 
     def fixme_set_ground_truth(
         self,
-        primary_target: dict[str, Any] | None = None,
+        primary_target: PrimaryTarget | None = None,
         semantic_id_to_label: dict[SemanticID, str] | None = None,
     ) -> None:
         pass

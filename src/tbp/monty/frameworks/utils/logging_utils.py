@@ -25,6 +25,7 @@ import numpy.typing as npt
 import pandas as pd
 import torch
 
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
@@ -241,7 +242,7 @@ def check_rotation_accuracy(stats, last_n_step=1):
     pose_stats = []
     for episode in stats:
         if len(stats[episode]["LM_0"]["possible_poses"]) >= last_n_step:
-            target_object = stats[episode]["LM_0"]["target"]["object"]
+            target_object = stats[episode]["LM_0"]["target"]["object_name"]
             target_rotation = stats[episode]["LM_0"]["target"]["euler_rotation"]
             detected_rotations = stats[episode]["LM_0"]["possible_poses"][-last_n_step][
                 target_object
@@ -332,7 +333,7 @@ def check_detection_accuracy_at_step(stats, last_n_step=1):
     for episode in stats:
         possible_matches = stats[episode]["LM_0"]["possible_matches"]
         if len(possible_matches) >= last_n_step:
-            target_object = stats[episode]["LM_0"]["target"]["object"]
+            target_object = stats[episode]["LM_0"]["target"]["object_name"]
             matches_at_step = possible_matches[-last_n_step]
             if len(matches_at_step) == 0:
                 performance = "no matches"
@@ -738,7 +739,7 @@ def add_pose_lm_episode_stats(lm, stats):
 
 
 def get_stats_per_lm(
-    model: Monty, episode_steps: int, target: dict[str, Any], episode_seed: int
+    model: Monty, episode_steps: int, target: PrimaryTarget, episode_seed: int
 ) -> dict[str, dict[str, Any]]:
     """Loop through lms and get stats.
 
@@ -835,7 +836,9 @@ def calculate_performance(stats, performance_type, lm, target_object):
     return stats
 
 
-def target_data_to_dict(target):
+def target_data_to_dict(
+    target: PrimaryTarget,
+) -> dict[str, str | npt.NDArray[np.float64] | float]:
     """Format target params to dict.
 
     Args:
@@ -844,14 +847,14 @@ def target_data_to_dict(target):
     Returns:
         dict with target params
     """
-    output_dict = {}
-    output_dict["primary_target_object"] = target["object"]
+    output_dict: dict[str, str | npt.NDArray[np.float64] | float] = {}
+    output_dict["primary_target_object"] = target.object_name
     # Convert values to NumPy arrays to get consistent string rendering.
-    output_dict["primary_target_position"] = np.array(target["position"])
-    output_dict["primary_target_rotation_euler"] = np.array(target["euler_rotation"])
-    output_dict["primary_target_rotation_quat"] = np.array(target["rotation"])
+    output_dict["primary_target_position"] = np.array(target.position)
+    output_dict["primary_target_rotation_euler"] = np.array(target.euler_rotation)
+    output_dict["primary_target_rotation_quat"] = np.array(target.rotation)
     # Currently scale is applied uniformly along all dimensions
-    output_dict["primary_target_scale"] = target["scale"][0]
+    output_dict["primary_target_scale"] = target.scale[0]
 
     return output_dict
 

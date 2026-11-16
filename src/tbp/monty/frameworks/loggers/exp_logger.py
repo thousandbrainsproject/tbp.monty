@@ -12,6 +12,9 @@ import json
 from pathlib import Path
 from typing import override
 
+from tbp.monty.frameworks.experiments.logger_args import LoggerArgs
+from tbp.monty.frameworks.models.abstract_monty_classes import Monty
+
 """
 Based on https://github.com/huggingface/transformers/blob/1438c487df5ce38a7b2ae30877b3074b96a423dd/src/transformers/trainer_callback.py
 """
@@ -40,34 +43,34 @@ class LoggingCallbackHandler:
     def logger_list(self):
         return "\n".join(logger.__class__.__name__ for logger in self.loggers)
 
-    def pre_episode(self, logger_args):
+    def pre_episode(self, logger_args: LoggerArgs) -> None:
         self.call_event("pre_episode", logger_args)
 
-    def post_episode(self, logger_args):
+    def post_episode(self, logger_args: LoggerArgs) -> None:
         self.call_event("post_episode", logger_args)
 
-    def pre_epoch(self, logger_args):
+    def pre_epoch(self, logger_args: LoggerArgs) -> None:
         self.call_event("pre_epoch", logger_args)
 
-    def post_epoch(self, logger_args):
+    def post_epoch(self, logger_args: LoggerArgs) -> None:
         self.call_event("post_epoch", logger_args)
 
-    def pre_train(self, logger_args):
+    def pre_train(self, logger_args: LoggerArgs) -> None:
         self.call_event("pre_train", logger_args)
 
-    def post_train(self, logger_args):
+    def post_train(self, logger_args: LoggerArgs) -> None:
         self.call_event("post_train", logger_args)
 
-    def pre_eval(self, logger_args):
+    def pre_eval(self, logger_args: LoggerArgs) -> None:
         self.call_event("pre_eval", logger_args)
 
-    def post_eval(self, logger_args):
+    def post_eval(self, logger_args: LoggerArgs) -> None:
         self.call_event("post_eval", logger_args)
 
-    def close(self, logger_args):
+    def close(self, logger_args: LoggerArgs) -> None:
         self.call_event("close", logger_args)
 
-    def call_event(self, event, logger_args):
+    def call_event(self, event, logger_args: LoggerArgs) -> None:
         for logger in self.loggers:
             getattr(logger, event)(
                 logger_args=logger_args, output_dir=self.output_dir, model=self.model
@@ -84,32 +87,39 @@ class BaseMontyLogger:
     def flush(self):
         pass
 
-    def pre_episode(self, logger_args, output_dir, model):
+    def pre_episode(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         pass
 
-    def post_episode(self, logger_args, output_dir, model):
+    def post_episode(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         pass
 
-    def pre_epoch(self, logger_args, output_dir, model):
+    def pre_epoch(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         pass
 
-    def post_epoch(self, logger_args, output_dir, model):
+    def post_epoch(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         pass
 
-    def pre_train(self, logger_args, output_dir, model):
+    def pre_train(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         pass
 
-    def post_train(self, logger_args, output_dir, model):
+    def post_train(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         pass
 
-    def pre_eval(self, logger_args, output_dir, model):
+    def pre_eval(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         pass
 
-    def post_eval(self, logger_args, output_dir, model):
+    def post_eval(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         pass
 
-    @override
-    def close(self, logger_args, output_dir, model):
+    def close(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:  # noqa: ARG002
         for handler in self.handlers:
             handler.close()
 
@@ -121,39 +131,47 @@ class TestLogger(BaseMontyLogger):
         self.use_parallel_wandb_logging = False
 
     @override
-    def pre_episode(self, logger_args, output_dir, model):
+    def pre_episode(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         self.log.append("pre_episode")
 
     @override
-    def post_episode(self, logger_args, output_dir, model):
+    def post_episode(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         self.log.append("post_episode")
 
     @override
-    def pre_epoch(self, logger_args, output_dir, model):
+    def pre_epoch(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         self.log.append("pre_epoch")
 
     @override
-    def post_epoch(self, logger_args, output_dir, model):
+    def post_epoch(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         self.log.append("post_epoch")
 
     @override
-    def pre_train(self, logger_args, output_dir, model):
+    def pre_train(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         self.log.append("pre_train")
 
     @override
-    def post_train(self, logger_args, output_dir, model):
+    def post_train(
+        self, logger_args: LoggerArgs, output_dir: str, model: Monty
+    ) -> None:
         self.log.append("post_train")
 
     @override
-    def pre_eval(self, logger_args, output_dir, model):
+    def pre_eval(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         self.log.append("pre_eval")
 
     @override
-    def post_eval(self, logger_args, output_dir, model):
+    def post_eval(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         self.log.append("post_eval")
 
     @override
-    def close(self, logger_args, output_dir, model):
+    def close(self, logger_args: LoggerArgs, output_dir: str, model: Monty) -> None:
         outfile = Path(output_dir) / "fake_log.json"
         with outfile.open("w") as f:
             json.dump(self.log, f)
