@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
+from typing import Literal
 from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np
