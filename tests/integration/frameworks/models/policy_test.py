@@ -236,21 +236,19 @@ class AdvancedPolicyTest(unittest.TestCase):
             Message(**fp_2_corrupt_z),
         ]
 
-    def initialize_lm_with_gsg(self) -> tuple[EvidenceGraphLM, dict[str, int | float]]:
+    def initialize_lm_with_gsg(self) -> EvidenceGraphLM:
         """Sets up an LM with a goal generator for testing.
 
         Returns:
-            graph_lm: Created evidence graph LM instance
-            gsg_args: Goal generator arguments for reference
+            Created evidence graph LM instance
         """
         gsg_args = dict(
             elapsed_steps_factor=10,
             min_post_goal_success_steps=5,
             x_percent_scale_factor=0.75,
-            desired_object_distance=0.025,
         )
 
-        graph_lm = EvidenceGraphLM(
+        return EvidenceGraphLM(
             max_match_distance=0.005,
             tolerances={
                 "patch": {
@@ -265,7 +263,6 @@ class AdvancedPolicyTest(unittest.TestCase):
             },
             gsg=EvidenceGoalGenerator(**gsg_args),
         )
-        return graph_lm, gsg_args
 
     def test_touch_object_basic_surf_agent(self) -> None:
         """Test ability to move a surface agent to touch an object.
@@ -940,7 +937,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         Returns:
             motor_goal_location: Motor goal location
-            motor_goal_pose: Motor goal 0th pose vector
+            motor_goal_surface_normal: Motor goal surface normal
             target_loc: Target location
             agent_direction: Agent direction
         """
@@ -948,7 +945,10 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         target_info = {
             "target_loc": np.array(target_location_on_object),
-            "target_surface_normal": np.array([0.0, 1.0, 0.0]),
+            # Identity pose rotated such that the surface normal points along +y
+            "target_surface_pose": Rotation.from_euler("z", 90, degrees=True).apply(
+                np.eye(3)
+            ),
             "hypothesis_to_test": {
                 "graph_id": "dummy_object",
                 "location": np.array([0.1, 0.1, 0.1]),
@@ -1007,7 +1007,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # Determine coordinates from goal.
         set_agent_pose = derive_set_agent_pose_for_jump_from_goal(
-            motor_goal, policy._agent_id, policy._desired_object_distance
+            motor_goal, policy.agent_id, policy.desired_object_distance
         )
         target_loc = set_agent_pose.location
         target_quat = set_agent_pose.rotation_quat
@@ -1021,7 +1021,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         assert motor_goal.location is not None
         return (
             motor_goal.location,
-            motor_goal.morphological_features["pose_vectors"].direction,
+            motor_goal.morphological_features["pose_vectors"].surface_normal,
             target_loc,
             agent_direction,
         )
@@ -1031,7 +1031,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         Should work across a variety of parameter settings.
         """
-        lm, gsg_args = self.initialize_lm_with_gsg()
+        lm = self.initialize_lm_with_gsg()
 
         policy: SurfacePolicyCurvatureInformed = hydra.utils.instantiate(
             self.policy_cfg_fragment
@@ -1040,14 +1040,14 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location
-        surface_displacement = gsg_args["desired_object_distance"] * 1.5
+        surface_displacement = policy.desired_object_distance * 1.5
 
         ctx = RuntimeContext(rng=np.random.RandomState())
 
         # === First, easy example ===
         (
             motor_goal_location,
-            motor_goal_direction,
+            motor_goal_surface_normal,
             target_loc,
             agent_direction,
         ) = self.core_evaluate_compute_goal_for_target_loc(
@@ -1058,12 +1058,12 @@ class AdvancedPolicyTest(unittest.TestCase):
             target_location_on_object=(0.2, 0.2, 0.2),
         )
 
-        assert np.all(
-            np.isclose(motor_goal_location, [0.1, 1.6 + surface_displacement, 0.2])
-        ), "Goal location is not as expected"
+        assert np.all(np.isclose(motor_goal_location, [0.1, 1.6, 0.2])), (
+            "Goal location is not as expected"
+        )
 
-        # Pointing down
-        assert np.all(np.isclose(motor_goal_direction, [0, -1.0, 0])), (
+        # Surface normal pointing up
+        assert np.all(np.isclose(motor_goal_surface_normal, [0, 1.0, 0])), (
             "Goal pose is not as expected"
         )
 
@@ -1080,7 +1080,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         (
             motor_goal_location_2,
-            motor_goal_direction_2,
+            motor_goal_surface_normal_2,
             target_loc_2,
             agent_direction_2,
         ) = self.core_evaluate_compute_goal_for_target_loc(
@@ -1092,13 +1092,12 @@ class AdvancedPolicyTest(unittest.TestCase):
             target_location_on_object=(0.1, 0.2, 0.1),
         )
 
-        # Surface displacement is negative, because object is flipped in x-axis
-        assert np.all(
-            np.isclose(motor_goal_location_2, [0, 1.4 - surface_displacement, 0.1])
-        ), "Goal location is not as expected"
+        assert np.all(np.isclose(motor_goal_location_2, [0, 1.4, 0.1])), (
+            "Goal location is not as expected"
+        )
 
-        # Pointing up, because object is flipped in y-axis
-        assert np.all(np.isclose(motor_goal_direction_2, [0, 1.0, 0])), (
+        # Surface normal pointing down, because object is flipped in x-axis
+        assert np.all(np.isclose(motor_goal_surface_normal_2, [0, -1.0, 0])), (
             "Goal pose is not as expected"
         )
 
@@ -1107,7 +1106,7 @@ class AdvancedPolicyTest(unittest.TestCase):
             "Target location is not as expected"
         )
 
-        # Pointing up, because object is flipped in y-axis
+        # Pointing up, because object is flipped in x-axis
         assert np.all(np.isclose(agent_direction_2, [0, 1.0, 0])), (
             "Agent pose is not as expected"
         )
@@ -1116,7 +1115,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         (
             motor_goal_location_3,
-            motor_goal_direction_3,
+            motor_goal_surface_normal_3,
             target_loc_3,
             agent_direction_3,
         ) = self.core_evaluate_compute_goal_for_target_loc(
@@ -1129,11 +1128,11 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         # Below results manually verified
         assert np.all(
-            np.isclose(motor_goal_location_3, [0.18586463, 1.58288073, -0.04139085])
+            np.isclose(motor_goal_location_3, [0.14964946, 1.58641076, -0.05046003])
         ), "Goal location is not as expected"
 
         assert np.all(
-            np.isclose(motor_goal_direction_3, [-0.965738, 0.09413407, -0.24184476])
+            np.isclose(motor_goal_surface_normal_3, [0.965738, -0.09413407, 0.24184476])
         ), "Goal pose is not as expected"
 
         assert np.all(

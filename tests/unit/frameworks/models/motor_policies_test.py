@@ -52,12 +52,10 @@ from tbp.monty.frameworks.models.motor_system_state import (
     SensorState,
 )
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
-from tbp.monty.geometry import GazeDirection, Rotation, SurfacePoseVectors
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 from tests.unit.frameworks.models.fakes.cmp import FakeMessage
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
-    nonzero_magnitude_vectors,
     quaternions,
     rotation_matrix,
     vectors_3d,
@@ -291,7 +289,8 @@ class JumpToGoalTest(ParametrizedTestCase):
 
         target_agent_location = (
             goal_location
-            + desired_object_distance
+            + 1.5
+            * desired_object_distance
             * goal.morphological_features["pose_vectors"].surface_normal
         )
 
@@ -461,7 +460,8 @@ class JumpToGoalTest(ParametrizedTestCase):
 
         target_agent_location = (
             goal_location
-            + desired_object_distance
+            + 1.5
+            * desired_object_distance
             * second_goal.morphological_features["pose_vectors"].surface_normal
         )
 

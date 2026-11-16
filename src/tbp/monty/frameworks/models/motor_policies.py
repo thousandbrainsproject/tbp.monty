@@ -373,6 +373,7 @@ def fixme_undo_last_action(
 
     raise TypeError(f"Invalid action: {last_action}")
 
+
 def derive_set_agent_pose_for_jump_from_goal(
     goal: Goal, agent_id: AgentID, desired_object_distance: float
 ) -> SetAgentPose:
@@ -382,6 +383,12 @@ def derive_set_agent_pose_for_jump_from_goal(
 
     Args:
         goal: The goal to jump towards and observe.
+        agent_id: The ID of the agent to jump.
+        desired_object_distance: The desired distance between the agent and the
+            target surface. The agent jumps to 1.5x this distance, so that it starts a
+            bit further away from the object, and can then move forward if it is
+            indeed facing it. This reduces the risk of collision should the LM that
+            generated the goal have a poorer pose hypothesis of the object.
 
     Returns:
         A `SetAgentPose` action.
@@ -401,7 +408,9 @@ def derive_set_agent_pose_for_jump_from_goal(
 
     target_observed_surface_normal = normalize(target_observed_surface_normal)
 
-    surface_displacement = desired_object_distance * target_observed_surface_normal
+    surface_displacement = (
+        1.5 * desired_object_distance * target_observed_surface_normal
+    )
 
     target_agent_location = goal.location + surface_displacement
 
@@ -421,6 +430,7 @@ def derive_set_agent_pose_for_jump_from_goal(
         location=target_agent_location,
         rotation_quat=target_quat,
     )
+
 
 class PredefinedPolicy(MotorPolicy):
     """Policy that follows an action sequence read from file.
@@ -502,17 +512,15 @@ class JumpToGoal(MotorPolicy):
         self,
         agent_id: AgentID,
         sensor_id: SensorID,
-        desired_object_distance: float = 0.0375,  # Temporarily set to 0.025*1.5,
-        # capturing the same behavior as the older implementation; for old values of
-        # 0.03, this would be 0.045.
+        desired_object_distance: float = 0.025,
     ) -> None:
         """Initialize policy.
 
         Args:
             agent_id: The agent ID
             sensor_id: The sensor ID to use for depth at center calculation.
-            desired_object_distance: The distance above the target surface that the
-                agent should move to.
+            desired_object_distance: The desired distance between the agent and the
+                target surface; the jump itself goes to 1.5x this distance.
         """
         self._agent_id = agent_id
         self._sensor_id = sensor_id
@@ -929,7 +937,7 @@ class InformedPolicy(BasePolicy):
             ), "Sensors are not identical in pose"
 
         set_agent_pose = derive_set_agent_pose_for_jump_from_goal(
-            goal, self._agent_id, self._desired_object_distance
+            goal, self.agent_id, self.desired_object_distance
         )
 
         self._is_jumping = True

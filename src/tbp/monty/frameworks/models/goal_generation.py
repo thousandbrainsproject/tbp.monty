@@ -699,7 +699,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
 
         Returns:
             A dictionary containing the hypothesis to test, the target location and
-            local pose vectors of the target point on the object.
+            surface pose vectors of the target point on the object.
         """
         mlh = self.parent_lm._get_current_mlh()
         mlh_id = mlh["graph_id"]
@@ -708,15 +708,14 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
         target_graph = target_object[sensor_channel_name]
         target_loc = target_graph.pos[target_loc_id]
-        surface_normal_mapping = target_graph.feature_mapping["pose_vectors"]
-        target_surface_pose = target_graph.x[
-            target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 9
-        ]
+        target_surface_pose = target_graph.get_values_for_feature("pose_vectors")[
+            target_loc_id
+        ].reshape(3, 3)
 
         return {
             "hypothesis_to_test": mlh,
             "target_loc": target_loc,
-            "target_surface_normal": target_surface_pose,
+            "target_surface_pose": target_surface_pose,
         }
 
     def _compute_goal_for_target_loc(
