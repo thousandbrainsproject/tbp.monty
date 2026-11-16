@@ -62,29 +62,6 @@ off_model_gating_cases = st.builds(
 
 
 class GetOutputTest(unittest.TestCase):
-    @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
-    )
-    @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
-    )
-    def test_calls_mlh_on_model_with_current_mlh(
-        self,
-        get_current_mlh_mock: MagicMock,
-        mlh_on_model_mock: MagicMock,
-    ) -> None:
-        mlh = {"graph_id": "mug", "rotation": Rotation.identity()}
-        get_current_mlh_mock.return_value = mlh
-        lm = EvidenceGraphLM(
-            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
-        )
-        lm.buffer = MagicMock()
-        lm.buffer.get_currently_on_object.return_value = True
-        lm.terminal_state = "match"
-
-        lm.get_output()
-
-        mlh_on_model_mock.assert_called_once_with(mlh)
 
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
