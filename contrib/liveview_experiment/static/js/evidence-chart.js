@@ -23,6 +23,118 @@ const OBJECT_COLORS = {
 // Default color for unknown objects
 const DEFAULT_COLOR = '#888888';
 
+/**
+ * Escape text going into the hover label: the names are the server's, but a name
+ * is data and the label is markup.
+ * @param {string} text - Text to escape
+ * @returns {string} Escaped text
+ */
+function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, character => {
+        switch (character) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            default: return '&#39;';
+        }
+    });
+}
+
+/**
+ * Bind the hover label that lists the theories at the pointed-at step.
+ *
+ * `plotly_hover` fires with every trace's point at that step, so the label is one
+ * read of the whole column rather than a per-trace tooltip — and it is ours
+ * rather than Plotly's unified label because that one lists traces in draw order,
+ * which is stable and says nothing about which theory was leading when the
+ * evidence got this far. The template hides Plotly's label layer inside
+ * `.evidence-hover-host` only, so a chart without this label keeps Plotly's.
+ *
+ * Bound once per element: `Plotly.react` reuses the element and keeps handlers.
+ *
+ * @param {HTMLElement} chartEl - The element Plotly draws into
+ */
+function attachHoverLabel(chartEl) {
+    if (!chartEl || chartEl.dataset.hoverLabelBound === 'true') return;
+    chartEl.dataset.hoverLabelBound = 'true';
+
+    chartEl.style.position = 'relative';
+    chartEl.classList.add('evidence-hover-host');
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'evidence-hover';
+    tooltip.hidden = true;
+    chartEl.appendChild(tooltip);
+
+    chartEl.on('plotly_hover', event => showHoverLabel(chartEl, tooltip, event));
+    chartEl.on('plotly_unhover', () => {
+        tooltip.hidden = true;
+    });
+}
+
+/**
+ * Show every theory with a value at the hovered step, highest evidence first.
+ *
+ * @param {HTMLElement} chartEl - The element Plotly draws into
+ * @param {HTMLElement} tooltip - The label element
+ * @param {Object} event - Plotly's hover event
+ */
+function showHoverLabel(chartEl, tooltip, event) {
+    const points = (event.points || [])
+        .filter(point => typeof point.y === 'number' && !Number.isNaN(point.y))
+        .sort((a, b) => b.y - a.y);
+
+    if (points.length === 0) {
+        tooltip.hidden = true;
+        return;
+    }
+
+    const rows = points
+        .map(point => {
+            const colour = point.data && point.data.line
+                ? point.data.line.color
+                : DEFAULT_COLOR;
+
+            return (
+                `<li><span class="evidence-hover-swatch" style="background:${colour}"></span>` +
+                `<span class="evidence-hover-name">${escapeHtml(point.data.name)}</span>` +
+                `<span class="evidence-hover-value">${point.y.toFixed(3)}</span></li>`
+            );
+        })
+        .join('');
+
+    tooltip.innerHTML =
+        `<div class="evidence-hover-step">step ${escapeHtml(String(points[0].x))}</div>` +
+        `<ol>${rows}</ol>`;
+    tooltip.hidden = false;
+    placeHoverLabel(chartEl, tooltip, event.event);
+}
+
+/**
+ * Keep the label beside the pointer and inside the plot.
+ *
+ * @param {HTMLElement} chartEl - The element Plotly draws into
+ * @param {HTMLElement} tooltip - The label element
+ * @param {MouseEvent} [sourceEvent] - The pointer's own event
+ */
+function placeHoverLabel(chartEl, tooltip, sourceEvent) {
+    const box = chartEl.getBoundingClientRect();
+    const width = tooltip.offsetWidth || 160;
+    const height = tooltip.offsetHeight || 120;
+
+    // A pointer 8px from the right edge would otherwise put the label outside.
+    const left = sourceEvent
+        ? Math.min(Math.max(8, sourceEvent.clientX - box.left + 16), box.width - width - 8)
+        : 8;
+    const top = sourceEvent
+        ? Math.min(Math.max(8, sourceEvent.clientY - box.top + 16), box.height - height - 8)
+        : 8;
+
+    tooltip.style.left = `${Math.max(8, left)}px`;
+    tooltip.style.top = `${Math.max(8, top)}px`;
+}
+
 // Steps of history visible while following the newest data
 const FOLLOW_WINDOW_STEPS = 100;
 
@@ -95,14 +207,12 @@ class EvidenceChart {
                 showgrid: true,
                 gridcolor: '#e5e7eb',
             },
-            // One label for the step under the pointer, listing every trace, so
-            // two peaks can be read against each other while scrolling.
+            // The label is built here rather than by Plotly: its unified label
+            // lists traces in draw order, which is stable and says nothing about
+            // which theory was leading when the evidence got this far. Hover stays
+            // on — it is what fires the events and draws the spike — and the
+            // template hides Plotly's own label layer instead.
             hovermode: 'x unified',
-            hoverlabel: {
-                bgcolor: 'rgba(255, 255, 255, 0.95)',
-                bordercolor: '#e5e7eb',
-                font: { size: 11 },
-            },
             showlegend: true,
             legend: {
                 orientation: 'h',
@@ -122,7 +232,15 @@ class EvidenceChart {
         
         Plotly.newPlot(this.container, [], layout, config);
         this.initialized = true;
+        this._attachHover();
         // console.log('EvidenceChart: Initialized with incremental push_event pattern');
+    }
+
+    /**
+     * Bind the hover label that lists the theories at the pointed-at step.
+     */
+    _attachHover() {
+        attachHoverLabel(this.container);
     }
     
     /**
@@ -411,12 +529,23 @@ window.Hooks.EvidenceChart = {
                 title: 'Time (s)',
                 showgrid: true,
                 gridcolor: '#e5e7eb',
+                // A pointer is compared against the whole run, not one line: a
+                // spike marks the step top to bottom while the label beside it
+                // names every theory that had a value there.
+                showspikes: true,
+                spikemode: 'across',
+                spikethickness: 1,
+                spikedash: 'dot',
+                spikecolor: '#9ca3af',
             },
             yaxis: {
                 title: 'Evidence Score',
                 showgrid: true,
                 gridcolor: '#e5e7eb',
             },
+            // Hover stays on — it fires the events and draws the spike — and the
+            // label itself is ours, so it can be sorted by evidence.
+            hovermode: 'x unified',
             showlegend: true,
             legend: {
                 orientation: 'h',
@@ -434,6 +563,7 @@ window.Hooks.EvidenceChart = {
         };
         
         this.baseLayout = layout;
+        attachHoverLabel(this.chartEl);
         return Plotly.newPlot(this.chartEl, [], layout, config);
     },
     
@@ -528,7 +658,15 @@ window.Hooks.EvidenceChart = {
                     line: {
                         color: getObjectColor(objName, index),
                         width: 2,
+                        // A step's evidence holds until the next step begins, so
+                        // the line holds its height and drops at the step: `hv`
+                        // is horizontal, then vertical. A straight segment would
+                        // draw a fall that never happened.
+                        shape: 'hv',
                     },
+                    // Read by the chart's own label; `extra` empty so no second
+                    // box names the trace again.
+                    hovertemplate: '%{y:.3f}<extra></extra>',
                 });
                 index++;
             }

@@ -16,6 +16,58 @@
             padding: 12px;
             background: #f5f5f5;
         }
+        /* The hover label is drawn by the chart hook, because the theories are
+           listed highest evidence first and Plotly's own label cannot be sorted.
+           Its label layer stays in the DOM — the events and the spike live there
+           — and is hidden, so only one label is ever on screen. Scoped to the
+           chart that carries our label: one that does not keeps Plotly's. */
+        .evidence-hover-host .hoverlayer {
+            display: none;
+        }
+        .evidence-hover {
+            position: absolute;
+            z-index: 10;
+            min-width: 9rem;
+            max-width: 15rem;
+            padding: 6px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.97);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+            font-size: 11px;
+            line-height: 1.5;
+            pointer-events: none;
+        }
+        .evidence-hover[hidden] {
+            display: none;
+        }
+        .evidence-hover-step {
+            color: #6b7280;
+            margin-bottom: 2px;
+        }
+        .evidence-hover ol {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .evidence-hover li {
+            display: grid;
+            grid-template-columns: 8px minmax(0, 1fr) auto;
+            gap: 6px;
+            align-items: baseline;
+        }
+        .evidence-hover-swatch {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+        .evidence-hover-name {
+            overflow-wrap: anywhere;
+        }
+        .evidence-hover-value {
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -142,10 +194,48 @@
             padding: 10px;
             display: flex;
             justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
             border-bottom: 1px solid #e5e7eb;
+        }
+        /* A value may be longer than its row: let it wrap under itself rather
+           than grow the row or butt against the name. */
+        .table-row > span:last-child {
+            min-inline-size: 0;
+            text-align: end;
         }
         .table-row.alt { background: #f9fafb; }
         .table-row:last-child { border-bottom: none; }
+        /* A path is longer than its card, so the rows that hold one are a name
+           and a line of monospaced text rather than a name and a value on one
+           line: the label keeps its column, and the path wraps under itself
+           instead of pushing the label off the row. */
+        .details { margin: 0; padding: 0; }
+        .detail {
+            display: grid;
+            grid-template-columns: 6.5rem minmax(0, 1fr);
+            gap: 0.125rem 0.75rem;
+            align-items: baseline;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .detail:last-child { border-bottom: none; }
+        .detail dt {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        .detail dd {
+            margin: 0;
+            min-inline-size: 0;
+        }
+        .detail-path {
+            display: block;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.6875rem;
+            line-height: 1.45;
+            color: #111827;
+            overflow-wrap: anywhere;
+        }
         .section {
             margin-bottom: 16px;
         }
@@ -279,22 +369,26 @@
                         <div class="table-row alt"><span>Environment</span><span style="font-weight: 600;">{{ environment_name }}</span></div>
                         {% endif %}
                         {% if experiment_name %}
-                        <div class="table-row"><span>Experiment</span><span style="font-weight: 600; word-break: break-word;">{{ experiment_name }}</span></div>
-                        {% endif %}
-                        {% if config_path %}
-                        <div class="table-row alt"><span>Config</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ config_path }}</span></div>
-                        {% endif %}
-                        {% if output_dir %}
-                        <div class="table-row" id="results-dir"><span>Results</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ output_dir }}</span></div>
-                        {% endif %}
-                        {% if stats_path %}
-                        <div class="table-row alt" id="results-stats"><span>Stats</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ stats_path }}</span></div>
-                        {% endif %}
-                        {% if log_path %}
-                        <div class="table-row" id="results-log"><span>Log</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ log_path }}</span></div>
+                        <div class="table-row"><span>Experiment</span><span style="font-weight: 600; overflow-wrap: anywhere;">{{ experiment_name }}</span></div>
                         {% endif %}
                         {% if model_name %}
-                        <div class="table-row"><span>Model</span><span style="font-weight: 600;" title="{{ model_path }}">{{ model_name }}</span></div>
+                        <div class="table-row alt"><span>Model</span><span style="font-weight: 600;" title="{{ model_path }}">{{ model_name }}</span></div>
+                        {% endif %}
+                        {% if config_path or output_dir %}
+                        <dl class="details">
+                            {% if config_path %}
+                            <div class="detail" id="results-config"><dt>Config</dt><dd><code class="detail-path">{{ config_path }}</code></dd></div>
+                            {% endif %}
+                            {% if output_dir %}
+                            <div class="detail" id="results-dir"><dt>Results</dt><dd><code class="detail-path">{{ output_dir }}</code></dd></div>
+                            {% endif %}
+                            {% if stats_path %}
+                            <div class="detail" id="results-stats"><dt>Stats</dt><dd><code class="detail-path">{{ stats_path }}</code></dd></div>
+                            {% endif %}
+                            {% if log_path %}
+                            <div class="detail" id="results-log"><dt>Log</dt><dd><code class="detail-path">{{ log_path }}</code></dd></div>
+                            {% endif %}
+                        </dl>
                         {% endif %}
                     </div>
                     <div class="table-card">
