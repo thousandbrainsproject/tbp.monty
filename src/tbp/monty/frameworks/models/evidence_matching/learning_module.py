@@ -1188,6 +1188,8 @@ class EvidenceGraphLM(GraphLM):
             In the case of unknown objects (i.e., the MLH's graph_id is not in
             memory) or when the MLH has no location, False is returned.
         """
+        graph_id: str
+        location: npt.NDArray[np.float64] | None
         graph_id, location = mlh["graph_id"], mlh["location"]
         if location is None or graph_id not in self.get_all_known_object_ids():
             return False
