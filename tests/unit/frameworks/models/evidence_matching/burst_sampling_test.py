@@ -234,12 +234,14 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         sampling_multiplier=st.floats(min_value=0.0, max_value=3.0),
         graph_num_nodes=st.integers(min_value=1, max_value=100),
         pose_fully_defined=st.booleans(),
+        pose_vectors=st.one_of(surface_pose_vectors(), orientation_matrix()),
     )
     def test_sample_count_returns_positive_count_during_burst(
         self,
         sampling_multiplier: float,
         graph_num_nodes: int,
         pose_fully_defined: bool,
+        pose_vectors: SurfacePoseVectors | OrientationMatrix,
     ) -> None:
         """Test sample count with various burst sampling parameters.
 
@@ -247,14 +249,19 @@ class BurstSamplingHypothesesUpdaterTest(TestCase):
         return a positive count based on graph nodes and sampling_multiplier.
 
         The sampling_multiplier is capped at num_hyps_per_node:
-            - 2 for pose_fully_defined=True,
-            - umbilical_num_poses for pose_fully_defined=False
+            - 1 for OrientationMatrix pose vectors,
+            - 2 for SurfacePoseVectors with pose_fully_defined=True,
+            - umbilical_num_poses for SurfacePoseVectors with
+              pose_fully_defined=False
 
         Sample count cannot exceed graph_num_nodes * num_hyps_per_node.
         """
         self.updater.sampling_burst_steps = 3
         self.updater.sampling_multiplier = sampling_multiplier
-        channel_features = {"pose_fully_defined": pose_fully_defined}
+        channel_features = {
+            "pose_fully_defined": pose_fully_defined,
+            "pose_vectors": pose_vectors,
+        }
         num_hyps_per_node = self.updater._num_hyps_per_node(features=channel_features)
 
         self.mock_graph_memory.get_input_channels_in_graph = Mock(
