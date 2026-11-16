@@ -25,6 +25,7 @@ class StateUpdateFields:
             "experiment_name": fields.metadata["experiment_name"],
             "environment_name": fields.metadata["environment_name"],
             "config_path": fields.metadata["config_path"],
+            "output_dir": fields.metadata["output_dir"],
             "experiment_start_time": fields.experiment_start_time.isoformat(),
             "status": fields.status,
             "max_train_steps": fields.limits.max_train_steps,

@@ -284,6 +284,15 @@
                         {% if config_path %}
                         <div class="table-row alt"><span>Config</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ config_path }}</span></div>
                         {% endif %}
+                        {% if output_dir %}
+                        <div class="table-row" id="results-dir"><span>Results</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ output_dir }}</span></div>
+                        {% endif %}
+                        {% if stats_path %}
+                        <div class="table-row alt" id="results-stats"><span>Stats</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ stats_path }}</span></div>
+                        {% endif %}
+                        {% if log_path %}
+                        <div class="table-row" id="results-log"><span>Log</span><span style="font-weight: 600; font-size: 10px; word-break: break-word;">{{ log_path }}</span></div>
+                        {% endif %}
                         {% if model_name %}
                         <div class="table-row"><span>Model</span><span style="font-weight: 600;" title="{{ model_path }}">{{ model_name }}</span></div>
                         {% endif %}

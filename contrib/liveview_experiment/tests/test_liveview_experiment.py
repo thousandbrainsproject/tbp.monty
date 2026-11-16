@@ -30,21 +30,27 @@ class TestExperimentMetadata:
             environment_name="test_env",
             experiment_name="test_experiment",
             config_path="/path/to/config.yaml",
+            output_dir="/results/test_experiment",
         )
         assert metadata.environment_name == "test_env"
         assert metadata.experiment_name == "test_experiment"
         assert metadata.config_path == "/path/to/config.yaml"
+        assert metadata.output_dir == "/results/test_experiment"
 
     def test_metadata_to_dict(self) -> None:
         """Test that metadata converts to dictionary correctly."""
         metadata = ExperimentMetadata(
-            environment_name="env", experiment_name="exp", config_path="/path"
+            environment_name="env",
+            experiment_name="exp",
+            config_path="/path",
+            output_dir="/results",
         )
         result = metadata.to_dict()
         assert result == {
             "environment_name": "env",
             "experiment_name": "exp",
             "config_path": "/path",
+            "output_dir": "/results",
         }
 
     def test_metadata_defaults(self) -> None:
@@ -53,6 +59,7 @@ class TestExperimentMetadata:
         assert metadata.environment_name == ""
         assert metadata.experiment_name == ""
         assert metadata.config_path == ""
+        assert metadata.output_dir == ""
 
 
 class TestMetadataExtractor:
@@ -93,6 +100,19 @@ class TestMetadataExtractor:
         assert metadata.experiment_name == "test_run"
         # config_path may be empty if Hydra not available, which is fine
         assert isinstance(metadata.config_path, str)
+
+    def test_extract_output_dir_from_logging_config(self) -> None:
+        """Test that the run's output directory is the logging config's."""
+        config = {"logging": {"output_dir": "/results/run_with_liveview"}}
+        extractor = MetadataExtractor(config=config, run_name="run")
+        metadata = extractor.extract()
+        assert metadata.output_dir == "/results/run_with_liveview"
+
+    def test_extract_output_dir_when_the_config_has_none(self) -> None:
+        """Test that a config without a logging group says nothing, not a path."""
+        extractor = MetadataExtractor(config={"experiment": {}}, run_name="run")
+        metadata = extractor.extract()
+        assert metadata.output_dir == ""
 
 
 class TestStateNormalization:

@@ -212,11 +212,28 @@ class ExperimentLiveView(LiveView[ExperimentState]):
                 str(state.environment_name) if state.environment_name else ""
             ),
             "config_path": str(state.config_path) if state.config_path else "",
+            "output_dir": str(state.output_dir) if state.output_dir else "",
+            "stats_path": self._results_file(state.output_dir, "eval_stats.csv"),
+            "log_path": self._results_file(state.output_dir, "log.txt"),
             "model_path": str(state.model_path) if state.model_path else "",
             "model_name": self._extract_model_name(state.model_name_or_path),
             "error_message": (str(state.error_message) if state.error_message else ""),
             "setup_message": (str(state.setup_message) if state.setup_message else ""),
         }
+
+    def _results_file(self, output_dir: str, name: str) -> str:
+        """The path of a file the run writes into its own directory.
+
+        Args:
+            output_dir: The run's output directory
+            name: The file's name in it
+
+        Returns:
+            Full path, or empty string when the run's directory is not known
+        """
+        if not output_dir:
+            return ""
+        return str(Path(output_dir) / name)
 
     def _build_numeric_assigns(self, state: ExperimentState) -> dict[str, int]:
         """Build required numeric template assigns (always integers).

@@ -56,6 +56,7 @@ class StateFieldBuilder:
             "experiment_name": safe_str(state.experiment_name),
             "environment_name": safe_str(state.environment_name),
             "config_path": safe_str(state.config_path),
+            "output_dir": safe_str(state.output_dir),
             "model_name_or_path": safe_str(state.model_name_or_path),
             "error_message": safe_str(state.error_message),
             "setup_message": safe_str(state.setup_message),

@@ -28,6 +28,7 @@ class ExperimentMetadata:
         environment_name: str = "",
         experiment_name: str = "",
         config_path: str = "",
+        output_dir: str = "",
     ) -> None:
         """Initialize metadata.
 
@@ -35,10 +36,12 @@ class ExperimentMetadata:
             environment_name: Conda environment name
             experiment_name: Experiment name
             config_path: Path to experiment config file
+            output_dir: Directory the run writes its results into
         """
         self.environment_name = environment_name
         self.experiment_name = experiment_name
         self.config_path = config_path
+        self.output_dir = output_dir
 
     def to_dict(self) -> dict[str, str]:
         """Convert to dictionary.
@@ -50,6 +53,7 @@ class ExperimentMetadata:
             "environment_name": self.environment_name,
             "experiment_name": self.experiment_name,
             "config_path": self.config_path,
+            "output_dir": self.output_dir,
         }
 
 
@@ -77,12 +81,34 @@ class MetadataExtractor:
         environment_name = self._extract_environment_name()
         experiment_name = self._extract_experiment_name()
         config_path = self._extract_config_path()
+        output_dir = self._extract_output_dir()
 
         return ExperimentMetadata(
             environment_name=environment_name,
             experiment_name=experiment_name,
             config_path=config_path,
+            output_dir=output_dir,
         )
+
+    def _extract_output_dir(self) -> str:
+        """Extract the directory this run writes its results into.
+
+        Monty appends the run name to the logging config's `output_dir` before
+        it instantiates the experiment, so the config the experiment is given
+        already names the run's own directory — the one its `eval_stats.csv`
+        and `log.txt` land in.
+
+        Returns:
+            Output directory or empty string
+        """
+        if not self.config:
+            return ""
+
+        logging_config = self.config.get("logging")
+        if logging_config is None:
+            return ""
+
+        return str(logging_config.get("output_dir") or "")
 
     def _extract_environment_name(self) -> str:
         """Extract environment name from environment variables.

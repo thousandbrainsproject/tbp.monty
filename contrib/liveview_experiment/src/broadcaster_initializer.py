@@ -68,6 +68,7 @@ class BroadcasterInitializer:
                 "experiment_name": metadata["experiment_name"],
                 "environment_name": metadata["environment_name"],
                 "config_path": metadata["config_path"],
+                "output_dir": metadata["output_dir"],
                 "experiment_start_time": experiment_start_time.isoformat(),
                 "status": "initializing",
                 "experiment_mode": "train",  # Default mode

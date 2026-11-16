@@ -72,6 +72,9 @@ class TestTemplateParsing:
             "experiment_name": "test_experiment",
             "environment_name": "test_env",
             "config_path": "/path/to/config.yaml",
+            "output_dir": "/results/test_run",
+            "stats_path": "/results/test_run/eval_stats.csv",
+            "log_path": "/results/test_run/log.txt",
             # Status and mode
             "status": "running",
             "status_display": "RUNNING",
@@ -202,11 +205,23 @@ class TestTemplateParsing:
         assigns.pop("environment_name", None)
         assigns.pop("experiment_name", None)
         assigns.pop("config_path", None)
+        assigns.pop("output_dir", None)
+        assigns.pop("stats_path", None)
+        assigns.pop("log_path", None)
 
         # Should still render without errors
         result = template.render(**assigns)
         assert result is not None
         assert isinstance(result, str)
+
+    def test_template_says_where_the_run_wrote_its_results(self) -> None:
+        """Test that the page names the directory and the files a run wrote."""
+        template = self._load_template()
+        html = template.render(**self._create_minimal_template_assigns())
+
+        assert "/results/test_run" in html
+        assert "/results/test_run/eval_stats.csv" in html
+        assert "/results/test_run/log.txt" in html
 
     def test_evidence_point_to_dict_serialization(self) -> None:
         """Test that EvidencePoint.to_dict produces valid JSON-serializable data."""

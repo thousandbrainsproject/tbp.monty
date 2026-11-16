@@ -36,6 +36,7 @@ class ExperimentState:
     experiment_name: str = ""
     environment_name: str = ""  # Conda environment name (e.g., "tbp.monty")
     config_path: str = ""  # Path to the experiment config file
+    output_dir: str = ""  # Directory the run writes its results into
     experiment_start_time: datetime | None = None
     last_update: datetime | None = None
 
