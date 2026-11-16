@@ -256,7 +256,7 @@ class MlhOnModelTest(unittest.TestCase):
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids",
         return_value=[sentinel.graph_id],
     )
-    def test_returns_whether_any_input_channel_is_within_max_match_distance(
+    def test_returns_whether_any_input_channel_graph_nearest_neighbor_is_within_max_match_distance(  # noqa: E501
         self,
         get_all_known_object_ids_mock: MagicMock,  # noqa: ARG002
         get_input_channels_in_graph_mock: MagicMock,
