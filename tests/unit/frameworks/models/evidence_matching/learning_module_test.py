@@ -35,7 +35,7 @@ not_match_terminal_states = st.sampled_from(
 @dataclass
 class GatingCase:
     on_object: bool
-    terminal_state: str | None
+    terminal_state: Literal["match", "no_match", "pose_time_out", "time_out"] | None
     mlh_on_model: bool
 
 
@@ -145,12 +145,9 @@ def mlh_on_model_cases(draw: st.DrawFn) -> MlhOnModelCase:
     within = draw(
         st.lists(distances_within_max_match, min_size=num_within, max_size=num_within)
     )
+    num_beyond = num_channels - num_within
     beyond = draw(
-        st.lists(
-            distances_beyond_max_match,
-            min_size=num_channels - num_within,
-            max_size=num_channels - num_within,
-        )
+        st.lists(distances_beyond_max_match, min_size=num_beyond, max_size=num_beyond)
     )
     distances = draw(st.permutations(within + beyond))
     return MlhOnModelCase(distances=distances, mlh_on_model=num_within > 0)
@@ -207,9 +204,10 @@ class MlhOnModelTest(unittest.TestCase):
         lm = EvidenceGraphLM(
             max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
         )
-        graph_memory_mock = MagicMock()
-        graph_mock = graph_memory_mock.get_graph.return_value
+        graph_mock = MagicMock()
         graph_mock.find_nearest_neighbors.return_value = np.array([0.0])
+        graph_memory_mock = MagicMock()
+        graph_memory_mock.get_graph.return_value = graph_mock
         lm.graph_memory = graph_memory_mock
         mlh_location_sentinel = np.array([1.0, 2.0, 3.0])
 
