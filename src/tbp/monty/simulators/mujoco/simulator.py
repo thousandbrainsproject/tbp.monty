@@ -9,9 +9,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, Sequence
+from typing import TYPE_CHECKING, Any, Protocol, Self, override
 
 from mujoco import (
     MjData,
@@ -25,7 +26,6 @@ from mujoco import (
     mjtTexture,
     mjtTextureRole,
 )
-from typing_extensions import Self, override
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -510,7 +510,7 @@ class MuJoCoSimulator(SimulatedObjectEnvironment):
             rotation: Initial orientation of the object.
             scale: Initial scale of the object.
         """
-        # In Habitat, the capsule is initially oriented with the round portions at the
+        # In Habitat, the capsule was initially oriented with the round portions at the
         # top and bottom along the vertical Y axis. MuJoCo places the capsule with the
         # round ends pointing towards and away from the agent along the Z axis.
         # To mimic Habitat's behaviour, we need to rotate the primitive object to

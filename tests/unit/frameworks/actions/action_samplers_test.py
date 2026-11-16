@@ -11,9 +11,9 @@
 from __future__ import annotations
 
 import unittest
+from typing import Protocol
 
 from numpy.random import RandomState
-from typing_extensions import Protocol
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ActionSampler,

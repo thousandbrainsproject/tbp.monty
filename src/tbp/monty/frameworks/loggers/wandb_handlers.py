@@ -10,12 +10,12 @@
 from __future__ import annotations
 
 import json
+from typing import override
 
 import numpy as np
 import pandas as pd
 import wandb
 from omegaconf import DictConfig
-from typing_extensions import override
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler

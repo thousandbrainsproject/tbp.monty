@@ -9,8 +9,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, ClassVar, Iterable, Literal, Sequence
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 import numpy.typing as npt

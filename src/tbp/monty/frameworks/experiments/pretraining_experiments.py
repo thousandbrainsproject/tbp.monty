@@ -51,21 +51,13 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         super().setup_experiment(config)
         if "agents" in config["environment"]["env_init_args"]:
             agents_config = config["environment"]["env_init_args"]["agents"]
-            # Habitat agents are configured using `agent_args`.
-            # The way we configure Habitat agents only allows for one agent.
-            if "agent_args" in agents_config:
-                self.sensor_pos = np.array(agents_config["agent_args"]["positions"])
-            else:
-                # MuJoCo agents are configured using a list of partially applied
-                # agent constructors.
-                # TODO: support more than one agent, this assumes there's only one.
-
-                # Introspect the first agent partial to determine what the
-                # original sensor positions were.
-                sensor_cfgs = agents_config[0].keywords["sensor_configs"]
-                self.sensor_pos = np.array(
-                    [sensor["position"] for sensor in sensor_cfgs.values()]
-                )
+            # Introspect the first agent partial to determine what the
+            # original sensor positions were.
+            # TODO: Support more than one agent, this assumes there's only one.
+            sensor_cfgs = agents_config[0].keywords["sensor_configs"]
+            self.sensor_pos = np.array(
+                [sensor["position"] for sensor in sensor_cfgs.values()]
+            )
         else:
             self.sensor_pos = np.array([0, 0, 0])
 
@@ -88,9 +80,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         if set(self.supervised_lm_ids) == set(all_lm_ids):
             self.model.switch_to_exploratory_step()
 
-    def post_episode(self, steps) -> None:
+    def post_episode(self) -> None:
         self._pass_target_info_to_model()
-        return super().post_episode(steps)
+        return super().post_episode()
 
     def _pass_target_info_to_model(self) -> None:
         # Pass target info to model --> will overwrite (where specified)

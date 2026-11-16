@@ -14,7 +14,8 @@ import dataclasses
 import json
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Literal, Sequence
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 import numpy as np
 import numpy.typing as npt

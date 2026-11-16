@@ -8,12 +8,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from collections.abc import Mapping
 from contextlib import contextmanager
 from http.server import HTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory as TempDir
 from threading import Thread
-from typing import Mapping
 
 import pytest
 import requests

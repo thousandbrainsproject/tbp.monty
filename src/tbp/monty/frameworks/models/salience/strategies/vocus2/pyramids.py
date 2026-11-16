@@ -8,8 +8,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
-from typing import Callable, Iterator, Protocol, Sequence
+from typing import Protocol
 
 import cv2
 import numpy as np
@@ -286,7 +287,7 @@ def pyramid_combine(
         raise ValueError("All pyramids must have the same shape")
     pyr_size = pyr_arrays[0].size
     planes = np.zeros(pyr_size, dtype=object)
-    for i, images in enumerate(zip(*[pyr.flat for pyr in pyramids])):
+    for i, images in enumerate(zip(*[pyr.flat for pyr in pyramids], strict=True)):
         planes[i] = reduce(images)
 
     return Pyramid(planes.reshape(pyr_shape))

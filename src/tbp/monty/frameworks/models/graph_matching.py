@@ -10,7 +10,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Collection, Sequence
+from collections.abc import Collection, Sequence
+from typing import Any
 
 import numpy as np
 import torch

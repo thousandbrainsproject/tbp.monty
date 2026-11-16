@@ -14,8 +14,12 @@ from unittest.mock import MagicMock
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tbp.monty.experiment.recognition_policy import (
-    AnyPolicy,
+from tbp.monty.experiment.recognition_status import (
+    RecognitionConclusion,
+    RecognitionStatus,
+)
+from tbp.monty.experiment.recognition_strategy import (
+    Any,
     MatchCriteria,
     MaximumSteps,
     MaxTotalSteps,
@@ -24,21 +28,17 @@ from tbp.monty.experiment.recognition_policy import (
     MontyIsDone,
     NaiveScan,
     ObjectRecognition,
-    RecognitionCounter,
-    RecognitionPolicy,
+    RecognitionContext,
     RecognitionResult,
+    RecognitionStrategy,
     StepLimit,
-)
-from tbp.monty.experiment.recognition_status import (
-    RecognitionConclusion,
-    RecognitionStatus,
 )
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 
 
 @st.composite
-def ascending_ints(draw: st.DrawFn, min_value: int):
+def ascending_ints(draw: st.DrawFn, min_value: int) -> tuple[int, int]:
     a = draw(st.integers(min_value=min_value))
     b = draw(st.integers(min_value=a + 1))
     return (a, b)
@@ -94,9 +94,9 @@ class MontyIsDoneTest(unittest.TestCase):
     )
     def test_defers_to_model_regardless_of_step(self, is_done: bool, step: int) -> None:
         model = _model_is_done(is_done)
-        policy = MontyIsDone()
-        count = RecognitionCounter(step)
-        result = policy(model, count)
+        strategy = MontyIsDone()
+        ctx = RecognitionContext(step)
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, is_done)
 
 
@@ -142,25 +142,25 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
         wrapped = MagicMock(
-            RecognitionPolicy,
+            RecognitionStrategy,
             return_value=RecognitionResult(
                 is_done=True,
                 time_out_lms=time_out_lms,
                 start_exploring=start_exploring,
             ),
         )
-        policy = MinEvalMaxTotalSteps(
+        strategy = MinEvalMaxTotalSteps(
             wrapped,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
         )
         model = _model_is_done(is_done=False)
-        count = RecognitionCounter(
+        ctx = RecognitionContext(
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        result = policy(model, count)
-        wrapped.assert_called_once_with(model, count)
+        result = strategy(ctx, model)
+        wrapped.assert_called_once_with(ctx, model)
         is_done = matching_steps >= min_eval_steps
         self.assertEqual(
             result, RecognitionResult(is_done, time_out_lms, start_exploring)
@@ -179,24 +179,24 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
     ) -> None:
         (max_total_steps, step) = step_asc
         wrapped = MagicMock(
-            RecognitionPolicy,
+            RecognitionStrategy,
             return_value=RecognitionResult(
                 is_done=False, time_out_lms=False, start_exploring=start_exploring
             ),
         )
-        policy = MinEvalMaxTotalSteps(
+        strategy = MinEvalMaxTotalSteps(
             wrapped,
             min_eval_steps=max_total_steps,
             max_total_steps=max_total_steps,
         )
         model = _model_is_done(is_done=False)
-        count = RecognitionCounter(
+        ctx = RecognitionContext(
             step=step,
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        result = policy(model, count)
-        wrapped.assert_called_once_with(model, count)
+        result = strategy(ctx, model)
+        wrapped.assert_called_once_with(ctx, model)
         is_done = step >= max_total_steps
         self.assertEqual(result, RecognitionResult(is_done, is_done, start_exploring))
 
@@ -217,21 +217,21 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
     ) -> None:
         (min_eval_steps, max_total_steps) = limit_asc
         wrapped = MagicMock(
-            RecognitionPolicy,
+            RecognitionStrategy,
             return_value=RecognitionResult(is_done, time_out_lms, start_exploring),
         )
-        policy = MinEvalMaxTotalSteps(
+        strategy = MinEvalMaxTotalSteps(
             wrapped,
             min_eval_steps=min_eval_steps,
             max_total_steps=max_total_steps,
         )
         model = _model_is_done(is_done=True)
-        count = RecognitionCounter(
+        ctx = RecognitionContext(
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        result = policy(model, count)
-        wrapped.assert_called_once_with(model, count)
+        result = strategy(ctx, model)
+        wrapped.assert_called_once_with(ctx, model)
         self.assertEqual(
             result,
             RecognitionResult(
@@ -258,9 +258,9 @@ class MaxTotalStepsTest(unittest.TestCase):
         self, step: int, max_total_steps: int
     ) -> None:
         model = MagicMock()
-        policy = MaxTotalSteps(max_total_steps)
-        count = RecognitionCounter(step)
-        result = policy(model, count)
+        strategy = MaxTotalSteps(max_total_steps)
+        ctx = RecognitionContext(step)
+        result = strategy(ctx, model)
         is_done = step >= max_total_steps
         self.assertEqual(result.is_done, is_done)
         model.assert_not_called()
@@ -296,9 +296,9 @@ class MaximumStepsTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done, is_exploring=False, matching_steps=matching_steps
         )
-        policy = MaximumSteps(max_steps, max_steps)
-        count = RecognitionCounter()
-        result = policy(model, count)
+        strategy = MaximumSteps(max_steps, max_steps)
+        ctx = RecognitionContext()
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
 
@@ -316,9 +316,9 @@ class MaximumStepsTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=is_done, is_exploring=True, matching_steps=matching_steps
         )
-        policy = MaximumSteps(max_steps, max_steps)
-        count = RecognitionCounter()
-        result = policy(model, count)
+        strategy = MaximumSteps(max_steps, max_steps)
+        ctx = RecognitionContext()
+        result = strategy(ctx, model)
         self.assertFalse(result.is_done)
 
     @given(
@@ -338,9 +338,9 @@ class MaximumStepsTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=matching_steps
         )
-        policy = MaximumSteps(max_train_steps, max_eval_steps)
-        count = RecognitionCounter(mode=mode)
-        result = policy(model, count)
+        strategy = MaximumSteps(max_train_steps, max_eval_steps)
+        ctx = RecognitionContext(mode=mode)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
 
@@ -386,9 +386,9 @@ class StepLimitTest(unittest.TestCase):
         max_steps: int,
     ) -> None:
         model = _model_with_step_type("matching_step")
-        policy = StepLimit(max_train_steps=max_steps, max_eval_steps=max_steps)
-        count = RecognitionCounter(matching_steps=matching_steps, mode=mode)
-        result = policy(model, count)
+        strategy = StepLimit(max_train_steps=max_steps, max_eval_steps=max_steps)
+        ctx = RecognitionContext(matching_steps=matching_steps, mode=mode)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -408,12 +408,12 @@ class StepLimitTest(unittest.TestCase):
     ) -> None:
         max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
         model = _model_with_step_type()
-        policy = StepLimit(
+        strategy = StepLimit(
             max_train_steps=max_train_steps,
             max_eval_steps=max_eval_steps,
         )
-        count = RecognitionCounter(matching_steps=matching_steps, mode=mode)
-        result = policy(model, count)
+        ctx = RecognitionContext(matching_steps=matching_steps, mode=mode)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -428,11 +428,11 @@ class StepLimitTest(unittest.TestCase):
         num_exploring_steps: int,
     ) -> None:
         model = _model_with_step_type("exploratory_step")
-        policy = StepLimit(num_exploring_steps=num_exploring_steps)
-        count = RecognitionCounter(
+        strategy = StepLimit(num_exploring_steps=num_exploring_steps)
+        ctx = RecognitionContext(
             exploring_steps=exploring_steps, mode=ExperimentMode.TRAIN
         )
-        result = policy(model, count)
+        result = strategy(ctx, model)
         is_done = exploring_steps >= num_exploring_steps
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -448,15 +448,15 @@ class StepLimitTest(unittest.TestCase):
     ) -> None:
         (min_train_steps, matching_steps) = match_asc
         model = _model_with_step_type()
-        policy = StepLimit(
+        strategy = StepLimit(
             min_train_steps=min_train_steps,
             max_train_steps=max_train_steps,
         )
-        count = RecognitionCounter(
+        ctx = RecognitionContext(
             matching_steps=matching_steps,
             mode=ExperimentMode.TRAIN,
         )
-        result = policy(model, count)
+        result = strategy(ctx, model)
         self.assertTrue(result.start_exploring)
         is_done = matching_steps >= max_train_steps
         self.assertEqual(result.is_done, is_done)
@@ -471,9 +471,9 @@ class MatchCriteriaTest(unittest.TestCase):
         model = MagicMock()
         model._match_criterion = MagicMock(return_value=is_done)
         model.learning_modules = []
-        policy = MatchCriteria()
-        count = RecognitionCounter()
-        result = policy(model, count)
+        strategy = MatchCriteria()
+        ctx = RecognitionContext()
+        result = strategy(ctx, model)
         model._match_criterion.assert_called_once()
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
@@ -499,9 +499,9 @@ class MinimumLMsTest(unittest.TestCase):
         num_pending = conclusions.count(None)
         num_concluded = len(conclusions) - num_pending
         model = _model_with_conclusions(conclusions)
-        policy = MinimumLMs(min_lms)
-        count = RecognitionCounter()
-        result = policy(model, count)
+        strategy = MinimumLMs(min_lms)
+        ctx = RecognitionContext()
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, num_concluded >= min_lms)
 
 
@@ -516,18 +516,18 @@ class NaiveScanTest(unittest.TestCase):
     @given(step=st.integers(min_value=0))
     def test_fixed_amount_5_yields_307_steps(self, step: int) -> None:
         model = _model_is_done(is_done=False)
-        policy = NaiveScan(fixed_amount=5)
-        count = RecognitionCounter(step)
-        result = policy(model, count)
+        strategy = NaiveScan(fixed_amount=5)
+        ctx = RecognitionContext(step)
+        result = strategy(ctx, model)
         is_done = step >= 307
         self.assertEqual(result.is_done, is_done)
 
     @given(fixed_amount=st.integers(min_value=1, max_value=100))
     def test_step_limit_less_than_10000(self, fixed_amount: int) -> None:
         model = _model_is_done(is_done=False)
-        policy = NaiveScan(fixed_amount)
-        count = RecognitionCounter(step=10000)
-        result = policy(model, count)
+        strategy = NaiveScan(fixed_amount)
+        ctx = RecognitionContext(step=10000)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
 
 
@@ -572,9 +572,9 @@ class ObjectRecognitionTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=matching_steps
         )
-        policy = ObjectRecognition(max_steps, max_steps, max_total_steps)
-        count = RecognitionCounter(step)
-        result = policy(model, count)
+        strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
+        ctx = RecognitionContext(step)
+        result = strategy(ctx, model)
         is_done = matching_steps >= max_steps
         self.assertEqual(result.is_done, is_done)
 
@@ -587,15 +587,15 @@ class ObjectRecognitionTest(unittest.TestCase):
         self, mode: ExperimentMode, max_train_steps: int, max_eval_steps: int
     ) -> None:
         max_steps = max_train_steps if mode is ExperimentMode.TRAIN else max_eval_steps
-        policy = ObjectRecognition(max_train_steps, max_eval_steps, 5000)
+        strategy = ObjectRecognition(max_train_steps, max_eval_steps, 5000)
         at_limit = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=max_steps
         )
-        self.assertTrue(policy(at_limit, RecognitionCounter(mode=mode)).is_done)
+        self.assertTrue(strategy(RecognitionContext(mode=mode), at_limit).is_done)
         before_limit = _model_with_recognition(
             is_done=False, is_exploring=False, matching_steps=max_steps - 1
         )
-        self.assertFalse(policy(before_limit, RecognitionCounter(mode=mode)).is_done)
+        self.assertFalse(strategy(RecognitionContext(mode=mode), before_limit).is_done)
 
     @given(
         max_total_steps=st.integers(min_value=1),
@@ -614,9 +614,9 @@ class ObjectRecognitionTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=False, is_exploring=is_exploring, matching_steps=matching_steps
         )
-        policy = ObjectRecognition(max_steps, max_steps, max_total_steps)
-        count = RecognitionCounter(max_total_steps + extra)
-        result = policy(model, count)
+        strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
+        ctx = RecognitionContext(max_total_steps + extra)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
 
     @given(
@@ -637,75 +637,77 @@ class ObjectRecognitionTest(unittest.TestCase):
         model = _model_with_recognition(
             is_done=is_done, is_exploring=is_exploring, matching_steps=matching_steps
         )
-        policy = ObjectRecognition(max_steps, max_steps, max_total_steps)
-        count = RecognitionCounter(step)
-        result = policy(model, count)
+        strategy = ObjectRecognition(max_steps, max_steps, max_total_steps)
+        ctx = RecognitionContext(step)
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, is_done)
 
 
 @st.composite
-def policies_with_done_index(draw: st.DrawFn) -> tuple[list[MagicMock], int | None]:
-    num_policies = draw(st.integers(min_value=1, max_value=10))
+def strategies_with_done_index(draw: st.DrawFn) -> tuple[list[MagicMock], int | None]:
+    num_strategies = draw(st.integers(min_value=1, max_value=10))
     done_index = draw(
-        st.one_of(st.none(), st.integers(min_value=0, max_value=num_policies - 1))
+        st.one_of(st.none(), st.integers(min_value=0, max_value=num_strategies - 1))
     )
-    policies = [
+    strategies = [
         MagicMock(
-            RecognitionPolicy, return_value=RecognitionResult(is_done=i == done_index)
+            RecognitionStrategy, return_value=RecognitionResult(is_done=i == done_index)
         )
-        for i in range(num_policies)
+        for i in range(num_strategies)
     ]
-    return (policies, done_index)
+    return (strategies, done_index)
 
 
-class AnyPolicyTest(unittest.TestCase):
-    def test_raises_value_error_if_policies_are_empty(self) -> None:
+class AnyTest(unittest.TestCase):
+    def test_raises_value_error_if_strategies_are_empty(self) -> None:
         with self.assertRaises(ValueError):
-            AnyPolicy([])
+            Any([])
 
-    @given(policies_and_done_index=policies_with_done_index())
-    def test_stops_at_first_policy_that_is_done(
-        self, policies_and_done_index: tuple[list[MagicMock], int | None]
+    @given(strategies_and_done_index=strategies_with_done_index())
+    def test_stops_at_first_strategy_that_is_done(
+        self, strategies_and_done_index: tuple[list[MagicMock], int | None]
     ) -> None:
-        (policies, done_index) = policies_and_done_index
+        (strategies, done_index) = strategies_and_done_index
         model = MagicMock()
-        policy = AnyPolicy(policies)
-        count = RecognitionCounter()
-        result = policy(model, count)
+        strategy = Any(strategies)
+        ctx = RecognitionContext()
+        result = strategy(ctx, model)
         self.assertEqual(result.is_done, done_index is not None)
-        num_called = len(policies) if done_index is None else done_index + 1
-        for called in policies[:num_called]:
+        num_called = len(strategies) if done_index is None else done_index + 1
+        for called in strategies[:num_called]:
             called.assert_called_once()
-        for not_called in policies[num_called:]:
+        for not_called in strategies[num_called:]:
             not_called.assert_not_called()
         model.assert_not_called()
 
     def test_recognition_result_aggregation(self) -> None:
-        default_result = MagicMock(RecognitionPolicy, return_value=RecognitionResult())
+        default_result = MagicMock(
+            RecognitionStrategy, return_value=RecognitionResult()
+        )
         is_done_result = MagicMock(
-            RecognitionPolicy, return_value=RecognitionResult(is_done=True)
+            RecognitionStrategy, return_value=RecognitionResult(is_done=True)
         )
         time_out_lms_result = MagicMock(
-            RecognitionPolicy, return_value=RecognitionResult(time_out_lms=True)
+            RecognitionStrategy, return_value=RecognitionResult(time_out_lms=True)
         )
         start_exploring_result = MagicMock(
-            RecognitionPolicy, return_value=RecognitionResult(start_exploring=True)
+            RecognitionStrategy, return_value=RecognitionResult(start_exploring=True)
         )
         is_done_time_out_lms_result = MagicMock(
-            RecognitionPolicy,
+            RecognitionStrategy,
             return_value=RecognitionResult(is_done=True, time_out_lms=True),
         )
 
         model = MagicMock()
-        count = RecognitionCounter()
+        ctx = RecognitionContext()
 
-        policy = AnyPolicy([default_result])
-        result = policy(model, count)
+        strategy = Any([default_result])
+        result = strategy(ctx, model)
         self.assertFalse(result.is_done)
         self.assertFalse(result.time_out_lms)
         self.assertFalse(result.start_exploring)
 
-        policy = AnyPolicy(
+        strategy = Any(
             [
                 start_exploring_result,
                 is_done_result,
@@ -713,12 +715,12 @@ class AnyPolicyTest(unittest.TestCase):
                 default_result,
             ]
         )
-        result = policy(model, count)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
         self.assertFalse(result.time_out_lms)
         self.assertTrue(result.start_exploring)
 
-        policy = AnyPolicy(
+        strategy = Any(
             [
                 default_result,
                 time_out_lms_result,
@@ -726,7 +728,7 @@ class AnyPolicyTest(unittest.TestCase):
                 is_done_time_out_lms_result,
             ]
         )
-        result = policy(model, count)
+        result = strategy(ctx, model)
         self.assertTrue(result.is_done)
         self.assertTrue(result.time_out_lms)
         self.assertTrue(result.start_exploring)

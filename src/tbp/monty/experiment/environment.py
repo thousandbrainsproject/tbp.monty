@@ -11,8 +11,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping, Sequence
 from pprint import pformat
-from typing import Mapping, Sequence, cast
+from typing import cast
 
 import numpy as np
 from omegaconf import ListConfig
@@ -286,7 +287,7 @@ class OneObjectPerEpisodeInterface(Interface):
     def create_semantic_mapping(self):
         """Create a unique semantic ID (positive integer) for each object.
 
-        Used by Habitat for the semantic sensor.
+        Used by the simulator for the semantic sensor.
 
         In addition, create a dictionary mapping back and forth between these IDs and
         the corresponding name of the object
@@ -296,7 +297,7 @@ class OneObjectPerEpisodeInterface(Interface):
         )
 
         starting_integer = 1  # Start at 1 so that we can distinguish on-object semantic
-        # IDs (>0) from being off object (semantic_id == 0 in Habitat by default)
+        # IDs (>0) from being off object (semantic_id == 0 in the simulator by default)
         self.semantic_id_to_label = {
             SemanticID(i + starting_integer): label
             for i, label in enumerate(self.source_object_list)

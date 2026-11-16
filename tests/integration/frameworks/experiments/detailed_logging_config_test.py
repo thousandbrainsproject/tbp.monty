@@ -30,7 +30,7 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
             self.cfg = hydra.compose(
                 config_name="experiment",
                 overrides=[
-                    "experiment=test/evidence_lm/base_mujoco",
+                    "experiment=test/evidence_lm/base",
                     "logging=detailed_info_evidence_eval_runs",
                     f"++experiment.config.logging.output_dir={self.output_dir}",
                 ],

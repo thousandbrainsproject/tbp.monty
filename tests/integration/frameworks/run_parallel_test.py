@@ -9,20 +9,11 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import pytest
-
-from tbp.monty.hydra import instantiate_experiment
-from tests import HYDRA_ROOT
-
-pytest.importorskip(
-    "habitat_sim",
-    reason="Habitat Sim optional dependency not installed.",
-)
-
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from typing import ClassVar
 
 import hydra
 import pandas as pd
@@ -30,12 +21,45 @@ import torch
 from omegaconf import DictConfig
 
 from tbp.monty.frameworks.run_parallel import main
+from tbp.monty.hydra import instantiate_experiment
+from tests import HYDRA_ROOT
 
 
 class RunParallelTest(unittest.TestCase):
-    def setUp(self):
-        self.output_dir = Path(tempfile.mkdtemp())
+    """Tests for the run_parallel functionality.
 
+    This suite of tests verifies that running experiment episodes serially results
+    in the same output as running the experiment episodes in parallel, under various
+    scenarios.
+    """
+
+    output_dir: ClassVar[Path]
+    supervised_pre_training_cfg: ClassVar[DictConfig]
+    eval_cfg: ClassVar[DictConfig]
+    eval_lt_cfg: ClassVar[DictConfig]
+    eval_gt_cfg: ClassVar[DictConfig]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.output_dir = Path(tempfile.mkdtemp())
+
+        cls._load_hydra_configs()
+
+        # Run the training experiments once for this whole test suite.
+        # serial run
+        exp = instantiate_experiment(cls.supervised_pre_training_cfg.experiment)
+        with exp:
+            exp.run()
+
+        # parallel run
+        main(cls.supervised_pre_training_cfg)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.output_dir)
+
+    @classmethod
+    def _load_hydra_configs(cls) -> None:
         def hydra_config(
             test_name: str, output_dir: Path, model_name_or_path: Path | None = None
         ) -> DictConfig:
@@ -51,33 +75,21 @@ class RunParallelTest(unittest.TestCase):
             return hydra.compose(config_name="experiment", overrides=overrides)
 
         with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
-            self.supervised_pre_training_cfg = hydra_config(
-                "supervised_pre_training", self.output_dir
+            cls.supervised_pre_training_cfg = hydra_config(
+                "supervised_pre_training", cls.output_dir
             )
-            self.eval_cfg = hydra_config(
+            cls.eval_cfg = hydra_config(
                 "eval",
-                output_dir=self.output_dir / "eval",
-                model_name_or_path=self.output_dir / "pretrained",
+                output_dir=cls.output_dir / "eval",
+                model_name_or_path=cls.output_dir / "pretrained",
             )
-            self.eval_lt_cfg = hydra_config("eval_lt", self.output_dir / "lt")
-            self.eval_gt_cfg = hydra_config("eval_gt", self.output_dir / "gt")
+            cls.eval_lt_cfg = hydra_config("eval_lt", cls.output_dir / "lt")
+            cls.eval_gt_cfg = hydra_config("eval_gt", cls.output_dir / "gt")
 
-    def test_run_parallel_equals_serial_for_various_n_eval_epochs(self):
-        # serial run
-        cfg = self.supervised_pre_training_cfg
-        exp = instantiate_experiment(cfg.experiment)
-        with exp:
-            exp.run()
-
-        # parallel run
-        main(cfg)
-
-        ###
-        # Compare results
-        ###
+    def test_run_parallel_equals_serial_for_training(self) -> None:
         parallel_model = torch.load(
             self.output_dir
-            / cfg.experiment.config.logging.run_name
+            / self.supervised_pre_training_cfg.experiment.config.logging.run_name
             / "pretrained"
             / "model.pt",
             weights_only=False,
@@ -111,9 +123,7 @@ class RunParallelTest(unittest.TestCase):
             ].num_nodes,
         )
 
-        ###
-        # n_eval_epochs == len(eval_rotations)
-        ###
+    def test_eval_parallel_equals_serial_when_epochs_equals_rotations(self) -> None:
         # serial run
         exp = instantiate_experiment(self.eval_cfg.experiment)
         with exp:
@@ -122,9 +132,6 @@ class RunParallelTest(unittest.TestCase):
         # parallel run
         main(self.eval_cfg)
 
-        ###
-        # Compare results
-        ###
         eval_dir = self.output_dir / "eval"
         parallel_eval_dir = eval_dir / "test_eval"
 
@@ -147,9 +154,7 @@ class RunParallelTest(unittest.TestCase):
 
         self.assertTrue(pcsv.equals(scsv))
 
-        ###
-        # n_eval_epochs < len(eval_rotations)
-        ###
+    def test_eval_parallel_equals_serial_when_epochs_less_than_rotations(self) -> None:
         # serial run
         exp = instantiate_experiment(self.eval_lt_cfg.experiment)
         with exp:
@@ -165,14 +170,16 @@ class RunParallelTest(unittest.TestCase):
         pcsv_lt = pd.read_csv(parallel_eval_dir_lt / "eval_stats.csv")
 
         # Remove columns that are not the same in the parallel and serial runs.
+        # See comment in test_eval_parallel_equals_serial_when_epochs_equals_rotations.
+        drop_cols = ["time", "stepwise_performance", "stepwise_target_object"]
         scsv_lt = scsv_lt.drop(columns=drop_cols)
         pcsv_lt = pcsv_lt.drop(columns=drop_cols)
 
         self.assertTrue(pcsv_lt.equals(scsv_lt))
 
-        ###
-        # n_eval_epochs > len(eval_rotations)
-        ###
+    def test_eval_parallel_equals_serial_when_epochs_greater_than_rotations(
+        self,
+    ) -> None:
         # serial run
         exp = instantiate_experiment(self.eval_gt_cfg.experiment)
         with exp:
@@ -187,9 +194,10 @@ class RunParallelTest(unittest.TestCase):
         scsv_gt = pd.read_csv(eval_dir_gt / "eval_stats.csv")
         pcsv_gt = pd.read_csv(parallel_eval_dir_gt / "eval_stats.csv")
 
+        # Remove columns that are not the same in the parallel and serial runs.
+        # See comment in test_eval_parallel_equals_serial_when_epochs_equals_rotations.
+        drop_cols = ["time", "stepwise_performance", "stepwise_target_object"]
         scsv_gt = scsv_gt.drop(columns=drop_cols)
         pcsv_gt = pcsv_gt.drop(columns=drop_cols)
 
         self.assertTrue(pcsv_gt.equals(scsv_gt))
-
-        shutil.rmtree(self.output_dir)

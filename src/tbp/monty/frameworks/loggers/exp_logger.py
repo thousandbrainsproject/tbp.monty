@@ -10,8 +10,7 @@
 
 import json
 from pathlib import Path
-
-from typing_extensions import override
+from typing import override
 
 """
 Based on https://github.com/huggingface/transformers/blob/1438c487df5ce38a7b2ae30877b3074b96a423dd/src/transformers/trainer_callback.py

@@ -271,26 +271,30 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
             assert sim.spec.mesh(geom0.meshname) is not None
 
     def test_custom_object_with_no_data_path(self):
-        with MuJoCoSimulator(data_path=None) as sim, pytest.raises(
-            DataPathNotConfigured
+        with (
+            MuJoCoSimulator(data_path=None) as sim,
+            pytest.raises(DataPathNotConfigured),
         ):
             sim.add_object("valid_object")
 
     def test_custom_object_missing(self) -> None:
-        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
-            UnknownObjectType
+        with (
+            MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim,
+            pytest.raises(UnknownObjectType),
         ):
             sim.add_object("invalid_object")
 
     def test_custom_object_missing_texture(self) -> None:
-        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
-            MissingObjectTexture
+        with (
+            MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim,
+            pytest.raises(MissingObjectTexture),
         ):
             sim.add_object("missing_texture")
 
     def test_custom_object_missing_model(self) -> None:
-        with MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim, pytest.raises(
-            MissingObjectModel
+        with (
+            MuJoCoSimulator(data_path=CUSTOM_OBJECT_DATA_PATH) as sim,
+            pytest.raises(MissingObjectModel),
         ):
             sim.add_object("missing_model")
 

@@ -188,7 +188,7 @@ class ObservationProcessor:
         """Processes observation.
 
         Args:
-            observation: Habitat observation.
+            observation: sensor observation.
 
         Returns:
             A Percept.

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, NewType, Protocol
+from typing import NewType, Protocol
 
 import cv2
 import numpy as np
@@ -34,7 +34,7 @@ from tbp.monty.frameworks.models.salience.strategies.vocus2.pyramids import (
 
 logger = logging.getLogger(__name__)
 
-FeatureMaps = NewType("FeatureMaps", Dict[str, npt.NDArray[np.float32]])
+FeatureMaps = NewType("FeatureMaps", dict[str, npt.NDArray[np.float32]])
 
 
 class MapCombine(Protocol):

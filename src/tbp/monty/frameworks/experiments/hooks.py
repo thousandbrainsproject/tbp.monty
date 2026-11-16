@@ -8,9 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Protocol
-
-from typing_extensions import Self
+from typing import Protocol, Self
 
 from tbp.monty.context import RuntimeContext
 from tbp.monty.frameworks.actions.actions import Action

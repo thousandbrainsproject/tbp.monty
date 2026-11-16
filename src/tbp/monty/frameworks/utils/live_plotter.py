@@ -230,7 +230,7 @@ class LivePlotter:
             new_text += f"with evidence {np.round(evidences[top_indices[1]], 2)}\n\n"
 
         new_text += r"$\bf{Possible}$ $\bf{matches:}$"
-        for gid, ev in zip(graph_ids, evidences):
+        for gid, ev in zip(graph_ids, evidences, strict=True):
             if gid in possible_matches:
                 new_text += f"\n{gid}: {np.round(ev, 1)}"
 

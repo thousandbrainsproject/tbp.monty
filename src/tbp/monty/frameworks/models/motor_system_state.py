@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.sensors import SensorID
@@ -42,7 +42,7 @@ class AgentState:
     """The agent's rotation."""
 
 
-class ProprioceptiveState(Dict[AgentID, AgentState]):
+class ProprioceptiveState(dict[AgentID, AgentState]):
     """The proprioceptive state of the motor system.
 
     When part of a ProprioceptiveState, the AgentState's position and rotation are
@@ -50,7 +50,7 @@ class ProprioceptiveState(Dict[AgentID, AgentState]):
     """
 
 
-class MotorSystemState(Dict[AgentID, AgentState]):
+class MotorSystemState(dict[AgentID, AgentState]):
     """The state of the motor system.
 
     TODO: Currently, ProprioceptiveState can be cast to MotorSystemState since

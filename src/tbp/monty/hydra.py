@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import contextlib
 import importlib
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Mapping
+from typing import TYPE_CHECKING, Any
 
 import hydra
 import numpy as np
