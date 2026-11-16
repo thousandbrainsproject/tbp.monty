@@ -337,7 +337,7 @@ class EvidenceGraphLM(GraphLM):
         self.current_mlh = {
             "graph_id": "no_observations_yet",
             "mlh_id": None,
-            "location": [0, 0, 0],
+            "location": np.zeros(3, dtype=np.float64),
             "rotation": Rotation.from_euler("xyz", [0, 0, 0]),
             "scale": 1,
             "evidence": 0,
@@ -1193,7 +1193,7 @@ class EvidenceGraphLM(GraphLM):
         graph_id, location = mlh["graph_id"], mlh["location"]
         if location is None or graph_id not in self.get_all_known_object_ids():
             return False
-        query = np.asarray(location, dtype=float).reshape(1, 3)
+        query = location.reshape(1, 3)
         distances = [
             self.graph_memory.get_graph(graph_id, channel).find_nearest_neighbors(
                 query, num_neighbors=1, return_distance=True
