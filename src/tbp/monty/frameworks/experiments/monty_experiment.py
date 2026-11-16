@@ -622,8 +622,9 @@ class MontyExperiment:
         logger we have already updated the target to graph mapping and will never
         get 'confused'/'FP'.
         """
-        self.logger_handler.post_episode(self.logger_args)
-        self.episode_telemetry.post_episode(self.logger_args, self.model)
+        logger_args = self.logger_args
+        self.logger_handler.post_episode(logger_args)  # TODO: remove!
+        self.episode_telemetry.post_episode(logger_args, self.model)
 
         self.model.update_ltm()
         self._snapshot_monty()

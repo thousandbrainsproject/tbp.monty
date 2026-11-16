@@ -10,36 +10,44 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path  # noqa: TC003
-from typing import ClassVar, Dict, Mapping, Sequence, Type
+from collections.abc import Sequence
+from pathlib import Path
+from pprint import pprint  # TODO: remove!
+from typing import Any, ClassVar
 
 import numpy as np
 import wandb
+from deepdiff import DeepDiff  # TODO: remove!
 from sklearn.preprocessing import LabelEncoder
 
 from tbp.monty import telemetry
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.experiments import monty_experiment
+from tbp.monty.frameworks.experiments.logger_args import LoggerArgs
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.loggers.monty_handlers import MontyHandler
 from tbp.monty.frameworks.models import graph_matching
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.logging_utils import target_data_to_dict
-from tbp.monty.telemetry.publishers import TelemetryPublisher
 from tbp.monty.telemetry.episode.schemas import (
     EpisodeStatsTelemetry,
     LMRecognitionStateTelemetry,
     LMStateTelemetry,
     LMTelemetryModel,
+    TerminalState,
 )
 from tbp.monty.telemetry.episode.stats import GraphLMStats
+from tbp.monty.telemetry.publishers import TelemetryPublisher
 from tbp.monty.telemetry.schemas import TelemetryEvent, TelemetrySchema
 from tbp.monty.telemetry.subscribers2 import TelemetrySubscriber
 
-_LMEventCache = Dict[str, Dict[Type[LMTelemetryModel], LMTelemetryModel]]
+_LMEventCache = dict[str, dict[type[LMTelemetryModel], LMTelemetryModel]]
 """Custom type to store the last received event per type for each LM during the episode.
 Structure::
     {lm_name: {type: event, ...}, ...}  # lm_name typically starts with "LM_"
 """
+
+old_logger_data: dict = {}  # TODO: remove!
 
 
 def _blank_overall_stats() -> dict:
@@ -177,10 +185,10 @@ class BasicGraphLMStats:
     def get_stats_per_lm(
         self,
         model: MontyBase,
-        target: Mapping,
-        target_data: Mapping,
+        episode_steps: int,
+        target: PrimaryTarget,
         episode_seed: int,
-    ) -> dict:
+    ) -> dict[str, dict[str, Any]]:
         """Outer-half equivalent of `logging_utils.get_stats_per_lm`.
 
         Returns:
@@ -199,36 +207,47 @@ class BasicGraphLMStats:
             lm_perf_dict = GraphLMStats.get_lm_performance_stats(
                 lm=lm_state,
                 model=model,
+                episode_steps=episode_steps,
                 target=target,
-                target_data=target_data,
                 episode_seed=episode_seed,
             )
             performance_dict[lm_name] = lm_perf_dict
 
         return performance_dict
 
-    def update_episode_data(self, logger_args: dict, model: MontyBase) -> None:
-        """Equivalent of `BasicGraphMatchingLogger.update_episode_data`."""
-        target: Mapping = logger_args["target"]
+    def update_episode_data(self, logger_args: LoggerArgs, model: MontyBase) -> None:
+        """Equivalent of `BasicGraphMatchingLogger.update_episode_data`.
+
+        Raises:
+            ValueError: If ``logger_args.target`` is ``None``.
+        """
+        if logger_args.target is None:
+            raise ValueError("logger_args.target cannot be None.")
+
+        target = logger_args.target
         target_data = target_data_to_dict(target)
 
         performance_dict = self.get_stats_per_lm(
             model=model,
+            episode_steps=logger_args.episode_steps,
             target=target,
-            target_data=target_data,
-            episode_seed=logger_args["episode_seed"],
+            episode_seed=logger_args.episode_seed,
         )
 
         mode = model.experiment_mode
-        episode = logger_args[f"{mode}_episodes"]
+        episode = (
+            logger_args.train_episodes
+            if mode is ExperimentMode.TRAIN
+            else logger_args.eval_episodes
+        )
         actions = model.motor_system.action_sequence
-        logger_time = {k: v for k, v in logger_args.items() if k != "target"}
+        logger_time = {k: v for k, v in logger_args.__dict__.items() if k != "target"}
         self.data["BASIC"][f"{mode}_stats"][episode] = performance_dict
 
         self.update_overall_stats(
             mode=mode,
             episode=episode,
-            episode_steps=model.episode_steps,
+            episode_steps=logger_args.episode_steps,
             monty_matching_steps=model.matching_steps,
         )
         overall_stats = self.get_formatted_overall_stats(mode, episode)
@@ -238,6 +257,12 @@ class BasicGraphLMStats:
         self.data["BASIC"][f"{mode}_targets"][episode] = target_data
         self.data["BASIC"][f"{mode}_timing"][episode] = logger_time
         self.data["BASIC"][f"{mode}_stats"][episode]["target"] = target_data
+
+        # TODO: remove!
+        ddiff = DeepDiff(old_logger_data, self.data)
+        if ddiff:
+            pprint(ddiff)
+            breakpoint()
 
     def update_overall_stats(
         self,
@@ -249,6 +274,8 @@ class BasicGraphLMStats:
         """Accumulates per-episode stats into the running overall stats dict.
 
         Mirrors `BasicGraphMatchingLogger.update_overall_stats`.
+
+        An ``undefined`` primary performance is counted as ``time_out``.
         """
         if mode is ExperimentMode.TRAIN:
             stats = self.overall_train_stats
@@ -260,6 +287,9 @@ class BasicGraphLMStats:
             # This accumulates stats from all LM
             episode_stats = self.data["BASIC"][f"{mode}_stats"][episode][lm_name]
             performance = episode_stats["primary_performance"]
+
+            if performance == TerminalState.UNDEFINED.value:
+                performance = TerminalState.TIME_OUT.value
 
             if performance is not None:  # in pre training, performance is None
                 stats[f"num_{performance}_per_lm"] += 1
@@ -597,9 +627,9 @@ class EpisodeTelemetryHandler(TelemetrySubscriber):
         #     stats["num_no_match"] += 1
         pass
 
-    def post_episode(self, logger_args: dict, model: MontyBase) -> None:
+    def post_episode(self, logger_args: LoggerArgs, model: MontyBase) -> None:
         """Updates episode stats, emits them, then flushes episode data."""
-        if "target" not in logger_args:  # TODO: remove this once handler configurable
+        if logger_args.target is None:  # TODO: remove this once handler configurable
             return
 
         self.graph_lm_stats.update_episode_data(logger_args=logger_args, model=model)
@@ -609,8 +639,12 @@ class EpisodeTelemetryHandler(TelemetrySubscriber):
                 event_data=EpisodeStatsTelemetry(
                     stats=self.graph_lm_stats.data,
                     mode=model.experiment_mode,
-                    episode=logger_args[f"{model.experiment_mode}_episodes"],
-                    step=model.episode_steps,
+                    episode=(
+                        logger_args.train_episodes
+                        if model.experiment_mode is ExperimentMode.TRAIN
+                        else logger_args.eval_episodes
+                    ),
+                    step=logger_args.episode_steps,
                 ),
             )
         )

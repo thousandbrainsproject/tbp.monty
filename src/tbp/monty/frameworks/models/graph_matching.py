@@ -646,7 +646,8 @@ class GraphLM(LearningModule):
 
     def _emit_lm_state(self):
         """Emits post-step LM state telemetry."""
-        telemeter.info(
+        # TODO telemetry: "critical" because this event is mandatory; re-assess
+        telemeter.critical(
             TelemetryEvent(
                 kind=LMStateTelemetry.__name__,
                 event_data=LMStateTelemetry.from_graph_lm(self),
@@ -936,14 +937,16 @@ class GraphLM(LearningModule):
         else:
             self.buffer.set_individual_ts(None, None)
 
-        telemeter.info(
+        # TODO telemetry: "critical" because this event is mandatory; re-assess
+        telemeter.critical(
             TelemetryEvent(
                 kind=LMRecognitionStateTelemetry.__name__,
                 event_data=LMRecognitionStateTelemetry.from_graph_lm(self),
             )
         )
 
-        self._emit_lm_state()  # TODO telemetry: probably unnecessary, I will re-assess
+        # TODO telemetry: maybe unneeded, post_step event seems sufficient; re-assess
+        # self._emit_lm_state()
 
     def collect_stats_to_save(self):
         """Get all stats that this LM should store in the buffer for logging.

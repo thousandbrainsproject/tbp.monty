@@ -9,12 +9,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, MutableMapping, Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Mapping, MutableMapping, Sequence, cast
+from typing import TYPE_CHECKING, Self, cast
 
 import numpy as np
 from pydantic import BaseModel
-from typing_extensions import Self
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
@@ -93,12 +93,12 @@ class LMStepState(BaseModel):
     """Learning module state data emitted at every step."""
 
     is_on_object: bool
-    """Indicates if ``GraphLM.buffer.on_object[0]`` is ``True``."""
+    """Indicates if ``GraphLM.buffer.on_object[0]`` is truthy."""
 
     matching_steps: int
     """Result of `GraphLM.buffer.get_num_matching_steps()`."""
 
-    location: Sequence[float]
+    location: Sequence[float] | None
     """Result of `GraphLM.buffer.get_current_location()`."""
 
     buffer_stats: MutableMapping
@@ -113,7 +113,7 @@ class LMStepState(BaseModel):
     target_to_graph_id: Mapping
     """Equivalent of `GraphLM.target_to_graph_id`."""
 
-    detected_pose: Sequence[float | None]
+    detected_pose: Sequence[float | None] | None
     """Equivalent of `GraphLM.detected_pose`."""
 
     symmetry_evidence: int
@@ -208,7 +208,9 @@ class LMStateTelemetry(LMTelemetryModel):
                 detected_object=lm.detected_object,
             ),
             step_state=LMStepState(
-                is_on_object=(lm.buffer.on_object and lm.buffer.on_object[0]),
+                is_on_object=(
+                    len(lm.buffer.on_object) > 0 and lm.buffer.on_object[0] != 0
+                ),
                 matching_steps=lm.buffer.get_num_matching_steps(),
                 location=location,
                 buffer_stats=lm.buffer.stats,  # TODO .copy()?

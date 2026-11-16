@@ -9,22 +9,28 @@
 
 from __future__ import annotations
 
-from typing import Mapping, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.logging_utils import (
     compute_pose_error,
     compute_unsupervised_stats,
+    target_data_to_dict,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotations_to_quats,
 )
 from tbp.monty.geometry import Rotation
-from tbp.monty.telemetry.episode.schemas import LMStateTelemetry, LMStepState
+from tbp.monty.telemetry.episode.schemas import (
+    LMStateTelemetry,
+    LMStepState,
+    TerminalState,
+)
 
 
 # TODO: convert to utils file? Declared as class for now to prevent name clash
@@ -36,10 +42,10 @@ class GraphLMStats:
         cls,
         lm: LMStateTelemetry,
         model: MontyBase,
-        target: Mapping,
-        target_data: Mapping,
+        episode_steps: int,
+        target: PrimaryTarget,
         episode_seed: int,
-    ) -> dict:
+    ) -> dict[str, dict[str, Any]]:
         """Generates the performance stats for a learning module.
 
         Inner-half equivalent of `logging_utils.get_stats_per_lm`.
@@ -47,13 +53,14 @@ class GraphLMStats:
         Args:
             lm: LM state event.
             model: Monty instance.
-            target: Target object.
-            target_data: Logging-friendly target object data.
+            episode_steps: Number of steps taken in the episode.
+            target: Target object of the episode.
             episode_seed: RNG seed used for the episode.
 
         Returns:
             LM performance stats.
         """
+        primary_target_dict = target_data_to_dict(target)
         lm_stats = cls.get_graph_lm_stats(lm, target)
         if lm.step_state.current_mlh is not None:
             lm_stats = cls.add_evidence_lm_episode_stats(
@@ -62,10 +69,10 @@ class GraphLMStats:
         else:
             lm_stats = cls.add_pose_lm_episode_stats(lm.step_state, lm_stats)
         lm_stats = cls.add_policy_episode_stats(lm.step_state, lm_stats)
-        lm_stats["monty_steps"] = model.episode_steps
+        lm_stats["monty_steps"] = episode_steps
         lm_stats["monty_matching_steps"] = model.matching_steps
         lm_stats["episode_seed"] = episode_seed
-        lm_stats.update(target_data)
+        lm_stats.update(primary_target_dict)
 
         # Add LM-specific target information
         lm_stats.update(
@@ -74,8 +81,10 @@ class GraphLMStats:
         return lm_stats
 
     @staticmethod
-    def get_graph_lm_stats(lm_state: LMStateTelemetry, target: Mapping) -> dict:
+    def get_graph_lm_stats(lm_state: LMStateTelemetry, target: PrimaryTarget) -> dict:
         """Generates the stats dictionary for one episode for an LM.
+
+        An ``undefined`` terminal state is reported as ``time_out``.
 
         Equivalent of `logging_utils.get_graph_lm_episode_stats`.
 
@@ -85,15 +94,15 @@ class GraphLMStats:
         lm = lm_state.step_state
         lm_recognition_state = lm_state.recognition_state
 
-        primary_target: str = target["object"]
-        primary_target_rotation_quat: npt.ArrayLike = target["quat_rotation"]
+        primary_target = target.object_name
+        primary_target_rotation_quat = target.quat_rotation
 
         primary_performance = "patch_off_object"  # Performance on the primary target in
         # the environment, typically the target object we begin the episode on
         stepwise_performance = "patch_off_object"  # Performance relative to the object
         # the learning module is actually receiving sensory input from when it converges
         location = np.array([0, 0, 0])
-        num_steps = 0
+        num_steps = np.int64(0)
         result: Sequence[str] | None = None
         possible_matches: Sequence[str] = []
         rotation_error = None
@@ -103,11 +112,18 @@ class GraphLMStats:
 
         if lm.is_on_object:
             # TODO: update this?
-            num_steps = lm.matching_steps
-            location = np.array(lm.location)
+            num_steps = np.int64(lm.matching_steps)
+            if lm.location is not None:
+                location = np.array(lm.location)
             possible_matches = lm.possible_matches
             primary_performance = lm_recognition_state.terminal_state.value
             stepwise_performance = lm_recognition_state.terminal_state.value
+
+            if primary_performance == TerminalState.UNDEFINED.value:
+                primary_performance = TerminalState.TIME_OUT.value
+            if stepwise_performance == TerminalState.UNDEFINED.value:
+                stepwise_performance = TerminalState.TIME_OUT.value
+
             result = lm_recognition_state.detected_object
             if len(possible_matches) == 0:
                 primary_performance = "no_match"
@@ -189,9 +205,12 @@ class GraphLMStats:
 
         detected_pose = lm.detected_pose
         if detected_pose is not None:
-            detected_location = detected_pose[:3]
-            detected_rotation = detected_pose[3:6]
-            detected_scale = detected_pose[6]
+            # TODO: numpy types here are only to mimic logging_utils; maybe unnecessary?
+            loc, rot, scale = detected_pose[:3], detected_pose[3:6], detected_pose[6]
+            none_in_pose = None in detected_pose
+            detected_location = loc if none_in_pose else np.asarray(loc)
+            detected_rotation = rot if none_in_pose else np.asarray(rot)
+            detected_scale = scale if none_in_pose else np.float64(scale)
         else:
             detected_location = None
             detected_rotation = None
@@ -233,9 +252,14 @@ class GraphLMStats:
         cls,
         lm: LMStepState,
         stats: dict,
-        target: Mapping,
+        target: PrimaryTarget,
     ) -> dict:
         """Equivalent of `logging_utils.add_evidence_lm_episode_stats`.
+
+        Args:
+            lm: Learning module step state data.
+            stats: Stats dictionary to update.
+            target: Target object of the episode.
 
         Returns:
             Updated stats dictionary.
@@ -243,12 +267,12 @@ class GraphLMStats:
         Raises:
             ValueError: If ``lm.current_mlh`` is ``None``.
         """
-        primary_target: str = target["object"]
-        primary_target_rotation_quat: npt.ArrayLike = target["quat_rotation"]
-        last_mlh = lm.current_mlh
-
-        if last_mlh is None:
+        if lm.current_mlh is None:
             raise ValueError("lm.current_mlh cannot be None")
+
+        primary_target = target.object_name
+        primary_target_rotation_quat = target.quat_rotation
+        last_mlh = lm.current_mlh
 
         stats["most_likely_object"] = last_mlh["graph_id"]
         stats["most_likely_location"] = last_mlh["location"]
@@ -279,6 +303,8 @@ class GraphLMStats:
     @staticmethod
     def add_pose_lm_episode_stats(lm: LMStepState, stats: dict) -> dict:
         """Add possible poses of an LM to episode stats.
+
+        Equivalent of `logging_utils.add_pose_lm_episode_stats`.
 
         Args:
             lm: LM instance from which to add the statistics.
@@ -317,6 +343,11 @@ class GraphLMStats:
 
     @staticmethod
     def add_policy_episode_stats(lm: LMStepState, stats: dict) -> dict:
+        """Equivalent of `logging_utils.add_policy_episode_stats`.
+
+        Returns:
+            Policy episode stats.
+        """
         if "goal_state_achieved" in lm.buffer_stats:
             stats["goal_states_attempted"] = len(lm.buffer_stats["goal_state_achieved"])
             stats["goal_state_achieved"] = np.sum(
@@ -336,6 +367,8 @@ class GraphLMStats:
         target_object: str | None,
     ) -> dict:
         """Calculate performance of an LM on a given target object.
+
+        Equivalent of `logging_utils.calculate_performance`.
 
         Args:
             stats: Statistics dictionary to update.
