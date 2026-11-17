@@ -79,7 +79,7 @@ class PoseVectorsTest(unittest.TestCase):
                     for _ in range(6)
                 ]
             )
-            pv_mean, _ = surface_pose_vector_mean(observations, np.ones((6, 1)))
+            pv_mean = surface_pose_vector_mean(observations, np.ones((6, 1)))
             self.assert_is_rotation(
                 pv_mean, "Mean of spread observations is not a rotation"
             )
@@ -156,7 +156,7 @@ class PoseVectorsTest(unittest.TestCase):
                     for _ in range(4)
                 ]
             )
-            pv_mean, _ = surface_pose_vector_mean(observations, np.ones((4, 1)))
+            pv_mean = surface_pose_vector_mean(observations, np.ones((4, 1)))
             stored = pose_vector_merge(
                 pv_mean,
                 stored,
