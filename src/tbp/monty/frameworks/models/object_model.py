@@ -31,7 +31,7 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     get_most_common_value,
     get_values_from_dense_last_dim,
     increment_sparse_tensor_by_count,
-    pose_vector_mean,
+    surface_pose_vector_mean,
     pose_vector_merge,
     remove_close_points,
     torch_graph_to_numpy,
@@ -814,7 +814,8 @@ class GridObjectModel(GraphObjectModel):
             pdefined_ids = obs_fm["pose_fully_defined"]
             pose_vecs = new_features_in_voxel[:, pv_ids[0] : pv_ids[1]]
             pdefined = new_features_in_voxel[:, pdefined_ids[0] : pdefined_ids[1]]
-            pv_mean, _ = pose_vector_mean(pose_vecs, pdefined)
+            match
+            pv_mean, _ = surface_pose_vector_mean(pose_vecs, pdefined)
         for feature in obs_fm:
             ids = obs_fm[feature]
             feats = new_features_in_voxel[:, ids[0] : ids[1]]
