@@ -11,7 +11,7 @@ from __future__ import annotations
 import unittest
 from dataclasses import dataclass
 from typing import Literal
-from unittest.mock import MagicMock, patch, sentinel
+from unittest.mock import MagicMock, call, patch, sentinel
 
 import numpy as np
 from hypothesis import given
@@ -188,40 +188,6 @@ class MlhOnModelTest(unittest.TestCase):
 
         self.assertFalse(on_model)
 
-    @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_input_channels_in_graph"
-    )
-    @patch(
-        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
-    )
-    def test_calls_find_nearest_neighbors_with_mlh_location(
-        self,
-        get_all_known_object_ids_mock: MagicMock,
-        get_input_channels_in_graph_mock: MagicMock,
-    ) -> None:
-        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
-        get_input_channels_in_graph_mock.return_value = [sentinel.channel_0]
-        lm = EvidenceGraphLM(
-            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
-        )
-        graph_mock = MagicMock()
-        graph_mock.find_nearest_neighbors.return_value = np.array([0.0])
-        graph_memory_mock = MagicMock()
-        graph_memory_mock.get_graph.return_value = graph_mock
-        lm.graph_memory = graph_memory_mock
-        mlh_location_sentinel = np.array([1.0, 2.0, 3.0])
-
-        lm._mlh_on_model(
-            {"graph_id": sentinel.graph_id, "location": mlh_location_sentinel}
-        )
-
-        graph_memory_mock.get_graph.assert_called_once_with(
-            sentinel.graph_id, sentinel.channel_0
-        )
-        (query,), kwargs = graph_mock.find_nearest_neighbors.call_args
-        np.testing.assert_array_equal(query, [mlh_location_sentinel])
-        self.assertEqual(kwargs, {"num_neighbors": 1, "return_distance": True})
-
     @given(mlh_on_model_case=mlh_on_model_cases())
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_input_channels_in_graph"
@@ -236,9 +202,8 @@ class MlhOnModelTest(unittest.TestCase):
         mlh_on_model_case: MlhOnModelCase,
     ) -> None:
         get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
-        get_input_channels_in_graph_mock.return_value = [
-            MagicMock() for _ in mlh_on_model_case.distances
-        ]
+        channels = [MagicMock() for _ in mlh_on_model_case.distances]
+        get_input_channels_in_graph_mock.return_value = channels
         graph_mocks = []
         for distance in mlh_on_model_case.distances:
             graph_mock = MagicMock()
@@ -249,9 +214,21 @@ class MlhOnModelTest(unittest.TestCase):
         )
         lm.graph_memory = MagicMock()
         lm.graph_memory.get_graph.side_effect = graph_mocks
+        mlh_location_sentinel = np.array([1.0, 2.0, 3.0])
 
         on_model = lm._mlh_on_model(
-            {"graph_id": sentinel.graph_id, "location": np.zeros(3)}
+            {"graph_id": sentinel.graph_id, "location": mlh_location_sentinel}
         )
+
+        for channel, get_graph_call, graph_mock in zip(
+            channels,
+            lm.graph_memory.get_graph.call_args_list,
+            graph_mocks,
+            strict=True,
+        ):
+            self.assertEqual(get_graph_call, call(sentinel.graph_id, channel))
+            (query,), kwargs = graph_mock.find_nearest_neighbors.call_args
+            np.testing.assert_array_equal(query, [mlh_location_sentinel])
+            self.assertEqual(kwargs, {"num_neighbors": 1, "return_distance": True})
 
         self.assertEqual(on_model, mlh_on_model_case.mlh_on_model)
