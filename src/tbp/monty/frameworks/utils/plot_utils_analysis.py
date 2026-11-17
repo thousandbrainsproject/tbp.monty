@@ -412,7 +412,7 @@ def plot_feature_matching_animation(
         # Add axes for 3d model plots
         ax = fig.add_subplot(1, len(objects) + 1, i + 2, projection="3d")
         ax.set_title(object_names[i])
-        ax.text(0, 0, 0, target["object"])
+        ax.text(0, 0, 0, target["object_name"])
         axes.append(ax)
         colors = np.ones(model_pos.shape[0])
         all_colors.append(colors)
