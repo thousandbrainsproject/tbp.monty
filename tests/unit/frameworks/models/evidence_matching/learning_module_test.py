@@ -14,7 +14,6 @@ from typing import Literal
 from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np
-import numpy.testing as nptest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -220,7 +219,7 @@ class MlhOnModelTest(unittest.TestCase):
             sentinel.graph_id, sentinel.channel_0
         )
         (query,), kwargs = graph_mock.find_nearest_neighbors.call_args
-        nptest.assert_array_equal(query, [mlh_location_sentinel])
+        np.testing.assert_array_equal(query, [mlh_location_sentinel])
         self.assertEqual(kwargs, {"num_neighbors": 1, "return_distance": True})
 
     @given(mlh_on_model_case=mlh_on_model_cases())
