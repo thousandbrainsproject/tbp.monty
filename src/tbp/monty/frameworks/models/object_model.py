@@ -31,12 +31,14 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     get_most_common_value,
     get_values_from_dense_last_dim,
     increment_sparse_tensor_by_count,
-    surface_pose_vector_mean,
+    orientation_matrix_mean,
     pose_vector_merge,
     remove_close_points,
+    surface_pose_vector_mean,
     torch_graph_to_numpy,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import apply_rf_transform_to_points
+from tbp.monty.geometry import OrientationMatrix, SurfacePoseVectors
 
 logger = logging.getLogger(__name__)
 
@@ -402,6 +404,10 @@ class GridObjectModel(GraphObjectModel):
         # filled or used to constrain nodes in graph.
         self.use_original_graph = False
         self._location_tree = None
+        # Class name of the dataclass the flattened pose_vectors came from, e.g.
+        # "OrientationMatrix". Stays None only for channels without pose_vectors.
+        # TODO: Remove once features are stored unflattened (e.g. in NumpyGraph).
+        self.pose_vector_type: str | None = None
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
@@ -505,6 +511,7 @@ class GridObjectModel(GraphObjectModel):
             # could also check if is type torch_geometric.data.data.Data
             logger.debug(f"turning graph of type {type(graph)} into numpy graph")
             graph = torch_graph_to_numpy(graph)
+        self.pose_vector_type = graph.pose_vector_type
         if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
             self._graph = graph
@@ -715,6 +722,8 @@ class GridObjectModel(GraphObjectModel):
             features=np.array(features_at_ids),
             feature_mapping=self._current_feature_mapping,
         )
+        # Store the type on the graph so it survives saving and loading the model.
+        graph.pose_vector_type = self.pose_vector_type
         # TODO: remove eventually and do search directly in grid?
         self._location_tree = KDTree(
             graph.pos,
@@ -806,15 +815,28 @@ class GridObjectModel(GraphObjectModel):
 
         Returns:
             New average features for a voxel.
+
+        Raises:
+            ValueError: If pose_vectors are present but their type is not known.
         """
         new_feature_avg = np.zeros(target_feat_dim)
-        if ("pose_vectors" in obs_fm) and ("pose_fully_defined" in obs_fm):
-            # TODO: deal with case where not all of those keys are present
+        if "pose_vectors" in obs_fm:
             pv_ids = obs_fm["pose_vectors"]
-            pdefined_ids = obs_fm["pose_fully_defined"]
             pose_vecs = new_features_in_voxel[:, pv_ids[0] : pv_ids[1]]
-            pdefined = new_features_in_voxel[:, pdefined_ids[0] : pdefined_ids[1]]
-            pv_mean = surface_pose_vector_mean(pose_vecs, pdefined)
+            if self.pose_vector_type == OrientationMatrix.__name__:
+                # Object orientations have no surface-side ambiguity, so take a
+                # plain rotation mean. pose_fully_defined is not needed.
+                pv_mean = orientation_matrix_mean(pose_vecs)
+            elif self.pose_vector_type == SurfacePoseVectors.__name__:
+                # TODO: deal with case where pose_fully_defined is not present
+                pdefined_ids = obs_fm["pose_fully_defined"]
+                pdefined = new_features_in_voxel[:, pdefined_ids[0] : pdefined_ids[1]]
+                pv_mean = surface_pose_vector_mean(pose_vecs, pdefined)
+            else:
+                raise ValueError(
+                    f"Cannot average pose_vectors of type {self.pose_vector_type} "
+                    f"in {self.object_id}. Set pose_vector_type first."
+                )
         for feature in obs_fm:
             ids = obs_fm[feature]
             feats = new_features_in_voxel[:, ids[0] : ids[1]]

@@ -82,6 +82,7 @@ class ObjectModelTest(unittest.TestCase):
     def test_can_build_grid_object_model(self):
         max_nodes, max_size, num_voxels_per_dim = 10, 10, 10
         model = GridObjectModel("test_model", max_nodes, max_size, num_voxels_per_dim)
+        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -174,6 +175,7 @@ class ObjectModelTest(unittest.TestCase):
         model = GridObjectModel(
             "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
         )
+        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -194,6 +196,7 @@ class ObjectModelTest(unittest.TestCase):
         model = GridObjectModel(
             "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
         )
+        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -227,6 +230,7 @@ class ObjectModelTest(unittest.TestCase):
         model2 = GridObjectModel(
             "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
         )
+        model2.pose_vector_type = "SurfacePoseVectors"
         model2.build_model(
             self.dummy_locs,
             features,
@@ -256,6 +260,7 @@ class ObjectModelTest(unittest.TestCase):
         model3 = GridObjectModel(
             "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
         )
+        model3.pose_vector_type = "SurfacePoseVectors"
         model3.build_model(
             self.dummy_locs,
             features,
@@ -286,6 +291,7 @@ class ObjectModelTest(unittest.TestCase):
         model4 = GridObjectModel(
             "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
         )
+        model4.pose_vector_type = "SurfacePoseVectors"
         model4.build_model(
             self.dummy_locs,
             features,
@@ -308,6 +314,7 @@ class ObjectModelTest(unittest.TestCase):
         model = GridObjectModel(
             "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
         )
+        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(self.dummy_locs, self.dummy_features)
 
         for _ in range(3):
@@ -339,6 +346,7 @@ class ObjectModelTest(unittest.TestCase):
         model = GridObjectModel(
             "test_model", max_nodes=3, max_size=10, num_voxels_per_dim=10
         )
+        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -350,6 +358,7 @@ class ObjectModelTest(unittest.TestCase):
         model = GridObjectModel(
             "test_model", max_nodes=10, max_size=1, num_voxels_per_dim=10
         )
+        model.pose_vector_type = "SurfacePoseVectors"
         with self.assertRaises(GridTooSmallError):
             model.build_model(
                 self.dummy_locs,

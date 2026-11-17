@@ -1142,6 +1142,10 @@ class GraphMemory(LMMemory):
         # Array representation of features for each graph -> faster matching
         self.feature_array = {}
         self.feature_order = {}  # Order in which features are stored in feature_array
+        # Input channel -> class name of its pose_vectors, e.g.
+        # {"patch_1": "SurfacePoseVectors", "learning_module_0": "OrientationMatrix"}.
+        # TODO: Remove once features are stored unflattened (e.g. in NumpyGraph).
+        self.channel_pose_vector_types = {}
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
@@ -1154,8 +1158,13 @@ class GraphMemory(LMMemory):
         object_location_rel_body: npt.NDArray,
         location_rel_model: npt.NDArray,
         object_rotation: Rotation | None,
+        pose_vector_types: dict[str, str],
     ) -> None:
         """Determine how to update memory and call corresponding function.
+
+        `pose_vector_types` maps input channel -> class name of its pose_vectors
+        (e.g. "OrientationMatrix"). It is recorded in
+        `self.channel_pose_vector_types` for models to read.
 
         How each channel's data is handled falls into one of three cases:
 
@@ -1177,6 +1186,8 @@ class GraphMemory(LMMemory):
             logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
         else:
             logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
+
+        self.channel_pose_vector_types.update(pose_vector_types)
 
         for input_channel, channel_features in features.items():
             (

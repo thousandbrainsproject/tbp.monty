@@ -457,6 +457,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
         object_location_rel_body: npt.NDArray[np.float64],
         location_rel_model: npt.NDArray[np.float64],
         object_rotation: Rotation | None,
+        pose_vector_types: dict[str, str],
     ) -> None:
         """Update models stored in memory given an episode's observations.
 
@@ -470,6 +471,8 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
             location_rel_model: Location of the last observation relative to the
                 object model.
             object_rotation: Rotation of the object relative to the world.
+            pose_vector_types: Input channel -> class name of its pose_vectors,
+                e.g. {"patch_1": "SurfacePoseVectors"}.
         """
         pass
 

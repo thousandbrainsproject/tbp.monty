@@ -58,6 +58,11 @@ class FeatureAtLocationBuffer:
         self.displacements = {}
 
         self.channel_sender_types = {}
+        # Input channel --> class name of its pose_vectors, e.g.
+        # {"patch_1": "SurfacePoseVectors", "learning_module_0": "OrientationMatrix"}.
+        # pose_vectors are flattened in self.features, so this keeps track.
+        # TODO: Remove once features are stored unflattened (e.g. in NumpyGraph).
+        self.pose_vector_types = {}
 
         self.stats = {
             "detected_path": None,
@@ -421,11 +426,12 @@ class FeatureAtLocationBuffer:
             - self.get_matching_step_when_output_goal_set()
         )
 
-    def get_infos_for_graph_update(self):
+    def get_infos_for_graph_update(self) -> dict[str, Any]:
         """Return all stored infos required to update a graph in memory."""
         return dict(
             locations=self.get_all_locations_on_object(),
             features=self.get_all_features_on_object(),
+            pose_vector_types=self.pose_vector_types,
             object_location_rel_body=self.stats["detected_location_rel_body"],
             location_rel_model=self.stats["detected_location_on_model"],
         )
@@ -495,7 +501,10 @@ class FeatureAtLocationBuffer:
             elif isinstance(
                 attr_value, (SurfacePoseVectors, OrientationMatrix, GazeDirection)
             ):
-                attr_value = attr_value.value.flatten()
+                if attr_name == "pose_vectors":
+                    # Record the type before flattening loses it.
+                    self.pose_vector_types[input_channel] = type(attr_value).__name__
+                attr_value = attr_value.to_flat()
             attr_shape = len(attr_value)
 
         if attr_name not in self.features[input_channel]:

@@ -392,6 +392,10 @@ class SurfacePoseVectors:
     def principal_curvature_2(self) -> npt.NDArray[np.float64]:
         return self.value[2]
 
+    def to_flat(self) -> npt.NDArray[np.float64]:
+        """Return a new (9,) row-major copy of `value` for flat feature storage."""
+        return self.value.flatten()
+
 
 @dataclass
 class OrientationMatrix:
@@ -402,6 +406,10 @@ class OrientationMatrix:
     Rotation Matrix of shape (3, 3) representing [x_axis, y_axis, z_axis] of object
     orientation.
     """
+
+    def to_flat(self) -> npt.NDArray[np.float64]:
+        """Return a new (9,) row-major copy of `value` for flat feature storage."""
+        return self.value.flatten()
 
 
 @dataclass
@@ -416,3 +424,7 @@ class GazeDirection:
     @property
     def direction(self) -> npt.NDArray[np.float64]:
         return self.value[0]
+
+    def to_flat(self) -> npt.NDArray[np.float64]:
+        """Return a new (9,) row-major copy of `value` for flat feature storage."""
+        return self.value.flatten()
