@@ -976,7 +976,7 @@ class MlhOnModelTest(unittest.TestCase):
     @patch(
         "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
     )
-    def test_returns_whether_any_input_channel_graph_nearest_neighbor_is_within_max_match_distance(  # noqa: E501
+    def test_queries_each_channel_graph_and_returns_whether_mlh_is_on_model(
         self,
         get_all_known_object_ids_mock: MagicMock,
         get_input_channels_in_graph_mock: MagicMock,
