@@ -449,7 +449,7 @@ def orientation_matrix_mean(orientation_matrices: npt.NDArray[np.float64]) -> np
         Mean rotation of shape (9,).
     """
     num_matrices = orientation_matrices.shape[0]
-    return Rotation.from_matrix(orientation_matrices.reshape(num_matrices, 3, 3)).mean().as_matrix().reshape(9)
+    return Rotation.from_matrix(orientation_matrices.reshape(num_matrices, 3, 3)).mean().as_matrix().flatten()
 
 def get_most_common_bool(booleans):
     """Get most common value out of a list of boolean values.

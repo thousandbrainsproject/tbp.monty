@@ -371,7 +371,7 @@ class SurfacePoseVectors:
 
     value: npt.NDArray[np.float64]
     """
-    Rotation Matrix of shape (N, 3, 3) containing [surface_normal, principal_curvature_1,
+    Rotation Matrix of shape (3, 3) containing [surface_normal, principal_curvature_1,
     principal_curvature_2]
 
     These are in row-major order, and in [z (SN), x (PC1), y (PC2)] order. This should
@@ -399,7 +399,7 @@ class OrientationMatrix:
 
     value: npt.NDArray[np.float64]
     """
-    Rotation Matrix of shape (N, 3, 3) representing [x_axis, y_axis, z_axis] of object
+    Rotation Matrix of shape (3, 3) representing [x_axis, y_axis, z_axis] of object
     orientation.
     """
 

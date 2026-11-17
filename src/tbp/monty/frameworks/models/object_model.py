@@ -814,8 +814,7 @@ class GridObjectModel(GraphObjectModel):
             pdefined_ids = obs_fm["pose_fully_defined"]
             pose_vecs = new_features_in_voxel[:, pv_ids[0] : pv_ids[1]]
             pdefined = new_features_in_voxel[:, pdefined_ids[0] : pdefined_ids[1]]
-            match
-            pv_mean, _ = surface_pose_vector_mean(pose_vecs, pdefined)
+            pv_mean = surface_pose_vector_mean(pose_vecs, pdefined)
         for feature in obs_fm:
             ids = obs_fm[feature]
             feats = new_features_in_voxel[:, ids[0] : ids[1]]
