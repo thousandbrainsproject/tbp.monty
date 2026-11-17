@@ -1,6 +1,6 @@
 ---
 title: Model-Free Repositioning for Natural Views
-description: Let sensor modules propose the agent's pose so that an object is viewed from a cleaner or canonical view.
+description: Let sensor modules propose the agent's pose so that an object is viewed from a cleaner or natural view.
 rfc: optional
 estimated-scope: medium
 improved-metric: accuracy, speed, learning, goal-policy
