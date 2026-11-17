@@ -29,43 +29,39 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: main
-          fetch-depth: 0
+          fetch-depth: 1
           path: tbp.monty
           persist-credentials: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: false
-
-      - name: Install trusted dependencies
-        working-directory: tbp.monty
-        run: uv sync --frozen --extra github_readme_sync_tool
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
 
       - name: Checkout exact PR head as input data
         uses: actions/checkout@v7
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
           path: pr_docs
           persist-credentials: false
 
-      - name: Render docs preview without secrets
-        working-directory: pr_docs
+      - name: Render docs preview
+        working-directory: tbp.monty
         env:
-          PREVIEW_REPOSITORY: ${{ github.repository }}
-          PREVIEW_PR_NUMBER: ${{ github.event.pull_request.number }}
-          PREVIEW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PREVIEW_BASE_REF: ${{ github.event.pull_request.base.ref }}
           IMAGE_PATH: ${{ github.event.pull_request.head.repo.full_name }}/${{ github.event.pull_request.head.sha }}/docs/figures          
         run: |
-          "$GITHUB_WORKSPACE/tbp.monty/.venv/bin/python" -I \
-            "$GITHUB_WORKSPACE/tbp.monty/tools/github_readme_sync/cli.py" \
-            render-preview docs "$RUNNER_TEMP/docs-preview/preview.json" \
-            --repository "$PREVIEW_REPOSITORY" \
-            --pr-number "$PREVIEW_PR_NUMBER" \
-            --head-sha "$PREVIEW_HEAD_SHA" \
-            --base-ref "$PREVIEW_BASE_REF"
+          uv run --frozen --extra github_readme_sync_tool \
+            python -m tools.github_readme_sync.cli \
+          render-preview \
+            "${{ github.workspace }}/pr_docs/docs" \
+            "${{ runner.temp }}/docs-preview/preview.json" \
+            --repository "${{ github.repository }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --base-ref "${{ github.base_ref }}"
 
       - name: Upload render docs preview JSON artifact
         uses: actions/upload-artifact@v6
