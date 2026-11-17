@@ -20,7 +20,6 @@ jobs:
       ${{
         github.repository_owner == 'thousandbrainsproject' &&
         github.event.workflow_run.event == 'pull_request' &&
-        github.event.workflow_run.conclusion == 'success' &&
         github.event.workflow_run.conclusion == 'success'
       }}
     runs-on: ubuntu-latest
