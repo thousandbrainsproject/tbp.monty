@@ -27,6 +27,8 @@ __all__ = [
     "MaximumSteps",
     "MinEvalMaxTotalSteps",
     "MinimumLMs",
+    "MontyBaseSetStepTypeAndCheckIfDone",
+    "MontyForGraphMatchingSetStepTypeAndCheckIfDone",
     "MontyIsDone",
     "NaiveScan",
     "ObjectRecognition",
@@ -564,7 +566,13 @@ class ObjectRecognition(RecognitionStrategy):
 
 
 class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
-    """Recognition strategy that duplicates `_set_step_type_and_check_if_done`."""
+    """Recognition strategy that duplicates `_set_step_type_and_check_if_done`.
+
+    Please note that this strategy is intended to replicate the contemporary behavior
+    of Monty benchmarks. However, please do not use this strategy in new experiments.
+    For new experiments, consider writing new recognition strategies tailored to your
+    specific needs or reuse some of the simpler existing strategies.
+    """
 
     _match_criterion: MatchCriterion
     _min_train_steps: int
@@ -714,7 +722,13 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
 
 
 class MontyBaseSetStepTypeAndCheckIfDone(RecognitionStrategy):
-    """Recognition strategy that duplicates `_set_step_type_and_check_if_done`."""
+    """Recognition strategy that duplicates `_set_step_type_and_check_if_done`.
+
+    Please note that this strategy is intended to replicate the contemporary behavior
+    of Monty tests. However, please do not use this strategy in new tests or
+    experiments. For new use cases, consider writing new recognition strategies tailored
+    to your specific needs or reuse some of the simpler existing strategies.
+    """
 
     _min_train_steps: int
     _min_eval_steps: int

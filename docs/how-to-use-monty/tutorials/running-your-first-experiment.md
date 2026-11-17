@@ -31,8 +31,7 @@ Monty uses [Hydra](https://hydra.cc/) for configuration. The `src/tbp/monty/conf
 # The defaults below are the all the components of an experiment you must
 # specify.
 defaults:
-  # /monty defines what Monty we will use and how many exploration, evaluation,
-  # training, and total steps to configure it with.
+  # /monty defines what Monty we will use.
   - /monty: graph
 
   # /monty/motor_system_config specifies what motor system and motor policy to
