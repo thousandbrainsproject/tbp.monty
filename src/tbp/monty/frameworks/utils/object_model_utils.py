@@ -436,7 +436,10 @@ def surface_pose_vector_mean(
     assert not np.any(np.isnan(pv_means)), "NaN in pose vector mean"
     return pv_means
 
-def orientation_matrix_mean(orientation_matrices: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+
+def orientation_matrix_mean(
+    orientation_matrices: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
     """Calculate the mean orientation of OrientationMatrix.
 
     Unlike surface_pose_vector_mean, every row is a signed axis of a rotation, so
@@ -449,7 +452,13 @@ def orientation_matrix_mean(orientation_matrices: npt.NDArray[np.float64]) -> np
         Mean rotation of shape (9,).
     """
     num_matrices = orientation_matrices.shape[0]
-    return Rotation.from_matrix(orientation_matrices.reshape(num_matrices, 3, 3)).mean().as_matrix().flatten()
+    return (
+        Rotation.from_matrix(orientation_matrices.reshape(num_matrices, 3, 3))
+        .mean()
+        .as_matrix()
+        .flatten()
+    )
+
 
 def get_most_common_bool(booleans):
     """Get most common value out of a list of boolean values.
