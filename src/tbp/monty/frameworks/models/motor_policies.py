@@ -406,10 +406,10 @@ def derive_set_agent_pose_for_jump_from_goal(
     except AttributeError as err:
         raise AttributeError("Goal for jump must contain surface normal") from err
 
-    target_observed_surface_normal = normalize(target_observed_surface_normal)
+    # target_observed_surface_normal = normalize(target_observed_surface_normal)
 
     surface_displacement = (
-        1.5 * desired_object_distance * target_observed_surface_normal
+        target_observed_surface_normal * desired_object_distance * 1.5
     )
 
     target_agent_location = goal.location + surface_displacement

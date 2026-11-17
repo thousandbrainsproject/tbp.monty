@@ -752,8 +752,8 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             displacement
         )
 
-        target_surface_pose_global_frame = object_rot.apply(
-            target_info["target_surface_pose"]
+        target_surface_pose_global_frame = np.vstack(
+            [object_rot.apply(v) for v in target_info["target_surface_pose"]]
         )
 
         # Extra metadata for logging. 'achieved' and
