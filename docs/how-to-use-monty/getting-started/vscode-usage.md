@@ -12,8 +12,6 @@ This guide will enable you to develop with Monty using VS Code on any supported 
 
 1. Install the Python extension: https://marketplace.visualstudio.com/items?itemName=ms-python.python
 
-1. Install the Pyrefly extension: https://marketplace.visualstudio.com/items?itemName=meta.pyrefly
-
 1. Install the Ruff extension: https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff
 
 1. Initialize the settings file using the provided example:
