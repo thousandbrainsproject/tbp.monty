@@ -120,7 +120,11 @@ class NoopAgentTest(unittest.TestCase):
             unique_ids = set(np.unique(semantic))
 
             assert semantic.shape == (64, 64)
-            assert unique_ids == {0, mjtGeom.mjGEOM_BOX, mjtGeom.mjGEOM_SPHERE}
+            assert unique_ids == {
+                0,
+                mjtGeom.mjGEOM_BOX.value,
+                mjtGeom.mjGEOM_SPHERE.value,
+            }
 
     def test_agent_observation_semantic_custom_ids(self) -> None:
         """Test that the semantic sensor with custom ids match expectations.
