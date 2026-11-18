@@ -22,7 +22,7 @@
 
 # how-to-use-monty: How to Use Monty
 - [getting-started](how-to-use-monty/getting-started.md)
-  - [getting-started-on-windows-via-wsl](how-to-use-monty/getting-started/getting-started-on-windows-via-wsl.md)
+  - [vscode-usage](how-to-use-monty/getting-started/vscode-usage.md)
 - [code-base-structure](how-to-use-monty/code-base-structure.md)
 - [running-benchmarks](how-to-use-monty/running-benchmarks.md)
 - [logging-and-analysis](how-to-use-monty/logging-and-analysis.md)
@@ -148,6 +148,7 @@
   - [interpret-goal-states-in-motor-system-switch-policies](future-work/motor-system-improvements/interpret-goal-states-in-motor-system-switch-policies.md)
   - [policy-to-recognize-an-object-before-moving-on-to-a-new-object](future-work/motor-system-improvements/policy-to-recognize-an-object-before-moving-on-to-a-new-object.md)
   - [policy-to-quickly-move-to-a-new-object](future-work/motor-system-improvements/policy-to-quickly-move-to-a-new-object.md)
+  - [model-free-repositioning-for-natural-views](future-work/motor-system-improvements/model-free-repositioning-for-natural-views.md)
 - [voting-improvements](future-work/voting-improvements.md)
   - [clean-up-and-simplify-voting](future-work/voting-improvements/clean-up-and-simplify-voting.md)
   - [outline-how-to-apply-attention](future-work/voting-improvements/outline-how-to-apply-attention.md)
