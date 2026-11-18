@@ -14,9 +14,10 @@ import numpy as np
 import numpy.typing as npt
 
 from tbp.monty.frameworks.utils.object_model_utils import (
+    orientation_matrix_mean,
     orthonormal_pose_vectors,
-    surface_pose_vector_mean,
     pose_vector_merge,
+    surface_pose_vector_mean,
 )
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE
@@ -165,3 +166,34 @@ class PoseVectorsTest(unittest.TestCase):
             )
             observation_count += 4
             self.assert_is_rotation(stored, "Merged frame is not a rotation")
+
+
+class OrientationMatrixMeanTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.orientation = Rotation.from_euler("xyz", [10, 20, 30], degrees=True)
+
+    def test_mean_of_identical_orientations_is_that_orientation(self) -> None:
+        orientations = np.vstack([self.orientation.as_matrix().flatten()] * 3)
+
+        mean = orientation_matrix_mean(orientations)
+
+        np.testing.assert_allclose(
+            mean, self.orientation.as_matrix().flatten(), atol=DEFAULT_TOLERANCE
+        )
+
+    def test_mean_of_orientations_spread_evenly_around_an_orientation_is_that_orientation(  # noqa: E501
+        self,
+    ) -> None:
+        offset = Rotation.from_euler("z", 40, degrees=True)
+        orientations = np.vstack(
+            [
+                (self.orientation * offset).as_matrix().flatten(),
+                (self.orientation * offset.inv()).as_matrix().flatten(),
+            ]
+        )
+
+        mean = orientation_matrix_mean(orientations)
+
+        np.testing.assert_allclose(
+            mean, self.orientation.as_matrix().flatten(), atol=DEFAULT_TOLERANCE
+        )

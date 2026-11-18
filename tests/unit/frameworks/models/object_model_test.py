@@ -10,6 +10,7 @@
 
 import copy
 import unittest
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 from hypothesis import given, settings
@@ -364,3 +365,71 @@ class ObjectModelTest(unittest.TestCase):
                 self.dummy_locs,
                 self.dummy_features,
             )
+
+
+class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.model = GridObjectModel(
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+        )
+        # One observation in the voxel, so there is no previous average to merge.
+        self.model._observation_count = MagicMock()
+        self.model._observation_count.__getitem__.return_value = 1
+        self.feature_mapping = {"pose_vectors": [0, 9], "pose_fully_defined": [9, 10]}
+        self.new_features_in_voxel = np.hstack([np.eye(3).reshape(1, 9), [[1.0]]])
+        self.pv_mean = np.arange(9.0)
+
+    def get_new_voxel_features(self) -> np.ndarray:
+        return self.model._get_new_voxel_features(
+            new_features_in_voxel=self.new_features_in_voxel,
+            previous_feat_in_voxel=MagicMock(),
+            voxel=(0, 0, 0),
+            obs_fm=self.feature_mapping,
+            target_fm=self.feature_mapping,
+            target_feat_dim=10,
+        )
+
+    @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
+    @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
+    def test_averages_orientation_matrix_pose_vectors_with_orientation_matrix_mean(
+        self,
+        orientation_matrix_mean_mock: MagicMock,
+        surface_pose_vector_mean_mock: MagicMock,
+    ) -> None:
+        self.model.pose_vector_type = "OrientationMatrix"
+        orientation_matrix_mean_mock.return_value = self.pv_mean
+
+        new_features = self.get_new_voxel_features()
+
+        orientation_matrix_mean_mock.assert_called_once()
+        np.testing.assert_array_equal(
+            orientation_matrix_mean_mock.call_args.args[0],
+            self.new_features_in_voxel[:, 0:9],
+        )
+        surface_pose_vector_mean_mock.assert_not_called()
+        np.testing.assert_array_equal(new_features[0:9], self.pv_mean)
+
+    @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
+    @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
+    def test_averages_surface_pose_vectors_with_surface_pose_vector_mean(
+        self,
+        orientation_matrix_mean_mock: MagicMock,
+        surface_pose_vector_mean_mock: MagicMock,
+    ) -> None:
+        self.model.pose_vector_type = "SurfacePoseVectors"
+        surface_pose_vector_mean_mock.return_value = self.pv_mean
+
+        new_features = self.get_new_voxel_features()
+
+        surface_pose_vector_mean_mock.assert_called_once()
+        pose_vectors, pose_fully_defined = surface_pose_vector_mean_mock.call_args.args
+        np.testing.assert_array_equal(pose_vectors, self.new_features_in_voxel[:, 0:9])
+        np.testing.assert_array_equal(
+            pose_fully_defined, self.new_features_in_voxel[:, 9:10]
+        )
+        orientation_matrix_mean_mock.assert_not_called()
+        np.testing.assert_array_equal(new_features[0:9], self.pv_mean)
+
+    def test_raises_if_pose_vector_type_is_not_set(self) -> None:
+        with self.assertRaises(ValueError):
+            self.get_new_voxel_features()
