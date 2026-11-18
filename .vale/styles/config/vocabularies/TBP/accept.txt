@@ -158,6 +158,7 @@
 \breimplements?\b
 \brepo\b
 \b[Rr]esampl(e|ed|ing)?\b
+\b[Rr]etinotopic(ally)?\b
 \b[Ss]accades?\b
 \bsaccading\b
 \bSampath\b
