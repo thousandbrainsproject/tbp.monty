@@ -837,7 +837,7 @@ not_match_gating_cases = st.builds(
 off_model_gating_cases = st.builds(
     GatingCase,
     on_object=st.just(value=True),
-    terminal_state=st.just("match"),
+    terminal_state=terminal_states,
     mlh_on_model=st.just(value=False),
 )
 
