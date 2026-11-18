@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Collection, Sequence
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -406,6 +406,7 @@ class GraphLM(LearningModule):
     possible_paths: dict[str, Any]
     detected_rotation_r: Rotation | None
     primary_target: str | None
+    terminal_state: Literal["match", "no_match", "pose_time_out", "time_out"] | None
 
     def __init__(self, initialize_base_modules=True) -> None:
         """Initialize general Learning Module based on graphs.
