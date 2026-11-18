@@ -185,7 +185,6 @@ class EncodeGoalTest(unittest.TestCase):
             "sender_type": "GSG",
             "goal_tolerances": None,
             "info": {
-                "proposed_surface_loc": np.array([0, 1.5, 0]),
                 "hypothesis_to_test": {
                     "graph_id": "mug",
                     "location": np.array([0, 1.5, 0]),

@@ -7,6 +7,7 @@ policy_selector:
     _target_: ${monty.class:tbp.monty.frameworks.models.motor_policies.JumpToGoal}
     agent_id: agent_id_0
     sensor_id: view_finder
+    desired_object_distance: 0.03
   look_at_goal:
     _target_: ${monty.class:tbp.monty.frameworks.models.salience.motor_policy.LookAtGoal}
     agent_id: agent_id_0

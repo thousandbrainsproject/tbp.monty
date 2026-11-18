@@ -16,6 +16,7 @@ experiment:
             _target_: ${monty.class:tbp.monty.frameworks.models.motor_policies.JumpToGoal}
             agent_id: agent_id_0
             sensor_id: view_finder
+            desired_object_distance: 0.03
           look_at_goal:
             _target_: ${monty.class:tbp.monty.frameworks.models.salience.motor_policy.LookAtGoal}
             agent_id: agent_id_0
@@ -61,7 +62,6 @@ experiment:
             elapsed_steps_factor: 10
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
         learning_module_1:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -91,7 +91,6 @@ experiment:
             elapsed_steps_factor: 10
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
         learning_module_2:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -121,7 +120,6 @@ experiment:
             elapsed_steps_factor: 10
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
         learning_module_3:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -151,7 +149,6 @@ experiment:
             elapsed_steps_factor: 10
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
         learning_module_4:
           hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.burst_sampling.BurstSamplingHypothesesUpdater}
           hypotheses_updater_args:
@@ -181,7 +178,6 @@ experiment:
             elapsed_steps_factor: 10
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
-            desired_object_distance: 0.03
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
