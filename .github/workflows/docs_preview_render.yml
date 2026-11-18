@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 jobs:
-  render:
+  docs_preview_render:
     name: docs-preview-render
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     runs-on: ubuntu-latest

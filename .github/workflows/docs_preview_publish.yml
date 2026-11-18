@@ -15,7 +15,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  publish:
+  docs_preview_publish:
+    name: docs-preview-publish
     if: >-
       ${{
         github.repository_owner == 'thousandbrainsproject' &&
@@ -81,7 +82,7 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            Running publishing documentation preview workflow... ⏳
+            Publishing documentation preview workflow... ⏳
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
 
@@ -92,7 +93,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "**/uv.lock"
 
-      - name: Compute preview version from trusted code and GitHub metadata
+      - name: Get version and branch name
         if: ${{ steps.source.outputs.ready == 'true' }}
         id: preview_info
         uses: ./tbp.monty/.github/actions/get_preview_info
@@ -100,7 +101,7 @@ jobs:
           user_login: ${{ steps.source.outputs.user_login }}
           head_ref: ${{ steps.source.outputs.head_ref }}
 
-      - name: Download docs render preview artifact
+      - name: Download preview artifact
         if: ${{ steps.source.outputs.ready == 'true' }}
         uses: actions/download-artifact@v8
         with:
@@ -109,28 +110,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: ${{ runner.temp }}/docs-preview-artifact
 
-      - name: Recheck PR immediately before publishing in case of updates
+      - name: Publish preview
         if: ${{ steps.source.outputs.ready == 'true' }}
-        id: current
-        uses: actions/github-script@v8
-        env:
-          PREVIEW_PR_NUMBER: ${{ steps.source.outputs.pr_number }}
-        with:
-          script: |
-            const run = context.payload.workflow_run;
-            const {data: pr} = await github.rest.pulls.get({
-              ...context.repo, pull_number: Number(process.env.PREVIEW_PR_NUMBER),
-            });
-            const current = pr.state === 'open' && !pr.merged &&
-              pr.base.repo.full_name === `${context.repo.owner}/${context.repo.repo}` &&
-              pr.base.ref === 'main' && pr.head.sha === run.head_sha &&
-              pr.head.repo?.id === run.head_repository.id &&
-              pr.head.ref === run.head_branch;
-            core.setOutput('current', String(current));
-            if (!current) core.notice('PR changed while preparing; skipping publish.');
-
-      - name: Validate and publish rendered documentation
-        if: ${{ steps.current.outputs.current == 'true' }}
         id: publish
         working-directory: tbp.monty
         env:
@@ -163,7 +144,7 @@ jobs:
             Last updated: ${{ steps.preview_info.outputs.monty_date }}
 
       - name: Update PR comment on failure
-        if: ${{ failure() && steps.source.outputs.pr_number != '' }}
+        if: ${{ failure() && steps.source.outputs.ready == 'true' }}
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -173,6 +154,6 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            ❌ Failed to build documentation preview.
+            ❌ Failed to publish documentation preview.
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
