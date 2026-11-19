@@ -39,7 +39,8 @@ pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v14}
 # v8 : First models trained on MuJoCo
 # v9 : Trained with euclidean distance and object pose evidence for OrientationMatrix inputs (PR#1266)
 # v10 : Applied transform fix from PR#1280
-compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v10}
+# v11 : Use salience/segmentation/attention for parent learning. From PR#1279
+compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v11}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
