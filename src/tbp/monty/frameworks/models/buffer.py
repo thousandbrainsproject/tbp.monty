@@ -490,8 +490,8 @@ class FeatureAtLocationBuffer:
                 # perform matrix operations on them.
                 attr_value = attr_value.flatten()
             elif isinstance(attr_value, (SurfacePoseVectors, OrientationMatrix)):
-                attr_value = attr_value.flatten()
                 self.pose_vector_types[input_channel] = type(attr_value)
+                attr_value = attr_value.flatten()
             elif isinstance(attr_value, GazeDirection):
                 raise TypeError("GazeDirection is not supported as a buffer feature.")
 

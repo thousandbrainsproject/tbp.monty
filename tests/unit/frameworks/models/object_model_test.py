@@ -22,7 +22,7 @@ from tbp.monty.frameworks.models.object_model import (
     GridTooSmallError,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import check_orthonormal
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import Rotation, SurfacePoseVectors, OrientationMatrix
 
 
 class ObjectModelTest(unittest.TestCase):
@@ -59,7 +59,7 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_create_grid_object_model(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=10
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=10, pose_vector_type=SurfacePoseVectors
         )
         self.assertIsNotNone(model)
         self.assertIsNone(model._graph)
@@ -82,8 +82,7 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_can_build_grid_object_model(self):
         max_nodes, max_size, num_voxels_per_dim = 10, 10, 10
-        model = GridObjectModel("test_model", max_nodes, max_size, num_voxels_per_dim)
-        model.pose_vector_type = "SurfacePoseVectors"
+        model = GridObjectModel("test_model", max_nodes, max_size, num_voxels_per_dim, pose_vector_type = SurfacePoseVectors)
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -174,9 +173,8 @@ class ObjectModelTest(unittest.TestCase):
         # that all locations should be binned into the same voxel and the location value
         # should be averaged.
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
         )
-        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -195,9 +193,8 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_grid_features_are_averaged_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
         )
-        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -229,9 +226,8 @@ class ObjectModelTest(unittest.TestCase):
         features = copy.deepcopy(self.dummy_features)
         features["pose_fully_defined"] = np.array([False, False, False, True])
         model2 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
         )
-        model2.pose_vector_type = "SurfacePoseVectors"
         model2.build_model(
             self.dummy_locs,
             features,
@@ -259,9 +255,8 @@ class ObjectModelTest(unittest.TestCase):
         opposite_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = opposite_pv.flatten()
         model3 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
         )
-        model3.pose_vector_type = "SurfacePoseVectors"
         model3.build_model(
             self.dummy_locs,
             features,
@@ -290,9 +285,8 @@ class ObjectModelTest(unittest.TestCase):
         rotated_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = rotated_pv.flatten()
         model4 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
         )
-        model4.pose_vector_type = "SurfacePoseVectors"
         model4.build_model(
             self.dummy_locs,
             features,
@@ -313,9 +307,8 @@ class ObjectModelTest(unittest.TestCase):
             [-self.dummy_pv[0], self.dummy_pv[1], -self.dummy_pv[2]]
         )
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
         )
-        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(self.dummy_locs, self.dummy_features)
 
         for _ in range(3):
@@ -345,9 +338,8 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_max_nodes_applied_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=3, max_size=10, num_voxels_per_dim=10
+            "test_model", max_nodes=3, max_size=10, num_voxels_per_dim=10, pose_vector_type=SurfacePoseVectors
         )
-        model.pose_vector_type = "SurfacePoseVectors"
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -357,9 +349,8 @@ class ObjectModelTest(unittest.TestCase):
     def test_max_size_applied_correctly(self):
         """Test that GridTooSmallError is raised if locations are outside of grid."""
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=1, num_voxels_per_dim=10
+            "test_model", max_nodes=10, max_size=1, num_voxels_per_dim=10, pose_vector_type=SurfacePoseVectors
         )
-        model.pose_vector_type = "SurfacePoseVectors"
         with self.assertRaises(GridTooSmallError):
             model.build_model(
                 self.dummy_locs,
@@ -369,25 +360,10 @@ class ObjectModelTest(unittest.TestCase):
 
 class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
-        )
-        # One observation in the voxel, so there is no previous average to merge.
-        self.model._observation_count = MagicMock()
-        self.model._observation_count.__getitem__.return_value = 1
         self.feature_mapping = {"pose_vectors": [0, 9], "pose_fully_defined": [9, 10]}
         self.new_features_in_voxel = np.hstack([np.eye(3).reshape(1, 9), [[1.0]]])
         self.pv_mean = np.arange(9.0)
 
-    def get_new_voxel_features(self) -> np.ndarray:
-        return self.model._get_new_voxel_features(
-            new_features_in_voxel=self.new_features_in_voxel,
-            previous_feat_in_voxel=MagicMock(),
-            voxel=(0, 0, 0),
-            obs_fm=self.feature_mapping,
-            target_fm=self.feature_mapping,
-            target_feat_dim=10,
-        )
 
     @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
     @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
@@ -396,10 +372,26 @@ class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
         orientation_matrix_mean_mock: MagicMock,
         surface_pose_vector_mean_mock: MagicMock,
     ) -> None:
-        self.model.pose_vector_type = "OrientationMatrix"
+        model = GridObjectModel(
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=OrientationMatrix,
+        )
+        # One observation in the voxel, so there is no previous average to merge.
+        model._observation_count = MagicMock()
+        model._observation_count.__getitem__.return_value = 1
         orientation_matrix_mean_mock.return_value = self.pv_mean
 
-        new_features = self.get_new_voxel_features()
+        new_features = model._get_new_voxel_features(
+            new_features_in_voxel=self.new_features_in_voxel,
+            previous_feat_in_voxel=MagicMock(),
+            voxel=(0, 0, 0),
+            obs_fm=self.feature_mapping,
+            target_fm=self.feature_mapping,
+            target_feat_dim=10,
+        )
 
         orientation_matrix_mean_mock.assert_called_once()
         np.testing.assert_array_equal(
@@ -416,10 +408,26 @@ class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
         orientation_matrix_mean_mock: MagicMock,
         surface_pose_vector_mean_mock: MagicMock,
     ) -> None:
-        self.model.pose_vector_type = "SurfacePoseVectors"
+        model = GridObjectModel(
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
+        )
+        # One observation in the voxel, so there is no previous average to merge.
+        model._observation_count = MagicMock()
+        model._observation_count.__getitem__.return_value = 1
         surface_pose_vector_mean_mock.return_value = self.pv_mean
 
-        new_features = self.get_new_voxel_features()
+        new_features = model._get_new_voxel_features(
+            new_features_in_voxel=self.new_features_in_voxel,
+            previous_feat_in_voxel=MagicMock(),
+            voxel=(0, 0, 0),
+            obs_fm=self.feature_mapping,
+            target_fm=self.feature_mapping,
+            target_feat_dim=10,
+        )
 
         surface_pose_vector_mean_mock.assert_called_once()
         pose_vectors, pose_fully_defined = surface_pose_vector_mean_mock.call_args.args
@@ -431,5 +439,22 @@ class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
         np.testing.assert_array_equal(new_features[0:9], self.pv_mean)
 
     def test_raises_if_pose_vector_type_is_not_set(self) -> None:
+        model = GridObjectModel(
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=None,
+        )
+        # One observation in the voxel, so there is no previous average to merge.
+        model._observation_count = MagicMock()
+        model._observation_count.__getitem__.return_value = 1
         with self.assertRaises(ValueError):
-            self.get_new_voxel_features()
+            model._get_new_voxel_features(
+                new_features_in_voxel=self.new_features_in_voxel,
+                previous_feat_in_voxel=MagicMock(),
+                voxel=(0, 0, 0),
+                obs_fm=self.feature_mapping,
+                target_fm=self.feature_mapping,
+                target_feat_dim=10,
+            )

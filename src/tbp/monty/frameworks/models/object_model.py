@@ -848,7 +848,7 @@ class GridObjectModel(GraphObjectModel):
                 case _:
                     raise ValueError(
                         f"Cannot average pose_vectors of type {self.pose_vector_type} "
-                        f"in {self.object_id}. Set pose_vector_type first."
+                        f"in {self.object_id}."
                     )
 
         for feature in obs_fm:
