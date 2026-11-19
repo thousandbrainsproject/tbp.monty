@@ -136,8 +136,8 @@ class EvidenceGraphMemory(GraphMemory):
             max_nodes=self.max_nodes_per_graph,
             max_size=self.max_graph_size,
             num_voxels_per_dim=self.num_model_voxels_per_dim,
+            pose_vector_type=self.pose_vector_types.get(input_channel),
         )
-        model.pose_vector_type = self.channel_pose_vector_types.get(input_channel)
         try:
             model.build_model(locations=locations, features=features)
 

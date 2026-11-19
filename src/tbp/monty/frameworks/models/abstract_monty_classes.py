@@ -31,7 +31,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 from tbp.monty.memento import Memento, Snapshotable
 from tbp.monty.observations import SensorObservation
 
@@ -457,7 +457,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
         object_location_rel_body: npt.NDArray[np.float64],
         location_rel_model: npt.NDArray[np.float64],
         object_rotation: Rotation | None,
-        pose_vector_types: dict[str, str],
+        pose_vector_types: dict[str, type[SurfacePoseVectors | OrientationMatrix]],
     ) -> None:
         """Update models stored in memory given an episode's observations.
 
