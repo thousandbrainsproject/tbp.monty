@@ -445,9 +445,6 @@ class LearningModule(
 class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
     """Like a long-term memory storing all the knowledge an LM has."""
 
-    ###
-    # Methods that define the algorithm
-    ###
     @abc.abstractmethod
     def update_memory(
         self,
@@ -471,8 +468,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
             location_rel_model: Location of the last observation relative to the
                 object model.
             object_rotation: Rotation of the object relative to the world.
-            pose_vector_types: Input channel -> class name of its pose_vectors,
-                e.g. {"patch_1": "SurfacePoseVectors"}.
+            pose_vector_types: Map from input channel name to pose vector type.
         """
         pass
 
