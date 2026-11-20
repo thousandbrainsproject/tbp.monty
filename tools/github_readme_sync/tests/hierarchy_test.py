@@ -1,4 +1,4 @@
-# Copyright 2025 Thousand Brains Project
+# Copyright 2025-2026 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -145,6 +145,53 @@ class TestHierarchyFile(unittest.TestCase):
 
         self.assertTrue(any("missing.md" in message for message in log.output))
         self.assertTrue(any("fragment" in message for message in log.output))
+
+    def test_check_hierarchy_link_membership(self):
+        cases = [
+            ("listed forward reference", "target.md", True, True, False),
+            ("unlisted existing page", "target.md", False, True, True),
+            ("missing page", "target.md", False, False, True),
+            ("listed fragment", "target.md#section", True, True, False),
+            ("unlisted fragment", "target.md#section", False, True, True),
+            ("normalized listed path", "sub/../target.md", True, True, False),
+            ("normalized unlisted path", "sub/../target.md", False, True, True),
+            ("parent path", "../guide/target.md", True, True, False),
+            ("external URL", "https://example.com/page.md", False, False, False),
+            ("placeholder", "placeholder-example-doc.md", False, False, False),
+            (
+                "ignored example",
+                "target.md",
+                False,
+                False,
+                False,
+            ),
+        ]
+        for name, target, listed, exists, rejected in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                guide = root / "guide"
+                (guide / "sub").mkdir(parents=True)
+                hierarchy = "# guide: Guide\n- [start](guide/start.md)\n"
+                if listed:
+                    hierarchy += "- [target](guide/target.md)\n"
+                (root / HIERARCHY_FILE).write_text(hierarchy)
+                source = guide / "start.md"
+                suffix = (
+                    " <!-- check-links-ignore -->" if name == "ignored example" else ""
+                )
+                source.write_text(f"[Target]({target}){suffix}\n")
+                if exists:
+                    (guide / "target.md").write_text("# Target\n")
+
+                if rejected:
+                    with self.assertLogs(level="ERROR") as logs:
+                        with self.assertRaises(SystemExit) as error:
+                            check_hierarchy_file(root)
+                    self.assertEqual(error.exception.code, 1)
+                    self.assertTrue(any(str(source) in line for line in logs.output))
+                    self.assertTrue(any("target.md" in line for line in logs.output))
+                else:
+                    check_hierarchy_file(root)
 
     def test_check_external_links(self):
         # Set up a mock server
