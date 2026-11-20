@@ -20,4 +20,3 @@ recognition_strategy:
       max_eval_steps: 100
     - _target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps
       max_total_steps: 100
-    - _target_: tbp.monty.experiment.recognition_strategy.MontyIsDone

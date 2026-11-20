@@ -29,7 +29,6 @@ __all__ = [
     "MinimumLMs",
     "MontyBaseSetStepTypeAndCheckIfDone",
     "MontyForGraphMatchingSetStepTypeAndCheckIfDone",
-    "MontyIsDone",
     "NaiveScan",
     "ObjectRecognition",
     "RecognitionContext",
@@ -72,9 +71,6 @@ class RecognitionResult:
     start_exploring: bool = False
     """Request for transition to 'exploring' mode."""
 
-    global_time_out: bool = True
-    """Request for global time-out on top of per-LM time-outs."""
-
 
 class RecognitionStrategy(Protocol):
     """Decides what constitutes "recognition" in an Experiment.
@@ -97,20 +93,6 @@ class RecognitionStrategy(Protocol):
             An aggregate Recognition Result based on this strategy.
         """
         ...
-
-
-class MontyIsDone(RecognitionStrategy):
-    """Legacy (default) recognition strategy."""
-
-    def __call__(
-        self: Self,
-        ctx: RecognitionContext,  # noqa: ARG002
-        model: MontyBase,
-    ) -> RecognitionResult:
-        is_done = model.is_done
-        if is_done:
-            logger.info("MontyIsDone is done, with model.is_done")
-        return RecognitionResult(is_done)
 
 
 class MinEvalMaxTotalSteps(RecognitionStrategy):
@@ -169,19 +151,11 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
         model: MontyBase,
     ) -> RecognitionResult:
         wrapped = self._wrapped(ctx, model)
-        if model.is_done:
-            result = RecognitionResult(
-                is_done=True,
-                time_out_lms=wrapped.time_out_lms,
-                start_exploring=wrapped.start_exploring,
-                global_time_out=wrapped.global_time_out,
-            )
-        elif ctx.step >= self._max_total_steps:
+        if ctx.step >= self._max_total_steps:
             result = RecognitionResult(
                 is_done=True,
                 time_out_lms=True,
                 start_exploring=wrapped.start_exploring,
-                global_time_out=wrapped.global_time_out,
             )
         elif (
             ctx.mode is ExperimentMode.EVAL
@@ -191,16 +165,13 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
                 is_done=False,
                 time_out_lms=wrapped.time_out_lms,
                 start_exploring=wrapped.start_exploring,
-                global_time_out=wrapped.global_time_out,
             )
         else:
             result = wrapped
 
         if result.is_done:
             logger.info(
-                "MinEvalMaxTotalSteps is done, "
-                "with model.is_done=%s step=%d matching_steps=%d",
-                model.is_done,
+                "MinEvalMaxTotalSteps is done, with step=%d matching_steps=%d",
                 ctx.step,
                 ctx.matching_steps,
             )
@@ -212,7 +183,6 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
                 TelemetryEvent(
                     kind="TerminalCondition",
                     model=dict(
-                        is_done=model.is_done,
                         is_exploring=model.is_exploring,
                         lms=lms,
                     ),
@@ -499,7 +469,6 @@ class ObjectRecognition(RecognitionStrategy):
     Terminal conditions include:
     - `ctx.matching_steps >= {max_train_steps | max_eval_steps}`
     - `ctx.step >= max_total_steps`
-    - `model.is_done`
     """
 
     _max_train_steps: int
@@ -557,9 +526,6 @@ class ObjectRecognition(RecognitionStrategy):
         elif ctx.step >= self._max_total_steps:
             result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info("ObjectRecognition is done, with step=%d", ctx.step)
-        elif model.is_done:
-            result = RecognitionResult(is_done=True)
-            logger.info("ObjectRecognition is done, with model.is_done")
         else:
             result = RecognitionResult()
         return result
@@ -618,7 +584,6 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
                         and ctx.matching_steps > self._min_eval_steps,
                         time_out_lms=True,
                         start_exploring=ctx.mode is ExperimentMode.TRAIN,
-                        global_time_out=False,
                     )
             case "exploratory_step":
                 if (
@@ -829,8 +794,6 @@ class Any(RecognitionStrategy):
                 is_done=result.is_done or rr.is_done,
                 time_out_lms=result.time_out_lms or rr.time_out_lms,
                 start_exploring=result.start_exploring or rr.start_exploring,
-                # False wins (non-default), so we use logical AND for global_time_out
-                global_time_out=result.global_time_out and rr.global_time_out,
             )
             if result.is_done:
                 break

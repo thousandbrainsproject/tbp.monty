@@ -987,7 +987,7 @@ class GraphLearningTest(BaseGraphTest):
                     if result.start_exploring:
                         monty.switch_to_exploratory_step()
                     if result.time_out_lms:
-                        monty.deal_with_time_out(global_time_out=result.global_time_out)
+                        monty.deal_with_time_out()
                 exp.post_episode()
             exp.post_epoch()
 
