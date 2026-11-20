@@ -522,7 +522,7 @@ class MontyExperiment:
             actions = self.run_step(ctx, self._recognition_ctx.step, actions)
             self._recognition_ctx.step += 1
             if self._should_update_step_counter():
-                if self.model.is_exploring:
+                if StepType.from_string(self.model.step_type) is StepType.EXPLORING:
                     self._recognition_ctx.exploring_steps += 1
                 else:
                     self._recognition_ctx.matching_steps += 1
