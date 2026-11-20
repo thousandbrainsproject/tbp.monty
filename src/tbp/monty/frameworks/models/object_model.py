@@ -27,6 +27,7 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     build_point_cloud_graph,
     circular_mean,
     expand_index_dims,
+    get_cubic_patches,
     get_most_common_bool,
     get_most_common_value,
     get_values_from_dense_last_dim,
@@ -477,26 +478,81 @@ class GridObjectModel(GraphObjectModel):
         """
         # if self._location_tree is not None:
         # We are using the pretrained graphs and location trees for matching
-        (distances, nearest_node_ids) = self._location_tree.query(
-            search_locations,
-            k=num_neighbors,
-            p=2,  # euclidean distance
-            workers=1,  # using more than 1 worker slows down run on lambda.
-        )
+        # (distances, nearest_node_ids) = self._location_tree.query(
+        #     search_locations,
+        #     k=num_neighbors,
+        #     p=2,  # euclidean distance
+        #     workers=1,  # using more than 1 worker slows down run on lambda.
+        # )
         # else:
-        #     # TODO: This is not done yet and doesn't work. It seems at the moment
-        #     # That kd Tree search is still more efficient.
-        #     # using new grid structure directly to query nearest neighbors
-        #     distances, nearest_node_ids = self._retrieve_locations_in_radius(
-        #         search_locations,
-        #         search_radius=search_radius,
-        #         max_neighbors=num_neighbors,
-        #     )
+        # TODO: This is not done yet and doesn't work. It seems at the moment
+        # That kd Tree search is still more efficient.
+        # using new grid structure directly to query nearest neighbors
+        distances, nearest_node_ids = self._retrieve_locations_in_radius(
+            search_locations=search_locations,
+        )
 
         if return_distance:
             return distances
 
         return nearest_node_ids
+
+    def _retrieve_locations_in_radius(
+        self,
+        search_locations,
+        search_radius=0.005,
+        max_neighbors=None,
+    ):
+        # NOTE: CURRENTLY NOT USED.
+
+        # Patch looked at for search will have size search_range * 2 + 1
+        # -> Minimum size == 3x3x3
+        # TODO: Remove +1? -> allow for search radius == 0 for direct lookup
+        search_range = int(search_radius * self._location_scale_factor) + 1
+
+        search_indices = self._locations_to_grid_ids(search_locations)
+        ids_in_bouds = np.all(
+            (search_indices >= 0)
+            & (search_indices < (self._num_cells_per_dim + search_range)),
+            axis=1,
+        )
+        # Get cubic patches around search locations and a mask which is True when
+        # the patch is outside the grid.
+        loc_ids_in_range, mask = get_cubic_patches(
+            self._location_grid.shape,
+            search_indices[ids_in_bouds],
+            search_range,
+        )
+        # Extract observation counts from the patches
+        counts_in_range = np.ma.array(
+            self._observation_count[
+                loc_ids_in_range[..., 0],
+                loc_ids_in_range[..., 1],
+                loc_ids_in_range[..., 2],
+            ],
+            mask=np.broadcast_to(
+                mask[..., np.newaxis], (mask.shape[0], mask.shape[1], 1)
+            ),
+        )
+        cells_without_entries = counts_in_range == 0
+        # add cells that have no observations to mask
+        mask = np.logical_or(mask, cells_without_entries[:, :, 0])
+        # Extract the locations in cells that are in ranges and contain observations
+        locs_in_range = np.ma.array(
+            self._location_grid[
+                loc_ids_in_range[..., 0],
+                loc_ids_in_range[..., 1],
+                loc_ids_in_range[..., 2],
+            ],
+            mask=np.broadcast_to(
+                mask[..., np.newaxis], (mask.shape[0], mask.shape[1], 3)
+            ),
+        )
+        diff = search_locations[ids_in_bouds, np.newaxis] - locs_in_range
+        distances = np.ma.sqrt(np.ma.sum(diff**2, axis=-1))
+        # TODO: Keep information about which search location these correspond to
+        loc_ids_matching = loc_ids_in_range[np.logical_not(mask)]
+        return distances, loc_ids_matching
 
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):
