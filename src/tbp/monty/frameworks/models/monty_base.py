@@ -33,7 +33,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.memento import Memento
-from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = ["MontyBase"]
 
@@ -42,8 +41,6 @@ telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyBase(Monty):
-    _is_done: bool
-
     def __init__(
         self,
         sensor_modules: Sequence[SensorModule],
@@ -53,9 +50,6 @@ class MontyBase(Monty):
         sm_to_lm_matrix,
         lm_to_lm_matrix,
         lm_to_lm_vote_matrix,
-        min_eval_steps,
-        min_train_steps,
-        num_exploratory_steps,
         attention_system: AttentionSystem | None = None,
     ) -> None:
         """Initialize the base class.
@@ -82,9 +76,6 @@ class MontyBase(Monty):
             lm_to_lm_vote_matrix: describes lateral coupling between learning
                 modules. This matrix is used for voting. Assumes no lateral voting if
                 `None` is passed.
-            min_eval_steps: Minimum number of steps required for evaluations.
-            min_train_steps: Minimum number of steps required for training.
-            num_exploratory_steps: Number of steps required by the exploratory phase.
             attention_system: The attention system to be used.
                 If `None`, a NoopAttentionSystem will be used.
 
@@ -103,21 +94,12 @@ class MontyBase(Monty):
         self.sm_to_lm_matrix = sm_to_lm_matrix
         self.lm_to_lm_matrix = lm_to_lm_matrix
         self.lm_to_lm_vote_matrix = lm_to_lm_vote_matrix
-        self.min_eval_steps = min_eval_steps
-        self.min_train_steps = min_train_steps
-        self.num_exploratory_steps = num_exploratory_steps
 
         # Counters, logging, default step_type
         self.step_type = "matching_step"
         self.experiment_mode: ExperimentMode | None = (
             None  # initialize to neither training nor testing
         )
-
-        # Number of steps in which at least 1 LM received information during exploration
-        self.exploratory_steps = 0
-        # Number of steps in which at least 1 LM was updated. It is not the same as each
-        # individual LM's number of matching steps.
-        self.matching_steps = 0
 
         if self.sm_to_lm_matrix is None:
             raise ValueError("sm_to_lm_matrix must be defined")
@@ -144,7 +126,6 @@ class MontyBase(Monty):
                 "sensor_module id; no more, no less!"
             )
 
-        self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
         self._attention_system = (
@@ -225,7 +206,7 @@ class MontyBase(Monty):
         self._step_motor_system(ctx, observations, proprioceptive_state)
         return self._actions
 
-    def deal_with_time_out(self):
+    def deal_with_time_out(self) -> None:
         """Call any functions and logging in case of a time out."""
         pass
 
@@ -345,29 +326,6 @@ class MontyBase(Monty):
             self._goals,
         )
 
-    def _set_step_type_and_check_if_done(self):
-        """Check terminal conditions and decide if we change the step type.
-
-        In the base case, we just run until min_{exploratory, train, eval} steps is
-        reached, and then either change step type or end the experiment. NOTE: it is up
-        to you to override this method and define your experimental flow.
-        """
-        self.update_step_counters()
-
-        if self.exceeded_min_steps:
-            if self.step_type == "exploratory_step":
-                self._is_done = True
-                logger.info(f"finished exploring after {self.exploratory_steps} steps")
-
-            elif self.step_type == "matching_step":
-                if self.experiment_mode is ExperimentMode.TRAIN:
-                    self.switch_to_exploratory_step()
-                else:
-                    self._is_done = True
-                    logger.info(
-                        f"finished evaluating after {self.matching_steps} steps"
-                    )
-
     ###
     # Methods (other than step) that interact with the experiment
     ###
@@ -380,8 +338,6 @@ class MontyBase(Monty):
 
     def reset(self) -> None:
         # TODO: move most (all?) of this logic to Experiment
-        self._is_done = False
-        self.reset_episode_steps()
         self.switch_to_matching_step()
         for lm in self.learning_modules:
             lm.reset_stm()
@@ -508,56 +464,9 @@ class MontyBase(Monty):
     def is_exploring(self) -> bool:
         return self.step_type == "exploratory_step"
 
-    @property
-    def is_done(self) -> bool:
-        return self._is_done
-
-    def set_done(self) -> None:
-        self._is_done = True
-
-    @property
-    def min_steps(self):
-        if self.step_type == "matching_step":
-            if self.experiment_mode is ExperimentMode.TRAIN:
-                return self.min_train_steps
-
-            if self.experiment_mode is ExperimentMode.EVAL:
-                return self.min_eval_steps
-
-        elif self.step_type == "exploratory_step":
-            return self.num_exploratory_steps
-
-    @property
-    def step_type_count(self):
-        if self.step_type == "matching_step":
-            return self.matching_steps
-        if self.step_type == "exploratory_step":
-            return self.exploratory_steps
-
-    @property
-    def exceeded_min_steps(self):
-        return self.step_type_count > self.min_steps
-
-    def reset_episode_steps(self):
-        self.matching_steps = 0
-        self.exploratory_steps = 0
-
-    def update_step_counters(self):
-        if self.step_type == "matching_step":
-            self.matching_steps += 1
-            logger.info(f"--- Global Matching Step {self.matching_steps} ---")
-            telemeter.info(
-                TelemetryEvent(
-                    kind="GlobalMatchingStep", matching_steps=self.matching_steps
-                )
-            )
-        elif self.step_type == "exploratory_step":
-            self.exploratory_steps += 1
-
     def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"
         logger.debug("Going into matching mode")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
-        logger.info(f"Going into exploratory mode after {self.matching_steps} steps")
