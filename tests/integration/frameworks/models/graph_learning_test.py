@@ -26,6 +26,7 @@ from omegaconf import DictConfig
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.primary_target import PrimaryTarget
+from tbp.monty.experiment.recognition_strategy import StepType
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
@@ -977,11 +978,20 @@ class GraphLearningTest(BaseGraphTest):
                     monty._step_learning_modules(ctx)
                     monty._vote()
                     monty._pass_goals()
-                    monty._set_step_type_and_check_if_done()
-                # TODO: This test does too much manually and does not incorporate how
-                #       we run episodes with RecognitionContext. Below we mock
-                #       recognition_ctx so that post_episode() has access to it.
-                exp._recognition_ctx.step = num_steps
+                    exp._recognition_ctx.step += 1
+                    step_type = StepType.from_string(exp.model.step_type)
+                    if exp._should_update_step_counter():
+                        if step_type is StepType.EXPLORING:
+                            exp._recognition_ctx.exploring_steps += 1
+                        else:
+                            exp._recognition_ctx.matching_steps += 1
+                    result = exp._recognition_strategy(
+                        exp._recognition_ctx, exp.model.learning_modules, step_type
+                    )
+                    if result.start_exploring:
+                        monty.switch_to_exploratory_step()
+                    if result.time_out_lms:
+                        monty.deal_with_time_out()
                 exp.post_episode()
             exp.post_epoch()
 

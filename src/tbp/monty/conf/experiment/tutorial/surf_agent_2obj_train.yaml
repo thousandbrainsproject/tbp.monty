@@ -2,7 +2,7 @@
 # The configuration for the pretraining experiment.
 defaults:
   # The Monty configuration details.
-  - /monty: graph_exp500_e3_t3
+  - /monty: graph
   # The Monty motor system configuration specific to a surface agent.
   - /monty/motor_system_config: surface_curvature_informed_5_goal0
   # The Monty learning module configuration.
@@ -39,4 +39,4 @@ experiment:
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       # Ensure the run name is unique per experiment configuration.
-      run_name: surf_agent_1lm_2obj_train
+      run_name: surf_agent_2obj_train

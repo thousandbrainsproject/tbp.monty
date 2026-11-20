@@ -14,6 +14,7 @@ from tbp.monty.experiment.primary_target import PrimaryTarget
 @dataclass
 class LoggerArgs:
     episode_steps: int
+    matching_steps: int
     total_train_steps: int
     train_episodes: int
     train_epochs: int

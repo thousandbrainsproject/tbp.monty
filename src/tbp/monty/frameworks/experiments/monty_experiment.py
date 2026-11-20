@@ -28,11 +28,10 @@ from tbp.monty.experiment.environment import (
     SaccadeOnImageFromStreamInterface,
     SaccadeOnImageInterface,
 )
-from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.recognition_strategy import (
-    MontyIsDone,
     RecognitionContext,
     RecognitionStrategy,
+    StepType,
 )
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.positioning_procedures import (
@@ -45,6 +44,7 @@ from tbp.monty.frameworks.experiments.seed import episode_seed
 from tbp.monty.frameworks.loggers.exp_logger import LoggingCallbackHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import WandbWrapper
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.models.graph_matching import MontyForGraphMatching
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 from tbp.monty.memento import Memento
@@ -67,7 +67,6 @@ class MontyExperiment:
     show_sensor_output: bool
     live_plotter: LivePlotter
 
-    _match_criterion: MatchCriterion
     _recreation_mode: bool
     _monty_cfg: DictConfig | None  # dehydrated Monty config
     _monty_memo: Memento
@@ -103,7 +102,6 @@ class MontyExperiment:
             self.model_path = Path(config["model_name_or_path"])
         else:
             self.model_path = None
-        self._match_criterion = config["match_criterion"]
         self.show_sensor_output = config["show_sensor_output"]
         self.supervised_lm_ids = config["supervised_lm_ids"]
         if self.supervised_lm_ids == "all":
@@ -120,7 +118,7 @@ class MontyExperiment:
         self._rng_seed_history: list[int] = []
 
         self._step_hook = config.pop("step_hook", NoOpStepHook())
-        self._recognition_strategy = config.pop("recognition_strategy", MontyIsDone())
+        self._recognition_strategy = config.pop("recognition_strategy")
         self._recognition_ctx = RecognitionContext()
 
     def reset_episode_rng(self):
@@ -254,6 +252,7 @@ class MontyExperiment:
             target = self.env_interface.primary_target
         return LoggerArgs(
             episode_steps=self._recognition_ctx.step,
+            matching_steps=self._recognition_ctx.matching_steps,
             total_train_steps=self.total_train_steps,
             train_episodes=self.train_episodes,
             train_epochs=self.train_epochs,
@@ -437,7 +436,6 @@ class MontyExperiment:
             **config,
             **monty_args,
         )
-        model._match_criterion = self._match_criterion
         self.model = model
 
     def _snapshot_monty(self) -> None:
@@ -523,8 +521,8 @@ class MontyExperiment:
         while not self._recognition_complete():
             actions = self.run_step(ctx, self._recognition_ctx.step, actions)
             self._recognition_ctx.step += 1
-            if self._check_if_any_lms_updated():
-                if self.model.is_exploring:
+            if self._should_update_step_counter():
+                if StepType.from_string(self.model.step_type) is StepType.EXPLORING:
                     self._recognition_ctx.exploring_steps += 1
                 else:
                     self._recognition_ctx.matching_steps += 1
@@ -534,24 +532,31 @@ class MontyExperiment:
             logger.info("Episode ran %d steps.", self._recognition_ctx.step)
 
     def _recognition_complete(self) -> bool:
-        result = self._recognition_strategy(self._recognition_ctx, self.model)
+        result = self._recognition_strategy(
+            self._recognition_ctx,
+            self.model.learning_modules,
+            StepType.from_string(self.model.step_type),
+        )
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
         if result.time_out_lms:
             self.model.deal_with_time_out()
         return result.is_done
 
-    def _check_if_any_lms_updated(self: Self) -> bool:
-        # TODO: Find a better way to determine this condition.
-        #       The `check_if_any_lms_updated` method is defined in
-        #       `MontyForGraphMatching` rather than `MontyBase`,
-        #       so the distinction between `step` and `matching_steps`
-        #       (or `exploring_steps`) only applies to `MontyForGraphMatching`
-        #       and its subclasses.
-        try:
+    def _should_update_step_counter(self: Self) -> bool:
+        """Determine if the step counter should be updated.
+
+        Captures the current convention that for `MontyForGraphMatching`, the step
+        counter is only updated if any LMs have been updated. In other cases, for
+        example `MontyBase` during tests, step counters are always updated.
+
+        Returns:
+            True if the step counter should be updated, False otherwise.
+        """
+        if isinstance(self.model, MontyForGraphMatching):
             return self.model.check_if_any_lms_updated()
-        except AttributeError:
-            return False
+
+        return True
 
     def run_step(
         self, ctx: RuntimeContext, step: int, actions: list[Action]
