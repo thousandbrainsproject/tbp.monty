@@ -127,13 +127,14 @@ class Message:
         if translation is not None:
             self.location += translation
         if rotation is not None:
-            # TODO: Replace with match statement
             pose_vectors = self.morphological_features["pose_vectors"]
-            if isinstance(pose_vectors, GazeDirection):
-                raise TypeError("Cannot transform GazeDirection")
-            self.morphological_features["pose_vectors"] = type(pose_vectors)(
-                np.dot(rotation, self.morphological_features["pose_vectors"].value)
-            )
+            match pose_vectors:
+                case SurfacePoseVectors() | OrientationMatrix():
+                    self.morphological_features["pose_vectors"] = type(pose_vectors)(
+                        np.dot(rotation, pose_vectors.value)
+                    )
+                case _:
+                    raise TypeError(f"Cannot transform {type(pose_vectors).__name__}")
 
     def set_displacement(self, displacement, ppf=None):
         """Add displacement (represented as dict) to message.
@@ -164,12 +165,11 @@ class Message:
         if "pose_vectors" not in self.morphological_features:
             raise ValueError("Message does not have SurfacePoseVectors")
 
-        # TODO: Replace with match statement
-        pose_vectors = self.morphological_features["pose_vectors"]
-        if isinstance(pose_vectors, SurfacePoseVectors):
-            return pose_vectors.surface_normal
-
-        raise ValueError("Message does not have SurfacePoseVectors")
+        match self.morphological_features["pose_vectors"]:
+            case SurfacePoseVectors(surface_normal=surface_normal):
+                return surface_normal
+            case _:
+                raise ValueError("Message does not have SurfacePoseVectors")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""
@@ -186,14 +186,14 @@ class Message:
         if "pose_vectors" not in self.morphological_features:
             raise ValueError("Message does not have SurfacePoseVectors")
 
-        # TODO: Replace with match statement
-        pose_vectors = self.morphological_features["pose_vectors"]
-        if isinstance(pose_vectors, SurfacePoseVectors):
-            return (
-                pose_vectors.principal_curvature_1,
-                pose_vectors.principal_curvature_2,
-            )
-        raise ValueError("Message does not have SurfacePoseVectors")
+        match self.morphological_features["pose_vectors"]:
+            case SurfacePoseVectors(
+                principal_curvature_1=curvature_1,
+                principal_curvature_2=curvature_2,
+            ):
+                return curvature_1, curvature_2
+            case _:
+                raise ValueError("Message does not have SurfacePoseVectors")
 
     def get_on_object(self):
         """Return whether we think we are on the object or not.
