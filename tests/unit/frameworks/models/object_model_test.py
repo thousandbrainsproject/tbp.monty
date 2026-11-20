@@ -59,7 +59,11 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_create_grid_object_model(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=10, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=10,
+            pose_vector_type=SurfacePoseVectors,
         )
         self.assertIsNotNone(model)
         self.assertIsNone(model._graph)
@@ -82,7 +86,13 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_can_build_grid_object_model(self):
         max_nodes, max_size, num_voxels_per_dim = 10, 10, 10
-        model = GridObjectModel("test_model", max_nodes, max_size, num_voxels_per_dim, pose_vector_type = SurfacePoseVectors)
+        model = GridObjectModel(
+            "test_model",
+            max_nodes,
+            max_size,
+            num_voxels_per_dim,
+            pose_vector_type=SurfacePoseVectors,
+        )
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -173,7 +183,11 @@ class ObjectModelTest(unittest.TestCase):
         # that all locations should be binned into the same voxel and the location value
         # should be averaged.
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(
             self.dummy_locs,
@@ -193,7 +207,11 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_grid_features_are_averaged_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(
             self.dummy_locs,
@@ -226,7 +244,11 @@ class ObjectModelTest(unittest.TestCase):
         features = copy.deepcopy(self.dummy_features)
         features["pose_fully_defined"] = np.array([False, False, False, True])
         model2 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model2.build_model(
             self.dummy_locs,
@@ -255,7 +277,11 @@ class ObjectModelTest(unittest.TestCase):
         opposite_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = opposite_pv.flatten()
         model3 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model3.build_model(
             self.dummy_locs,
@@ -285,7 +311,11 @@ class ObjectModelTest(unittest.TestCase):
         rotated_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = rotated_pv.flatten()
         model4 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model4.build_model(
             self.dummy_locs,
@@ -307,7 +337,11 @@ class ObjectModelTest(unittest.TestCase):
             [-self.dummy_pv[0], self.dummy_pv[1], -self.dummy_pv[2]]
         )
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(self.dummy_locs, self.dummy_features)
 
@@ -338,7 +372,11 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_max_nodes_applied_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=3, max_size=10, num_voxels_per_dim=10, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=3,
+            max_size=10,
+            num_voxels_per_dim=10,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(
             self.dummy_locs,
@@ -349,7 +387,11 @@ class ObjectModelTest(unittest.TestCase):
     def test_max_size_applied_correctly(self):
         """Test that GridTooSmallError is raised if locations are outside of grid."""
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=1, num_voxels_per_dim=10, pose_vector_type=SurfacePoseVectors
+            "test_model",
+            max_nodes=10,
+            max_size=1,
+            num_voxels_per_dim=10,
+            pose_vector_type=SurfacePoseVectors,
         )
         with self.assertRaises(GridTooSmallError):
             model.build_model(
@@ -363,7 +405,6 @@ class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
         self.feature_mapping = {"pose_vectors": [0, 9], "pose_fully_defined": [9, 10]}
         self.new_features_in_voxel = np.hstack([np.eye(3).reshape(1, 9), [[1.0]]])
         self.pv_mean = np.arange(9.0)
-
 
     @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
     @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
