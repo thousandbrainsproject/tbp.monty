@@ -4,10 +4,6 @@ experiment:
     do_train: false
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
-      monty_args:
-        num_exploratory_steps: 1000
-        min_eval_steps: ${constants.min_eval_steps}
-        min_train_steps: 3
       motor_system_config:
         _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
         policy_selector:
@@ -470,10 +466,19 @@ experiment:
       _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
       count: 3
     recognition_strategy:
-      _target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition
-      max_train_steps: 1000
-      max_eval_steps: 500
-      max_total_steps: 6000
+      _target_: tbp.monty.experiment.recognition_strategy.Any
+      strategies:
+      - _target_: tbp.monty.experiment.recognition_strategy.MontyForGraphMatchingSetStepTypeAndCheckIfDone
+        match_criterion:
+          _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+          count: 3
+        min_train_steps: 3
+        min_eval_steps: ${constants.min_eval_steps}
+        num_exploratory_steps: 1000
+      - _target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition
+        max_train_steps: 1000
+        max_eval_steps: 500
+        max_total_steps: 6000
     logging:
       python_log_level: WARNING
       python_log_to_file: true

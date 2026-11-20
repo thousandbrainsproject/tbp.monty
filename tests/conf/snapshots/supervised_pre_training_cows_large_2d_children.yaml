@@ -4,10 +4,6 @@ experiment:
     do_train: true
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
-      monty_args:
-        num_exploratory_steps: 1000
-        min_eval_steps: 3
-        min_train_steps: 3
       motor_system_config:
         policy_selector:
           policy:
@@ -331,6 +327,13 @@ experiment:
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:
+      - _target_: tbp.monty.experiment.recognition_strategy.MontyForGraphMatchingSetStepTypeAndCheckIfDone
+        match_criterion:
+          _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+          count: 1
+        min_train_steps: 3
+        min_eval_steps: 3
+        num_exploratory_steps: 1000
       - _target_: tbp.monty.experiment.recognition_strategy.MontyIsDone
       - _target_: tbp.monty.experiment.recognition_strategy.NaiveScan
         fixed_amount: 1

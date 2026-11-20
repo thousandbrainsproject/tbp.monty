@@ -4,10 +4,6 @@ experiment:
     do_train: false
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
-      monty_args:
-        num_exploratory_steps: 1000
-        min_eval_steps: ${constants.min_eval_steps}
-        min_train_steps: 3
       motor_system_config:
         _target_: tbp.monty.frameworks.models.motor_system.MotorSystem
         policy_selector:
@@ -224,39 +220,6 @@ experiment:
           - 0.2
         raise_actuate_missing: false
       env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
-      transform:
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.GaussianBlurRGB
-        agent_id: agent_id_0
-        sigma: 5
-        sensor_ids:
-        - patch_1
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: agent_id_0
-        max_depth: 1
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
-        agent_id: agent_id_0
-        sensor_ids:
-        - patch_0
-        - patch_1
-        - patch_2
-        - view_finder
-        resolutions:
-        - - 64
-          - 64
-        - - 64
-          - 64
-        - - 64
-          - 64
-        - - 256
-          - 256
-        world_coord: true
-        zooms:
-        - 10.0
-        - 30.0
-        - 5.0
-        - 1.0
-        get_all_points: true
-        use_semantic_sensor: false
     eval_env_interface_args:
       object_names:
       - 001_cube
@@ -395,10 +358,20 @@ experiment:
       ids:
       - learning_module_2
     recognition_strategy:
-      _target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition
-      max_train_steps: 1000
-      max_eval_steps: 100
-      max_total_steps: 500
+      _target_: tbp.monty.experiment.recognition_strategy.Any
+      strategies:
+      - _target_: tbp.monty.experiment.recognition_strategy.MontyForGraphMatchingSetStepTypeAndCheckIfDone
+        match_criterion:
+          _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
+          ids:
+          - learning_module_2
+        min_train_steps: 3
+        min_eval_steps: ${constants.min_eval_steps}
+        num_exploratory_steps: 1000
+      - _target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition
+        max_train_steps: 1000
+        max_eval_steps: 100
+        max_total_steps: 500
     logging:
       python_log_level: WARNING
       python_log_to_file: true
