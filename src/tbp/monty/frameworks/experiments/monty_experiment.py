@@ -31,6 +31,7 @@ from tbp.monty.experiment.environment import (
 from tbp.monty.experiment.recognition_strategy import (
     RecognitionContext,
     RecognitionStrategy,
+    StepType,
 )
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.positioning_procedures import (
@@ -531,7 +532,11 @@ class MontyExperiment:
             logger.info("Episode ran %d steps.", self._recognition_ctx.step)
 
     def _recognition_complete(self) -> bool:
-        result = self._recognition_strategy(self._recognition_ctx, self.model)
+        result = self._recognition_strategy(
+            self._recognition_ctx,
+            self.model.learning_modules,
+            StepType.from_string(self.model.step_type),
+        )
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
         if result.time_out_lms:
