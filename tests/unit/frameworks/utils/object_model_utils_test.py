@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import numpy.typing as npt
@@ -22,6 +23,7 @@ from tbp.monty.frameworks.utils.object_model_utils import (
 )
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tests.matchers import ArrayEqual
 from tests.strategies.geometry import rotation_matrices
 
 
@@ -172,7 +174,18 @@ class PoseVectorsTest(unittest.TestCase):
 
 class OrientationMatrixMeanTest(unittest.TestCase):
     @given(orientation_matrices=rotation_matrices())
+    @patch("tbp.monty.frameworks.utils.object_model_utils.Rotation")
     def test_rotation_is_called_with_reshaped_matrices(
-        self, orientation_matrices: npt.NDArray[np.float64]
+        self, mock_rotation: MagicMock, orientation_matrices: npt.NDArray[np.float64]
     ) -> None:
-        pass
+        from_matrix_mock = MagicMock()
+        mock_rotation.from_matrix = from_matrix_mock
+        input_orientation_matrices = orientation_matrices.reshape(-1, 9)
+
+        result = orientation_matrix_mean(input_orientation_matrices)
+
+        from_matrix_mock.assert_called_once_with(ArrayEqual(orientation_matrices))
+        self.assertIs(
+            result,
+            from_matrix_mock.return_value.mean.return_value.as_matrix.return_value.flatten.return_value,
+        )
