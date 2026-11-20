@@ -22,7 +22,8 @@ from tbp.monty.frameworks.models.object_model import (
     GridTooSmallError,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import check_orthonormal
-from tbp.monty.geometry import Rotation, SurfacePoseVectors, OrientationMatrix
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
+from tests.matchers import ArrayEqual
 
 
 class ObjectModelTest(unittest.TestCase):
@@ -400,11 +401,18 @@ class ObjectModelTest(unittest.TestCase):
             )
 
 
-class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
+class GridObjectModelPoseVectorMeanTest(unittest.TestCase):
     def setUp(self) -> None:
         self.feature_mapping = {"pose_vectors": [0, 9], "pose_fully_defined": [9, 10]}
+        self.feature_mapping_vector_len = 10
+        [self.pose_vectors_start, self.pose_vectors_end] = self.feature_mapping[
+            "pose_vectors"
+        ]
+        [self.pose_fully_defined_start, self.pose_fully_defined_end] = (
+            self.feature_mapping["pose_fully_defined"]
+        )
         self.new_features_in_voxel = np.hstack([np.eye(3).reshape(1, 9), [[1.0]]])
-        self.pv_mean = np.arange(9.0)
+        self.pv_mean_sentinel = np.arange(9.0)
 
     @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
     @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
@@ -420,27 +428,32 @@ class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
             num_voxels_per_dim=5,
             pose_vector_type=OrientationMatrix,
         )
-        # One observation in the voxel, so there is no previous average to merge.
-        model._observation_count = MagicMock()
-        model._observation_count.__getitem__.return_value = 1
-        orientation_matrix_mean_mock.return_value = self.pv_mean
+        # Skip `if num_obs_in_voxel > num_new_obs:` branch in code after tested section
+        model._observation_count = MagicMock()  # type: ignore[assignment]
+        model._observation_count.__getitem__.return_value = 0  # type: ignore[index]
+        orientation_matrix_mean_mock.return_value = self.pv_mean_sentinel
 
         new_features = model._get_new_voxel_features(
             new_features_in_voxel=self.new_features_in_voxel,
             previous_feat_in_voxel=MagicMock(),
-            voxel=(0, 0, 0),
+            voxel=MagicMock(),
             obs_fm=self.feature_mapping,
             target_fm=self.feature_mapping,
-            target_feat_dim=10,
+            target_feat_dim=self.feature_mapping_vector_len,
         )
 
-        orientation_matrix_mean_mock.assert_called_once()
-        np.testing.assert_array_equal(
-            orientation_matrix_mean_mock.call_args.args[0],
-            self.new_features_in_voxel[:, 0:9],
+        orientation_matrix_mean_mock.assert_called_once_with(
+            ArrayEqual(
+                self.new_features_in_voxel[
+                    :, self.pose_vectors_start : self.pose_vectors_end
+                ]
+            )
         )
         surface_pose_vector_mean_mock.assert_not_called()
-        np.testing.assert_array_equal(new_features[0:9], self.pv_mean)
+        np.testing.assert_array_equal(
+            new_features[self.pose_vectors_start : self.pose_vectors_end],
+            self.pv_mean_sentinel,
+        )
 
     @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
     @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
@@ -456,28 +469,37 @@ class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
             num_voxels_per_dim=5,
             pose_vector_type=SurfacePoseVectors,
         )
-        # One observation in the voxel, so there is no previous average to merge.
-        model._observation_count = MagicMock()
-        model._observation_count.__getitem__.return_value = 1
-        surface_pose_vector_mean_mock.return_value = self.pv_mean
+        # Skip `if num_obs_in_voxel > num_new_obs:` branch in code after tested section
+        model._observation_count = MagicMock()  # type: ignore[assignment]
+        model._observation_count.__getitem__.return_value = 0  # type: ignore[index]
+        surface_pose_vector_mean_mock.return_value = self.pv_mean_sentinel
 
         new_features = model._get_new_voxel_features(
             new_features_in_voxel=self.new_features_in_voxel,
             previous_feat_in_voxel=MagicMock(),
-            voxel=(0, 0, 0),
+            voxel=MagicMock(),
             obs_fm=self.feature_mapping,
             target_fm=self.feature_mapping,
-            target_feat_dim=10,
+            target_feat_dim=self.feature_mapping_vector_len,
         )
 
-        surface_pose_vector_mean_mock.assert_called_once()
-        pose_vectors, pose_fully_defined = surface_pose_vector_mean_mock.call_args.args
-        np.testing.assert_array_equal(pose_vectors, self.new_features_in_voxel[:, 0:9])
-        np.testing.assert_array_equal(
-            pose_fully_defined, self.new_features_in_voxel[:, 9:10]
+        surface_pose_vector_mean_mock.assert_called_once_with(
+            ArrayEqual(
+                self.new_features_in_voxel[
+                    :, self.pose_vectors_start : self.pose_vectors_end
+                ]
+            ),
+            ArrayEqual(
+                self.new_features_in_voxel[
+                    :, self.pose_fully_defined_start : self.pose_fully_defined_end
+                ]
+            ),
         )
         orientation_matrix_mean_mock.assert_not_called()
-        np.testing.assert_array_equal(new_features[0:9], self.pv_mean)
+        np.testing.assert_array_equal(
+            new_features[self.pose_vectors_start : self.pose_vectors_end],
+            self.pv_mean_sentinel,
+        )
 
     def test_raises_if_pose_vector_type_is_not_set(self) -> None:
         model = GridObjectModel(
@@ -487,15 +509,12 @@ class GridObjectModelPoseVectorAverageTest(unittest.TestCase):
             num_voxels_per_dim=5,
             pose_vector_type=None,
         )
-        # One observation in the voxel, so there is no previous average to merge.
-        model._observation_count = MagicMock()
-        model._observation_count.__getitem__.return_value = 1
         with self.assertRaises(ValueError):
             model._get_new_voxel_features(
                 new_features_in_voxel=self.new_features_in_voxel,
                 previous_feat_in_voxel=MagicMock(),
-                voxel=(0, 0, 0),
+                voxel=MagicMock(),
                 obs_fm=self.feature_mapping,
                 target_fm=self.feature_mapping,
-                target_feat_dim=10,
+                target_feat_dim=self.feature_mapping_vector_len,
             )

@@ -20,7 +20,7 @@ from scipy.spatial import KDTree
 from sklearn.neighbors import kneighbors_graph
 from torch_geometric.data import Data
 
-import tbp.monty.geometry as geometry
+from tbp.monty import geometry
 from tbp.monty.frameworks.models.abstract_monty_classes import ObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.frameworks.utils.object_model_utils import (
