@@ -27,7 +27,7 @@ Monty experiments are defined and configured using [Hydra](https://hydra.cc/). T
     - `logging`: Specifies which loggers should be used.
     - `monty_config`: Configuration for the Monty model.
       - `monty_class`: `Monty` The type of Monty model to use, e.g. for evidence-based graph matching: `MontyForEvidenceGraphMatching`.
-      - `monty_args`: Arguments supplied to the Monty class.
+      - `monty_args`: Arguments supplied to the Monty class, if any.
       - `sensor_modules`: `Mapping[str:Mapping]` Sensor module configurations.
       - `learning_modules`: `Mapping[str:Mapping]` Learning module configurations.
       - `motor_system_config`: Configuration of the motor system and motor policies.
@@ -48,7 +48,7 @@ Monty experiments are defined and configured using [Hydra](https://hydra.cc/). T
 
 # Setting up the Experiment Config for Pretraining
 
-To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_train_mujoco.yaml`. Let's highlight the various aspects of a training experiment configuration.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_train.yaml`. Let's highlight the various aspects of a training experiment configuration.
 
 ```yaml
 # @package _global_
@@ -64,13 +64,13 @@ experiment:
     # ...
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
-      run_name: surf_agent_2obj_train_mujoco
+      run_name: surf_agent_2obj_train
 ```
 
 > [!NOTE]
 > **Where Logs and Models are Saved**
 >
-> Loggers have `output_dir` and `run_name` parameters, and since we will use `run.py`, the output will be saved to `OUTPUT_DIR/RUN_NAME`. The `MontySupervisedObjectPretrainingExperiment` suffixes `pretrained`, so the final model will be stored at `OUTPUT_DIR/RUN_NAME/pretrained`, which in our case will be `~/tbp/results/monty/projects/surf_agent_2obj_train_mujoco/pretrained`.
+> Loggers have `output_dir` and `run_name` parameters, and since we will use `run.py`, the output will be saved to `OUTPUT_DIR/RUN_NAME`. The `MontySupervisedObjectPretrainingExperiment` suffixes `pretrained`, so the final model will be stored at `OUTPUT_DIR/RUN_NAME/pretrained`, which in our case will be `~/tbp/results/monty/projects/surf_agent_2obj_train/pretrained`.
 >
 
 Next, we specify which objects the model will train on in the dataset, including the rotations in which the objects will be presented. The following code specifies two objects ("mug" and "banana") and 14 unique rotations, which means that both the mug and the banana will be shown 14 times, each time in a different rotation. During each of the overall 28 episodes, the sensors will move over the respective object and collect multiple observations to update the model of the object.
@@ -119,7 +119,7 @@ Now we define the entire configuration that specifies one complete Monty experim
 # The configuration for the pretraining experiment.
 defaults:
   # The Monty configuration details.
-  - /monty: graph_exp500_e3_t3
+  - /monty: graph
   # The Monty motor system configuration specific to a surface agent.
   - /monty/motor_system_config: surface_curvature_informed_5_goal0
   # The Monty learning module configuration.
@@ -156,12 +156,12 @@ experiment:
     logging:
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       # Ensure the run name is unique per experiment configuration.
-      run_name: surf_agent_2obj_train_mujoco
+      run_name: surf_agent_2obj_train
 ```
 
 Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md) and a training environment interface to initialize our objects at different orientations for each episode. `/monty/*` composes multiple configs that together describe the complete sensorimotor modeling system. Here is a short breakdown of its components:
 
-- `/monty: graph_exp500_e3_t3`: The top-level Monty configuration that specifies how many exploratory, eval, and train steps to take.
+- `/monty: graph`: The top-level Monty configuration that specifies which Monty implementation to use.
 - `/monty/motor_system_config: surface_curvature_informed_5_goal0`: A motor system configuration that specifies a motor policy to use. This policy here will move orthogonal to the surface of the object with a preference of following principal curvatures that are sensed.
 - `/monty/learning_module: graph_1lm`: Specifies a single `GraphLM` that constructs a graph of the object being explored.
 - `/monty/sensor_module: camera_surf_rgba`: Specifies two sensor modules. One will be a `CameraSM` with `is_surface_sm=True` (a small sensory patch for a surface agent). The sensor module will extract the given list of features for each patch. We won't save raw observations here since it is memory-intensive and only required for detailed logging/plotting. The other will be an `ExperimentSensorModule` functioning like a probe, which we can use for logging. We could also store raw observations from the viewfinder for later visualization/analysis if needed. This sensor module is not connected to a learning module and, therefore, is not used for learning. It is called `view_finder` since it helps initialize each episode on the object.
@@ -172,7 +172,7 @@ To get an idea of what each sensor module sees and the information passed on to 
 
 To run this experiment, call the `run.py` script with the experiment name as the `experiment` argument.
 ```shell
-uv run python run.py experiment=tutorial/surf_agent_2obj_train_mujoco
+uv run python run.py experiment=tutorial/surf_agent_2obj_train
 ```
 
 This will take a few minutes to complete and then you can inspect and visualize the learned models. To do so, create a script and paste in the following code. Name the script `pretraining_tutorial_analysis.py`, place it in the project directory, and run it: `uv run python pretraining_tutorial_analysis.py`.
@@ -186,7 +186,7 @@ from tbp.monty.frameworks.utils.logging_utils import load_stats
 from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Specify where pretraining data is stored.
-exp_path = Path("~/tbp/results/monty/projects/surf_agent_2obj_train_mujoco").expanduser()
+exp_path = Path("~/tbp/results/monty/projects/surf_agent_2obj_train").expanduser()
 pretrained_dict = exp_path / "pretrained"
 
 train_stats, eval_stats, detailed_stats, lm_models = load_stats(

@@ -149,7 +149,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         self._vote()
         self._pass_goals()
         self._step_motor_system(ctx, observations, proprioceptive_state)
-        self._set_step_type_and_check_if_done()
 
     def _exploratory_step(
         self,
@@ -170,7 +169,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         self._step_learning_modules(ctx)
         self._pass_goals()
         self._step_motor_system(ctx, observations, proprioceptive_state)
-        self._set_step_type_and_check_if_done()
 
     @abc.abstractmethod
     def step(
@@ -239,14 +237,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractmethod
-    def _set_step_type_and_check_if_done(self):
-        """Check terminal conditions and decide if to change the step type.
-
-        Update what self.is_done returns to the experiment.
-        """
-        pass
-
     ###
     # Saving, loading, and logging
     ###
@@ -289,10 +279,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_experiment_mode(self, mode: ExperimentMode) -> None:
-        pass
-
-    @abc.abstractmethod
-    def is_done(self) -> bool:
         pass
 
 

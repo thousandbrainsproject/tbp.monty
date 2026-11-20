@@ -94,8 +94,6 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
             return super().reset()
 
         # reset terminal state
-        self._is_done = False
-        self.reset_episode_steps()
         self.switch_to_matching_step()
         self._reset_terminal_states()
 
