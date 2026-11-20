@@ -6,6 +6,16 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from .vocus2 import Vocus2
+from .vocus2 import (
+    ColorChannelSalience,
+    NoOperatingLimits,
+    Vocus2,
+    Vocus2SalienceConfig,
+)
 
-__all__ = ["Vocus2"]
+__all__ = [
+    "ColorChannelSalience",
+    "NoOperatingLimits",
+    "Vocus2",
+    "Vocus2SalienceConfig",
+]
