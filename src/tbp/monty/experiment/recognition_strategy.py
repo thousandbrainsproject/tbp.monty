@@ -371,6 +371,17 @@ class StepLimit(RecognitionStrategy):
 class MatchCriteria(RecognitionStrategy):
     """The `model.learning_modules` meet the configured `match_criteria`."""
 
+    _match_criterion: MatchCriterion
+    """The criterion the learning modules must satisfy."""
+
+    def __init__(self: Self, match_criterion: MatchCriterion) -> None:
+        """Initialize the strategy with the given match criterion.
+
+        Args:
+            match_criterion: The criterion the learning modules must satisfy.
+        """
+        self._match_criterion = match_criterion
+
     def __call__(
         self: Self,
         ctx: RecognitionContext,  # noqa: ARG002
@@ -379,9 +390,7 @@ class MatchCriteria(RecognitionStrategy):
         terminal_states: dict[str, str | None] = {
             lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
         }
-        # TODO: Either configure the `match_criterion` on the strategy itself,
-        #       or provide configurable strategies for each criterion.
-        is_done = model._match_criterion(terminal_states)
+        is_done = self._match_criterion(terminal_states)
         if is_done:
             logger.info(
                 "MatchCriteria is done, with terminal_states=%s",

@@ -416,10 +416,6 @@ experiment:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_3}
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
-      ids:
-      - learning_module_2
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:

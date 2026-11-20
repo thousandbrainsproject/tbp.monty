@@ -156,9 +156,6 @@ experiment:
         allow_translation: false
         max_orientation_attempts: 3
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.MinEvalMaxTotalSteps
       min_eval_steps: 20
@@ -179,6 +176,9 @@ experiment:
           max_train_steps: 1000
           max_eval_steps: 500
         - _target_: tbp.monty.experiment.recognition_strategy.MatchCriteria
+          match_criterion:
+            _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+            count: 1
     logging:
       python_log_level: WARNING
       python_log_to_file: true

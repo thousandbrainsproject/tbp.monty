@@ -92,9 +92,6 @@ experiment:
         clip_value: 1.1
     eval_env_interface_args: {}
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.SaccadeOnImageFromStreamInterface}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:
