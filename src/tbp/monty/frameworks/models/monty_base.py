@@ -482,9 +482,6 @@ class MontyBase(Monty):
     def is_done(self) -> bool:
         return self._is_done
 
-    def set_done(self) -> None:
-        self._is_done = True
-
     def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"
         logger.debug("Going into matching mode")
