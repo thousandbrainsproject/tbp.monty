@@ -24,6 +24,7 @@ from tbp.monty.frameworks.utils.logging_utils import (
     target_data_to_dict,
     total_size,
 )
+from tbp.monty.telemetry.episode import subscribers
 
 """
 Loggers define a pool of data in the attribute self.data. The job of loggers is to
@@ -185,8 +186,11 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             else logger_args.eval_episodes
         )
 
-        for handler in self.handlers:
-            handler.report_episode(self.data, output_dir, episode, mode)
+        # TODO telemetry: temporarily commented to test EpisodeTelemetryHandler
+        # for handler in self.handlers:
+        #     handler.report_episode(self.data, output_dir, episode, mode)
+
+        subscribers.old_logger_data = self.data  # TODO: remove!
 
         if not self.use_parallel_wandb_logging:
             # when logging in parallel to wandb we need to wait with flushing
