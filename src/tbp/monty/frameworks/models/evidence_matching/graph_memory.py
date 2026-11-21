@@ -10,6 +10,8 @@
 
 import logging
 
+from torch_geometric.data import Data
+
 from tbp.monty.frameworks.models.graph_matching import GraphMemory
 from tbp.monty.frameworks.models.object_model import (
     GridObjectModel,
@@ -82,7 +84,7 @@ class EvidenceGraphMemory(GraphMemory):
                     # it to the GridObjectModel (with use_original_graph == True)
                     loaded_graph = channel_model._graph
                     channel_model = self._initialize_model_with_graph(
-                        graph_id, loaded_graph
+                        graph_id, loaded_graph, input_channel
                     )
                 else:
                     # serialization seems to mess up the sparse tensors, so we need to
@@ -105,12 +107,15 @@ class EvidenceGraphMemory(GraphMemory):
             except GridTooSmallError:
                 logger.info("Grid too small for given locations. Not adding to memory.")
 
-    def _initialize_model_with_graph(self, graph_id, graph):
+    def _initialize_model_with_graph(
+        self, graph_id: str, graph: Data, input_channel: str
+    ) -> GridObjectModel:
         model = GridObjectModel(
             object_id=graph_id,
             max_nodes=self.max_nodes_per_graph,
             max_size=self.max_graph_size,
             num_voxels_per_dim=self.num_model_voxels_per_dim,
+            pose_vector_type=self.pose_vector_types.get(input_channel),
         )
         # Keep benchmark results constant by still using original graph for
         # matching when loading pretrained models.
@@ -136,6 +141,7 @@ class EvidenceGraphMemory(GraphMemory):
             max_nodes=self.max_nodes_per_graph,
             max_size=self.max_graph_size,
             num_voxels_per_dim=self.num_model_voxels_per_dim,
+            pose_vector_type=self.pose_vector_types.get(input_channel),
         )
         try:
             model.build_model(locations=locations, features=features)

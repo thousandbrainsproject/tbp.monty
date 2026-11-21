@@ -20,6 +20,7 @@ from scipy.spatial import KDTree
 from sklearn.neighbors import kneighbors_graph
 from torch_geometric.data import Data
 
+from tbp.monty import geometry
 from tbp.monty.frameworks.models.abstract_monty_classes import ObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.frameworks.utils.object_model_utils import (
@@ -31,12 +32,14 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     get_most_common_value,
     get_values_from_dense_last_dim,
     increment_sparse_tensor_by_count,
-    pose_vector_mean,
+    orientation_matrix_mean,
     pose_vector_merge,
     remove_close_points,
+    surface_pose_vector_mean,
     torch_graph_to_numpy,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import apply_rf_transform_to_points
+from tbp.monty.geometry import OrientationMatrix, SurfacePoseVectors
 
 logger = logging.getLogger(__name__)
 
@@ -368,7 +371,18 @@ class GridObjectModel(GraphObjectModel):
         - remove .norm as attribute and store as feature instead?
     """
 
-    def __init__(self, object_id, max_nodes, max_size, num_voxels_per_dim):
+    # TODO: Remove once features are stored unflattened (e.g. in NumpyGraph).
+    pose_vector_type: type[SurfacePoseVectors | OrientationMatrix] | None = None
+    """Type of pose vectors. Stays None only for channels without pose_vectors."""
+
+    def __init__(
+        self,
+        object_id: str,
+        max_nodes: int,
+        max_size: float,
+        num_voxels_per_dim: int,
+        pose_vector_type: type[SurfacePoseVectors | OrientationMatrix] | None,
+    ) -> None:
         """Initialize a grid object model.
 
         Args:
@@ -379,6 +393,7 @@ class GridObjectModel(GraphObjectModel):
                 that can be represented and how locations are mapped into voxels.
             num_voxels_per_dim: number of voxels per dimension in the model's grids.
                 Defines the resolution of the model.
+            pose_vector_type: Type of pose_vectors.
         """
         logger.info(f"init object model with id {object_id}")
         self.object_id = object_id
@@ -402,6 +417,7 @@ class GridObjectModel(GraphObjectModel):
         # filled or used to constrain nodes in graph.
         self.use_original_graph = False
         self._location_tree = None
+        self.pose_vector_type = pose_vector_type
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
@@ -715,6 +731,8 @@ class GridObjectModel(GraphObjectModel):
             features=np.array(features_at_ids),
             feature_mapping=self._current_feature_mapping,
         )
+        # Store the type on the graph so it survives saving and loading the model.
+        graph.pose_vector_type = self.pose_vector_type
         # TODO: remove eventually and do search directly in grid?
         self._location_tree = KDTree(
             graph.pos,
@@ -806,15 +824,32 @@ class GridObjectModel(GraphObjectModel):
 
         Returns:
             New average features for a voxel.
+
+        Raises:
+            ValueError: If pose_vectors are present but their type is not known.
         """
         new_feature_avg = np.zeros(target_feat_dim)
-        if ("pose_vectors" in obs_fm) and ("pose_fully_defined" in obs_fm):
-            # TODO: deal with case where not all of those keys are present
+        if "pose_vectors" in obs_fm:
             pv_ids = obs_fm["pose_vectors"]
-            pdefined_ids = obs_fm["pose_fully_defined"]
             pose_vecs = new_features_in_voxel[:, pv_ids[0] : pv_ids[1]]
-            pdefined = new_features_in_voxel[:, pdefined_ids[0] : pdefined_ids[1]]
-            pv_mean, _ = pose_vector_mean(pose_vecs, pdefined)
+            match self.pose_vector_type:
+                case geometry.OrientationMatrix:
+                    # Object orientations have no surface-side ambiguity, so take a
+                    # plain rotation mean. pose_fully_defined is not needed.
+                    pv_mean = orientation_matrix_mean(pose_vecs)
+                case geometry.SurfacePoseVectors:
+                    # TODO: deal with case where pose_fully_defined is not present
+                    pdefined_ids = obs_fm["pose_fully_defined"]
+                    pdefined = new_features_in_voxel[
+                        :, pdefined_ids[0] : pdefined_ids[1]
+                    ]
+                    pv_mean = surface_pose_vector_mean(pose_vecs, pdefined)
+                case _:
+                    raise ValueError(
+                        f"Cannot average pose_vectors of type {self.pose_vector_type} "
+                        f"in {self.object_id}."
+                    )
+
         for feature in obs_fm:
             ids = obs_fm[feature]
             feats = new_features_in_voxel[:, ids[0] : ids[1]]

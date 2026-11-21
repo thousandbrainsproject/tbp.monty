@@ -39,7 +39,7 @@ from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     apply_rf_transform_to_points,
 )
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
 from tbp.monty.telemetry.schemas import TelemetryEvent
@@ -1002,19 +1002,23 @@ class GraphLM(LearningModule):
         # QUESTION: Should this actually be something handled in LMs?
         raise NotImplementedError("Need to implement way to update memory hypotheses")
 
-    def _update_memory(self):
+    def _update_memory(self) -> None:
         """Give all infos to graph_memory.update_memory to determine how to update."""
         if self.detected_object is None:
             logger.info("no match found in time, not updating memory")
             return
-        args = self.buffer.get_infos_for_graph_update()
-        args["graph_id"] = self.detected_object
-        args["object_rotation"] = self.detected_rotation_r
-        if args["object_rotation"] is not None:
-            # TODO: find a solution that makes it more obvious when rotation is rel
-            # the model or rel environment.
-            args["object_rotation"] = args["object_rotation"].inv()
-        self.graph_memory.update_memory(**args)
+
+        self.graph_memory.update_memory(
+            locations=self.buffer.get_all_locations_on_object(),
+            features=self.buffer.get_all_features_on_object(),
+            graph_id=self.detected_object,
+            object_location_rel_body=self.buffer.stats["detected_location_rel_body"],
+            location_rel_model=self.buffer.stats["detected_location_on_model"],
+            object_rotation=self.detected_rotation_r.inv()
+            if self.detected_rotation_r is not None
+            else None,
+            pose_vector_types=self.buffer.pose_vector_types,
+        )
 
     def _update_target_graph_mapping(self, detected_object, target_object):
         """Update dicts that keep track which graphs were built from which objects."""
@@ -1122,6 +1126,8 @@ class GraphMemory(LMMemory):
     Subclasses are DisplacementGraphMemory, FeatureGraphMemory and EvidenceGraphMemory.
     """
 
+    pose_vector_types: dict[str, type[SurfacePoseVectors | OrientationMatrix]]
+
     def __init__(self, graph_delta_thresholds=None, k=None) -> None:
         """Initialize a graph memory structure. This can then be filled with graphs.
 
@@ -1143,6 +1149,7 @@ class GraphMemory(LMMemory):
         # Array representation of features for each graph -> faster matching
         self.feature_array = {}
         self.feature_order = {}  # Order in which features are stored in feature_array
+        self.pose_vector_types = {}
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
@@ -1155,6 +1162,7 @@ class GraphMemory(LMMemory):
         object_location_rel_body: npt.NDArray,
         location_rel_model: npt.NDArray,
         object_rotation: Rotation | None,
+        pose_vector_types: dict[str, type[SurfacePoseVectors | OrientationMatrix]],
     ) -> None:
         """Determine how to update memory and call corresponding function.
 
@@ -1178,6 +1186,8 @@ class GraphMemory(LMMemory):
             logger.info(f"{graph_id} already in memory ({self.get_memory_ids()})")
         else:
             logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
+
+        self.pose_vector_types.update(pose_vector_types)
 
         for input_channel, channel_features in features.items():
             (

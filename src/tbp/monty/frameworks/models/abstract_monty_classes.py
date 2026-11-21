@@ -31,7 +31,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     ProprioceptiveState,
 )
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 from tbp.monty.memento import Memento, Snapshotable
 from tbp.monty.observations import SensorObservation
 
@@ -445,9 +445,6 @@ class LearningModule(
 class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
     """Like a long-term memory storing all the knowledge an LM has."""
 
-    ###
-    # Methods that define the algorithm
-    ###
     @abc.abstractmethod
     def update_memory(
         self,
@@ -457,6 +454,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
         object_location_rel_body: npt.NDArray[np.float64],
         location_rel_model: npt.NDArray[np.float64],
         object_rotation: Rotation | None,
+        pose_vector_types: dict[str, type[SurfacePoseVectors | OrientationMatrix]],
     ) -> None:
         """Update models stored in memory given an episode's observations.
 
@@ -470,6 +468,7 @@ class LMMemory(Snapshotable, metaclass=abc.ABCMeta):
             location_rel_model: Location of the last observation relative to the
                 object model.
             object_rotation: Rotation of the object relative to the world.
+            pose_vector_types: Map from input channel name to pose vector type.
         """
         pass
 

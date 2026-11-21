@@ -9,17 +9,22 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import numpy.typing as npt
+from hypothesis import given
 
 from tbp.monty.frameworks.utils.object_model_utils import (
+    orientation_matrix_mean,
     orthonormal_pose_vectors,
-    pose_vector_mean,
     pose_vector_merge,
+    surface_pose_vector_mean,
 )
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import DEFAULT_TOLERANCE
+from tests.matchers import ArrayEqual
+from tests.strategies.geometry import rotation_matrices
 
 
 class PoseVectorsTest(unittest.TestCase):
@@ -79,7 +84,7 @@ class PoseVectorsTest(unittest.TestCase):
                     for _ in range(6)
                 ]
             )
-            pv_mean, _ = pose_vector_mean(observations, np.ones((6, 1)))
+            pv_mean = surface_pose_vector_mean(observations, np.ones((6, 1)))
             self.assert_is_rotation(
                 pv_mean, "Mean of spread observations is not a rotation"
             )
@@ -156,7 +161,7 @@ class PoseVectorsTest(unittest.TestCase):
                     for _ in range(4)
                 ]
             )
-            pv_mean, _ = pose_vector_mean(observations, np.ones((4, 1)))
+            pv_mean = surface_pose_vector_mean(observations, np.ones((4, 1)))
             stored = pose_vector_merge(
                 pv_mean,
                 stored,
@@ -165,3 +170,22 @@ class PoseVectorsTest(unittest.TestCase):
             )
             observation_count += 4
             self.assert_is_rotation(stored, "Merged frame is not a rotation")
+
+
+class OrientationMatrixMeanTest(unittest.TestCase):
+    @given(orientation_matrices=rotation_matrices())
+    @patch("tbp.monty.frameworks.utils.object_model_utils.Rotation")
+    def test_rotation_is_called_with_reshaped_matrices(
+        self, mock_rotation: MagicMock, orientation_matrices: npt.NDArray[np.float64]
+    ) -> None:
+        from_matrix_mock = MagicMock()
+        mock_rotation.from_matrix = from_matrix_mock
+        input_orientation_matrices = orientation_matrices.reshape(-1, 9)
+
+        result = orientation_matrix_mean(input_orientation_matrices)
+
+        from_matrix_mock.assert_called_once_with(ArrayEqual(orientation_matrices))
+        self.assertIs(
+            result,
+            from_matrix_mock.return_value.mean.return_value.as_matrix.return_value.flatten.return_value,
+        )

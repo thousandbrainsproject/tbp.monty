@@ -47,6 +47,8 @@ class FeatureAtLocationBuffer:
     location buffer is also used to calculate displacements.
     """
 
+    pose_vector_types: dict[str, type[SurfacePoseVectors | OrientationMatrix]]
+
     def __init__(self):
         """Initialize buffer dicts for locations, features, displacements and stats."""
         self.locations = np.empty((0, 3))
@@ -58,6 +60,7 @@ class FeatureAtLocationBuffer:
         self.displacements = {}
 
         self.channel_sender_types = {}
+        self.pose_vector_types = {}
 
         self.stats = {
             "detected_path": None,
@@ -421,15 +424,6 @@ class FeatureAtLocationBuffer:
             - self.get_matching_step_when_output_goal_set()
         )
 
-    def get_infos_for_graph_update(self):
-        """Return all stored infos required to update a graph in memory."""
-        return dict(
-            locations=self.get_all_locations_on_object(),
-            features=self.get_all_features_on_object(),
-            object_location_rel_body=self.stats["detected_location_rel_body"],
-            location_rel_model=self.stats["detected_location_on_model"],
-        )
-
     def get_first_sensory_input_channel(self):
         """Get name of first sensory (coming from SM) input channel in buffer.
 
@@ -484,6 +478,9 @@ class FeatureAtLocationBuffer:
             input_channel: Input channel from which the feature was received.
             attr_name: Name of the feature.
             attr_value: Value of the feature.
+
+        Raises:
+            TypeError: If the attribute value is GazeDirection.
         """
         if isinstance(attr_value, (int, float, bool)):
             attr_shape = 1
@@ -492,10 +489,12 @@ class FeatureAtLocationBuffer:
                 # Store all features as flat list so we can easily concatenate them and
                 # perform matrix operations on them.
                 attr_value = attr_value.flatten()
-            elif isinstance(
-                attr_value, (SurfacePoseVectors, OrientationMatrix, GazeDirection)
-            ):
-                attr_value = attr_value.value.flatten()
+            elif isinstance(attr_value, (SurfacePoseVectors, OrientationMatrix)):
+                self.pose_vector_types[input_channel] = type(attr_value)
+                attr_value = attr_value.flatten()
+            elif isinstance(attr_value, GazeDirection):
+                raise TypeError("GazeDirection is not supported as a buffer feature.")
+
             attr_shape = len(attr_value)
 
         if attr_name not in self.features[input_channel]:

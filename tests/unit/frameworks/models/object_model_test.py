@@ -10,6 +10,7 @@
 
 import copy
 import unittest
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 from hypothesis import given, settings
@@ -21,7 +22,8 @@ from tbp.monty.frameworks.models.object_model import (
     GridTooSmallError,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import check_orthonormal
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
+from tests.matchers import ArrayEqual
 
 
 class ObjectModelTest(unittest.TestCase):
@@ -58,7 +60,11 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_create_grid_object_model(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=10
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=10,
+            pose_vector_type=SurfacePoseVectors,
         )
         self.assertIsNotNone(model)
         self.assertIsNone(model._graph)
@@ -81,7 +87,13 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_can_build_grid_object_model(self):
         max_nodes, max_size, num_voxels_per_dim = 10, 10, 10
-        model = GridObjectModel("test_model", max_nodes, max_size, num_voxels_per_dim)
+        model = GridObjectModel(
+            "test_model",
+            max_nodes,
+            max_size,
+            num_voxels_per_dim,
+            pose_vector_type=SurfacePoseVectors,
+        )
         model.build_model(
             self.dummy_locs,
             self.dummy_features,
@@ -172,7 +184,11 @@ class ObjectModelTest(unittest.TestCase):
         # that all locations should be binned into the same voxel and the location value
         # should be averaged.
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(
             self.dummy_locs,
@@ -192,7 +208,11 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_grid_features_are_averaged_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(
             self.dummy_locs,
@@ -225,7 +245,11 @@ class ObjectModelTest(unittest.TestCase):
         features = copy.deepcopy(self.dummy_features)
         features["pose_fully_defined"] = np.array([False, False, False, True])
         model2 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model2.build_model(
             self.dummy_locs,
@@ -254,7 +278,11 @@ class ObjectModelTest(unittest.TestCase):
         opposite_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = opposite_pv.flatten()
         model3 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model3.build_model(
             self.dummy_locs,
@@ -284,7 +312,11 @@ class ObjectModelTest(unittest.TestCase):
         rotated_pv = rot.apply(np.eye(3))
         features["pose_vectors"][0] = rotated_pv.flatten()
         model4 = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model4.build_model(
             self.dummy_locs,
@@ -306,7 +338,11 @@ class ObjectModelTest(unittest.TestCase):
             [-self.dummy_pv[0], self.dummy_pv[1], -self.dummy_pv[2]]
         )
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=10, num_voxels_per_dim=5
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(self.dummy_locs, self.dummy_features)
 
@@ -337,7 +373,11 @@ class ObjectModelTest(unittest.TestCase):
 
     def test_max_nodes_applied_correctly(self):
         model = GridObjectModel(
-            "test_model", max_nodes=3, max_size=10, num_voxels_per_dim=10
+            "test_model",
+            max_nodes=3,
+            max_size=10,
+            num_voxels_per_dim=10,
+            pose_vector_type=SurfacePoseVectors,
         )
         model.build_model(
             self.dummy_locs,
@@ -348,10 +388,133 @@ class ObjectModelTest(unittest.TestCase):
     def test_max_size_applied_correctly(self):
         """Test that GridTooSmallError is raised if locations are outside of grid."""
         model = GridObjectModel(
-            "test_model", max_nodes=10, max_size=1, num_voxels_per_dim=10
+            "test_model",
+            max_nodes=10,
+            max_size=1,
+            num_voxels_per_dim=10,
+            pose_vector_type=SurfacePoseVectors,
         )
         with self.assertRaises(GridTooSmallError):
             model.build_model(
                 self.dummy_locs,
                 self.dummy_features,
+            )
+
+
+class GridObjectModelPoseVectorMeanTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.feature_mapping = {"pose_vectors": [0, 9], "pose_fully_defined": [9, 10]}
+        self.feature_mapping_vector_len = 10
+        [self.pose_vectors_start, self.pose_vectors_end] = self.feature_mapping[
+            "pose_vectors"
+        ]
+        [self.pose_fully_defined_start, self.pose_fully_defined_end] = (
+            self.feature_mapping["pose_fully_defined"]
+        )
+        self.new_features_in_voxel = np.hstack([np.eye(3).reshape(1, 9), [[1.0]]])
+        self.pv_mean_sentinel = np.arange(9.0)
+
+    @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
+    @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
+    def test_averages_orientation_matrix_pose_vectors_with_orientation_matrix_mean(
+        self,
+        orientation_matrix_mean_mock: MagicMock,
+        surface_pose_vector_mean_mock: MagicMock,
+    ) -> None:
+        model = GridObjectModel(
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=OrientationMatrix,
+        )
+        # Skip `if num_obs_in_voxel > num_new_obs:` branch in code after tested section
+        model._observation_count = MagicMock()  # type: ignore[assignment]
+        model._observation_count.__getitem__.return_value = 0  # type: ignore[index]
+        orientation_matrix_mean_mock.return_value = self.pv_mean_sentinel
+
+        new_features = model._get_new_voxel_features(
+            new_features_in_voxel=self.new_features_in_voxel,
+            previous_feat_in_voxel=MagicMock(),
+            voxel=MagicMock(),
+            obs_fm=self.feature_mapping,
+            target_fm=self.feature_mapping,
+            target_feat_dim=self.feature_mapping_vector_len,
+        )
+
+        orientation_matrix_mean_mock.assert_called_once_with(
+            ArrayEqual(
+                self.new_features_in_voxel[
+                    :, self.pose_vectors_start : self.pose_vectors_end
+                ]
+            )
+        )
+        surface_pose_vector_mean_mock.assert_not_called()
+        np.testing.assert_array_equal(
+            new_features[self.pose_vectors_start : self.pose_vectors_end],
+            self.pv_mean_sentinel,
+        )
+
+    @patch("tbp.monty.frameworks.models.object_model.surface_pose_vector_mean")
+    @patch("tbp.monty.frameworks.models.object_model.orientation_matrix_mean")
+    def test_averages_surface_pose_vectors_with_surface_pose_vector_mean(
+        self,
+        orientation_matrix_mean_mock: MagicMock,
+        surface_pose_vector_mean_mock: MagicMock,
+    ) -> None:
+        model = GridObjectModel(
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=SurfacePoseVectors,
+        )
+        # Skip `if num_obs_in_voxel > num_new_obs:` branch in code after tested section
+        model._observation_count = MagicMock()  # type: ignore[assignment]
+        model._observation_count.__getitem__.return_value = 0  # type: ignore[index]
+        surface_pose_vector_mean_mock.return_value = self.pv_mean_sentinel
+
+        new_features = model._get_new_voxel_features(
+            new_features_in_voxel=self.new_features_in_voxel,
+            previous_feat_in_voxel=MagicMock(),
+            voxel=MagicMock(),
+            obs_fm=self.feature_mapping,
+            target_fm=self.feature_mapping,
+            target_feat_dim=self.feature_mapping_vector_len,
+        )
+
+        surface_pose_vector_mean_mock.assert_called_once_with(
+            ArrayEqual(
+                self.new_features_in_voxel[
+                    :, self.pose_vectors_start : self.pose_vectors_end
+                ]
+            ),
+            ArrayEqual(
+                self.new_features_in_voxel[
+                    :, self.pose_fully_defined_start : self.pose_fully_defined_end
+                ]
+            ),
+        )
+        orientation_matrix_mean_mock.assert_not_called()
+        np.testing.assert_array_equal(
+            new_features[self.pose_vectors_start : self.pose_vectors_end],
+            self.pv_mean_sentinel,
+        )
+
+    def test_raises_if_pose_vector_type_is_not_set(self) -> None:
+        model = GridObjectModel(
+            "test_model",
+            max_nodes=10,
+            max_size=10,
+            num_voxels_per_dim=5,
+            pose_vector_type=None,
+        )
+        with self.assertRaises(ValueError):
+            model._get_new_voxel_features(
+                new_features_in_voxel=self.new_features_in_voxel,
+                previous_feat_in_voxel=MagicMock(),
+                voxel=MagicMock(),
+                obs_fm=self.feature_mapping,
+                target_fm=self.feature_mapping,
+                target_feat_dim=self.feature_mapping_vector_len,
             )
