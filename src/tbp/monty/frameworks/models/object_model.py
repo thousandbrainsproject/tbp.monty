@@ -521,7 +521,6 @@ class GridObjectModel(GraphObjectModel):
             # could also check if is type torch_geometric.data.data.Data
             logger.debug(f"turning graph of type {type(graph)} into numpy graph")
             graph = torch_graph_to_numpy(graph)
-        self.pose_vector_type = graph.pose_vector_type
         if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
             self._graph = graph
