@@ -3,7 +3,7 @@ title: Benchmark Experiments
 description: Performance of current implementation on our benchmark test suite.
 ---
 # General Notes
-These benchmark experiments are not common benchmarks from the AI field. There are a **set of experiments we have defined for ourselves to track our research progress**. They specifically evaluate capabilities that we have added or plan to add to Monty. 
+These benchmark experiments are not common benchmarks from the AI field. There are a **set of experiments we have defined for ourselves to track our research progress**. They specifically evaluate capabilities that we have added or plan to add to Monty.
 
 You can find Monty experiment configs for all the following experiments in the [benchmarks](https://github.com/thousandbrainsproject/tbp.monty/tree/main/benchmarks) folder. Note that the experiment parameters are not overly optimized for accuracy. **The parameters used here aim to strike a good balance between speed and accuracy** to allow our researchers to iterate quickly and evaluate algorithm changes regularly. If a particular use case requires higher accuracy or faster learning or inference, this can be achieved by adjusting learning module parameters.
 
@@ -27,12 +27,12 @@ To be able to test the ability to distinguish similar objects (for example by us
 ![](../figures/overview/current_models_surf_agent_similar.png)
 
 
-For experiments with multiple sensors and learning modules we currently only have a setup with the distant agent so we also have to train the models with the distant agent. These models have less even coverage of points since we just see the objects from several fixed viewpoints and can't move as freely around the object as we can with the surface agent. This is why these models have a few missing areas where parts of the object were never visible during training. In the 5LM experiments, each LM has learned slightly different models, depending on their sensor parameters. The image below shows the models learned in one LM. Results with one LM for comparability are given in the experiment marked with `dist_on_distm` (i.e., distant agent evaluated on distant-agent trained models). 
+For experiments with multiple sensors and learning modules we currently only have a setup with the distant agent so we also have to train the models with the distant agent. These models have less even coverage of points since we just see the objects from several fixed viewpoints and can't move as freely around the object as we can with the surface agent. This is why these models have a few missing areas where parts of the object were never visible during training. In the 5LM experiments, each LM has learned slightly different models, depending on their sensor parameters. The image below shows the models learned in one LM. Results with one LM for comparability are given in the experiment marked with `dist_on_distm` (i.e., distant agent evaluated on distant-agent trained models).
 
 ![](../figures/overview/current_models_dist_agent_distinct.png)
 
 
-Configs with `multi` in the name have additional distractor objects, in addition to the primary target object. These experiments are designed to evaluate the model's ability to stay on an object until it is recognized. As a result, these are currently setup so that the agent should always begin on a "primary" target object, and recognition of this object is the primary metric that we evaluate. In addition however, there is a "step-wise" target, which is whatever object an LM's sensor is currently viewing; the ultimate MLH or converged ID of an LM is therefore also compared to the step-wise target that the LM was observing at the time. To make recognition of the primary target relatively challenging, distractor objects are added as close as possible along the horizontal axis, while ensuring that i) the objects do not clip into each other, and ii) that an initial view of the primary target is achieved at the start of the episode. Note these experiments cannot currently be run with multi-processing (the -m flag), as the Object Initializer classes need to be updated. Example multi-object environments are shown below. 
+Configs with `multi` in the name have additional distractor objects, in addition to the primary target object. These experiments are designed to evaluate the model's ability to stay on an object until it is recognized. As a result, these are currently setup so that the agent should always begin on a "primary" target object, and recognition of this object is the primary metric that we evaluate. In addition however, there is a "step-wise" target, which is whatever object an LM's sensor is currently viewing; the ultimate MLH or converged ID of an LM is therefore also compared to the step-wise target that the LM was observing at the time. To make recognition of the primary target relatively challenging, distractor objects are added as close as possible along the horizontal axis, while ensuring that i) the objects do not clip into each other, and ii) that an initial view of the primary target is achieved at the start of the episode. Note these experiments cannot currently be run with multi-processing (the -m flag), as the Object Initializer classes need to be updated. Example multi-object environments are shown below.
 
 ![](../figures/overview/multi_obj_environments.png)
 
@@ -182,13 +182,13 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 > To generate the pretrained models, run the following experiments in order. Train the shared five 3D children first, then the size-specific 2D children, then each parent model. Both parent architectures load the corresponding 2D-child checkpoint, which already contains the shared 3D children. Intermediate checkpoints are read from `${MONTY_MODELS}/my_trained_models/<experiment>/pretrained/`; keep the output directories consistent with these dependencies.
 >
 > ```sh
-> python run.py experiment=supervised_pre_training_cows_3d_children
-> python run.py experiment=supervised_pre_training_cows_small_2d_children
-> python run.py experiment=supervised_pre_training_cows_small_compositional
-> python run.py experiment=supervised_pre_training_cows_small_monolithic
-> python run.py experiment=supervised_pre_training_cows_large_2d_children
-> python run.py experiment=supervised_pre_training_cows_large_compositional
-> python run.py experiment=supervised_pre_training_cows_large_monolithic
+> python run_parallel.py experiment=supervised_pre_training_cows_3d_children
+> python run_parallel.py experiment=supervised_pre_training_cows_small_2d_children
+> python run_parallel.py experiment=supervised_pre_training_cows_small_compositional
+> python run_parallel.py experiment=supervised_pre_training_cows_small_monolithic
+> python run_parallel.py experiment=supervised_pre_training_cows_large_2d_children
+> python run_parallel.py experiment=supervised_pre_training_cows_large_compositional
+> python run_parallel.py experiment=supervised_pre_training_cows_large_monolithic
 > ```
 
 > [!NOTE]
@@ -226,7 +226,7 @@ The `random_locs` experiments evaluate only the 100 additional objects with chan
 
 # Monty-Meets-World
 
-The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models. 
+The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models.
 
 For a really cool video of the first time Monty was tested in the real world, see the recording linked on our [project showcase page](../community/project-showcase.md#monty-for-object-detection-with-the-ipad-camera).
 
@@ -301,14 +301,14 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ### Explanation of Some of the Results
 
-- **Why is there such a drop in performance going from sim-to-real?**  
+- **Why is there such a drop in performance going from sim-to-real?**
   Although there are likely a variety of factors at play, it is worth emphasizing that it is highly non-trivial to learn on photogrammetry scanned objects, and then generalize to images extracted from an RGBD depth camera, as this is a significant shift in the source of data available to the model. Furthermore, note that due to structural similarity of several of the objects in the dataset to one another, it is not too surprising that the model may converge to an incorrect hypothesis given only a single view.
-- **Why is the percent MLH used so high?**  
+- **Why is the percent MLH used so high?**
   Each episode is restricted to a single viewing angle of an object, resulting in significant ambiguity. Furthermore, episodes use a maximum of 100 matching steps so that these experiments can be run quickly.
-- **Are there any other factors contributing to performance differences to be aware of?**  
+- **Are there any other factors contributing to performance differences to be aware of?**
   During the collection of some of the datasets, the "smoothing" setting was unfortunately not active; this affects the standard (world_image_on_scanned_model) dataset, as well as the bright and hand-intrusion experiments. Broadly, this appears to not have had too much of an impact, given that e.g., dark and bright perform comparably (with bright actually being better, even though it was acquired without smoothing). There appear to be a couple of images (around 5 out of the 240 images), where this has resulted in a large step-change in the depth reading, and as a result of this, the experiment begins with the model "off" the object, even though to a human eye, the initial position of the patch is clearly on the object. This will be addressed in a future update to the data-sets, where we can also implement any additional changes we may wish to make during data collection (e.g., more control of object poses, or the inclusion of motor data).
-- **What steps should be noted when acquiring new images?**  
-  In addition to ensuring that the "smoothing" option is toggled on (currently off by default), lie the iPad on its side, ensuring that the volume bottom is at the top, so that the orientation of images are consistent across the data-sets. In general, objects should be as close to the camera as possible when taking images, while ensuring the depth values do not begin to clip. 
+- **What steps should be noted when acquiring new images?**
+  In addition to ensuring that the "smoothing" option is toggled on (currently off by default), lie the iPad on its side, ensuring that the volume bottom is at the top, so that the orientation of images are consistent across the data-sets. In general, objects should be as close to the camera as possible when taking images, while ensuring the depth values do not begin to clip.
 
 # Future Capabilities
 

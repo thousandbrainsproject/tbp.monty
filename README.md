@@ -5,7 +5,7 @@
 *An open-source, sensorimotor learning system following the principles of the neocortex.*
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/mit)
-![PyPI - Python Version](https://img.shields.io/badge/python-3.8-blue)
+![PyPI - Python Version](https://img.shields.io/badge/python-3.15-blue)
 [![](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml/badge.svg)](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml)
 
 This repository contains the first implementation of a **sensorimotor learning system** from the **Thousand Brains Project**. We lovingly call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
@@ -57,7 +57,7 @@ If you would like to receive updates, follow us on [Bluesky](https://bsky.app/pr
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
-If you're writing a publication that references the Thousand Brains Project, please cite 
+If you're writing a publication that references the Thousand Brains Project, please cite
 
 [TBP white paper](https://arxiv.org/abs/2412.18354):
 ```
