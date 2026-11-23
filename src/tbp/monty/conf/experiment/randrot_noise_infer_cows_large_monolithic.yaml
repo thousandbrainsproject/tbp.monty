@@ -10,6 +10,7 @@ defaults:
   - /environment: mujoco_dist_agent_sensors3_256
   - /env_interface: eval_cows_large
   - /env_interface/positioning_procedures_eval: getgoodview_viewfinder_patch0
+  - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4_256
   - /termination: named_lm2_any_mfgm_t3ecexp1000_t1000e100tot500
   - /logging: basic_warning_wandb_evidence_eval_runs
 

@@ -1,0 +1,62 @@
+name: Docs Preview Render
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'benchmarks/**'
+      - 'tools/github_readme_sync/**'
+      - '.github/workflows/docs_preview*.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  docs_preview_render:
+    name: docs-preview-render
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          path: tbp.monty
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
+
+      - name: Render docs preview
+        working-directory: tbp.monty
+        env:
+          IMAGE_PATH: ${{ github.event.pull_request.head.repo.full_name }}/${{ github.event.pull_request.head.sha }}/docs/figures
+        run: |
+          uv run --frozen --extra github_readme_sync_tool \
+            python -m tools.github_readme_sync.cli \
+            render-preview \
+            docs \
+            "${{ runner.temp }}/docs-preview/preview.json" \
+            --repository "${{ github.repository }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --base-ref "${{ github.base_ref }}"
+
+      - name: Upload render docs preview JSON artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs-preview-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/docs-preview/preview.json
+          if-no-files-found: error
+          retention-days: 1
