@@ -82,7 +82,7 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            Publishing documentation preview workflow... ⏳
+            Publishing documentation preview... ⏳
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
 
