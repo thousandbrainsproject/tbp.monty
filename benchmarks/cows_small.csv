@@ -1,5 +1,5 @@
 Experiment,Correct (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Avg Prediction Error|align right,Run Time (mins)|align right,Num Episodes|hidden
 base_infer_cows_small_monolithic,41.73,76.32,87,53.64,0.25,28,266
-base_infer_cows_small_compositional,39.47,67.67,84,49.48,0.25,29,266
+base_infer_cows_small_compositional,38.72,67.29,84,50.80,0.25,27,266
 randrot_noise_infer_cows_small_monolithic,27.37,63.16,79,106.42,0.53,18,190
-randrot_noise_infer_cows_small_compositional,26.32,60.53,77,93.91,0.53,17,190
+randrot_noise_infer_cows_small_compositional,25.26,66.84,80,96.09,0.54,19,190
