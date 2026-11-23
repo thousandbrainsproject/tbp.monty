@@ -87,8 +87,8 @@ class TutorialsTest(TestCase):
                     "experiment=tutorial/surf_agent_2obj_unsupervised",
                     # We don't need to run the whole thing.
                     "experiment.config.n_train_epochs=1",
-                    "experiment.config.recognition_strategy.max_train_steps=3",
-                    "experiment.config.recognition_strategy.max_total_steps=3",
+                    "experiment.config.recognition_strategy=null",
+                    "experiment.config.recognition_strategy={_target_: tbp.monty.experiment.recognition_strategy.Any, strategies: [{_target_: tbp.monty.experiment.recognition_strategy.MontyForGraphMatchingSetStepTypeAndCheckIfDone, match_criterion: {_target_: tbp.monty.experiment.match_criteria.AnyLMsMatch, count: 1}, min_train_steps: 100, min_eval_steps: 3, num_exploratory_steps: 1000},{_target_: tbp.monty.experiment.recognition_strategy.ObjectRecognition, max_train_steps: 3, max_eval_steps: 3, max_total_steps: 5000}]}",  # noqa: E501
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
@@ -173,7 +173,6 @@ class TutorialsTest(TestCase):
                     "experiment.config.n_eval_epochs=1",
                     "experiment.config.recognition_strategy.max_eval_steps=3",
                     "experiment.config.recognition_strategy.max_total_steps=3",
-                    "experiment.config.monty_config.monty_args.num_exploratory_steps=3",
                 ],
             )
             experiment = instantiate_experiment(config.experiment)
