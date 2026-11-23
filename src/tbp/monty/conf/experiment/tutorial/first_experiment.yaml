@@ -9,9 +9,8 @@
 # The defaults below are the all the components of an experiment you must
 # specify.
 defaults:
-  # /monty defines what Monty we will use and how many exploration, evaluation,
-  # training, and total steps to configure it with.
-  - /monty: graph_exp1000_e3_t3
+  # /monty defines what Monty we will use.
+  - /monty: graph
 
   # /monty/motor_system_config specifies what motor system and motor policy to
   # use within Monty. We use a motor system with an InformedPolicyRandomWalk where
