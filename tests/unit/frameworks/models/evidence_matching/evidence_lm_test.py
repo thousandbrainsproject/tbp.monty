@@ -10,8 +10,14 @@
 from __future__ import annotations
 
 import copy
+import unittest
+from dataclasses import dataclass
+from typing import Literal
+from unittest.mock import MagicMock, call, patch, sentinel
 
 import numpy as np
+from hypothesis import given
+from hypothesis import strategies as st
 from omegaconf import OmegaConf
 
 from tbp.monty.cmp import Message
@@ -20,7 +26,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.goal_generation import EvidenceGoalGenerator
-from tbp.monty.geometry import SurfacePoseVectors
+from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tests import HYDRA_ROOT
 from tests.unit.resources.unit_test_utils import BaseGraphTest
 
@@ -158,12 +164,12 @@ class EvidenceLMTest(BaseGraphTest):
 
         # Train on second object
         obj_two_target = copy.deepcopy(self.placeholder_target)
-        obj_two_target["object"] = "new_object1"
+        obj_two_target.object_name = "new_object1"
         graph_lm.reset_stm()
         graph_lm.fixme_reset_ground_truth(primary_target=obj_two_target)
         for observation in fake_obs_two:
             graph_lm.exploratory_step(self.ctx, [observation])
-        graph_lm.detected_object = obj_two_target["object"]
+        graph_lm.detected_object = obj_two_target.object_name
         graph_lm.detected_rotation_r = None
         graph_lm.buffer.stats["detected_location_rel_body"] = (
             graph_lm.buffer.current_location()
@@ -795,3 +801,215 @@ class EvidenceLMTest(BaseGraphTest):
             [0, 0, 0],
             "Should recognize rotation 0, 0, 0.",
         )
+
+
+MAX_MATCH_DISTANCE = 0.01
+TERMINAL_STATES = [None, "match", "no_match", "time_out", "pose_time_out"]
+
+terminal_states = st.sampled_from(TERMINAL_STATES)
+
+not_match_terminal_states = st.sampled_from(
+    [state for state in TERMINAL_STATES if state != "match"]
+)
+
+
+@dataclass
+class GatingCase:
+    on_object: bool
+    terminal_state: Literal["match", "no_match", "pose_time_out", "time_out"] | None
+    mlh_on_model: bool
+
+
+off_object_gating_cases = st.builds(
+    GatingCase,
+    on_object=st.just(value=False),
+    terminal_state=terminal_states,
+    mlh_on_model=st.booleans(),
+)
+
+not_match_gating_cases = st.builds(
+    GatingCase,
+    on_object=st.just(value=True),
+    terminal_state=not_match_terminal_states,
+    mlh_on_model=st.booleans(),
+)
+
+off_model_gating_cases = st.builds(
+    GatingCase,
+    on_object=st.just(value=True),
+    terminal_state=terminal_states,
+    mlh_on_model=st.just(value=False),
+)
+
+
+class GetOutputTest(unittest.TestCase):
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
+    )
+    def test_returns_message_with_pass_message_true_when_all_gating_conditions_met(
+        self,
+        get_current_mlh_mock: MagicMock,
+        mlh_on_model_mock: MagicMock,
+    ) -> None:
+        get_current_mlh_mock.return_value = {
+            "graph_id": "mug",
+            "rotation": Rotation.identity(),
+        }
+        mlh_on_model_mock.return_value = True
+        lm = EvidenceGraphLM(
+            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
+        )
+        lm.buffer = MagicMock()
+        lm.buffer.get_currently_on_object.return_value = True
+        lm.terminal_state = "match"
+
+        message = lm.get_output()
+
+        self.assertTrue(message.pass_message)
+
+    @given(
+        gating_case=st.one_of(
+            off_object_gating_cases,
+            not_match_gating_cases,
+            off_model_gating_cases,
+        )
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._mlh_on_model"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM._get_current_mlh"
+    )
+    def test_returns_message_with_pass_message_false_when_any_gating_condition_fails(
+        self,
+        get_current_mlh_mock: MagicMock,
+        mlh_on_model_mock: MagicMock,
+        gating_case: GatingCase,
+    ) -> None:
+        get_current_mlh_mock.return_value = {
+            "graph_id": "mug",
+            "rotation": Rotation.identity(),
+        }
+        mlh_on_model_mock.return_value = gating_case.mlh_on_model
+        lm = EvidenceGraphLM(
+            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
+        )
+        lm.buffer = MagicMock()
+        lm.buffer.get_currently_on_object.return_value = gating_case.on_object
+        lm.terminal_state = gating_case.terminal_state
+
+        message = lm.get_output()
+
+        self.assertFalse(message.pass_message)
+
+
+distances_within_max_match = st.floats(min_value=0.0, max_value=MAX_MATCH_DISTANCE)
+
+distances_beyond_max_match = st.floats(
+    min_value=MAX_MATCH_DISTANCE, max_value=10 * MAX_MATCH_DISTANCE, exclude_min=True
+)
+
+
+@dataclass
+class MlhOnModelCase:
+    distances: list[float]
+    mlh_on_model: bool
+
+
+@st.composite
+def mlh_on_model_cases(draw: st.DrawFn) -> MlhOnModelCase:
+    num_channels = draw(st.integers(min_value=1, max_value=4))
+    num_within = draw(st.integers(min_value=0, max_value=num_channels))
+    within = draw(
+        st.lists(distances_within_max_match, min_size=num_within, max_size=num_within)
+    )
+    num_beyond = num_channels - num_within
+    beyond = draw(
+        st.lists(distances_beyond_max_match, min_size=num_beyond, max_size=num_beyond)
+    )
+    distances = draw(st.permutations(within + beyond))
+    return MlhOnModelCase(distances=distances, mlh_on_model=num_within > 0)
+
+
+class MlhOnModelTest(unittest.TestCase):
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
+    )
+    def test_returns_false_when_mlh_has_no_location(
+        self,
+        get_all_known_object_ids_mock: MagicMock,
+    ) -> None:
+        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
+        lm = EvidenceGraphLM(
+            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
+        )
+
+        on_model = lm._mlh_on_model({"graph_id": sentinel.graph_id, "location": None})
+
+        self.assertFalse(on_model)
+
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
+    )
+    def test_returns_false_when_mlh_object_is_unknown(
+        self,
+        get_all_known_object_ids_mock: MagicMock,
+    ) -> None:
+        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
+        lm = EvidenceGraphLM(
+            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
+        )
+
+        on_model = lm._mlh_on_model(
+            {"graph_id": sentinel.unknown_graph_id, "location": np.zeros(3)}
+        )
+
+        self.assertFalse(on_model)
+
+    @given(mlh_on_model_case=mlh_on_model_cases())
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_input_channels_in_graph"
+    )
+    @patch(
+        "tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.get_all_known_object_ids"
+    )
+    def test_queries_each_channel_graph_and_returns_whether_mlh_is_on_model(
+        self,
+        get_all_known_object_ids_mock: MagicMock,
+        get_input_channels_in_graph_mock: MagicMock,
+        mlh_on_model_case: MlhOnModelCase,
+    ) -> None:
+        get_all_known_object_ids_mock.return_value = [sentinel.graph_id]
+        channels = [MagicMock() for _ in mlh_on_model_case.distances]
+        get_input_channels_in_graph_mock.return_value = channels
+        graph_mocks = []
+        for distance in mlh_on_model_case.distances:
+            graph_mock = MagicMock()
+            graph_mock.find_nearest_neighbors.return_value = np.array([distance])
+            graph_mocks.append(graph_mock)
+        lm = EvidenceGraphLM(
+            max_match_distance=MAX_MATCH_DISTANCE, tolerances={}, feature_weights={}
+        )
+        lm.graph_memory = MagicMock()
+        lm.graph_memory.get_graph.side_effect = graph_mocks
+        mlh_location_sentinel = np.array([1.0, 2.0, 3.0])
+
+        on_model = lm._mlh_on_model(
+            {"graph_id": sentinel.graph_id, "location": mlh_location_sentinel}
+        )
+
+        for channel, get_graph_call, graph_mock in zip(
+            channels,
+            lm.graph_memory.get_graph.call_args_list,
+            graph_mocks,
+            strict=True,
+        ):
+            self.assertEqual(get_graph_call, call(sentinel.graph_id, channel))
+            (query,), kwargs = graph_mock.find_nearest_neighbors.call_args
+            np.testing.assert_array_equal(query, [mlh_location_sentinel])
+            self.assertEqual(kwargs, {"num_neighbors": 1, "return_distance": True})
+
+        self.assertEqual(on_model, mlh_on_model_case.mlh_on_model)

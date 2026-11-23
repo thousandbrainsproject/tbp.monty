@@ -25,6 +25,7 @@ from omegaconf import DictConfig
 
 from tbp.monty.cmp import Message
 from tbp.monty.context import RuntimeContext
+from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
@@ -87,8 +88,7 @@ class TrainedGraphLM:
         """Reset short-term memory buffer."""
         self.learning_module.reset_stm()
 
-    # TODO: fix primary_target's type
-    def fixme_reset_ground_truth(self, primary_target: dict[str, Any]) -> None:
+    def fixme_reset_ground_truth(self, primary_target: PrimaryTarget | None) -> None:
         """Reset internal state based on ground truth."""
         self.learning_module.fixme_reset_ground_truth(primary_target)
 
@@ -403,8 +403,8 @@ class GraphLearningTest(BaseGraphTest):
                 exp.model.primary_target = str(e)
                 for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
-                last_step = exp.run_episode_steps()
-                exp.post_episode(last_step)
+                exp.run_episode_steps()
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
@@ -516,7 +516,7 @@ class GraphLearningTest(BaseGraphTest):
         for row in range(train_stats.shape[0]):
             self.assertEqual(
                 train_stats.loc[row]["primary_target_object"],
-                detailed_stats[str(row)]["LM_0"]["target"]["object"],
+                detailed_stats[str(row)]["LM_0"]["target"]["object_name"],
                 "targets in train_stats and detailed stats don't match.",
             )
 
@@ -524,7 +524,7 @@ class GraphLearningTest(BaseGraphTest):
             detailed_id = train_stats.shape[0] + row - 1
             self.assertEqual(
                 eval_stats.loc[row]["primary_target_object"],
-                detailed_stats[str(detailed_id)]["LM_0"]["target"]["object"],
+                detailed_stats[str(detailed_id)]["LM_0"]["target"]["object_name"],
                 "targets in eval_stats and detailed stats don't match.",
             )
         self.assertEqual(
@@ -978,7 +978,11 @@ class GraphLearningTest(BaseGraphTest):
                     monty._vote()
                     monty._pass_goals()
                     monty._set_step_type_and_check_if_done()
-                exp.post_episode(num_steps)
+                # TODO: This test does too much manually and does not incorporate how
+                #       we run episodes with RecognitionContext. Below we mock
+                #       recognition_ctx so that post_episode() has access to it.
+                exp._recognition_ctx.step = num_steps
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)

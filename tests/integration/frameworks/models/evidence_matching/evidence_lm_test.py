@@ -171,7 +171,7 @@ class EvidenceLMTest(BaseGraphTest):
             "min_train_steps was not applied correctly.",
         )
         self.assertGreater(
-            exp.model.episode_steps,
+            exp._recognition_ctx.step,
             exp.model.matching_steps + 80,
             "number of episode steps should be larger than matching steps + "
             "exploration steps since we don't count off object observations as"
@@ -252,8 +252,8 @@ class EvidenceLMTest(BaseGraphTest):
                 exp.model.primary_target = str(e)
                 for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
-                last_step = exp.run_episode_steps()
-                exp.post_episode(last_step)
+                exp.run_episode_steps()
+                exp.post_episode()
             exp.post_epoch()
 
         output_dir = Path(exp.output_dir)
