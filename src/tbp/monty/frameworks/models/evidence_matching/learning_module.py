@@ -194,12 +194,6 @@ class EvidenceGraphLM(GraphLM):
             to classify an object as symmetric and go into terminal condition.
 
     Model Attributes:
-        graph_delta_thresholds: Thresholds used to compare nodes in the graphs being
-            learned, and thereby whether to include a new point or not. By default,
-            we only consider the distance between points, using a threshold
-            of 0.001 (determined in remove_close_points). Can also specify
-            thresholds based on e.g. surface normal angle difference, or principal
-            curvature magnitude difference.
         max_graph_size: Maximum size of a graph in meters. Any observations that fall
             out of this range will be discarded/used for building a new model. This
             constrains the size of models that an LM can learn and enforces learning
@@ -251,7 +245,6 @@ class EvidenceGraphLM(GraphLM):
         path_similarity_threshold=0.1,
         pose_similarity_threshold=0.35,
         required_symmetry_evidence=5,
-        graph_delta_thresholds=None,
         max_graph_size=0.3,  # 30cm
         max_nodes_per_graph=2000,
         num_model_voxels_per_dim=50,  # -> voxel size = 6mm3 (0.006)
@@ -266,7 +259,6 @@ class EvidenceGraphLM(GraphLM):
         super().__init__(*args, **kwargs)
         # --- LM components ---
         self.graph_memory = EvidenceGraphMemory(
-            graph_delta_thresholds=graph_delta_thresholds,
             max_nodes_per_graph=max_nodes_per_graph,
             max_graph_size=max_graph_size,
             num_model_voxels_per_dim=num_model_voxels_per_dim,
