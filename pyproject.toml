@@ -39,7 +39,8 @@ dependencies = [
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']
-license = { file = 'LICENSE' }
+license = 'MIT'
+license-files = ['LICENSE']
 name = 'tbp.monty'
 readme = 'README.md'
 requires-python = '>=3.15'
