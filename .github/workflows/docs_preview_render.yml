@@ -45,7 +45,7 @@ jobs:
         run: |
           uv run --frozen --extra github_readme_sync_tool \
             python -m tools.github_readme_sync.cli \
-          render-preview \
+            render-preview \
             docs \
             "${{ runner.temp }}/docs-preview/preview.json" \
             --repository "${{ github.repository }}" \

@@ -119,7 +119,7 @@ jobs:
         run: |
           uv run --frozen --extra github_readme_sync_tool --extra print_version_tool \
             python -m tools.github_readme_sync.cli \
-          publish-preview \
+            publish-preview \
             "${{ runner.temp }}/docs-preview-artifact/preview.json" \
             ${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }} \
             --expected-repository "${{ github.repository }}" \
