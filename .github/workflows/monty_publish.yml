@@ -36,17 +36,11 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "**/uv.lock"
-      - name: Create uv environment
-        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
-        working-directory: tbp.monty
-        run: |
-          uv sync --locked --extra dev --extra simulator_mujoco
-          uv pip install build
       - name: Build the package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         working-directory: tbp.monty
         run: |
-          uv run python -m build
+          uv run --frozen --extra dev --extra simulator_mujoco --extra build python -m build
       - name: Publish the package to PyPI
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         uses: pypa/gh-action-pypi-publish@release/v1
