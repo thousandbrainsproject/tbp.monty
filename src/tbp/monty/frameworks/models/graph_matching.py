@@ -20,7 +20,6 @@ import torch
 from tbp.monty import telemetry
 from tbp.monty.cmp import AttentionRegion, Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
@@ -52,8 +51,6 @@ telemeter = telemetry.getTelemeter(__name__)
 
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing objects using graphs."""
-
-    _match_criterion: MatchCriterion
 
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""

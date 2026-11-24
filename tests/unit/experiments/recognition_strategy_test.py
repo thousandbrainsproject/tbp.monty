@@ -392,13 +392,11 @@ class MatchCriteriaTest(unittest.TestCase):
         is_done=st.booleans(),
     )
     def test_done_iff_match_criterion_has_been_met(self, is_done: bool) -> None:
-        model = MagicMock()
-        model._match_criterion = MagicMock(return_value=is_done)
-        model.learning_modules = []
-        strategy = MatchCriteria()
+        match_criterion = MagicMock(return_value=is_done)
+        strategy = MatchCriteria(match_criterion=match_criterion)
         ctx = RecognitionContext()
-        result = strategy(ctx, model)
-        model._match_criterion.assert_called_once()
+        result = strategy(ctx, MagicMock())
+        match_criterion.assert_called_once()
         self.assertEqual(result.is_done, is_done)
         self.assertEqual(result.time_out_lms, is_done)
 
