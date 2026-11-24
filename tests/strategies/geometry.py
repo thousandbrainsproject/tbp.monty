@@ -15,8 +15,13 @@ import numpy as np
 import numpy.typing as npt
 import quaternion as qt
 
-from tbp.monty.geometry import Rotation
+from tbp.monty.geometry import OrientationMatrix, Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
+
+
+@st.composite
+def orientation_matrix(draw: st.DrawFn) -> OrientationMatrix:  # noqa: ARG001
+    return OrientationMatrix(Rotation.random().as_matrix())
 
 
 @st.composite
@@ -87,3 +92,16 @@ def rotation_matrices(draw: st.DrawFn) -> npt.NDArray[np.float64]:
         Multiple rotation matrices of shape (N, 3, 3).
     """
     return Rotation.random(draw(st.integers(min_value=1, max_value=1000))).as_matrix()
+
+
+@st.composite
+def surface_pose_vectors(draw: st.DrawFn) -> SurfacePoseVectors:  # noqa: ARG001
+    """Generates a random SurfacePoseVectors instance.
+
+    Args:
+        draw: The Hypothesis draw function.
+
+    Returns:
+        SurfacePoseVectors: A random surface pose vectors instance.
+    """
+    return SurfacePoseVectors(Rotation.random().as_matrix())
