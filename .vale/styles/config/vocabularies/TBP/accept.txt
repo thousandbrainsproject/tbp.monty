@@ -152,12 +152,14 @@
 \b[pP]retrain(ed|ing)?\b
 \bprofiler\b
 \bPurdy\b
+\bPyrefly\b
 \bPyTorch\b
 \bRao\b
 \brdme\b
 \breimplements?\b
 \brepo\b
 \b[Rr]esampl(e|ed|ing)?\b
+\b[Rr]etinotopic(ally)?\b
 \b[Ss]accades?\b
 \bsaccading\b
 \bSampath\b

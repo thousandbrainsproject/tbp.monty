@@ -10,7 +10,7 @@ This tutorial is a follow-up of our tutorial on [pretraining a model](pretrainin
 > The [first part](pretraining-a-model.md) of this tutorial must be completed for the code in this tutorial to run.
 >
 # Setting up the Experiment Config for Inference
-To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_eval_mujoco.yaml` file. Let's highlight the various aspects of an evaluation experiment configuration.
+To follow along, open the `src/tbp/monty/conf/experiment/tutorial/surf_agent_2obj_eval.yaml` file. Let's highlight the various aspects of an evaluation experiment configuration.
 
 ```yaml
 # @package _global_
@@ -23,13 +23,13 @@ experiment:
   config:
     # ...
     # Specify the path where we saved the pretrained model
-    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_2obj_train_mujoco/pretrained"}
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_2obj_train/pretrained"}
     # ...
     logging:
       # Specify directory where an output directory will be created.
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       # Specify a name for the evaluation run
-      run_name: surf_agent_2obj_eval_mujoco
+      run_name: surf_agent_2obj_eval
 ```
 
 Now we specify that we want to test the model on "mug" and "banana", and that we want the objects to be rotated a few different ways.
@@ -172,7 +172,7 @@ We then integrate these sensor and learning module configs into the overall expe
 # @package _global_
 
 defaults:
-  - /monty: evidencegraph_exp1000_emin_t3
+  - /monty: evidencegraph
   - /monty/motor_system_config: surface_curvature_informed_goal1
   - /monty/learning_module: evidence_tutorial_surf_agent_2obj
   - /monty/sensor_module: camera_tutorial_surf_agent_2obj
@@ -191,7 +191,7 @@ experiment:
     # We will evaluate each of the 3 test rotations
     n_train_epochs: 3
     # Specify the path where we saved the pretrained model
-    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_2obj_train_mujoco/pretrained"}
+    model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_2obj_train/pretrained"}
     n_eval_epochs: 3
     seed: 42
     supervised_lm_ids: []
@@ -200,7 +200,7 @@ experiment:
       # Specify directory where an output directory will be created.
       output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
       # Specify a name for the evaluation run
-      run_name: surf_agent_2obj_eval_mujoco
+      run_name: surf_agent_2obj_eval
 ```
 
 Note that we have changed the Monty experiment class and the logging config. We also opted for a policy whereby learning-modules generate actions to test hypotheses by producing "goals" for the low-level motor system.
@@ -210,9 +210,9 @@ Note that we have changed the Monty experiment class and the logging config. We 
 To run the experiment, call the `run.py` script with an experiment name as the `experiment` argument.
 
 ```shell
-uv run python run.py experiment=tutorial/surf_agent_2obj_eval_mujoco
+uv run python run.py experiment=tutorial/surf_agent_2obj_eval
 ```
 
-Once the run is complete, you can inspect the inference logs located in `~/tbp/results/monty/projects/surf_agent_2obj_eval_mujoco`. Since `EvalLoggingConfig` includes a CSV-logger, you should be able to open `eval_stats.csv` and find 6 rows (one for each episode) detailing whether the object was correctly identified, the number of steps required in an episode, etc.
+Once the run is complete, you can inspect the inference logs located in `~/tbp/results/monty/projects/surf_agent_2obj_eval`. Since `EvalLoggingConfig` includes a CSV-logger, you should be able to open `eval_stats.csv` and find 6 rows (one for each episode) detailing whether the object was correctly identified, the number of steps required in an episode, etc.
 
 You now know how to pretrain a model and use it to perform inference. In our next tutorial, we will demonstrate how to use Monty for [unsupervised continual learning](unsupervised-continual-learning.md).

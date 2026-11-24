@@ -977,11 +977,17 @@ class GraphLearningTest(BaseGraphTest):
                     monty._step_learning_modules(ctx)
                     monty._vote()
                     monty._pass_goals()
-                    monty._set_step_type_and_check_if_done()
-                # TODO: This test does too much manually and does not incorporate how
-                #       we run episodes with RecognitionContext. Below we mock
-                #       recognition_ctx so that post_episode() has access to it.
-                exp._recognition_ctx.step = num_steps
+                    exp._recognition_ctx.step += 1
+                    if exp._should_update_step_counter():
+                        if monty.is_exploring:
+                            exp._recognition_ctx.exploring_steps += 1
+                        else:
+                            exp._recognition_ctx.matching_steps += 1
+                    result = exp._recognition_strategy(exp._recognition_ctx, monty)
+                    if result.start_exploring:
+                        monty.switch_to_exploratory_step()
+                    if result.time_out_lms:
+                        monty.deal_with_time_out(global_time_out=result.global_time_out)
                 exp.post_episode()
             exp.post_epoch()
 

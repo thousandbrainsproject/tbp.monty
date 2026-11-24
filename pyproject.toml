@@ -17,7 +17,7 @@ classifiers = [
 dependencies = [
     'hydra-core>=1.3.2',
     'importlib_resources',
-    'matplotlib>=3.7.3',
+    'matplotlib>=3.8',
     'numpy',
     'opencv-python==4.13.0.92',
     'omegaconf>=2.3.0',
@@ -26,8 +26,8 @@ dependencies = [
     'pydantic>=2.10.6',
     'numpy-quaternion',
     'scikit-image',
-    'scikit-learn',
-    'scipy>=1.10.1',
+    'scikit-learn>=1.9.1',
+    'scipy>=1.18.1',
     'sympy',
     'torch',
     'torch-geometric>=2.1.0.post1',
@@ -39,14 +39,15 @@ dependencies = [
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']
-license = { file = 'LICENSE' }
+license = 'MIT'
+license-files = ['LICENSE']
 name = 'tbp.monty'
 readme = 'README.md'
-requires-python = '>=3.13'
+requires-python = '>=3.15'
 
 [project.optional-dependencies]
 simulator_mujoco = [
-    'mujoco'
+    'mujoco>=3.13'
 ]
 analysis = [
     'ipython',
@@ -300,5 +301,10 @@ where = ["src"]
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv.extra-build-dependencies]
-torch-scatter = ["setuptools", "torch"]
-torch-sparse = ["torch"]
+torch-scatter = [{ requirement = "torch", match-runtime = true }, "setuptools"]
+torch-sparse = [{ requirement = "torch", match-runtime = true }]
+
+# Needed by Windows
+[tool.uv.extra-build-variables]
+torch-scatter = { _CL_ = "/std:c++20" }
+torch-sparse = { _CL_ = "/std:c++20" }
