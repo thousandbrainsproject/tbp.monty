@@ -51,10 +51,7 @@ from tbp.monty.frameworks.environments.positioning_procedures import (
 from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.sensors import SensorID
-from tbp.monty.frameworks.utils.spatial_arithmetics import (
-    get_angle_beefed_up,
-    normalize,
-)
+from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.geometry import Rotation
 from tbp.monty.math import VectorXYZ
 from tbp.monty.memento import Memento, Snapshotable
@@ -405,8 +402,6 @@ def derive_set_agent_pose_for_jump_from_goal(
         raise KeyError("Goal for jump must contain pose vectors") from err
     except AttributeError as err:
         raise AttributeError("Goal for jump must contain surface normal") from err
-
-    # target_observed_surface_normal = normalize(target_observed_surface_normal)
 
     surface_displacement = (
         target_observed_surface_normal * desired_object_distance * 1.5
