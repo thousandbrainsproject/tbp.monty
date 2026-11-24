@@ -281,10 +281,6 @@ class Monty(ExperimentMonty, RuntimeMonty, Snapshotable, metaclass=abc.ABCMeta):
     def set_experiment_mode(self, mode: ExperimentMode) -> None:
         pass
 
-    @abc.abstractmethod
-    def is_done(self) -> bool:
-        pass
-
 
 class RuntimeLearningModule(Protocol):
     """Monty runtime interface to a Learning Module."""

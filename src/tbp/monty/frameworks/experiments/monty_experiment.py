@@ -30,7 +30,6 @@ from tbp.monty.experiment.environment import (
 )
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.recognition_strategy import (
-    MontyIsDone,
     RecognitionContext,
     RecognitionStrategy,
 )
@@ -121,7 +120,7 @@ class MontyExperiment:
         self._rng_seed_history: list[int] = []
 
         self._step_hook = config.pop("step_hook", NoOpStepHook())
-        self._recognition_strategy = config.pop("recognition_strategy", MontyIsDone())
+        self._recognition_strategy = config.pop("recognition_strategy")
         self._recognition_ctx = RecognitionContext()
 
     def reset_episode_rng(self):
@@ -540,7 +539,7 @@ class MontyExperiment:
         if result.start_exploring:
             self.model.switch_to_exploratory_step()
         if result.time_out_lms:
-            self.model.deal_with_time_out(global_time_out=result.global_time_out)
+            self.model.deal_with_time_out()
         return result.is_done
 
     def _should_update_step_counter(self: Self) -> bool:
