@@ -137,7 +137,6 @@ experiment:
         max_eval_steps: 500
       - _target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps
         max_total_steps: 6000
-      - _target_: tbp.monty.experiment.recognition_strategy.MontyIsDone
     logging:
       python_log_level: WARNING
       python_log_to_file: true

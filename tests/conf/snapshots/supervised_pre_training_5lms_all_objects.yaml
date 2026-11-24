@@ -369,7 +369,6 @@ experiment:
         min_train_steps: 3
         min_eval_steps: 3
         num_exploratory_steps: 500
-      - _target_: tbp.monty.experiment.recognition_strategy.MontyIsDone
       - _target_: tbp.monty.experiment.recognition_strategy.NaiveScan
         fixed_amount: 5
       - _target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps
