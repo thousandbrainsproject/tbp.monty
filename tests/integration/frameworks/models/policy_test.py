@@ -240,7 +240,7 @@ class AdvancedPolicyTest(unittest.TestCase):
         """Sets up an LM with a goal generator for testing.
 
         Returns:
-            Created evidence graph LM instance
+            graph_lm: Created evidence graph LM instance
         """
         gsg_args = dict(
             elapsed_steps_factor=10,
