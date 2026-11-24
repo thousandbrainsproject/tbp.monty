@@ -29,7 +29,6 @@ __all__ = [
     "DepthTo3DLocations",
     "GaussianBlurRGB",
     "GaussianSmoothing",
-    "MissingToMaxDepth",
     "Transform",
     "TransformContext",
 ]
@@ -57,53 +56,6 @@ class Transform(Protocol):
             Observations with the transform applied.
         """
         ...
-
-
-class MissingToMaxDepth(Transform):
-    """Return max depth when no mesh is present at a location.
-
-    Habitat depth sensors return 0 when no mesh is present at a location. Instead,
-    return max_depth. See:
-    https://github.com/facebookresearch/habitat-sim/issues/1157 for discussion.
-    """
-
-    def __init__(
-        self,
-        agent_id: AgentID,
-        max_depth: float,
-        threshold: float = 0.0,
-    ):
-        """Initialize the transform.
-
-        Args:
-            agent_id: agent id of the agent where the transform should be applied.
-            max_depth: numeric that will replace missing
-            threshold: (optional) numeric, anything less than this is counted as
-                missing. Defaults to 0.0.
-        """
-        self.agent_id = agent_id
-        self.max_depth = max_depth
-        self.threshold = threshold
-
-    def __call__(
-        self, observations: Observations, _ctx: TransformContext
-    ) -> Observations:
-        return self.call(observations)
-
-    def call(self, observations: Observations) -> Observations:
-        """Replace missing depth values with max_depth.
-
-        Args:
-            observations: Observations to modify in place.
-
-        Returns:
-            Observations, same as input, with missing data modified in place
-        """
-        # loop over sensor modules
-        for sm in observations[self.agent_id]:
-            m = np.where(observations[self.agent_id][sm]["depth"] <= self.threshold)
-            observations[self.agent_id][sm]["depth"][m] = self.max_depth
-        return observations
 
 
 class AddNoiseToRawDepthImage(Transform):
@@ -558,8 +510,7 @@ class DepthTo3DLocations(Transform):
                 semantic_patch = agent_obs["semantic"]
             else:
                 # The generated map uses depth observations to determine whether
-                # pixels are on object using 1 meter as a threshold since
-                # `MissingToMaxDepth` sets the background void to 1.
+                # pixels are on object using 1 meter as a threshold.
                 semantic_patch = np.ones_like(depth_patch, dtype=int)
                 semantic_patch[depth_patch >= 1] = 0
 
