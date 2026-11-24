@@ -52,6 +52,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
     SensorState,
 )
 from tbp.monty.frameworks.sensors import SensorID
+from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
 from tbp.monty.geometry import Rotation, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 from tests.unit.frameworks.models.fakes.cmp import FakeMessage
@@ -258,6 +259,7 @@ class JumpToGoalTest(ParametrizedTestCase):
             sensor_id=SensorID("view_finder"),
             desired_object_distance=desired_object_distance,
         )
+        goal_pose = np.array([normalize(row) for row in goal_pose])
         goal = Goal(
             location=goal_location,
             morphological_features={
@@ -431,6 +433,7 @@ class JumpToGoalTest(ParametrizedTestCase):
                 "pose_vectors": DEFAULT_SURFACE_POSE_VECTORS,
             },
         )
+        goal_pose = np.array([normalize(row) for row in goal_pose])
         second_goal = Mock(
             location=goal_location,
             morphological_features={
