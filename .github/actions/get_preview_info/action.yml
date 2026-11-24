@@ -4,6 +4,10 @@ inputs:
   user_login:
     description: 'The GitHub user login'
     required: true
+  head_ref:
+    description: 'The PR head branch, used by the workflow_run'
+    required: false
+    default: ''
 outputs:
   monty_version:
     description: 'The Monty version'
@@ -24,8 +28,10 @@ runs:
       id: set_vars
       shell: bash
       working-directory: tbp.monty
+      env:
+        PREVIEW_HEAD_REF: ${{ inputs.head_ref }}
       run: |
-        BRANCH=${GITHUB_HEAD_REF:-main}
+        BRANCH=${PREVIEW_HEAD_REF:-${GITHUB_HEAD_REF:-main}}
         echo "monty_version=$(uv run --frozen --extra print_version_tool python -m tools.print_version.cli minor)" >> $GITHUB_OUTPUT
         echo "branch_name=${{ inputs.user_login }}-$(echo ${BRANCH} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_OUTPUT
         echo "monty_date=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT

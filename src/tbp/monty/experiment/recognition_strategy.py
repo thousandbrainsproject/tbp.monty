@@ -71,6 +71,9 @@ class RecognitionResult:
     start_exploring: bool = False
     """Request for transition to 'exploring' mode."""
 
+    global_time_out: bool = True
+    """Request for global time-out on top of per-LM time-outs."""
+
 
 class StepType(Enum):
     MATCHING = "matching"
@@ -176,6 +179,7 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
                 is_done=True,
                 time_out_lms=True,
                 start_exploring=wrapped.start_exploring,
+                global_time_out=wrapped.global_time_out,
             )
         elif (
             ctx.mode is ExperimentMode.EVAL
@@ -185,6 +189,7 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
                 is_done=False,
                 time_out_lms=wrapped.time_out_lms,
                 start_exploring=wrapped.start_exploring,
+                global_time_out=wrapped.global_time_out,
             )
         else:
             result = wrapped
@@ -832,6 +837,8 @@ class Any(RecognitionStrategy):
                 is_done=result.is_done or rr.is_done,
                 time_out_lms=result.time_out_lms or rr.time_out_lms,
                 start_exploring=result.start_exploring or rr.start_exploring,
+                # False wins (non-default), so we use logical AND for global_time_out
+                global_time_out=result.global_time_out and rr.global_time_out,
             )
             if result.is_done:
                 break

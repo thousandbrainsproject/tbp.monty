@@ -102,7 +102,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        learning_modules = []
+        learning_modules: list[LearningModule] = []
         step_type = StepType.MATCHING
         result = strategy(ctx, learning_modules, step_type)
         wrapped.assert_called_once_with(ctx, learning_modules, step_type)
@@ -139,7 +139,7 @@ class MinEvalMaxTotalStepsTest(unittest.TestCase):
             matching_steps=matching_steps,
             mode=ExperimentMode.EVAL,
         )
-        learning_modules = []
+        learning_modules: list[LearningModule] = []
         step_type = StepType.MATCHING
         result = strategy(ctx, learning_modules, step_type)
         wrapped.assert_called_once_with(ctx, learning_modules, step_type)
