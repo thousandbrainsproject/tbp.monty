@@ -225,7 +225,9 @@ class PredefinedPolicyReadActionFileTest(unittest.TestCase):
 class JumpToGoalTest(ParametrizedTestCase):
     def setUp(self) -> None:
         self.agent_id = AGENT_ID
-        self.policy = JumpToGoal(self.agent_id, SensorID("view_finder"))
+        self.policy = JumpToGoal(
+            self.agent_id, SensorID("view_finder"), desired_object_distance=0.03
+        )
         self.motor_system_state = MotorSystemState(
             {
                 self.agent_id: AgentState(
@@ -354,7 +356,9 @@ class JumpToGoalTest(ParametrizedTestCase):
                 "pose_vectors": SurfacePoseVectors(np.eye(3)),
             },
         )
-        policy = JumpToGoal(self.agent_id, SensorID("view_finder"))
+        policy = JumpToGoal(
+            self.agent_id, SensorID("view_finder"), desired_object_distance=0.03
+        )
         policy(
             ctx=Mock(),
             observations=Mock(),
@@ -504,7 +508,9 @@ class JumpToGoalTest(ParametrizedTestCase):
             },
         )
 
-        policy = JumpToGoal(self.agent_id, SensorID("view_finder"))
+        policy = JumpToGoal(
+            self.agent_id, SensorID("view_finder"), desired_object_distance=0.03
+        )
         policy(
             ctx=Mock(),
             observations=Mock(),

@@ -507,7 +507,7 @@ class JumpToGoal(MotorPolicy):
         self,
         agent_id: AgentID,
         sensor_id: SensorID,
-        desired_object_distance: float = 0.025,
+        desired_object_distance: float,
     ) -> None:
         """Initialize policy.
 
@@ -1109,16 +1109,16 @@ class SurfacePolicy(InformedPolicy):
     def __init__(
         self,
         alpha,
-        desired_object_distance=0.025,
+        desired_object_distance: float,
         **kwargs,
     ) -> None:
         """Initialize policy.
 
         Args:
-            desired_object_distance: Distance to maintain from the surface; used for
-                touch_object and move-forward. Defaults to 0.025.
             alpha: to what degree should the move_tangentially direction be the
                 same as the last step or totally random? 0~same as before, 1~random walk
+            desired_object_distance: Distance to maintain from the surface; used for
+                touch_object, move-forward, and jumping to a goal.
             **kwargs: ?
         """
         super().__init__(**kwargs)

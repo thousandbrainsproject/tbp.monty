@@ -1246,7 +1246,7 @@ class JumpToGoalTest(ParametrizedTestCase):
 
         self.assertFalse(post_jump_percept.get_on_object())
 
-        policy = JumpToGoal(JUMP_AGENT_ID, JUMP_SENSOR_ID)
+        policy = JumpToGoal(JUMP_AGENT_ID, JUMP_SENSOR_ID, desired_object_distance=0.03)
         goal = Mock(
             location=np.array(JUMP_OBJECT_POSITION),
             morphological_features={"pose_vectors": SurfacePoseVectors(np.eye(3))},
