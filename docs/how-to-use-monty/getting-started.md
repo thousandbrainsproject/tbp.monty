@@ -81,7 +81,7 @@ Monty requires Astral's uv to install its dependencies. For instructions on how 
 Some of Monty's dependencies need to be compiled. On Windows, this requires the Visual Studio Build Tools for C++, which you can install using the following command. The total size is about 5 GB.
 
 ```shell Windows
-winget install Microsoft.VisualStudio.BuildTools --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" --force --accept-package-agreements
+winget install Microsoft.VisualStudio.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --wait" --force
 ```
 
 ## 2.3 Set up Monty
