@@ -29,7 +29,6 @@ __all__ = [
     "MinimumLMs",
     "MontyBaseSetStepTypeAndCheckIfDone",
     "MontyForGraphMatchingSetStepTypeAndCheckIfDone",
-    "MontyIsDone",
     "NaiveScan",
     "ObjectRecognition",
     "RecognitionContext",
@@ -99,20 +98,6 @@ class RecognitionStrategy(Protocol):
         ...
 
 
-class MontyIsDone(RecognitionStrategy):
-    """Legacy (default) recognition strategy."""
-
-    def __call__(
-        self: Self,
-        ctx: RecognitionContext,  # noqa: ARG002
-        model: MontyBase,
-    ) -> RecognitionResult:
-        is_done = model.is_done
-        if is_done:
-            logger.info("MontyIsDone is done, with model.is_done")
-        return RecognitionResult(is_done)
-
-
 class MinEvalMaxTotalSteps(RecognitionStrategy):
     """Recognition strategy that is not done while `matching_steps < min_eval_steps`.
 
@@ -169,14 +154,7 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
         model: MontyBase,
     ) -> RecognitionResult:
         wrapped = self._wrapped(ctx, model)
-        if model.is_done:
-            result = RecognitionResult(
-                is_done=True,
-                time_out_lms=wrapped.time_out_lms,
-                start_exploring=wrapped.start_exploring,
-                global_time_out=wrapped.global_time_out,
-            )
-        elif ctx.step >= self._max_total_steps:
+        if ctx.step >= self._max_total_steps:
             result = RecognitionResult(
                 is_done=True,
                 time_out_lms=True,
@@ -198,9 +176,7 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
 
         if result.is_done:
             logger.info(
-                "MinEvalMaxTotalSteps is done, "
-                "with model.is_done=%s step=%d matching_steps=%d",
-                model.is_done,
+                "MinEvalMaxTotalSteps is done, with step=%d matching_steps=%d",
                 ctx.step,
                 ctx.matching_steps,
             )
@@ -212,7 +188,6 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
                 TelemetryEvent(
                     kind="TerminalCondition",
                     model=dict(
-                        is_done=model.is_done,
                         is_exploring=model.is_exploring,
                         lms=lms,
                     ),
@@ -401,6 +376,17 @@ class StepLimit(RecognitionStrategy):
 class MatchCriteria(RecognitionStrategy):
     """The `model.learning_modules` meet the configured `match_criteria`."""
 
+    _match_criterion: MatchCriterion
+    """The criterion the learning modules must satisfy."""
+
+    def __init__(self: Self, match_criterion: MatchCriterion) -> None:
+        """Initialize the strategy with the given match criterion.
+
+        Args:
+            match_criterion: The criterion the learning modules must satisfy.
+        """
+        self._match_criterion = match_criterion
+
     def __call__(
         self: Self,
         ctx: RecognitionContext,  # noqa: ARG002
@@ -409,9 +395,7 @@ class MatchCriteria(RecognitionStrategy):
         terminal_states: dict[str, str | None] = {
             lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
         }
-        # TODO: Either configure the `match_criterion` on the strategy itself,
-        #       or provide configurable strategies for each criterion.
-        is_done = model._match_criterion(terminal_states)
+        is_done = self._match_criterion(terminal_states)
         if is_done:
             logger.info(
                 "MatchCriteria is done, with terminal_states=%s",
@@ -499,7 +483,6 @@ class ObjectRecognition(RecognitionStrategy):
     Terminal conditions include:
     - `ctx.matching_steps >= {max_train_steps | max_eval_steps}`
     - `ctx.step >= max_total_steps`
-    - `model.is_done`
     """
 
     _max_train_steps: int
@@ -557,9 +540,6 @@ class ObjectRecognition(RecognitionStrategy):
         elif ctx.step >= self._max_total_steps:
             result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info("ObjectRecognition is done, with step=%d", ctx.step)
-        elif model.is_done:
-            result = RecognitionResult(is_done=True)
-            logger.info("ObjectRecognition is done, with model.is_done")
         else:
             result = RecognitionResult()
         return result
@@ -618,7 +598,6 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
                         and ctx.matching_steps > self._min_eval_steps,
                         time_out_lms=True,
                         start_exploring=ctx.mode is ExperimentMode.TRAIN,
-                        global_time_out=False,
                     )
             case "exploratory_step":
                 if (

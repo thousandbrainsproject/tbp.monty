@@ -53,7 +53,3 @@ class ExperimentMonty(Protocol):
             mode: The experiment mode.
         """
         ...
-
-    def is_done(self) -> bool:
-        """Return `True` if the model has reached a terminal condition."""
-        ...
