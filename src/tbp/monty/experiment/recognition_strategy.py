@@ -12,13 +12,13 @@ import logging
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import Enum
 from typing import Protocol, Self
 
 from tbp.monty import telemetry
 from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
-from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
 __all__ = [
@@ -75,6 +75,21 @@ class RecognitionResult:
     """Request for global time-out on top of per-LM time-outs."""
 
 
+class StepType(Enum):
+    MATCHING = "matching"
+    EXPLORING = "exploring"
+
+    @staticmethod
+    def from_string(value: str) -> StepType:
+        match value:
+            case "matching_step":
+                return StepType.MATCHING
+            case "exploratory_step":
+                return StepType.EXPLORING
+            case _:
+                raise ValueError(f"Unknown step type: {value}")
+
+
 class RecognitionStrategy(Protocol):
     """Decides what constitutes "recognition" in an Experiment.
 
@@ -84,13 +99,17 @@ class RecognitionStrategy(Protocol):
     """
 
     def __call__(
-        self: Self, ctx: RecognitionContext, model: MontyBase
+        self: Self,
+        ctx: RecognitionContext,
+        learning_modules: Sequence[LearningModule],
+        step_type: StepType,
     ) -> RecognitionResult:
         """Apply this strategy to produce a Recognition Result from per-LM status.
 
         Args:
             ctx: The Experiment counters and limits.
-            model: The Monty model to be queried.
+            learning_modules: The sequence of Learning Modules to be queried.
+            step_type: The type of step being taken (matching or exploring).
 
         Returns:
             An aggregate Recognition Result based on this strategy.
@@ -151,9 +170,10 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
     def __call__(
         self: Self,
         ctx: RecognitionContext,
-        model: MontyBase,
+        learning_modules: Sequence[LearningModule],
+        step_type: StepType,
     ) -> RecognitionResult:
-        wrapped = self._wrapped(ctx, model)
+        wrapped = self._wrapped(ctx, learning_modules, step_type)
         if ctx.step >= self._max_total_steps:
             result = RecognitionResult(
                 is_done=True,
@@ -182,13 +202,13 @@ class MinEvalMaxTotalSteps(RecognitionStrategy):
             )
             lms = {
                 str(lm.learning_module_id): lm.recognition_status
-                for lm in model.learning_modules
+                for lm in learning_modules
             }
             telemeter.info(
                 TelemetryEvent(
                     kind="TerminalCondition",
                     model=dict(
-                        is_exploring=model.is_exploring,
+                        is_exploring=step_type is StepType.EXPLORING,
                         lms=lms,
                     ),
                     ctx=ctx,
@@ -221,7 +241,8 @@ class MaxTotalSteps(RecognitionStrategy):
     def __call__(
         self: Self,
         ctx: RecognitionContext,
-        model: MontyBase,  # noqa: ARG002
+        learning_modules: Sequence[LearningModule],  # noqa: ARG002
+        step_type: StepType,  # noqa: ARG002
     ) -> RecognitionResult:
         is_done = ctx.step >= self._max_total_steps
         if is_done:
@@ -260,23 +281,25 @@ class MaximumSteps(RecognitionStrategy):
     def __call__(
         self: Self,
         ctx: RecognitionContext,
-        model: MontyBase,
+        learning_modules: Sequence[LearningModule],  # noqa: ARG002
+        step_type: StepType,
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
             if ctx.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        is_done = (not model.is_exploring) and (ctx.matching_steps >= max_steps)
+        is_done = (step_type is not StepType.EXPLORING) and (
+            ctx.matching_steps >= max_steps
+        )
         result = RecognitionResult(
             is_done=is_done,
             time_out_lms=is_done,
         )
         if result.is_done:
             logger.info(
-                "MaximumSteps is done, "
-                "with model.is_exploring=%s ctx.matching_steps=%d",
-                model.is_exploring,
+                "MaximumSteps is done, with step_type=%s ctx.matching_steps=%d",
+                step_type,
                 ctx.matching_steps,
             )
         return result
@@ -339,9 +362,12 @@ class StepLimit(RecognitionStrategy):
         self._max_eval_steps = max_eval_steps
 
     def __call__(
-        self: Self, ctx: RecognitionContext, model: MontyBase
+        self: Self,
+        ctx: RecognitionContext,
+        learning_modules: Sequence[LearningModule],  # noqa: ARG002
+        step_type: StepType,
     ) -> RecognitionResult:
-        if model.is_exploring:
+        if step_type is StepType.EXPLORING:
             is_done = ctx.exploring_steps >= self._num_exploring_steps
             result = RecognitionResult(
                 is_done=is_done,
@@ -390,10 +416,11 @@ class MatchCriteria(RecognitionStrategy):
     def __call__(
         self: Self,
         ctx: RecognitionContext,  # noqa: ARG002
-        model: MontyBase,
+        learning_modules: Sequence[LearningModule],
+        step_type: StepType,  # noqa: ARG002
     ) -> RecognitionResult:
         terminal_states: dict[str, str | None] = {
-            lm.learning_module_id: lm.terminal_state for lm in model.learning_modules
+            lm.learning_module_id: lm.terminal_state for lm in learning_modules
         }
         is_done = self._match_criterion(terminal_states)
         if is_done:
@@ -428,17 +455,16 @@ class MinimumLMs(RecognitionStrategy):
     def __call__(
         self: Self,
         ctx: RecognitionContext,  # noqa: ARG002
-        model: MontyBase,
+        learning_modules: Sequence[LearningModule],
+        step_type: StepType,  # noqa: ARG002
     ) -> RecognitionResult:
         num_matched = sum(
-            1
-            for lm in model.learning_modules
-            if lm.recognition_status.conclusion is not None
+            1 for lm in learning_modules if lm.recognition_status.conclusion is not None
         )
         is_done = num_matched >= self._min_lms
         if is_done:
             logger.info("MinimumLMs is done, with num_matched=%d", num_matched)
-        return RecognitionResult(is_done)
+        return RecognitionResult(is_done=is_done)
 
 
 class NaiveScan(RecognitionStrategy):
@@ -469,12 +495,13 @@ class NaiveScan(RecognitionStrategy):
     def __call__(
         self: Self,
         ctx: RecognitionContext,
-        model: MontyBase,  # noqa: ARG002
+        learning_modules: Sequence[LearningModule],  # noqa: ARG002
+        step_type: StepType,  # noqa: ARG002
     ) -> RecognitionResult:
         is_done = ctx.step >= self._step_limit
         if is_done:
             logger.info("NaiveScan is done, with step=%d", ctx.step)
-        return RecognitionResult(is_done)
+        return RecognitionResult(is_done=is_done)
 
 
 class ObjectRecognition(RecognitionStrategy):
@@ -522,19 +549,21 @@ class ObjectRecognition(RecognitionStrategy):
         self._max_total_steps = max_total_steps
 
     def __call__(
-        self: Self, ctx: RecognitionContext, model: MontyBase
+        self: Self,
+        ctx: RecognitionContext,
+        learning_modules: Sequence[LearningModule],  # noqa: ARG002
+        step_type: StepType,
     ) -> RecognitionResult:
         max_steps = (
             self._max_train_steps
             if ctx.mode is ExperimentMode.TRAIN
             else self._max_eval_steps
         )
-        if (not model.is_exploring) and (ctx.matching_steps >= max_steps):
+        if (step_type is not StepType.EXPLORING) and (ctx.matching_steps >= max_steps):
             result = RecognitionResult(is_done=True, time_out_lms=True)
             logger.info(
-                "ObjectRecognition is done, "
-                "with model.is_exploring=%s ctx.matching_steps=%d",
-                model.is_exploring,
+                "ObjectRecognition is done, with step_type=%s ctx.matching_steps=%d",
+                step_type,
                 ctx.matching_steps,
             )
         elif ctx.step >= self._max_total_steps:
@@ -583,15 +612,17 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
         self._num_exploratory_steps = num_exploratory_steps
 
     def __call__(
-        self: Self, ctx: RecognitionContext, model: MontyBase
+        self: Self,
+        ctx: RecognitionContext,
+        learning_modules: Sequence[LearningModule],
+        step_type: StepType,
     ) -> RecognitionResult:
-        learning_modules = model.learning_modules
         any_lms_updated = self._check_if_any_lms_updated(learning_modules)
 
-        match model.step_type:
-            case "matching_step":
+        match step_type:
+            case StepType.MATCHING:
                 if any_lms_updated and self._check_terminal_conditions(
-                    ctx, learning_modules, model
+                    ctx, learning_modules, step_type
                 ):
                     return RecognitionResult(
                         is_done=ctx.mode is ExperimentMode.EVAL
@@ -599,7 +630,7 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
                         time_out_lms=True,
                         start_exploring=ctx.mode is ExperimentMode.TRAIN,
                     )
-            case "exploratory_step":
+            case StepType.EXPLORING:
                 if (
                     any_lms_updated
                     and ctx.exploring_steps >= self._num_exploratory_steps
@@ -618,7 +649,7 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
         self,
         ctx: RecognitionContext,
         learning_modules: Sequence[LearningModule],
-        model: MontyBase,
+        step_type: StepType,
     ) -> bool:
         """Check if all LMs have reached a terminal state.
 
@@ -655,7 +686,7 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
             return True
 
         # No need to check pose consensus if we haven't moved min steps yet.
-        if not self._exceeded_min_steps(ctx, model):
+        if not self._exceeded_min_steps(ctx, step_type):
             return False
 
         # Check if LMs satisfy the match criterion
@@ -674,30 +705,26 @@ class MontyForGraphMatchingSetStepTypeAndCheckIfDone(RecognitionStrategy):
 
         return False
 
-    def _exceeded_min_steps(self, ctx: RecognitionContext, model: MontyBase) -> bool:
-        return self._step_type_count(ctx, model) > self._min_steps(ctx, model)
+    def _exceeded_min_steps(self, ctx: RecognitionContext, step_type: StepType) -> bool:
+        return self._step_type_count(ctx, step_type) > self._min_steps(ctx, step_type)
 
-    def _min_steps(self, ctx: RecognitionContext, model: MontyBase) -> int:
-        match model.step_type:
-            case "matching_step":
+    def _min_steps(self, ctx: RecognitionContext, step_type: StepType) -> int:
+        match step_type:
+            case StepType.MATCHING:
                 match ctx.mode:
                     case ExperimentMode.TRAIN:
                         return self._min_train_steps
                     case ExperimentMode.EVAL:
                         return self._min_eval_steps
-            case "exploratory_step":
+            case StepType.EXPLORING:
                 return self._num_exploratory_steps
-            case _:
-                raise ValueError(f"Unknown step type: {model.step_type}")
 
-    def _step_type_count(self, ctx: RecognitionContext, model: MontyBase) -> int:
-        match model.step_type:
-            case "matching_step":
+    def _step_type_count(self, ctx: RecognitionContext, step_type: StepType) -> int:
+        match step_type:
+            case StepType.MATCHING:
                 return ctx.matching_steps
-            case "exploratory_step":
+            case StepType.EXPLORING:
                 return ctx.exploring_steps
-            case _:
-                raise ValueError(f"Unknown step type: {model.step_type}")
 
 
 class MontyBaseSetStepTypeAndCheckIfDone(RecognitionStrategy):
@@ -734,13 +761,16 @@ class MontyBaseSetStepTypeAndCheckIfDone(RecognitionStrategy):
         self._num_exploratory_steps = num_exploratory_steps
 
     def __call__(
-        self: Self, ctx: RecognitionContext, model: MontyBase
+        self: Self,
+        ctx: RecognitionContext,
+        learning_modules: Sequence[LearningModule],  # noqa: ARG002
+        step_type: StepType,
     ) -> RecognitionResult:
-        if self._exceeded_min_steps(ctx, model):
-            match model.step_type:
-                case "exploratory_step":
+        if self._exceeded_min_steps(ctx, step_type):
+            match step_type:
+                case StepType.EXPLORING:
                     return RecognitionResult(is_done=True)
-                case "matching_step":
+                case StepType.MATCHING:
                     match ctx.mode:
                         case ExperimentMode.TRAIN:
                             return RecognitionResult(start_exploring=True)
@@ -749,30 +779,26 @@ class MontyBaseSetStepTypeAndCheckIfDone(RecognitionStrategy):
 
         return RecognitionResult()
 
-    def _exceeded_min_steps(self, ctx: RecognitionContext, model: MontyBase) -> bool:
-        return self._step_type_count(ctx, model) > self._min_steps(ctx, model)
+    def _exceeded_min_steps(self, ctx: RecognitionContext, step_type: StepType) -> bool:
+        return self._step_type_count(ctx, step_type) > self._min_steps(ctx, step_type)
 
-    def _min_steps(self, ctx: RecognitionContext, model: MontyBase) -> int:
-        match model.step_type:
-            case "matching_step":
+    def _min_steps(self, ctx: RecognitionContext, step_type: StepType) -> int:
+        match step_type:
+            case StepType.MATCHING:
                 match ctx.mode:
                     case ExperimentMode.TRAIN:
                         return self._min_train_steps
                     case ExperimentMode.EVAL:
                         return self._min_eval_steps
-            case "exploratory_step":
+            case StepType.EXPLORING:
                 return self._num_exploratory_steps
-            case _:
-                raise ValueError(f"Unknown step type: {model.step_type}")
 
-    def _step_type_count(self, ctx: RecognitionContext, model: MontyBase) -> int:
-        match model.step_type:
-            case "matching_step":
+    def _step_type_count(self, ctx: RecognitionContext, step_type: StepType) -> int:
+        match step_type:
+            case StepType.MATCHING:
                 return ctx.matching_steps
-            case "exploratory_step":
+            case StepType.EXPLORING:
                 return ctx.exploring_steps
-            case _:
-                raise ValueError(f"Unknown step type: {model.step_type}")
 
 
 class Any(RecognitionStrategy):
@@ -799,11 +825,14 @@ class Any(RecognitionStrategy):
         self._strategies = strategies
 
     def __call__(
-        self: Self, ctx: RecognitionContext, model: MontyBase
+        self: Self,
+        ctx: RecognitionContext,
+        learning_modules: Sequence[LearningModule],
+        step_type: StepType,
     ) -> RecognitionResult:
         result = RecognitionResult()
         for strategy in self._strategies:
-            rr = strategy(ctx, model)
+            rr = strategy(ctx, learning_modules, step_type)
             result = RecognitionResult(
                 is_done=result.is_done or rr.is_done,
                 time_out_lms=result.time_out_lms or rr.time_out_lms,

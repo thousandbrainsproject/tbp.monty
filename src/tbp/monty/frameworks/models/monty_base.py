@@ -460,10 +460,6 @@ class MontyBase(Monty):
     def is_motor_only_step(self) -> bool:
         return self.motor_system.motor_only_step
 
-    @property
-    def is_exploring(self) -> bool:
-        return self.step_type == "exploratory_step"
-
     def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"
         logger.debug("Going into matching mode")
