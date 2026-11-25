@@ -127,8 +127,6 @@ As an example, if the most likely object was a mug, and the second most likely o
 
 In addition to being able to compare the top two most likely objects in such a way, one can just focus on the most likely object, and use this same technique to compare the two most likely _poses_ of the same object.
 
-**Translating an On-Object Goal into an Agent Pose:** The learning module's goal generator (`EvidenceGoalGenerator`) specifies the proposed test point as a goal located directly on the object's surface, together with the surface pose vectors (including the surface normal) at that point in body-centric coordinates. The motor system (e.g., `JumpToGoal` for the distant agent or `SurfacePolicy` for the surface agent) then translates this on-object goal into a target pose for the agent using its own `desired_object_distance` parameter: it positions the agent along the target surface normal at 1.5 times `desired_object_distance` away from the surface (starting slightly back to reduce collision risk if the LM's pose hypothesis is inaccurate) and orients the agent to look directly down the surface normal.
-
 **Determining When to Perform a Hypothesis-Driven Test:** There are currently a handful of conditions for when we perform a hypothesis-driven test, summarized below:
 
 - The system is sufficiently confident about the object ID in question; in this case, Monty will focus on determining _pose_ as described above. With all other indications below, the process remains focused on distinguishing the ID amongst the top two most likely objects.
