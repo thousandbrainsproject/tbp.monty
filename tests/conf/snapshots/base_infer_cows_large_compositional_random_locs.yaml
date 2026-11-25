@@ -255,9 +255,6 @@ experiment:
         sigma: 5
         sensor_ids:
         - patch_1
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: agent_id_0
-        max_depth: 1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
         agent_id: agent_id_0
         sensor_ids:
@@ -397,10 +394,6 @@ experiment:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_3}
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
-      ids:
-      - learning_module_2
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:

@@ -41,8 +41,6 @@ telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyBase(Monty):
-    _is_done: bool
-
     def __init__(
         self,
         sensor_modules: Sequence[SensorModule],
@@ -128,7 +126,6 @@ class MontyBase(Monty):
                 "sensor_module id; no more, no less!"
             )
 
-        self._is_done = False
         self._actions: list[Action] = []
         self._goals: list[Goal] = []
         self._attention_system = (
@@ -209,18 +206,8 @@ class MontyBase(Monty):
         self._step_motor_system(ctx, observations, proprioceptive_state)
         return self._actions
 
-    def deal_with_time_out(self, global_time_out: bool) -> None:
-        """Call any functions and logging in case of a time out.
-
-        Args:
-            global_time_out: If True, set Monty state to done so we don't go into
-                exploration mode anymore (if we timed out we didn't recognize an object
-                so exploration makes no sense since we won't add anything to memory).
-                This is set to False, if Monty didn't reach a global time out (exceeded
-                max_steps) but instead, the match criterion was satisfied by the LMs
-                that recognized an object. Then the other LMs will be set to time_out,
-                but we still want to explore.
-        """
+    def deal_with_time_out(self) -> None:
+        """Call any functions and logging in case of a time out."""
         pass
 
     def _step_learning_modules(self, ctx: RuntimeContext):
@@ -351,7 +338,6 @@ class MontyBase(Monty):
 
     def reset(self) -> None:
         # TODO: move most (all?) of this logic to Experiment
-        self._is_done = False
         self.switch_to_matching_step()
         for lm in self.learning_modules:
             lm.reset_stm()
@@ -477,13 +463,6 @@ class MontyBase(Monty):
     @property
     def is_exploring(self) -> bool:
         return self.step_type == "exploratory_step"
-
-    @property
-    def is_done(self) -> bool:
-        return self._is_done
-
-    def set_done(self) -> None:
-        self._is_done = True
 
     def switch_to_matching_step(self) -> None:
         self.step_type = "matching_step"

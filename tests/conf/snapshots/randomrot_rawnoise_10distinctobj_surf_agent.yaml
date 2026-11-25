@@ -125,9 +125,6 @@ experiment:
           - 0.1
       env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: agent_id_0
-        max_depth: 1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.AddNoiseToRawDepthImage
         agent_id: agent_id_0
         sigma: 0.001
@@ -165,9 +162,6 @@ experiment:
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.RandomRotation
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:

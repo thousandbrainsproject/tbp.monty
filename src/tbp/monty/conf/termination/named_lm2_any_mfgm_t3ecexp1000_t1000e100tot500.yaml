@@ -1,9 +1,5 @@
 # @package experiment.config
 
-match_criterion:
-  _target_: tbp.monty.experiment.match_criteria.NamedLMsMatch
-  ids:
-    - learning_module_2
 recognition_strategy:
   _target_: tbp.monty.experiment.recognition_strategy.Any
   strategies:

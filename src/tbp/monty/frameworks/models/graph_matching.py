@@ -20,7 +20,6 @@ import torch
 from tbp.monty import telemetry
 from tbp.monty.cmp import AttentionRegion, Goal, Message, location_mean
 from tbp.monty.context import RuntimeContext
-from tbp.monty.experiment.match_criteria import MatchCriterion
 from tbp.monty.experiment.primary_target import PrimaryTarget
 from tbp.monty.experiment.recognition_status import (
     RecognitionConclusion,
@@ -52,8 +51,6 @@ telemeter = telemetry.getTelemeter(__name__)
 
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing objects using graphs."""
-
-    _match_criterion: MatchCriterion
 
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""
@@ -112,8 +109,8 @@ class MontyForGraphMatching(MontyBase):
         # Otherwise return False
         return False
 
-    def deal_with_time_out(self, global_time_out: bool = True) -> None:
-        self._set_time_outs(global_time_out=global_time_out)
+    def deal_with_time_out(self) -> None:
+        self._set_time_outs()
 
     # ------------------ Logging & Saving ----------------------
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
@@ -376,26 +373,13 @@ class MontyForGraphMatching(MontyBase):
         # Add logging information : TODO use the buffer to log this appropriately
         lm.stepwise_targets_list.append(lm.stepwise_target_object)
 
-    def _set_time_outs(self, global_time_out: bool = False) -> None:
-        """Set terminal state of LMs that are not done yet to time_out.
-
-        Args:
-            global_time_out: If True, set Monty state to done so we don't go into
-                exploration mode anymore (if we timed out we didn't recognize an object
-                so exploration makes no sense since we won't add anything to memory).
-                This is set to False, if Monty didn't reach a global time out (exceeded
-                max_steps) but instead, the match criterion was satisfied by the LMs
-                that recognized an object. Then the other LMs will be set to time_out,
-                but we still want to explore.
-        """
+    def _set_time_outs(self) -> None:
+        """Set terminal state of LMs that are not done yet to time_out."""
         # Don't set LM states to time out if we were in exploratory mode
         if self.step_type != "exploratory_step":
             for lm in self.learning_modules:
                 if lm.terminal_state is None:
                     lm.terminal_state = "time_out"
-        if global_time_out:
-            # Don't go into exploratory mode if we timed out
-            self._is_done = True
 
 
 class GraphLM(LearningModule):

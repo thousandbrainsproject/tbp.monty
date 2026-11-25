@@ -44,7 +44,6 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
-    MissingToMaxDepth,
 )
 from tbp.monty.frameworks.environments.environment import SemanticID
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
@@ -1180,9 +1179,6 @@ class JumpToGoalTest(ParametrizedTestCase):
             sensor_module_id=JUMP_SENSOR_ID,
             features=["on_object", "object_coverage", "pose_vectors"],
         )
-        self.missing_to_max_depth = MissingToMaxDepth(
-            agent_id=JUMP_AGENT_ID, max_depth=1.0
-        )
         self.depth_to_3d = DepthTo3DLocations(
             agent_id=JUMP_AGENT_ID,
             sensor_ids=[JUMP_SENSOR_ID],
@@ -1203,7 +1199,6 @@ class JumpToGoalTest(ParametrizedTestCase):
         Returns:
             The percept produced by the camera sensor module.
         """
-        observations = self.missing_to_max_depth.call(observations)
         observations = self.depth_to_3d.call(observations, state=sim.states)
         return self.sensor_module.step(
             Mock(rng=np.random.default_rng(0)),

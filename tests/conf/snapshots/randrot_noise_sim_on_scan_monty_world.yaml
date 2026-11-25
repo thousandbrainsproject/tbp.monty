@@ -99,9 +99,6 @@ experiment:
           - 0.2
       env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: agent_id_0
-        max_depth: 1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
         agent_id: agent_id_0
         sensor_ids:
@@ -144,9 +141,6 @@ experiment:
         allow_translation: false
         max_orientation_attempts: 3
     eval_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:
