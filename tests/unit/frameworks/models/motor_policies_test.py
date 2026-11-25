@@ -355,7 +355,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         goal = Mock(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": SurfacePoseVectors(np.eye(3)),
+                "pose_vectors": DEFAULT_SURFACE_POSE_VECTORS,
             },
         )
         policy = JumpToGoal(
