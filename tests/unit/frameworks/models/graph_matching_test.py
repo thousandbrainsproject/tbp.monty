@@ -98,6 +98,7 @@ class GraphMemoryUpdateMemoryTest(unittest.TestCase):
             object_location_rel_body=MagicMock(),
             location_rel_model=MagicMock(),
             object_rotation=MagicMock(),
+            pose_vector_types={},
         )
 
         gm._build_graph.assert_called_once_with(
@@ -133,6 +134,7 @@ class GraphMemoryUpdateMemoryTest(unittest.TestCase):
             object_location_rel_body=sentinel.object_location_rel_body,
             location_rel_model=sentinel.location_rel_model,
             object_rotation=sentinel.object_rotation,
+            pose_vector_types={},
         )
 
         gm._extend_graph.assert_called_once_with(
@@ -179,6 +181,7 @@ class GraphMemoryUpdateMemoryTest(unittest.TestCase):
             object_location_rel_body=MagicMock(),
             location_rel_model=MagicMock(),
             object_rotation=MagicMock(),
+            pose_vector_types={},
         )
 
         gm._build_graph.assert_called_once_with(
