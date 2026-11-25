@@ -117,7 +117,7 @@ In the figure below, two examples of the policy in action are shown.
 
 ## Hypothesis-Driven Policy Details
 
-For the hypothesis-driven action policy, the Monty system uses its learned, internal models of objects, in combination with its hypotheses about the current ID and pose of the object it is perceiving, to propose a point in space to move to. This testing point should help disambiguate the ID and/or pose of the object as efficiently as possible. This policy is currently for LMs that use explicit 3D graphs to model objects.
+For the hypothesis-driven action policy, the Monty system uses its learned, internal models of objects, in combination with its hypotheses about the current ID and pose of the object it is perceiving, to propose a target location and surface pose on the object to observe. This testing point should help disambiguate the ID and/or pose of the object as efficiently as possible. This policy is currently for LMs that use explicit 3D graphs to model objects.
 
 **Selecting a Test Point:** A simple heuristic for where to test an object for this purpose might be to evaluate the point on the most-likely object that is farthest away from where the system currently believes it is. Such a "max-distance" condition is partially implemented, however the main method currently in use involves a moderately more sophisticated comparison of the two most likely hypotheses so as to identify the most distinguishing point to visit.
 
@@ -126,6 +126,8 @@ In particular, this "graph-mismatch" technique takes the most likely and second 
 As an example, if the most likely object was a mug, and the second most likely object a can of soup, then a point on the handle of the mug would have the most-distant nearest neighbor to the can-of-soup graph. In general, this is a reasonable heuristic for identifying potentially diagnostic differences in the structures of two objects using Euclidean distance-alone, without requiring comparisons in feature-space. Eventually we want to extend this to include distance in feature space to efficiently distinguish objects with the same morphology such as a coke can from a sparkling water can.
 
 In addition to being able to compare the top two most likely objects in such a way, one can just focus on the most likely object, and use this same technique to compare the two most likely _poses_ of the same object.
+
+**Translating an On-Object Goal into an Agent Pose:** The learning module's goal generator (`EvidenceGoalGenerator`) specifies the proposed test point as a goal located directly on the object's surface, together with the surface pose vectors (including the surface normal) at that point in body-centric coordinates. The motor system (e.g., `JumpToGoal` for the distant agent or `SurfacePolicy` for the surface agent) then translates this on-object goal into a target pose for the agent using its own `desired_object_distance` parameter: it positions the agent along the target surface normal at 1.5 times `desired_object_distance` away from the surface (starting slightly back to reduce collision risk if the LM's pose hypothesis is inaccurate) and orients the agent to look directly down the surface normal.
 
 **Determining When to Perform a Hypothesis-Driven Test:** There are currently a handful of conditions for when we perform a hypothesis-driven test, summarized below:
 

@@ -492,7 +492,7 @@ class PredefinedPolicy(MotorPolicy):
 
 
 class JumpToGoal(MotorPolicy):
-    """Policy that moves to a observe a pose specified by a goal.
+    """Policy that moves to observe a pose specified by a goal.
 
     Requires that the goal provides a surface normal and its location. The agent will
     then attempt a jump to a pose such that it looks down at this surface normal.
