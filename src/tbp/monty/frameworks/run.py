@@ -51,6 +51,8 @@ def output_dir_from_run_name(config: DictConfig) -> Path:
 @hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
     print_config(cfg)
+    if cfg.get("print_cfg", False):
+        return
 
     cfg.experiment.config.logging.output_dir = str(output_dir_from_run_name(cfg))
 
