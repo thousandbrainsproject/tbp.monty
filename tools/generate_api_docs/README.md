@@ -9,9 +9,10 @@ This directory contains the sources and instructions to build **tbp.monty** API 
 The API documentation is collected from the source code **docstring** and built
 using [sphinx](https://www.sphinx-doc.org/en/master/) tools.
 
-From the `tbp.monty` directory, use the following command to install the required packages:
+From the `tbp.monty` directory, install the documentation tools and the optional
+dependencies for the analysis and MuJoCo APIs:
 
-    pip install -e '.[generate_api_docs_tool]'
+    pip install -e '.[generate_api_docs_tool,analysis,simulator_mujoco]'
 
 Once the dependencies are installed, change directory to `tools/generate_api_docs` and use the following command to
 create the API documentation source files:
