@@ -37,6 +37,7 @@
   - [using-monty-in-a-custom-application](how-to-use-monty/tutorials/using-monty-in-a-custom-application.md)
   - [using-monty-for-robotics](how-to-use-monty/tutorials/using-monty-for-robotics.md)
   - [running-an-experiment-from-a-different-repository](how-to-use-monty/tutorials/running-an-experiment-from-a-different-repository.md)
+  - [writing-a-custom-motor-policy](how-to-use-monty/tutorials/writing-a-custom-motor-policy.md)
 - [common-issues-and-how-to-fix-them](how-to-use-monty/common-issues-and-how-to-fix-them.md)
 
 # how-monty-works: How Monty Works
