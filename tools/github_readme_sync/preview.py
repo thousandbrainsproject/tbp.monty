@@ -10,12 +10,75 @@
 from __future__ import annotations
 
 import json
+import logging
+import re
 from pathlib import Path
 
 from tools.github_readme_sync.hierarchy import check_hierarchy_file
 from tools.github_readme_sync.models import SCHEMA_VERSION, PreviewBundle
 from tools.github_readme_sync.readme import ReadMe
 from tools.github_readme_sync.upload import load_doc, upload_rendered
+
+logger = logging.getLogger(__name__)
+_MINOR_VERSION = r"[0-9]+\.[0-9]+"
+
+
+def _preview_suffix(pr_number: int) -> str:
+    if pr_number < 1:
+        raise ValueError("Preview pull request number must be positive")
+    # Dots distinguish these names from legacy previews, whose suffix used
+    # only letters, digits and hyphens from the author and branch name.
+    return f"-monty.pr.{pr_number}"
+
+
+def preview_version(minor_version: str, pr_number: int) -> str:
+    """Build a ReadMe preview version in the pull request's namespace.
+
+    Args:
+        minor_version: The Monty major and minor version.
+        pr_number: The number of the pull request being previewed.
+
+    Returns:
+        A ReadMe version name scoped to the pull request.
+
+    Raises:
+        ValueError: If the Monty version or pull request number is invalid.
+    """
+    if not re.fullmatch(_MINOR_VERSION, minor_version):
+        raise ValueError(f"Expected a major.minor version, got {minor_version!r}")
+    return minor_version + _preview_suffix(pr_number)
+
+
+def delete_pr_previews(pr_number: int, *, legacy_version: str | None = None) -> None:
+    """Delete the hidden ReadMe previews created for one pull request.
+
+    Args:
+        pr_number: The positive number of the pull request being cleaned up.
+        legacy_version: Exact version to also remove for pre-existing previews.
+            Names outside the legacy format are skipped.
+    """
+    suffix = re.escape(_preview_suffix(pr_number))
+    pattern = re.compile(rf"{_MINOR_VERSION}{suffix}")
+    if legacy_version is not None and not re.fullmatch(
+        rf"{_MINOR_VERSION}-[A-Za-z0-9-]+", legacy_version
+    ):
+        logger.warning("Ignoring unsupported legacy preview version %r", legacy_version)
+        legacy_version = None
+
+    versions = set()
+    for branch in ReadMe.get_branches():
+        name = branch.get("name")
+        if (
+            not isinstance(name, str)
+            or (branch.get("privacy") or {}).get("view") != "hidden"
+        ):
+            continue
+        version = name.removeprefix("v")
+        if version == legacy_version or pattern.fullmatch(version):
+            versions.add(version)
+
+    for version in sorted(versions):
+        ReadMe(version).delete_version()
 
 
 def render_preview(

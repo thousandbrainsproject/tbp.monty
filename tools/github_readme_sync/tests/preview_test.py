@@ -22,11 +22,14 @@ from tools.github_readme_sync.models import (
     RenderedDocument,
 )
 from tools.github_readme_sync.preview import (
+    delete_pr_previews,
     load_preview_bundle,
+    preview_version,
     publish_preview,
     render_preview,
 )
 from tools.github_readme_sync.readme import ReadMe
+from tools.github_readme_sync.req import ReadMeRequestError
 
 REPOSITORY = "thousandbrainsproject/tbp.monty"
 PR_NUMBER = 1111
@@ -39,6 +42,105 @@ VALIDATION_CONTEXT = {
     "expected_head_sha": HEAD_SHA,
     "expected_base_ref": BASE_REF,
 }
+
+
+class TestPreviewVersions(unittest.TestCase):
+    def test_format_version_and_pr_number(self):
+        self.assertEqual(preview_version("0.60", 1319), "0.60-monty.pr.1319")
+        with self.assertRaises(ValueError):
+            preview_version("0.60.1", 1319)
+        with self.assertRaises(ValueError):
+            preview_version("0.60", 0)
+
+    @patch("tools.github_readme_sync.req._SESSION.delete")
+    @patch("tools.github_readme_sync.req._SESSION.get")
+    def test_cleanup_selects_scoped_hidden_versions_from_all_pages(
+        self, mock_get, mock_delete
+    ):
+        branches_url = "https://api.readme.com/v2/branches"
+        first = MagicMock(status_code=200, url=branches_url)
+        first.json.return_value = {
+            "data": [
+                {"name": "0.59-monty.pr.1319", "privacy": {"view": "hidden"}},
+                {"name": "0.60-monty.pr.13190", "privacy": {"view": "hidden"}},
+                {"name": "0.60-monty.pr.1319-docs", "privacy": {"view": "hidden"}},
+                {"name": "0.60", "privacy": {"view": "default"}},
+                {"name": "ref", "privacy": None},
+            ],
+            "paging": {"next": "/v2/branches?page=2"},
+        }
+        second = MagicMock(status_code=200, url=f"{branches_url}?page=2")
+        second.json.return_value = {
+            "data": [
+                {"name": "v0.60-monty.pr.1319", "privacy": {"view": "hidden"}},
+                {"name": "0.60-monty.pr.1319", "privacy": {"view": "hidden"}},
+                {"name": "0.61-monty.pr.1319", "privacy": {"view": "public"}},
+                {"name": "0.59-legacy-feature", "privacy": {"view": "hidden"}},
+                {"name": "0.60-legacy-feature", "privacy": {"view": "hidden"}},
+            ],
+            "paging": {"next": None},
+        }
+        mock_get.side_effect = [first, second]
+        mock_delete.return_value = MagicMock(status_code=204)
+
+        delete_pr_previews(1319, legacy_version="0.60-legacy-feature")
+
+        self.assertEqual(
+            [req.args[0] for req in mock_get.call_args_list],
+            [branches_url, f"{branches_url}?page=2"],
+        )
+        self.assertEqual(
+            [req.args[0] for req in mock_delete.call_args_list],
+            [
+                f"{branches_url}/0.59-monty.pr.1319",
+                f"{branches_url}/0.60-legacy-feature",
+                f"{branches_url}/0.60-monty.pr.1319",
+            ],
+        )
+
+    @patch("tools.github_readme_sync.req._SESSION.delete")
+    @patch("tools.github_readme_sync.req._SESSION.get")
+    def test_failed_inventory_performs_no_deletions(self, mock_get, mock_delete):
+        first = MagicMock(status_code=200, url="https://api.readme.com/v2/branches")
+        first.json.return_value = {
+            "data": [
+                {"name": "0.59-monty.pr.1319", "privacy": {"view": "hidden"}},
+            ],
+            "paging": {"next": "/v2/branches?page=2"},
+        }
+        mock_get.side_effect = [
+            first,
+            MagicMock(status_code=502, text="Could not fetch page"),
+        ]
+
+        with self.assertRaises(ReadMeRequestError):
+            delete_pr_previews(1319)
+
+        mock_delete.assert_not_called()
+
+    @patch("tools.github_readme_sync.readme.get_collection")
+    def test_invalid_scope_stops_before_inventory(self, mock_get_collection):
+        with self.assertRaises(ValueError):
+            delete_pr_previews(0)
+        mock_get_collection.assert_not_called()
+
+    @patch.object(ReadMe, "delete_version", autospec=True)
+    @patch.object(ReadMe, "get_branches")
+    def test_unsupported_legacy_name_does_not_block_scoped_cleanup(
+        self, mock_get_branches, mock_delete_version
+    ):
+        legacy_version = "0.60-dependabot[bot]-docs"
+        scoped_version = "0.60-monty.pr.1319"
+        mock_get_branches.return_value = [
+            {"name": legacy_version, "privacy": {"view": "hidden"}},
+            {"name": scoped_version, "privacy": {"view": "hidden"}},
+        ]
+
+        with self.assertLogs("tools.github_readme_sync.preview", level="WARNING"):
+            delete_pr_previews(1319, legacy_version=legacy_version)
+
+        mock_delete_version.assert_called_once()
+        self.assertEqual(mock_delete_version.call_args.args[0].version, scoped_version)
 
 
 def make_document(**overrides):

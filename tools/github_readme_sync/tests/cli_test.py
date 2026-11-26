@@ -16,6 +16,33 @@ import pytest
 from tools.github_readme_sync.cli import main
 
 
+class TestPreviewCLI:
+    def test_preview_version(self, capsys):
+        with patch.object(sys, "argv", ["cli.py", "preview-version", "0.60", "317"]):
+            main()
+
+        assert capsys.readouterr().out == "0.60-monty.pr.317\n"
+
+    @patch("tools.github_readme_sync.cli.delete_pr_previews")
+    def test_delete_pr_previews(self, mock_delete_pr_previews):
+        argv = [
+            "cli.py",
+            "delete-pr-previews",
+            "317",
+            "--legacy-version",
+            "0.60-legacy-docs",
+        ]
+        with (
+            patch.object(sys, "argv", argv),
+            patch.dict("os.environ", {"README_API_KEY": "test-key"}),
+        ):
+            main()
+
+        mock_delete_pr_previews.assert_called_once_with(
+            317, legacy_version="0.60-legacy-docs"
+        )
+
+
 class TestCLIArgumentErrors:
     def test_export_wrong_args(self):
         # Simulate missing version argument for the 'export' command

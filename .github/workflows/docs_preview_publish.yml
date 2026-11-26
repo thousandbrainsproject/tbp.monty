@@ -1,9 +1,5 @@
 name: Docs Preview Publish
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: true
-
 on:
   workflow_run:
     workflows: [Docs Preview Render]
@@ -15,8 +11,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  docs_preview_publish:
-    name: docs-preview-publish
+  find_pr:
     if: >-
       ${{
         github.repository_owner == 'thousandbrainsproject' &&
@@ -24,14 +19,12 @@ jobs:
         github.event.workflow_run.conclusion == 'success'
       }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    permissions:
+      pull-requests: read
+    outputs:
+      pr_number: ${{ steps.source.outputs.pr_number }}
+      head_sha: ${{ steps.source.outputs.head_sha }}
     steps:
-      - name: Checkout tbp.monty
-        uses: actions/checkout@v7
-        with:
-          path: tbp.monty
-          persist-credentials: false
-
       - name: Find the current PR
         id: source
         uses: actions/github-script@v8
@@ -67,16 +60,53 @@ jobs:
 
             core.setOutput('pr_number', pr.number);
             core.setOutput('head_sha', pr.head.sha);
-            core.setOutput('head_ref', pr.head.ref);
-            core.setOutput('user_login', pr.user.login);
+
+  docs_preview_publish:
+    name: docs-preview-publish
+    needs: find_pr
+    if: ${{ needs.find_pr.outputs.pr_number != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: monty-readme-preview-${{ needs.find_pr.outputs.pr_number }}
+      queue: max
+    env:
+      PR_NUMBER: ${{ needs.find_pr.outputs.pr_number }}
+      PR_HEAD_SHA: ${{ needs.find_pr.outputs.head_sha }}
+    steps:
+      - name: Recheck PR before publishing
+        id: current
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            });
+            if (
+              pr.state !== 'open' ||
+              pr.base.ref !== 'main' ||
+              pr.head.sha !== process.env.PR_HEAD_SHA
+            ) {
+              core.notice('The PR changed while waiting to publish. Skipping.');
+              return;
+            }
             core.setOutput('ready', 'true');
 
+      - name: Checkout tbp.monty
+        if: ${{ steps.current.outputs.ready == 'true' }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: tbp.monty
+          persist-credentials: false
+
       - name: Create initial PR comment
-        if: ${{ steps.source.outputs.ready == 'true' }}
+        if: ${{ steps.current.outputs.ready == 'true' }}
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ steps.source.outputs.pr_number }}
+          issue_number: ${{ needs.find_pr.outputs.pr_number }}
           comment_id: docs-preview
           working_directory: tbp.monty
           message: |
@@ -87,22 +117,25 @@ jobs:
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
 
       - name: Install uv
-        if: ${{ steps.source.outputs.ready == 'true' }}
+        if: ${{ steps.current.outputs.ready == 'true' }}
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "**/uv.lock"
 
-      - name: Get version and branch name
-        if: ${{ steps.source.outputs.ready == 'true' }}
+      - name: Get preview version and date
+        if: ${{ steps.current.outputs.ready == 'true' }}
         id: preview_info
-        uses: ./tbp.monty/.github/actions/get_preview_info
-        with:
-          user_login: ${{ steps.source.outputs.user_login }}
-          head_ref: ${{ steps.source.outputs.head_ref }}
+        working-directory: tbp.monty
+        run: |
+          minor=$(uv run --frozen --extra print_version_tool python -m tools.print_version.cli minor)
+          version=$(uv run --frozen --extra github_readme_sync_tool \
+            python -m tools.github_readme_sync.cli preview-version "$minor" "$PR_NUMBER")
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'date=%s\n' "$(date -u +'%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
 
       - name: Download preview artifact
-        if: ${{ steps.source.outputs.ready == 'true' }}
+        if: ${{ steps.current.outputs.ready == 'true' }}
         uses: actions/download-artifact@v8
         with:
           name: docs-preview-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
@@ -111,20 +144,21 @@ jobs:
           path: ${{ runner.temp }}/docs-preview-artifact
 
       - name: Publish preview
-        if: ${{ steps.source.outputs.ready == 'true' }}
+        if: ${{ steps.current.outputs.ready == 'true' }}
         id: publish
         working-directory: tbp.monty
         env:
           README_API_KEY: ${{ secrets.README_API_KEY }}
+          PREVIEW_VERSION: ${{ steps.preview_info.outputs.version }}
         run: |
           uv run --frozen --extra github_readme_sync_tool --extra print_version_tool \
             python -m tools.github_readme_sync.cli \
             publish-preview \
             "${{ runner.temp }}/docs-preview-artifact/preview.json" \
-            ${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }} \
+            "$PREVIEW_VERSION" \
             --expected-repository "${{ github.repository }}" \
-            --expected-pr-number "${{ steps.source.outputs.pr_number }}" \
-            --expected-head-sha "${{ steps.source.outputs.head_sha }}" \
+            --expected-pr-number "$PR_NUMBER" \
+            --expected-head-sha "$PR_HEAD_SHA" \
             --expected-base-ref main
 
       - name: Update PR comment on success
@@ -132,23 +166,23 @@ jobs:
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ steps.source.outputs.pr_number }}
+          issue_number: ${{ needs.find_pr.outputs.pr_number }}
           comment_id: docs-preview
           working_directory: tbp.monty
           message: |
             📚 **Documentation Preview**
 
             ✅ A preview of the documentation changes in this PR is available for maintainers at:
-            ${{ vars.DOCS_URL_PREFIX }}v${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}
+            ${{ vars.DOCS_URL_PREFIX }}v${{ steps.preview_info.outputs.version }}
 
-            Last updated: ${{ steps.preview_info.outputs.monty_date }}
+            Last updated: ${{ steps.preview_info.outputs.date }}
 
       - name: Update PR comment on failure
-        if: ${{ failure() && steps.source.outputs.ready == 'true' }}
+        if: ${{ failure() && steps.current.outputs.ready == 'true' }}
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ steps.source.outputs.pr_number }}
+          issue_number: ${{ needs.find_pr.outputs.pr_number }}
           comment_id: docs-preview
           working_directory: tbp.monty
           message: |

@@ -59,6 +59,16 @@ optional arguments:
 pytest --cov=.
 ```
 
+## Preview lifecycle
+
+Preview builds use ReadMe versions named `{major}.{minor}-monty.pr.{number}`.
+When a pull request closes, the cleanup workflow lists ReadMe branches and
+removes hidden versions with that exact pull request suffix. It also checks the
+single current version under the legacy author-and-branch name.
+
+Publishing and cleanup share a per-PR concurrency queue. Each job checks the
+current pull request state after entering that queue.
+
 
 ## Troubleshooting
 

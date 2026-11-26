@@ -30,6 +30,8 @@ from tools.github_readme_sync.hierarchy import (  # noqa: E402
 )
 from tools.github_readme_sync.index import generate_index  # noqa: E402
 from tools.github_readme_sync.preview import (  # noqa: E402
+    delete_pr_previews,
+    preview_version,
     publish_preview,
     render_preview,
 )
@@ -165,6 +167,20 @@ def main():
     )
     delete_parser.add_argument("version", help="The version to delete")
 
+    delete_pr_parser = subparsers.add_parser(
+        "delete-pr-previews", help="Delete the hidden previews for a pull request"
+    )
+    delete_pr_parser.add_argument("pr_number", type=int)
+    delete_pr_parser.add_argument(
+        "--legacy-version", help="Also delete this exact hidden legacy preview"
+    )
+
+    preview_version_parser = subparsers.add_parser(
+        "preview-version", help="Print the scoped version name for a preview"
+    )
+    preview_version_parser.add_argument("minor_version")
+    preview_version_parser.add_argument("pr_number", type=int)
+
     # Generate index command
     index_parser = subparsers.add_parser(
         "generate-index", help="Generate index.json from docs front-matter"
@@ -225,6 +241,13 @@ def main():
         check_readme_api_key()
         rdme = ReadMe(args.version)
         rdme.delete_version()
+
+    elif args.command == "delete-pr-previews":
+        check_readme_api_key()
+        delete_pr_previews(args.pr_number, legacy_version=args.legacy_version)
+
+    elif args.command == "preview-version":
+        print(preview_version(args.minor_version, args.pr_number))
 
     elif args.command == "generate-index":
         output_file = args.output_file.strip()
