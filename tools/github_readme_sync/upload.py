@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -43,7 +44,9 @@ def upload(new_hierarchy, file_path: str, rdme: ReadMe):
         )
 
         # Exact title match (case-sensitive)
-        set_do_not_delete(to_be_deleted, category["title"])
+        set_do_not_delete(
+            to_be_deleted, ReadMeItem(id=category["title"], type="category")
+        )
 
         # Recursively process the hierarchy of children
         process_children(
@@ -97,7 +100,9 @@ def upload_rendered(
         )
 
         # Exact title match (case-sensitive)
-        set_do_not_delete(to_be_deleted, category["title"])
+        set_do_not_delete(
+            to_be_deleted, ReadMeItem(id=category["title"], type="category")
+        )
 
         # Recursively process the hierarchy of children
         process_rendered_children(
@@ -154,7 +159,7 @@ def process_rendered_children(
             created=created,
         )
 
-        set_do_not_delete(to_be_deleted, doc["slug"])
+        set_do_not_delete(to_be_deleted, ReadMeItem(id=doc["slug"], type="doc"))
 
         # If this child has children, call the function recursively
         if doc["children"]:
@@ -193,7 +198,7 @@ def process_children(
             doc=doc,
             created=created,
         )
-        set_do_not_delete(to_be_deleted, child["slug"])
+        set_do_not_delete(to_be_deleted, ReadMeItem(id=child["slug"], type="doc"))
 
         # If this child has children, call the function recursively
         if child.get("children"):
@@ -208,11 +213,10 @@ def process_children(
             )
 
 
-def set_do_not_delete(to_be_deleted: list[ReadMeItem], identifier: str):
-    for item in to_be_deleted:
-        if item.id == identifier:
-            to_be_deleted.remove(item)
-            return
+def set_do_not_delete(to_be_deleted: list[ReadMeItem], item: ReadMeItem):
+    # The inventory has no entry for a newly created resource.
+    with suppress(ValueError):
+        to_be_deleted.remove(item)
 
 
 def get_all_categories_docs(rdme: ReadMe) -> list[ReadMeItem]:
