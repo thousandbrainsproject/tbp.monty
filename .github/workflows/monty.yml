@@ -45,7 +45,8 @@ jobs:
         working-directory: tbp.monty
         run: |
           cd tools/generate_api_docs
-          uv run --frozen --extra dev --extra generate_api_docs_tool make apidoc html
+          uv run --frozen --extra dev --extra generate_api_docs_tool \
+            --extra analysis --extra simulator_mujoco make apidoc html
       - name: Store API docs artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v7

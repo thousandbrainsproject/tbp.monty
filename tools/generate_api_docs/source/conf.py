@@ -149,20 +149,6 @@ toc_maxdepth = 5
 # -- Extension configuration -------------------------------------------------
 autodoc_member_order = "groupwise"
 autodoc_inherit_docstrings = True
-autodoc_mock_imports = [
-    "PIL",
-    "habitat_sim",
-    "magnum",
-    "matplotlib",
-    "numpy",
-    "pandas",
-    "quaternion",
-    "scipy",
-    "skimage",
-    "sklearn",
-    "torch",
-    "torch_geometric",
-]
 autodoc_default_options = {
     # Make sphinx generate docs for specific dunder methods
     "special-members": "__init__",
