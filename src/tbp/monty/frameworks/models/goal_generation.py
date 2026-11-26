@@ -51,9 +51,9 @@ class GraphGoalGenerator(GoalGenerator):
     Generated Goals are received by either:
         i) other learning modules, which may model world objects (e.g., a mug) or
         internal systems (e.g., the agent's robotic limb)
-        ii) motor actuators, in which case they represent simpler, primitive Goals
-        for the actuator to achieve (e.g., a target location and surface pose on an
-        object to observe)
+        ii) the motor system, in which case they represent simpler, primitive Goals
+        for the motor system to handle (e.g., a target location and surface normal on an
+        object to move to and observe)
 
     Alongside the high-level driving Goal, generated sub-Goals can also be
     conditioned on other information such as the LM's current most-likely hypothesis
@@ -476,6 +476,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         """Initialize the Evidence GSG.
 
         Args:
+            parent_lm: ?
             goal_tolerances: ?
             elapsed_steps_factor: Factor that considers the number of elapsed
                 steps as a possible condition for initiating a hypothesis-testing Goal;

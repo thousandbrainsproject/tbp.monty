@@ -18,7 +18,7 @@ The [Cortical Messaging Protocol](../../overview/architecture-overview/cortical-
 
 - sender type (string in ["SM", "LM"])
 
-The `Message` class is quite general and depending who outputs it, it can be interpreted in different ways. As output of the sensor module, it can be seen as a percept. When output by the learning module it can be interpreted as the hypothesized or most likely percept (representing object ID and pose). When it is the motor output of the LM it can be seen as a goal (for instance specifying a target location and surface pose on an object to observe, or a desired pose of an object in the world). Lastly, when sent as lateral votes between LMs we send a list of message class instances which are interpreted as votes (where votes do not contain non-morphological, modality-specific features but only pose information associated with object IDs). 
+The `Message` class is quite general and depending who outputs it, it can be interpreted in different ways. As output of the sensor module, it can be seen as a percept. When output by the learning module it can be interpreted as the hypothesized or most likely percept (representing object ID and pose). When it is the motor output of the LM it can be seen as a goal (for instance specifying a target location and surface normal on an object to observe, or a desired pose of an object in the world). Lastly, when sent as lateral votes between LMs we send a list of message class instances which are interpreted as votes (where votes do not contain non-morphological, modality-specific features but only pose information associated with object IDs). 
 
 The figure below shows which messages in Monty are CMP compliant.
 

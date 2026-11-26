@@ -117,7 +117,7 @@ In the figure below, two examples of the policy in action are shown.
 
 ## Hypothesis-Driven Policy Details
 
-For the hypothesis-driven action policy, the Monty system uses its learned, internal models of objects, in combination with its hypotheses about the current ID and pose of the object it is perceiving, to propose a target location and surface pose on the object to observe. This testing point should help disambiguate the ID and/or pose of the object as efficiently as possible. This policy is currently for LMs that use explicit 3D graphs to model objects.
+For the hypothesis-driven action policy, the Monty system uses its learned, internal models of objects, in combination with its hypotheses about the current ID and pose of the object it is perceiving, to propose a target location and surface normal on the object to observe. This testing point should help disambiguate the ID and/or pose of the object as efficiently as possible. This policy is currently for LMs that use explicit 3D graphs to model objects.
 
 **Selecting a Test Point:** A simple heuristic for where to test an object for this purpose might be to evaluate the point on the most-likely object that is farthest away from where the system currently believes it is. Such a "max-distance" condition is partially implemented, however the main method currently in use involves a moderately more sophisticated comparison of the two most likely hypotheses so as to identify the most distinguishing point to visit.
 

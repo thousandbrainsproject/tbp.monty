@@ -376,8 +376,6 @@ def derive_set_agent_pose_for_jump_from_goal(
 ) -> SetAgentPose:
     """Derive the `SetAgentPose` action from a goal.
 
-    Requires the goal to provide a surface normal for the agent to look down at.
-
     Args:
         goal: The goal to jump towards and observe.
         agent_id: The ID of the agent to jump.
