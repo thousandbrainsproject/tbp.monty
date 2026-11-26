@@ -251,12 +251,13 @@ def remove_wandb_wrapper(config: DictConfig) -> None:
 
 
 def wandb_group(config: DictConfig) -> str | None:
-    for handler in config["logging"]["monty_data_logger"]["handlers"]:
+    handlers = config["logging"].get("monty_data_logger", {}).get("handlers", [])
+    for handler in handlers:
         if (
             handler["_target_"]
             == "tbp.monty.frameworks.loggers.wandb_handlers.WandbWrapper"
         ):
-            return handler["wandb_group"]
+            return handler.get("wandb_group")
     return None
 
 
@@ -662,6 +663,8 @@ def run_episodes_parallel(
     num_parallel: int,
     experiment_name: str,
     train: bool = True,
+    *,
+    wandb_run_group: str | None = None,
 ) -> None:
     """Run episodes in parallel.
 
@@ -672,6 +675,7 @@ def run_episodes_parallel(
             processes will be equal to the number of configs.
         experiment_name: Name of the experiment.
         train: Whether the episodes are training or evaluation episodes.
+        wandb_run_group: Group from the original experiment's Wandb wrapper.
     """
     # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(experiments), num_parallel)
@@ -686,7 +690,7 @@ def run_episodes_parallel(
     if log_parallel_wandb:
         wandb_run = wandb.init(
             name=experiment_name,
-            group=wandb_group(experiments[0]["config"]),
+            group=wandb_run_group,
             project="Monty",
             config=experiments[0],
             id=wandb.util.generate_id(),
@@ -819,4 +823,5 @@ def main(cfg: DictConfig):
                 cfg.num_parallel,
                 cfg.experiment.config.logging.run_name,
                 train=False,
+                wandb_run_group=wandb_group(cfg.experiment.config),
             )
