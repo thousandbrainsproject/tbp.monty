@@ -61,3 +61,17 @@ learning_module_0:
 ```
 
 For simplicity, every other configuration parameter was copied from `base_config_10distinctobj_dist_agent` experiment configuration in `src/tbp/monty/conf/experiment/base_config_10distinctobj_dist_agent.yaml`.
+
+## Select a MuJoCo asset catalog
+
+MuJoCo presets with a mesh directory select it through the `environment/mujoco_assets` Hydra group. The group sets `data_path` independently of the agent and sensor settings. Use object names that are available in the selected catalog.
+
+With the MuJoCo extra installed, run the first experiment on the built-in cube without downloading YCB meshes.
+
+```shell
+uv run python run.py experiment=tutorial/first_experiment \
+  environment/mujoco_assets@experiment.config.environment.env_init_args=builtins \
+  'experiment.config.train_env_interface_args.object_names=[cubeSolid]'
+```
+
+Other catalogs include `ycb`, `numenta_lab`, `cows`, and `cows_random_locs`. To supply your own mesh directory, set `experiment.config.environment.env_init_args.data_path` directly.

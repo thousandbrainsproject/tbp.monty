@@ -1,7 +1,10 @@
 # @package experiment.config.environment
 
+defaults:
+  - mujoco_assets@env_init_args: builtins
+  - _self_
+
 env_init_args:
-  data_path: null
   agents:
     - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
       _partial_: true

@@ -13,6 +13,7 @@ defaults:
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4_256
   - /termination: any3_any_mfgm_t3e3exp1000_t250e500tot500
   - /logging: silent_info_train
+  - override /environment/mujoco_assets@experiment.config.environment.env_init_args: cows
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -27,8 +28,5 @@ experiment:
     train_env_interface_args:
       object_init_sampler:
         rotations: ${constants.rotations_cube_faces}
-    environment:
-      env_init_args:
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
     logging:
       run_name: supervised_pre_training_cows_small_compositional
