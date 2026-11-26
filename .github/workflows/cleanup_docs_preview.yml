@@ -1,41 +1,66 @@
 name: Cleanup Docs Preview
 
 on:
-  push:
-    branches:
-      - main
   pull_request_target:
     types: [closed]
     branches:
       - main
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   cleanup_docs_preview:
     name: cleanup-docs-preview
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    concurrency:
+      group: monty-readme-preview-${{ github.event.pull_request.number }}
+      queue: max
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
+      - name: Confirm the PR is still closed
+        id: current
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            });
+            if (pr.state === 'closed') {
+              core.setOutput('closed', 'true');
+            }
+
       - name: Checkout tbp.monty
+        if: ${{ steps.current.outputs.closed == 'true' }}
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.workflow_sha }}
           fetch-depth: 0
           path: tbp.monty
+          persist-credentials: false
       - name: Install uv
+        if: ${{ steps.current.outputs.closed == 'true' }}
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "**/uv.lock"
-      - name: Get version and branch
+      - name: Get legacy preview version and branch
+        if: ${{ steps.current.outputs.closed == 'true' }}
         id: preview_info
         uses: ./tbp.monty/.github/actions/get_preview_info
         with:
           user_login: ${{ github.event.pull_request.user.login }}
-      - name: Delete docs preview
+      - name: Delete docs previews
+        if: ${{ steps.current.outputs.closed == 'true' }}
         working-directory: tbp.monty
+        env:
+          README_API_KEY: ${{ secrets.README_API_KEY }}
+          LEGACY_VERSION: ${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}
         run: |
-          export README_API_KEY=${{ secrets.README_API_KEY }}
-          uv run --frozen \
-            --extra dev \
-            --extra github_readme_sync_tool \
-            --extra print_version_tool \
-            python -m tools.github_readme_sync.cli delete "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
+          uv run --frozen --extra github_readme_sync_tool \
+            python -m tools.github_readme_sync.cli \
+            delete-pr-previews "$PR_NUMBER" --legacy-version "$LEGACY_VERSION"

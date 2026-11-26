@@ -89,6 +89,11 @@ class ReadMe:
     def _branch_url(self, suffix: str = "") -> str:
         return f"{API_PREFIX}/branches/{self.version}{suffix}"
 
+    @staticmethod
+    def get_branches() -> list[ReadMeResource]:
+        """Return the project branches from ReadMe's paginated inventory."""
+        return get_collection(f"{API_PREFIX}/branches")
+
     def get_categories(self) -> list[ReadMeResource]:
         """Return guide categories in the order supplied by ReadMe."""
         categories = get_collection(self._branch_url(f"/categories/{GUIDES_SECTION}"))
