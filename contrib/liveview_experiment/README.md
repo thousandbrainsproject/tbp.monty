@@ -89,7 +89,14 @@ LIVEVIEW_RUN_NAME_SUFFIX=_debug ./contrib/liveview_experiment/scripts/run.sh ran
 
 http://127.0.0.1:8000
 
-> **Note:** The 77obj experiments need pretrained models under `$MONTY_MODELS/pretrained_ycb_v12/`. If missing, a symlink `pretrained_ycb_v12 -> pretrained_ycb_v11` will work (v12 is a rename of v11).
+> **Note:** A run needs the pretrained model its config names, at
+> `$MONTY_MODELS/<release>/<model>/pretrained/model.pt`. The shipped experiments
+> need `pretrained_ycb_v15` (the 77obj and YCB configs) and
+> `pretrained_compositional_objects_v13` (the cows configs) — Monty's
+> getting-started page lists the archives to unpack there. When the file is
+> missing the run stops before it starts and says which model, which release and
+> which folder it looked in; set `MONTY_MODELS` to the folder that already holds
+> the release rather than moving or copying it.
 
 ## Architecture
 

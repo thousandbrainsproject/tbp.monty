@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import sys
 import time
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -45,6 +46,7 @@ from .experiment_config import (
 )
 from .experiment_initializer import ExperimentInitializer
 from .metadata_extractor import ExperimentMetadata, MetadataExtractor
+from .model_check import missing_model_message
 from .state_update_builder import StateUpdateBuilder
 
 if TYPE_CHECKING:
@@ -238,6 +240,15 @@ class MontyExperimentWithLiveView(MontyExperiment):
 
     def setup_experiment(self, config: ConfigDict) -> None:
         """Set up the experiment and broadcast initial state."""
+        # A missing checkpoint is a fact about this machine, not a fault in the
+        # experiment: said here, before loggers, the environment and torch are
+        # touched, it is one paragraph instead of a traceback through
+        # `torch.load`.
+        message = missing_model_message(config)
+        if message:
+            print(message, file=sys.stderr)
+            raise SystemExit(1)
+
         super().setup_experiment(config)
 
         self._experiment_status = "running"
