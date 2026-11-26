@@ -56,8 +56,11 @@ function escapeHtml(text) {
  * @param {HTMLElement} chartEl - The element Plotly draws into
  */
 function attachHoverLabel(chartEl) {
-    if (!chartEl || chartEl.dataset.hoverLabelBound === 'true') return;
-    chartEl.dataset.hoverLabelBound = 'true';
+    // A property, not `dataset`: Plotly rewrites the element's data attributes
+    // on every draw, so a flag kept there reads as "not bound" a second after it
+    // is set. Marked only once the events are on the element — `on` is Plotly's,
+    // and an element Plotly has not drawn into yet has none.
+    if (!chartEl || chartEl.hoverLabelBound) return;
 
     chartEl.style.position = 'relative';
     chartEl.classList.add('evidence-hover-host');
@@ -71,6 +74,8 @@ function attachHoverLabel(chartEl) {
     chartEl.on('plotly_unhover', () => {
         tooltip.hidden = true;
     });
+
+    chartEl.hoverLabelBound = true;
 }
 
 /**
@@ -563,8 +568,15 @@ window.Hooks.EvidenceChart = {
         };
         
         this.baseLayout = layout;
-        attachHoverLabel(this.chartEl);
-        return Plotly.newPlot(this.chartEl, [], layout, config);
+
+        // `on` is Plotly's, and Plotly puts it on the element when it draws into
+        // it — binding the hover label before the first plot is a TypeError, and
+        // this promise's answer is what every later draw waits for, so the chart
+        // never appeared at all.
+        return Plotly.newPlot(this.chartEl, [], layout, config).then(() => {
+            attachHoverLabel(this.chartEl);
+            return this.chartEl;
+        });
     },
     
     updated() {
