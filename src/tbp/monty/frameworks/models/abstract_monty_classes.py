@@ -305,6 +305,14 @@ class RuntimeLearningModule(Protocol):
         """
         ...
 
+    def post_step(self, ctx: RuntimeContext) -> None:
+        """Perform post-processing after any type of step is fully complete.
+
+        Args:
+            ctx: The runtime context.
+        """
+        pass
+
     def receive_votes(self, votes: Collection[Any]) -> None:
         """Process inbound voting data.
 
@@ -389,6 +397,10 @@ class LearningModule(
     def exploratory_step(
         self, ctx: RuntimeContext, percepts: Sequence[Message]
     ) -> None:
+        pass
+
+    @abc.abstractmethod
+    def post_step(self, ctx: RuntimeContext) -> None:
         pass
 
     @abc.abstractmethod

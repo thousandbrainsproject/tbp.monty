@@ -21,6 +21,7 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 
+from tbp.monty import telemetry
 from tbp.monty.context import RuntimeContext
 from tbp.monty.experiment.environment import (
     Interface,
@@ -47,10 +48,15 @@ from tbp.monty.frameworks.models.graph_matching import MontyForGraphMatching
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
 from tbp.monty.memento import Memento
+from tbp.monty.telemetry.episode.subscribers import (
+    EpisodeTelemetryHandler,
+    MontyHandlerTelemetryConnector,
+)
 
 __all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
+telemeter = telemetry.getTelemeter(__name__)
 
 
 class MontyExperiment:
@@ -159,6 +165,7 @@ class MontyExperiment:
 
         self.load_environment_interfaces(config)
         self.init_monty_data_loggers(self.config["logging"])
+        self.init_telemetry()
         self.init_counters()
 
     def init_env(self, env_init_func, env_init_args):
@@ -370,6 +377,13 @@ class MontyExperiment:
         # Instantiate logging callback handler for custom monty loggers
         self.logger_handler = LoggingCallbackHandler(
             self.monty_logger, self.model, output_dir=self.output_dir
+        )
+
+    def init_telemetry(self):
+        """Initialize Monty telemetry."""
+        self.episode_telemetry = EpisodeTelemetryHandler()
+        self.monty_handler_telemetry = MontyHandlerTelemetryConnector(
+            handlers=self.monty_logger.handlers, output_dir=self.output_dir
         )
 
     def get_epoch_state(self):
@@ -608,7 +622,9 @@ class MontyExperiment:
         logger we have already updated the target to graph mapping and will never
         get 'confused'/'FP'.
         """
-        self.logger_handler.post_episode(self.logger_args)
+        logger_args = self.logger_args
+        self.logger_handler.post_episode(logger_args)  # TODO: remove!
+        self.episode_telemetry.post_episode(logger_args, self.model)
 
         self.model.update_ltm()
         self._snapshot_monty()
@@ -761,6 +777,9 @@ class MontyExperiment:
 
         # Close monty logging
         self.logger_handler.close(self.logger_args)
+
+        self.episode_telemetry.unsubscribe()
+        self.monty_handler_telemetry.unsubscribe()
 
         # Close python logging
         for handler in logger.handlers:

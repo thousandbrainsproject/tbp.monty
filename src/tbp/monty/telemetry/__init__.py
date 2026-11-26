@@ -45,7 +45,7 @@ Usage example::
 Handler example::
 
     class MyHandler(logging.Handler):
-        def emit(self, record):
+        def emit(self, record) -> None:
             event = record.msg  # the TelemetryEvent instance
             ...
 """

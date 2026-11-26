@@ -41,9 +41,14 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 from tbp.monty.geometry import Rotation
 from tbp.monty.memento import Memento
 from tbp.monty.runtime import is_location_only_step
+from tbp.monty.telemetry.episode.schemas import (
+    LMRecognitionStateTelemetry,
+    LMStateTelemetry,
+    TerminalState,
+)
 from tbp.monty.telemetry.schemas import TelemetryEvent
 
-__all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching"]
+__all__ = ["GraphLM", "GraphMemory", "MontyForGraphMatching", "TerminalState"]
 
 logger = logging.getLogger(__name__)
 telemeter = telemetry.getTelemeter(__name__)
@@ -516,6 +521,22 @@ class GraphLM(LearningModule):
         self.buffer.append(buffer_data)
         self.buffer.append_input_percepts(percepts)
 
+    def post_step(
+        self,
+        ctx: RuntimeContext,  # noqa: ARG002
+    ) -> None:
+        self._emit_lm_state()
+
+    def _emit_lm_state(self):
+        """Emits post-step LM state telemetry."""
+        # TODO telemetry: "critical" because this event is mandatory; re-assess
+        telemeter.critical(
+            TelemetryEvent(
+                kind=LMStateTelemetry.__name__,
+                event_data=LMStateTelemetry.from_graph_lm(self),
+            )
+        )
+
     def update_ltm_from_stm(self) -> None:
         """If training, update memory from buffer."""
         if self.mode is ExperimentMode.TRAIN and len(self.buffer) > 0:
@@ -798,6 +819,17 @@ class GraphLM(LearningModule):
             self.buffer.set_individual_ts(self.detected_object, self.detected_pose)
         else:
             self.buffer.set_individual_ts(None, None)
+
+        # TODO telemetry: "critical" because this event is mandatory; re-assess
+        telemeter.critical(
+            TelemetryEvent(
+                kind=LMRecognitionStateTelemetry.__name__,
+                event_data=LMRecognitionStateTelemetry.from_graph_lm(self),
+            )
+        )
+
+        # TODO telemetry: maybe unneeded, post_step event seems sufficient; re-assess
+        # self._emit_lm_state()
 
     def collect_stats_to_save(self):
         """Get all stats that this LM should store in the buffer for logging.
