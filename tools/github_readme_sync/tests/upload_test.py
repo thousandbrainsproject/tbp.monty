@@ -8,7 +8,9 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 from tools.github_readme_sync.upload import (
@@ -16,10 +18,86 @@ from tools.github_readme_sync.upload import (
     get_all_categories_docs,
     set_do_not_delete,
     upload,
+    upload_rendered,
 )
 
 
 class TestUpload(unittest.TestCase):
+    def test_upload_keeps_guide_with_same_name_as_obsolete_category(self):
+        hierarchy = [
+            {
+                "slug": "examples",
+                "title": "Examples",
+                "children": [
+                    {
+                        "slug": "advanced",
+                        "title": "Advanced",
+                        "body": "Example",
+                        "children": [],
+                    }
+                ],
+            }
+        ]
+
+        for rendered in (False, True):
+            with self.subTest(rendered=rendered):
+                rdme = MagicMock()
+                rdme.get_categories.return_value = [
+                    {"title": "advanced"},
+                    {"title": "Examples"},
+                ]
+                rdme.get_category_docs.side_effect = [
+                    [{"slug": "obsolete"}],
+                    [{"slug": "advanced"}],
+                ]
+                rdme.create_category_if_not_exists.return_value = (
+                    "/branches/0.40/categories/guides/Examples",
+                    False,
+                )
+                page = ("/branches/0.40/guides/advanced", False)
+
+                if rendered:
+                    rdme.create_or_update_rendered_doc.return_value = page
+                    upload_rendered(hierarchy, rdme)
+                    rdme.create_or_update_rendered_doc.assert_called_once()
+                else:
+                    rdme.create_or_update_doc.return_value = page
+                    with tempfile.TemporaryDirectory() as folder:
+                        category_path = Path(folder) / "examples"
+                        category_path.mkdir()
+                        (category_path / "advanced.md").write_text(
+                            "---\ntitle: Advanced\n---\nExample\n", encoding="utf-8"
+                        )
+                        upload(hierarchy, folder, rdme)
+                    rdme.create_or_update_doc.assert_called_once()
+
+                rdme.delete_doc.assert_called_once_with("obsolete")
+                rdme.delete_category.assert_called_once_with("advanced")
+
+    def test_upload_keeps_category_with_same_name_as_obsolete_guide(self):
+        hierarchy = [{"slug": "advanced", "title": "advanced", "children": []}]
+
+        for rendered in (False, True):
+            with self.subTest(rendered=rendered):
+                rdme = MagicMock()
+                rdme.get_categories.return_value = [
+                    {"title": "Obsolete"},
+                    {"title": "advanced"},
+                ]
+                rdme.get_category_docs.side_effect = [[{"slug": "advanced"}], []]
+                rdme.create_category_if_not_exists.return_value = (
+                    "/branches/0.40/categories/guides/advanced",
+                    False,
+                )
+
+                if rendered:
+                    upload_rendered(hierarchy, rdme)
+                else:
+                    upload(hierarchy, "/unused", rdme)
+
+                rdme.delete_doc.assert_called_once_with("advanced")
+                rdme.delete_category.assert_called_once_with("Obsolete")
+
     @patch("tools.github_readme_sync.upload.get_all_categories_docs")
     @patch("tools.github_readme_sync.upload.process_children")
     def test_upload_cleans_up_before_making_version_stable(
@@ -81,7 +159,7 @@ class TestUpload(unittest.TestCase):
             ReadMeItem(id="Test Category", type="category"),
         ]
 
-        set_do_not_delete(to_be_deleted, "test-doc")
+        set_do_not_delete(to_be_deleted, ReadMeItem(id="test-doc", type="doc"))
 
         self.assertEqual(
             to_be_deleted,
@@ -94,7 +172,9 @@ class TestUpload(unittest.TestCase):
             ReadMeItem(id="Test Category", type="category"),
         ]
 
-        set_do_not_delete(to_be_deleted, "Test Category")
+        set_do_not_delete(
+            to_be_deleted, ReadMeItem(id="Test Category", type="category")
+        )
 
         self.assertEqual(
             to_be_deleted,
