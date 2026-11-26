@@ -14,7 +14,7 @@ import multiprocessing as mp
 import re
 import shutil
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import torch
 import wandb
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from tbp.monty.experiment.environment import (
     OneObjectPerEpisodeInterface,
@@ -140,8 +140,52 @@ def print_config(config: DictConfig) -> None:
     print("-" * 100)
 
 
-def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
-    """Parses a zero-based episode selection string into episode indices.
+def _yaml_config_value(value: Any) -> Any:
+    """Convert resolved config values for inspection.
+
+    Args:
+        value: A value from a composed or generated configuration.
+
+    Returns:
+        The representation to write to YAML.
+    """
+    match value:
+        case DictConfig() | ListConfig():
+            return _yaml_config_value(OmegaConf.to_container(value))
+        case Predefined():
+            return _yaml_config_value(
+                {
+                    "_target_": type(value),
+                    "positions": value.positions,
+                    "rotations": value.rotations,
+                    "scales": value.scales,
+                    "change_every_episode": value.change_every_episode,
+                }
+            )
+        case type():
+            return f"{value.__module__}.{value.__qualname__}"
+        case Path():
+            return str(value)
+        case np.ndarray() | np.generic():
+            return _yaml_config_value(value.tolist())
+        case Mapping():
+            return {key: _yaml_config_value(item) for key, item in value.items()}
+        case list() | tuple():
+            return [_yaml_config_value(item) for item in value]
+        case _:
+            return value
+
+
+def _print_config_document(config: Mapping) -> None:
+    print("---")
+    print(OmegaConf.to_yaml(_yaml_config_value(config)), end="")
+
+
+EpisodeSpec = str | int | Sequence[str | int] | None
+
+
+def parse_episode_spec(episode_spec: EpisodeSpec, total: int) -> list[int]:
+    """Parse a zero-based episode selection into episode indices.
 
     Converts a human-friendly selection string into a sorted list of unique,
     zero-based episode indices in the half-open interval `[0, total)`.
@@ -149,13 +193,13 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     a colon (`:`), with the end index exclusive.
 
     Args:
-        episode_spec: Selection string describing which episodes to run.
-            See supported forms.
+        episode_spec: Index, range or sequence describing which episodes to run.
         total: Total number of episodes. Must be non-negative.
 
     Supported forms:
       - `"all"`, `":"`, or empty string: select all valid indices `[0, total)`
       - Comma-separated integers and ranges, for example `"0,3,5:8"`
+      - An integer index, or a nonempty list of indices and ranges
       - Open-ended ranges (end-exclusive):
           - `":N"` selects `[0, N)` (i.e., indices `0` through `N-1`)
           - `"N:"` selects `[N, total)`
@@ -174,16 +218,27 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     """
     if episode_spec is None:
         return list(range(total))
-    s = episode_spec.strip().lower()
-    if s in ("", "all", ":"):
-        return list(range(total))
+    parts: Sequence[str | int]
+    if isinstance(episode_spec, str):
+        spec = episode_spec.strip().lower()
+        if spec in ("", "all", ":"):
+            return list(range(total))
+        parts = spec.split(",")
+    elif isinstance(episode_spec, int):
+        parts = [episode_spec]
+    elif isinstance(episode_spec, Sequence) and episode_spec:
+        parts = episode_spec
+    else:
+        raise ValueError(f"{episode_spec!r} is not a valid selection.")
 
     selected: set[int] = set()
 
-    for raw in s.split(","):
-        part = raw.strip()
+    for raw in parts:
+        part = str(raw).strip()
         if not part:
-            continue
+            if isinstance(episode_spec, str):
+                continue
+            raise ValueError(f"{raw!r} is not a valid selection.")
 
         m = RE_OPEN_LEFT.match(part)
         if m:
@@ -226,9 +281,10 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     return sorted(selected)
 
 
-def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> list[dict]:
-    idxs = parse_episode_spec(episode_spec, len(configs))
-    return [cfg for i, cfg in enumerate(configs) if i in idxs]
+def filter_episode_configs(
+    configs: list[Mapping], episode_spec: EpisodeSpec
+) -> list[Mapping]:
+    return [configs[index] for index in parse_episode_spec(episode_spec, len(configs))]
 
 
 def has_wandb_wrapper(config: DictConfig) -> bool:
@@ -775,7 +831,12 @@ def run_episodes_parallel(
 
 @hydra.main(config_path="../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
-    print_config(cfg)
+    print_cfg = cfg.get("print_cfg", False)
+    episode_spec = cfg.get("episodes")
+    if print_cfg:
+        _print_config_document(cfg)
+    else:
+        print_config(cfg)
 
     if cfg.experiment.config.do_train:
         assert issubclass(
@@ -786,11 +847,10 @@ def main(cfg: DictConfig):
         train_configs = generate_parallel_train_configs(
             cfg.experiment, cfg.experiment.config.logging.run_name
         )
-        train_configs = filter_episode_configs(train_configs, cfg.episodes)
-        if cfg.print_cfg:
-            print("Printing configs for spot checking")
+        train_configs = filter_episode_configs(train_configs, episode_spec)
+        if print_cfg:
             for config in train_configs:
-                print_config(config)
+                _print_config_document(config)
         else:
             run_episodes_parallel(
                 train_configs,
@@ -808,11 +868,10 @@ def main(cfg: DictConfig):
         eval_configs = generate_parallel_eval_configs(
             cfg.experiment, cfg.experiment.config.logging.run_name
         )
-        eval_configs = filter_episode_configs(eval_configs, cfg.episodes)
-        if cfg.print_cfg:
-            print("Printing configs for spot checking")
+        eval_configs = filter_episode_configs(eval_configs, episode_spec)
+        if print_cfg:
             for config in eval_configs:
-                print_config(config)
+                _print_config_document(config)
         else:
             run_episodes_parallel(
                 eval_configs,
