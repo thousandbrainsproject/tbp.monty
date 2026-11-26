@@ -306,13 +306,16 @@ For interactive inspection, debugging and visualization of Monty experiment runs
 
 A typical workflow is to first run a Monty experiment and then analyze the generated logs using `tbp.plot`. Most interactive visualizations rely on **per-step data**, so experiments are usually run with detailed logging enabled. In practice, this means running an experiment with the `DetailedJSONHandler` included in `config.logging.monty_data_logger.handlers`, and keeping the number of episodes and objects small to keep the JSON log size manageable.
 
-A quick and convenient way to achieve this is to override the configuration from the command-line interface, for example:
-```zsh
-python run_parallel.py \
+Select the `detailed` data logger and run a few episodes to collect local CSV and JSON logs. This override keeps the experiment's log directory and Python log level.
+
+```shell
+uv run python run_parallel.py \
   experiment=randrot_noise_10distinctobj_dist_agent \
-  episodes=\'5,9,12\' \
-  +experiment/config/logging=detailed_evidence_lm
+  'episodes="5,9,12"' \
+  logging/data_logger@experiment.config.logging.monty_data_logger=detailed
 ```
+
+The other data logger options are `basic` for local CSV, `basic_wandb` for CSV plus Wandb, and `silent` for runs without experiment data handlers.
 
 ### Tutorials and Examples
 
