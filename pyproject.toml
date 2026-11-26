@@ -39,7 +39,8 @@ dependencies = [
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']
-license = { file = 'LICENSE' }
+license = 'MIT'
+license-files = ['LICENSE']
 name = 'tbp.monty'
 readme = 'README.md'
 requires-python = '>=3.15'
@@ -307,3 +308,4 @@ torch-sparse = [{ requirement = "torch", match-runtime = true }]
 [tool.uv.extra-build-variables]
 torch-scatter = { _CL_ = "/std:c++20" }
 torch-sparse = { _CL_ = "/std:c++20" }
+numpy-quaternion = { _CL_ = "/D__MATH_MSVC_COMPATIBILITY_H__ /D_USE_MATH_DEFINES /FIfloat.h /FImath.h" }  # temp fix for MSVC 14.52+, remove once numpy-quaternion has 3.15 wheels

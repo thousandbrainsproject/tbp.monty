@@ -225,6 +225,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         performance_dict = get_stats_per_lm(
             model,
             logger_args.episode_steps,
+            logger_args.matching_steps,
             logger_args.target,
             logger_args.episode_seed,
         )
@@ -245,7 +246,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.data["BASIC"][f"{mode}_stats"][episode] = performance_dict
 
         self.update_overall_stats(
-            mode, episode, logger_args.episode_steps, model.matching_steps
+            mode, episode, logger_args.episode_steps, logger_args.matching_steps
         )
         overall_stats = self.get_formatted_overall_stats(mode, episode)
 

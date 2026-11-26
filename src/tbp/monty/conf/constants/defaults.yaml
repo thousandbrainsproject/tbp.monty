@@ -27,7 +27,8 @@ min_eval_steps: 20
 # v12 : v11 with resampling experiment renamed to burst sampling
 # v13 : Added supervised_pretraining_10distinctobj_vocus2
 # v14 : First models trained on MuJoCo
-pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v14}
+# v15 : Models stored as picked NumpyGraph
+pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v15}
 
 # v1 : Trained on version 1.0 of the compositional objects dataset (logos had transparent backgrounds)
 # v2 : Trained on version 1.1 of the compositional objects dataset (logos on white "stickers")
@@ -40,7 +41,9 @@ pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v14}
 # v9 : Trained with euclidean distance and object pose evidence for OrientationMatrix inputs (PR#1266)
 # v10 : Applied transform fix from PR#1280
 # v11 : Use salience/segmentation/attention for parent learning. From PR#1279
-compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v11}
+# v12 : Retrained with hypothesis sampling that discriminates on pose vector type. From PR#1287
+# v13 : Models stored as picked NumpyGraph
+compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v13}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.

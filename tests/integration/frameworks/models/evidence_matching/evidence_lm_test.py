@@ -165,14 +165,14 @@ class EvidenceLMTest(BaseGraphTest):
         )
         # Since min_train_steps==12 we should have taken 13 steps.
         self.assertEqual(
-            exp.model.matching_steps,
+            exp._recognition_ctx.matching_steps,
             13,
             "Did not take correct amount of matching steps. Perhaps "
             "min_train_steps was not applied correctly.",
         )
         self.assertGreater(
             exp._recognition_ctx.step,
-            exp.model.matching_steps + 80,
+            exp._recognition_ctx.matching_steps + 80,
             "number of episode steps should be larger than matching steps + "
             "exploration steps since we don't count off object observations as"
             "as matching steps (but do count them as episode steps).",
@@ -220,7 +220,7 @@ class EvidenceLMTest(BaseGraphTest):
         self.assertLessEqual(
             exp.model.learning_modules[0]
             .get_graph("new_object0", input_channel="first")
-            .x.shape[1],
+            .num_features,
             32,  # max_train_steps + exploratory_steps
             "No new points should be added to an existing graph after time out.",
         )
@@ -249,7 +249,7 @@ class EvidenceLMTest(BaseGraphTest):
             # Overwrite target with a false name to test confused logging.
             for e in range(4):
                 exp.pre_episode()
-                exp.model.primary_target = str(e)
+                exp.model.primary_target.object_name = str(e)
                 for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
                 exp.run_episode_steps()

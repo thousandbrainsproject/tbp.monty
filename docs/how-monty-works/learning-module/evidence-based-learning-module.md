@@ -137,12 +137,14 @@ In our current experiment set up, we divide time into episodes. **Each episode e
 
 This check can be divided into **global Monty checks and local LM checks** (purple box). An individual LM can reach its terminal state much earlier than the overall Monty system. For example, if one LM does not have a model of the shown object it will reach no match quite fast while the other LMs will continue until they recognize the object. Or one LM might receive some unique evidence about an object and recognize it before all other LMs do.
 
-The `match_criterion` experiment setting controls which learning modules must reach the terminal `match` state before the episode ends. Experiment configs set it through the `/termination` config group in `src/tbp/monty/conf/termination/`, alongside the `recognition_strategy` that enforces the step limits. To end the episode after a configured number of LMs match, use `AnyLMsMatch`:
+The `match_criterion` of a recognition strategy controls which learning modules must reach the terminal `match` state before the episode ends. Experiment configs set a `recognition_strategy` through the `/termination` config group in `src/tbp/monty/conf/termination/`. To end the episode after a configured number of LMs match, give the `MatchCriteria` strategy an `AnyLMsMatch` criterion:
 
 ```yaml
-match_criterion:
-  _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-  count: 2
+recognition_strategy:
+  _target_: tbp.monty.experiment.recognition_strategy.MatchCriteria
+  match_criterion:
+    _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
+    count: 2
 ```
 
 To require specific LMs to match, use `NamedLMsMatch`. Every listed LM must reach `match`; an unlisted matching LM cannot substitute for one of them:

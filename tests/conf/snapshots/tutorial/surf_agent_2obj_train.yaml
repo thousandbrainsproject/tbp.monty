@@ -4,10 +4,6 @@ experiment:
     do_train: true
     monty_config:
       monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
-      monty_args:
-        num_exploratory_steps: 500
-        min_eval_steps: 3
-        min_train_steps: 3
       motor_system_config:
         policy_selector:
           policy:
@@ -101,9 +97,6 @@ experiment:
         raise_actuate_missing: false
       env_init_func: ${monty.class:tbp.monty.simulators.mujoco.MuJoCoSimulator}
       transform:
-      - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-        agent_id: agent_id_0
-        max_depth: 1
       - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
         agent_id: agent_id_0
         sensor_ids:
@@ -131,9 +124,6 @@ experiment:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined
         rotations: ${constants.rotations_all}
     train_env_interface_class: ${monty.class:tbp.monty.experiment.environment.OneObjectPerEpisodeInterface}
-    match_criterion:
-      _target_: tbp.monty.experiment.match_criteria.AnyLMsMatch
-      count: 1
     recognition_strategy:
       _target_: tbp.monty.experiment.recognition_strategy.Any
       strategies:
@@ -144,7 +134,6 @@ experiment:
         max_eval_steps: 500
       - _target_: tbp.monty.experiment.recognition_strategy.MaxTotalSteps
         max_total_steps: 6000
-      - _target_: tbp.monty.experiment.recognition_strategy.MontyIsDone
     logging:
       python_log_level: WARNING
       python_log_to_file: true
@@ -153,7 +142,7 @@ experiment:
       monty_data_logger:
         _target_: tbp.monty.frameworks.loggers.exp_logger.BaseMontyLogger
         handlers: []
-      run_name: surf_agent_1lm_2obj_train
+      run_name: surf_agent_2obj_train
     telemetry:
       formatters:
         telemetry_formatter:
@@ -194,8 +183,8 @@ constants:
   - hsv
   - principal_curvatures_log
   min_eval_steps: 20
-  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v14}
-  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v11}
+  pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v15}
+  compositional_pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_compositional_objects_v13}
   rotations_all_count: 14
   rotations_all:
   - - 0

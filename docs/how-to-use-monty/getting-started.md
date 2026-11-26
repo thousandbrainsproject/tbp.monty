@@ -64,8 +64,8 @@ You can also update your code using the terminal by running `git pull upstream m
 > ```
 > git reset upstream/main
 > ```
-> This will make the two branches point to the same commit while keeping any changes in the local branch on disk. Then you can make a new branch and commit those changes. 
-> 
+> This will make the two branches point to the same commit while keeping any changes in the local branch on disk. Then you can make a new branch and commit those changes.
+>
 > If you don't want to keep those changes, you can add `--hard` to this command to have Git reset the on disk files to match the upstream branch.
 
 # 2. Set up Your Environment
@@ -81,7 +81,7 @@ Monty requires Astral's uv to install its dependencies. For instructions on how 
 Some of Monty's dependencies need to be compiled. On Windows, this requires the Visual Studio Build Tools for C++, which you can install using the following command. The total size is about 5 GB.
 
 ```shell Windows
-winget install Microsoft.VisualStudio.BuildTools --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" --accept-package-agreements
+winget install Microsoft.VisualStudio.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --wait" --force
 ```
 
 ## 2.3 Set up Monty
@@ -97,7 +97,7 @@ uv sync --extra=dev --extra=simulator_mujoco
 
 > [!NOTE]
 > If you'd prefer to not have to prefix Python commands with `uv run`, you can activate the environment using the activation scripts that are provided in the virtual environment.
-> 
+>
 > For example, under bash or zsh run `source .venv/bin/activate`. There are versions for other shells available in that directory, e.g. fish, nushell, etc.
 >
 > **The instructions below will show the commands with `uv run`**, so be sure to remove that if you activated the environment.
@@ -151,8 +151,8 @@ unzip ycb_objects_1.0.zip
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_v14 | tgz |  [pretrained_ycb_v14.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.tgz) |
-| pretrained_ycb_v14 | zip |  [pretrained_ycb_v14.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.zip) |
+| pretrained_ycb_v15 | tgz |  [pretrained_ycb_v15.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v15.tgz) |
+| pretrained_ycb_v15 | zip |  [pretrained_ycb_v15.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v15.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
@@ -161,23 +161,23 @@ mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.tgz | tar -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v15.tgz | tar -xzf -
 ```
 ```shell zip
 mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v14.zip
+curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v15.zip
 
-unzip pretrained_ycb_v14.zip
+unzip pretrained_ycb_v15.zip
 ```
 
 The folder should then have the following structure:
 
 ```
 ~/tbp/results/monty/pretrained_models/
-|-- pretrained_ycb_v14/
+|-- pretrained_ycb_v15/
 |   |-- supervised_pre_training_5lms
 |   |-- supervised_pre_training_5lms_all_objects
 |   |-- ...
@@ -187,8 +187,8 @@ The folder should then have the following structure:
 > To unpack an archive you should be able to double-click on it.
 >
 > To unpack via the command line, copy the archive into the `~/tbp/results/monty/pretrained_models/` folder and inside that folder run:
-> - for a `tgz` archive, `tar -xzf pretrained_ycb_v14.tgz`.
-> - for a `zip` archive, `unzip pretrained_ycb_v14.zip`.
+> - for a `tgz` archive, `tar -xzf pretrained_ycb_v15.tgz`.
+> - for a `zip` archive, `unzip pretrained_ycb_v15.zip`.
 
 ## [Optional] Set Environment Variables
 
@@ -200,7 +200,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v14` folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v15` folders.
 
 
 ### MONTY_DATA
