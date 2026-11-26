@@ -20,7 +20,7 @@ from hypothesis.extra.numpy import arrays
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
-from tbp.monty.geometry import GazeDirection, Rotation, SurfaceNormal
+from tbp.monty.geometry import GazeDirection, Rotation
 from tests.strategies.arrays import (
     float_array_n_by_3,
     float_array_not_1d,
