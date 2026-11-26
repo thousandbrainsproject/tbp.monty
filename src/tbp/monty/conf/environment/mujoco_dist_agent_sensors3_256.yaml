@@ -1,7 +1,10 @@
 # @package experiment.config.environment
 
+defaults:
+  - mujoco_assets@env_init_args: compositional_legacy
+  - _self_
+
 env_init_args:
-  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/compositional_objects}
   agents:
     - _target_: tbp.monty.simulators.mujoco.agents.DistantAgent
       _partial_: true

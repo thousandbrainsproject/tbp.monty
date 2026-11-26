@@ -13,6 +13,7 @@ defaults:
   - /env_interface/transform: gaussianblur_missing_depthto3d_sensor4_256
   - /termination: named_lm2_any_mfgm_t3ecexp1000_t1000e100tot500
   - /logging: basic_warning_wandb_evidence_eval_runs
+  - override /environment/mujoco_assets@experiment.config.environment.env_init_args: cows
 
 experiment:
   _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
@@ -24,9 +25,6 @@ experiment:
     seed: 42
     supervised_lm_ids: []
     python_log_level: DEBUG
-    environment:
-      env_init_args:
-        data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects_1.4_mujoco}
     eval_env_interface_args:
       object_init_sampler:
         _target_: tbp.monty.frameworks.environments.object_init_samplers.Predefined

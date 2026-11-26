@@ -1,7 +1,10 @@
 # @package experiment.config.environment
 
+defaults:
+  - mujoco_assets@env_init_args: ycb
+  - _self_
+
 env_init_args:
-  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/mujoco/objects/ycb}
   agents:
     - _target_: tbp.monty.simulators.mujoco.agents.SurfaceAgent
       _partial_: true
