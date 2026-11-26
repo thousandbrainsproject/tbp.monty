@@ -37,32 +37,23 @@ class NumpyGraph:
         for key in my_dict:
             setattr(self, key, my_dict[key])
 
+    def __repr__(self) -> str:
+        """Return the graph's fields, summarizing arrays by dtype and shape."""
+        fields = ", ".join(
+            f"{key}={value.dtype}{list(value.shape)}"
+            if isinstance(value, np.ndarray)
+            else f"{key}={value!r}"
+            for key, value in vars(self).items()
+        )
+        return f"{type(self).__name__}({fields})"
 
-def torch_graph_to_numpy(torch_graph):
-    """Turn a torch geometric data structure into a dict with numpy arrays.
+    @property
+    def num_nodes(self) -> int:
+        return self.x.shape[0]
 
-    Args:
-        torch_graph: Torch geometric data structure.
-
-    Returns:
-        NumpyGraph.
-    """
-    numpy_graph = {}
-
-    # Newer versions of torch_geometric change `keys` from a
-    # property to a function.
-    # TODO: remove check and use keys function once upgraded to Python 3.10
-    if callable(torch_graph.keys):
-        keys = torch_graph.keys()
-    else:
-        keys = torch_graph.keys
-
-    for key in keys:
-        if isinstance(torch_graph[key], torch.Tensor):
-            numpy_graph[key] = np.array(torch_graph[key])
-        else:
-            numpy_graph[key] = torch_graph[key]
-    return NumpyGraph(numpy_graph)
+    @property
+    def num_features(self) -> int:
+        return self.x.shape[1]
 
 
 def already_in_list(

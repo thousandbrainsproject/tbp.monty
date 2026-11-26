@@ -837,7 +837,10 @@ def point_pair_features(
     normal_i: npt.NDArray[np.float64],
     normal_j: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
-    """Return point pair features between two points.
+    """Return point pair features between pairs of points.
+
+    All inputs have shape (..., 3) and broadcast against each other, so this
+    computes features for a single pair or for many pairs at once.
 
     Args:
         pos_i: Location of point 1.
@@ -846,16 +849,19 @@ def point_pair_features(
         normal_j: Surface normal of point 2.
 
     Returns:
-        Point pair features as a numpy array of shape (4,).
+        Point pair features of shape (..., 4): the distance between the points,
+        followed by the angles (normal_i, pos_j - pos_i), (normal_j, pos_j - pos_i)
+        and (normal_i, normal_j).
     """
     pseudo: npt.NDArray[np.float64] = pos_j - pos_i
-    return np.array(
+    return np.stack(
         [
-            np.linalg.norm(pseudo),
+            np.linalg.norm(pseudo, axis=-1),
             get_angle_between(normal_i, pseudo),
             get_angle_between(normal_j, pseudo),
             get_angle_between(normal_i, normal_j),
-        ]
+        ],
+        axis=-1,
     )
 
 

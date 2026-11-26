@@ -333,8 +333,7 @@ class DisplacementGraphLM(GraphLM):
             node_displacement = (
                 self.possible_matches[graph_id][first_input_channel]
                 .edge_attr[edge_id]
-                .detach()
-                .clone()
+                .copy()
             )
 
             if use_relative_len:
@@ -472,7 +471,7 @@ class DisplacementGraphMemory(GraphMemory):
             next_possible_paths[graph_id] = np.swapaxes(
                 self.get_graph(graph_id, first_input_channel).edge_index, 0, 1
             )
-            if self.get_graph(graph_id, first_input_channel).x.dim() > 1:
+            if self.get_graph(graph_id, first_input_channel).x.ndim > 1:
                 # Features of nodes contain more than just IDs (i.e. RGBA)
                 possible_paths[graph_id] = self.get_graph_node_ids(
                     graph_id, first_input_channel
