@@ -15,6 +15,7 @@ import json
 import logging
 import shutil
 from collections import deque
+from collections.abc import Iterable
 from itertools import chain
 from pathlib import Path
 from sys import getsizeof
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_stats(
-    exp_path,
+    exp_path: str | Path,
     load_train=True,
     load_eval=True,
     load_detailed=True,
@@ -52,6 +53,7 @@ def load_stats(
         detailed_stats: dict with detailed statistics
         lm_models: dict with loaded language models
     """
+    exp_path = Path(exp_path)
     train_stats, eval_stats, detailed_stats, lm_models = None, None, None, None
     if load_train:
         print("...loading and checking train statistics...")
@@ -64,12 +66,15 @@ def load_stats(
     if load_detailed:
         print("...loading detailed run statistics...")
         json_file = exp_path / "detailed_run_stats.json"
-        try:
-            with json_file.open() as f:
-                detailed_stats = json.load(f)
-        except ValueError:
-            detailed_stats = deserialize_json_chunks(json_file)
-        f.close()
+        episode_dir = exp_path / "detailed_run_stats"
+        if not json_file.is_file() and episode_dir.is_dir():
+            detailed_stats = deserialize_json_chunks(episode_dir)
+        else:
+            try:
+                with json_file.open(encoding="utf-8") as f:
+                    detailed_stats = json.load(f)
+            except json.JSONDecodeError:
+                detailed_stats = deserialize_json_chunks(json_file)
 
     if load_models:
         print("...loading LM models...")
@@ -103,56 +108,68 @@ def load_models_from_dir(
     return lm_models
 
 
-def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
-    """Deserialize one episode at a time from json file.
+def _episode_json_paths(directory: Path) -> list[tuple[int, Path]]:
+    files = []
+    for path in directory.glob("episode_*.json"):
+        episode = path.stem.removeprefix("episode_")
+        if episode.isdecimal() and path.is_file():
+            files.append((int(episode), path))
+    return sorted(files)
 
-    Only get episodes specified by arguments, which follow list / numpy like semantics.
 
-    Note:
-        assumes line counter is exactly in line with episode keys
+def deserialize_json_chunks(
+    json_file: str | Path,
+    start: int = 0,
+    stop: int | None = None,
+    episodes: Iterable[int] | None = None,
+) -> dict[str, Any]:
+    """Load selected episodes from detailed JSON logs.
+
+    Combined logs use zero-based line positions, allowing independently written
+    records with repeated keys. Individual episode files use their episode IDs.
 
     Args:
-        json_file: full path to the json file to load
-        start: int, get data starting at this episode
-        stop: int, get data ending at this episode, not inclusive as usual in Python
-        episodes: iterable of ints with episodes to pull
+        json_file: The combined JSON log or directory containing episode files.
+        start: First episode index or ID to include.
+        stop: Exclusive upper bound, or None to read through the end.
+        episodes: Explicit indices or IDs to load instead of the start/stop range.
 
     Returns:
-        detailed_json: dict containing contents of file_handle
+        Episode records keyed by index or ID as strings, in ascending order.
     """
+    path = Path(json_file)
+    requested = set(episodes) if episodes is not None else None
 
-    def should_get_episode(start, stop, episodes, counter):
-        if episodes is not None:
-            return counter in episodes
+    def includes(episode: int) -> bool:
+        if requested is not None:
+            return episode in requested
+        return start <= episode and (stop is None or episode < stop)
 
-        return (counter >= start) and (counter < stop)
+    detailed_json: dict[str, Any] = {}
+    if path.is_dir():
+        for episode, episode_path in _episode_json_paths(path):
+            if includes(episode):
+                key = str(episode)
+                with episode_path.open(encoding="utf-8") as f:
+                    detailed_json[key] = json.load(f)[key]
+    else:
+        last = stop if requested is None else max(requested, default=-1) + 1
+        with path.open(encoding="utf-8") as f:
+            for index, line in enumerate(f):
+                if last is not None and index >= last:
+                    break
+                if includes(index):
+                    record = json.loads(line)
+                    detailed_json[str(index)] = next(iter(record.values()))
 
-    detailed_json = {}
-    stop = stop or np.inf
-    with Path(json_file).open() as f:
-        for line_counter, line in enumerate(f):
-            if should_get_episode(start, stop, episodes, line_counter):
-                # NOTE: json logging is only used at inference time and inference
-                # episodes are independent and order does not matter. This hack fixes a
-                # problem introduced from running in parallel: every episode had the
-                # key 0 since it was its own experiment, so we update detailed_json with
-                # line counter key instead of tmp_json key. This works for serial
-                # episodes because order of execution is arbitrary, all that matters is
-                # we know the parameters for that episode.
-                tmp_json = json.loads(line)
-                json_key = next(iter(tmp_json.keys()))  # has only one key
-                detailed_json[str(line_counter)] = tmp_json[json_key]
-                del tmp_json
-
-    if episodes is not None:
-        str_episodes = [str(i) for i in episodes]
-        if list(detailed_json.keys()) != str_episodes:
-            print(
-                "WARNING: episode keys did not equal json keys. This can happen if "
-                "json file was not appended to in episode order. To manually load the"
-                "whole file for debugging, run `deserialize_json_chunks(my_file)` with"
-                "no further arguments"
-            )
+    if requested is not None:
+        missing = [
+            str(episode)
+            for episode in sorted(requested)
+            if str(episode) not in detailed_json
+        ]
+        if missing:
+            print(f"WARNING: detailed log is missing episodes: {', '.join(missing)}")
     return detailed_json
 
 
