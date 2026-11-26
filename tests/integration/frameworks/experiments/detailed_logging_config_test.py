@@ -13,8 +13,10 @@ import tempfile
 import unittest
 
 import hydra
+from omegaconf import open_dict
 
 from tbp.monty.frameworks.experiments.mode import ExperimentMode
+from tbp.monty.frameworks.utils.logging_utils import load_stats
 from tbp.monty.hydra import instantiate_experiment
 from tests import HYDRA_ROOT
 
@@ -59,4 +61,28 @@ class DetailedEvidenceLmLoggingConfigTest(unittest.TestCase):
         self.assertTrue(
             (exp.output_dir / "detailed_run_stats.json").exists(),
             "Expected detailed_run_stats.json file to be created",
+        )
+
+    def test_load_stats_reads_an_experiment_saved_per_episode(self) -> None:
+        detailed_handler = (
+            self.cfg.experiment.config.logging.monty_data_logger.handlers[1]
+        )
+        with open_dict(detailed_handler):
+            detailed_handler.detailed_save_per_episode = True
+
+        exp = instantiate_experiment(self.cfg.experiment)
+        with exp:
+            exp.model.set_experiment_mode(ExperimentMode.EVAL)
+            exp.run_epoch()
+
+        *_, detailed, _ = load_stats(
+            str(exp.output_dir), load_train=False, load_eval=False, load_models=False
+        )
+        episode_files = sorted(
+            (exp.output_dir / "detailed_run_stats").glob("episode_*.json")
+        )
+        self.assertTrue(episode_files)
+        self.assertEqual(
+            list(detailed),
+            [str(int(file.stem.removeprefix("episode_"))) for file in episode_files],
         )

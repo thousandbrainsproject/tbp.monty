@@ -99,7 +99,9 @@ Alternatively, you can of course always just load the stats files (logged at `ou
 >
 > The detailed JSON logs save very detailed information for every step and episode. This includes for example the pixel observations at every step. The .json files can therefore get large very quickly. You should use the `DetailedJSONHandler` with care and only if needed. Remember to adjust the number of epochs and episodes to be as small as possible.
 >
-> If you need to load a larger JSON file, it makes sense to load it with the `deserialize_json_chunks` function. This way you can load one episode at a time, process its data, clear memory, and then load the next episode.
+> To load selected episodes, pass the `detailed_run_stats.json` file or `detailed_run_stats/` directory to `deserialize_json_chunks`. Use an exclusive range such as `start=2, stop=5` or pass specific episodes with `episodes=[2, 4]`. The combined log uses zero-based record positions. Individual episode files use the saved episode IDs, which may have gaps.
+
+`load_stats` reads `detailed_run_stats.json` when present. It reads the saved episode files when a run uses `DetailedJSONHandler` with `detailed_save_per_episode: true` and has no combined log.
 
 ### Calculating Summary Statistics
 
