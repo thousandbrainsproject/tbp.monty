@@ -16,7 +16,12 @@ from typing import Any, ClassVar, Literal
 import numpy as np
 import numpy.typing as npt
 
-from tbp.monty.geometry import GazeDirection, OrientationMatrix, SurfacePoseVectors
+from tbp.monty.geometry import (
+    GazeDirection,
+    OrientationMatrix,
+    SurfaceNormal,
+    SurfacePoseVectors,
+)
 
 
 class Message:
@@ -93,8 +98,11 @@ class Message:
                 if feature == "pose_vectors":
                     feat_val = np.round(feat_val.value, 3)
                     repr_string += f"       {feature}: \n"
-                    for vector in feat_val:
-                        repr_string += f"           {vector}\n"
+                    if feat_val.ndim == 1:
+                        repr_string += f"           {feat_val}\n"
+                    else:
+                        for vector in feat_val:
+                            repr_string += f"           {vector}\n"
                 else:
                     repr_string += f"       {feature}: {feat_val}\n"
         repr_string += "   Non-Morphological Features: \n"
@@ -156,20 +164,22 @@ class Message:
         return feature_val
 
     def surface_normal(self) -> npt.NDArray[np.float64]:
-        """Return the SurfacePoseVectors surface normal vector.
+        """Return the surface normal vector.
 
         Raises:
-            ValueError: If message does not have SurfacePoseVectors
+            ValueError: If message does not have SurfacePoseVectors or SurfaceNormal
         """
         if "pose_vectors" not in self.morphological_features:
-            raise ValueError("Message does not have SurfacePoseVectors")
+            raise ValueError(
+                "Message does not have SurfacePoseVectors or SurfaceNormal"
+            )
 
         # TODO: Replace with match statement
         pose_vectors = self.morphological_features["pose_vectors"]
-        if isinstance(pose_vectors, SurfacePoseVectors):
+        if isinstance(pose_vectors, (SurfacePoseVectors, SurfaceNormal)):
             return pose_vectors.surface_normal
 
-        raise ValueError("Message does not have SurfacePoseVectors")
+        raise ValueError("Message does not have SurfacePoseVectors or SurfaceNormal")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""
@@ -214,10 +224,10 @@ class Message:
         )
         assert isinstance(
             self.morphological_features["pose_vectors"],
-            (SurfacePoseVectors, OrientationMatrix, GazeDirection),
+            (SurfacePoseVectors, SurfaceNormal, OrientationMatrix, GazeDirection),
         ), (
-            "pose_vectors must be an instance of SurfacePoseVectors, OrientationMatrix,"
-            " or GazeDirection but type is "
+            "pose_vectors must be an instance of SurfacePoseVectors, SurfaceNormal, "
+            "OrientationMatrix, or GazeDirection but type is "
             f"{type(self.morphological_features['pose_vectors'])}"
         )
         assert "pose_fully_defined" in self.morphological_features
@@ -335,10 +345,10 @@ class Goal(Message):
             )
             assert isinstance(
                 self.morphological_features["pose_vectors"],
-                (SurfacePoseVectors, OrientationMatrix, GazeDirection),
+                (SurfacePoseVectors, SurfaceNormal, OrientationMatrix, GazeDirection),
             ), (
                 "pose_vectors must be an instance of SurfacePoseVectors, "
-                "OrientationMatrix, or GazeDirection but type is "
+                "SurfaceNormal, OrientationMatrix, or GazeDirection but type is "
                 f"{type(self.morphological_features['pose_vectors'])}"
             )
             assert "pose_fully_defined" in self.morphological_features

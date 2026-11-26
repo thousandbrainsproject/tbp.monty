@@ -20,7 +20,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     GoalGenerator,
 )
 from tbp.monty.frameworks.utils.communication_utils import get_percept_from_channel
-from tbp.monty.geometry import GazeDirection
+from tbp.monty.geometry import SurfaceNormal
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.graph_matching import GraphLM
@@ -51,9 +51,9 @@ class GraphGoalGenerator(GoalGenerator):
     Generated Goals are received by either:
         i) other learning modules, which may model world objects (e.g., a mug) or
         internal systems (e.g., the agent's robotic limb)
-        ii) motor actuators, in which case they represent simpler, primitive Goals
-        for the actuator to achieve (e.g., the location and orientation of an
-        actuator-sensor pair)
+        ii) the motor system, in which case they represent simpler, primitive Goals
+        for the motor system to handle (e.g., a target location and surface normal on an
+        object to move to and observe)
 
     Alongside the high-level driving Goal, generated sub-Goals can also be
     conditioned on other information such as the LM's current most-likely hypothesis
@@ -470,7 +470,6 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         elapsed_steps_factor=10,
         min_post_goal_success_steps=np.inf,
         x_percent_scale_factor=0.75,
-        desired_object_distance=0.03,
         wait_growth_multiplier=2,
         **kwargs,
     ) -> None:
@@ -507,13 +506,6 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
                 single object, but not a pose. If it is <1.0, then we will start testing
                 pose of the MLH object even before we are entirely certain about its ID.
                 Defaults to 0.75.
-            desired_object_distance: The desired distance between the agent and the
-                object, which is used to determine whether the agent is close enough to
-                the object to consider it "achieved". Note this need not be the same as
-                the one specified for the motor-system (e.g. the surface-policy), as we
-                may want to aim for an initially farther distance, while the
-                surface-policy may want to stay quite close to the object. Defaults to
-                0.03.
             wait_growth_multiplier: Multiplier used to increase the `wait_factor`, which
                 in turn controls how long to wait before the next jump attempt.
             **kwargs: Additional keyword arguments.
@@ -523,7 +515,6 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         self.elapsed_steps_factor = elapsed_steps_factor
         self.min_post_goal_success_steps = min_post_goal_success_steps
         self.x_percent_scale_factor = x_percent_scale_factor
-        self.desired_object_distance = desired_object_distance
         self.wait_growth_multiplier = wait_growth_multiplier
 
     # ======================= Public ==========================
@@ -701,7 +692,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         return target_loc_id
 
     def _get_target_loc_info(self, target_loc_id):
-        """Given a target location ID, get the target location and pose vectors.
+        """Given a target location ID, get the target location and surface normal.
 
         Note:
             Currently assumes we are computing with the MLH graph.
@@ -717,9 +708,8 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
         target_graph = target_object[sensor_channel_name]
         target_loc = target_graph.pos[target_loc_id]
-        surface_normal_mapping = target_graph.feature_mapping["pose_vectors"]
-        target_surface_normal = target_graph.x[
-            target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3
+        target_surface_normal = target_graph.get_values_for_feature("pose_vectors")[
+            target_loc_id, :3
         ]
 
         return {
@@ -734,15 +724,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         """Specify a Goal for the motor-actuator.
 
         Based on a target location (in object-centric coordinates) and the associated
-        surface normal of that location, specify a Goal for the motor-actuator,
-        such that any sensors associated with the motor-actuator should be pointed down
-        at and observing the target location (i.e. parallel to the surface normal).
-
-        For the movement to have a high probability of arriving at the desired location,
-        the current hypothesis of the object ID and pose used to inform the movement
-        should be correct, although subsequent observations may still provide useful
-        information to the agent, i.e. even if we are wrong about the object ID and
-        pose.
+        surface normal of that location, specify a Goal.
 
         Args:
             observations: The current observations, which should include the sensory
@@ -756,8 +738,6 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         Returns:
             A Goal for the motor-actuator.
         """
-        # Determine the displacement, and therefore the environmental target location,
-        # that we will use
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
         sensory_input = get_percept_from_channel(
             percepts=observations, channel_name=sensor_channel_name
@@ -766,57 +746,29 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             target_info["target_loc"] - target_info["hypothesis_to_test"]["location"]
         )
 
-        object_rot = target_info["hypothesis_to_test"]["rotation"].inv()  # MLH rotation
-        # is stored as the rotation needed to convert a displacement to the object pose,
-        # so the *object pose* is given by its inverse
+        object_rot = target_info["hypothesis_to_test"]["rotation"].inv()
 
-        # Rotate the displacement; note we're converting from an *internal* object frame
-        # of reference, to the global frame of reference; thus, we rotate not by the
-        # inverse, but by the actual object orientation.
-        rotated_disp = object_rot.apply(displacement)
+        target_location_global_frame = sensory_input.location + object_rot.apply(
+            displacement
+        )
 
-        # The target location on the object's surface in global/body-centric coordinates
-        proposed_surface_loc = sensory_input.location + rotated_disp
-
-        # Rotate the learned surface normal (which was committed to memory assuming a
-        # default 0,0,0 orientation of the object)
-        target_surface_normal_rotated = object_rot.apply(
+        target_surface_normal_global_frame = object_rot.apply(
             target_info["target_surface_normal"]
         )
-
-        # Scale the surface normal by the desired distance x1.5 (i.e. so that we start
-        # a bit further away from the object; we will separately move forward if we
-        # are indeed facing it)
-        surface_displacement = (
-            target_surface_normal_rotated * self.desired_object_distance * 1.5
-        )
-
-        target_loc = proposed_surface_loc + surface_displacement
 
         # Extra metadata for logging. 'achieved' and
         # 'matching_step_when_output_goal_set' should be updated at the next step.
         # We initialize them as `None` to indicate that no valid values have been set.
         info = {
-            "proposed_surface_loc": proposed_surface_loc,
             "hypothesis_to_test": target_info["hypothesis_to_test"],
             "achieved": None,
             "matching_step_when_output_goal_set": None,
         }
 
         return Goal(
-            location=np.array(target_loc),
+            location=np.array(target_location_global_frame),
             morphological_features={
-                # Note the hypothesis-testing policy does not specify the roll of the
-                # agent, because this is not relevant to the task
-                "pose_vectors": GazeDirection(
-                    np.array(
-                        [
-                            (-1) * target_surface_normal_rotated,
-                            [np.nan, np.nan, np.nan],
-                            [np.nan, np.nan, np.nan],
-                        ]
-                    )
-                ),
+                "pose_vectors": SurfaceNormal(target_surface_normal_global_frame),
                 "pose_fully_defined": None,
                 "on_object": 1,
             },

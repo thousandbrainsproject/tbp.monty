@@ -366,6 +366,20 @@ class Rotation:
 
 
 @dataclass
+class SurfaceNormal:
+    """Surface normal vector."""
+
+    value: npt.NDArray[np.float64]
+    """
+    Vector of shape (3,) representing the surface normal.
+    """
+
+    @property
+    def surface_normal(self) -> npt.NDArray[np.float64]:
+        return self.value
+
+
+@dataclass
 class SurfacePoseVectors:
     """Surface normal, and two principal curvature vectors."""
 

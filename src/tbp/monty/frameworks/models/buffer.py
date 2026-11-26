@@ -31,6 +31,7 @@ from tbp.monty.geometry import (
     GazeDirection,
     OrientationMatrix,
     Rotation,
+    SurfaceNormal,
     SurfacePoseVectors,
 )
 
@@ -493,7 +494,8 @@ class FeatureAtLocationBuffer:
                 # perform matrix operations on them.
                 attr_value = attr_value.flatten()
             elif isinstance(
-                attr_value, (SurfacePoseVectors, OrientationMatrix, GazeDirection)
+                attr_value,
+                (SurfacePoseVectors, SurfaceNormal, OrientationMatrix, GazeDirection),
             ):
                 attr_value = attr_value.value.flatten()
             attr_shape = len(attr_value)

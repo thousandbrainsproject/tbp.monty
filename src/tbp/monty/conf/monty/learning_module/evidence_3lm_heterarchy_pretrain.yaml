@@ -23,7 +23,6 @@ learning_module_0:
     elapsed_steps_factor: 10
     min_post_goal_success_steps: 100
     x_percent_scale_factor: 0.75
-    desired_object_distance: 0.03
 
 learning_module_1:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM

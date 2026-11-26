@@ -23,8 +23,6 @@ learning_module_0:
     elapsed_steps_factor: 10
     min_post_goal_success_steps: 5
     x_percent_scale_factor: 0.75
-    desired_object_distance: 0.03
-
 learning_module_1:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   feature_weights:
@@ -46,8 +44,6 @@ learning_module_1:
     elapsed_steps_factor: 10
     min_post_goal_success_steps: 5
     x_percent_scale_factor: 0.75
-    desired_object_distance: 0.03
-
 learning_module_2:
   _target_: tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM
   max_match_distance: 0.01
@@ -74,4 +70,3 @@ learning_module_2:
     elapsed_steps_factor: 10
     min_post_goal_success_steps: 5
     x_percent_scale_factor: 0.75
-    desired_object_distance: 0.03

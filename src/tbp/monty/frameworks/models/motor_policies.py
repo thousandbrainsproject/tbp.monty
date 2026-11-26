@@ -371,6 +371,60 @@ def fixme_undo_last_action(
     raise TypeError(f"Invalid action: {last_action}")
 
 
+def derive_set_agent_pose_for_jump_from_goal(
+    goal: Goal, agent_id: AgentID, desired_object_distance: float
+) -> SetAgentPose:
+    """Derive the `SetAgentPose` action from a goal.
+
+    Args:
+        goal: The goal to jump towards and observe.
+        agent_id: The ID of the agent to jump.
+        desired_object_distance: The desired distance between the agent and the
+            target surface. The agent jumps to 1.5x this distance, so that it starts a
+            bit further away from the object, and can then move forward if it is
+            indeed facing it. This reduces the risk of collision should the LM that
+            generated the goal have a poorer pose hypothesis of the object.
+
+    Returns:
+        A `SetAgentPose` action.
+
+    Raises:
+        KeyError: If the goal does not contain pose vectors.
+        AttributeError: If the goal does not contain a surface normal.
+    """
+    try:
+        target_observed_surface_normal = goal.morphological_features[
+            "pose_vectors"
+        ].surface_normal
+    except KeyError as err:
+        raise KeyError("Goal for jump must contain pose vectors") from err
+    except AttributeError as err:
+        raise AttributeError("Goal for jump must contain surface normal") from err
+
+    surface_displacement = (
+        target_observed_surface_normal * desired_object_distance * 1.5
+    )
+
+    target_agent_location = goal.location + surface_displacement
+
+    # The agent should look down at the surface normal: invert it
+    target_agent_vec = (-1) * target_observed_surface_normal
+
+    yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
+    pitch_angle = math.asin(target_agent_vec[1])
+
+    # Should rotate by pitch degrees around x, and by yaw degrees around y (and
+    # no change about z, which would correspond to roll)
+    scipy_combined_orientation = Rotation.from_euler("xy", [pitch_angle, yaw_angle])
+    target_quat = qt.quaternion(*scipy_combined_orientation.as_quat())
+
+    return SetAgentPose(
+        agent_id=agent_id,
+        location=target_agent_location,
+        rotation_quat=target_quat,
+    )
+
+
 class PredefinedPolicy(MotorPolicy):
     """Policy that follows an action sequence read from file.
 
@@ -436,22 +490,34 @@ class PredefinedPolicy(MotorPolicy):
 
 
 class JumpToGoal(MotorPolicy):
-    """Policy that takes observation as input."""
+    """Policy that moves to observe a pose specified by a goal.
+
+    Requires that the goal provides a surface normal and its location. The agent will
+    then attempt a jump to a pose such that it looks down at this surface normal.
+    """
 
     _undo_action: Action | None
     _is_jumping: bool
     _pre_jump_state: AgentState | None
     _undo_actions: list[Action]
 
-    def __init__(self, agent_id: AgentID, sensor_id: SensorID) -> None:
+    def __init__(
+        self,
+        agent_id: AgentID,
+        sensor_id: SensorID,
+        desired_object_distance: float,
+    ) -> None:
         """Initialize policy.
 
         Args:
             agent_id: The agent ID
             sensor_id: The sensor ID to use for depth at center calculation.
+            desired_object_distance: The desired distance between the agent and the
+                target surface; the jump itself goes to 1.5x this distance.
         """
         self._agent_id = agent_id
         self._sensor_id = sensor_id
+        self._desired_object_distance = desired_object_distance
 
         # TODO: make this part of `__init__()` after `reset()` is removed.
         self._init_JumpToGoal()
@@ -576,31 +642,6 @@ class JumpToGoal(MotorPolicy):
         self._reset_jump_state()
         return None
 
-    def _derive_set_agent_pose_from_goal(self, goal: Goal) -> SetAgentPose:
-        """Derive the `SetAgentPose` action from the driving goal.
-
-        TODO: The desired_object_distance should be used here to determine SetAgentPose
-        and not in the GoalGenerator.
-
-        Returns:
-            A `SetAgentPose` action.
-        """
-        target_agent_vec = goal.morphological_features["pose_vectors"].direction
-
-        yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
-        pitch_angle = math.asin(target_agent_vec[1])
-
-        # Should rotate by pitch degrees around x, and by yaw degrees around y (and
-        # no change about z, which would correspond to roll)
-        scipy_combined_orientation = Rotation.from_euler("xy", [pitch_angle, yaw_angle])
-        target_quat = qt.quaternion(*scipy_combined_orientation.as_quat())
-
-        return SetAgentPose(
-            agent_id=self._agent_id,
-            location=goal.location,
-            rotation_quat=target_quat,
-        )
-
     def _reset_jump_state(self) -> None:
         self._is_jumping = False
         self._pre_jump_state = None
@@ -638,7 +679,9 @@ class JumpToGoal(MotorPolicy):
                 == self._pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
 
-        set_agent_pose = self._derive_set_agent_pose_from_goal(goal)
+        set_agent_pose = derive_set_agent_pose_for_jump_from_goal(
+            goal, self._agent_id, self._desired_object_distance
+        )
 
         self._is_jumping = True
 
@@ -847,30 +890,6 @@ class InformedPolicy(BasePolicy):
         """
         pass
 
-    def _derive_set_agent_pose_from_goal(self, goal: Goal) -> SetAgentPose:
-        """Derive the `SetAgentPose` action from the driving goal.
-
-        Returns:
-            A `SetAgentPose` action.
-        """
-        target_loc = goal.location
-        target_agent_vec = goal.morphological_features["pose_vectors"].direction
-
-        yaw_angle = math.atan2(-target_agent_vec[0], -target_agent_vec[2])
-        pitch_angle = math.asin(target_agent_vec[1])
-
-        # Should rotate by pitch degrees around x, and by yaw degrees around y (and
-        # no change about z, which would correspond to roll)
-        scipy_combined_orientation = Rotation.from_euler("xy", [pitch_angle, yaw_angle])
-
-        target_quat = qt.quaternion(*scipy_combined_orientation.as_quat())
-
-        return SetAgentPose(
-            agent_id=self.agent_id,
-            location=target_loc,
-            rotation_quat=target_quat,
-        )
-
     def _reset_jump_state(self) -> None:
         """Clear the jump state."""
         self._is_jumping = False
@@ -910,7 +929,9 @@ class InformedPolicy(BasePolicy):
                 == self._pre_jump_state.sensors[first_sensor].rotation
             ), "Sensors are not identical in pose"
 
-        set_agent_pose = self._derive_set_agent_pose_from_goal(goal)
+        set_agent_pose = derive_set_agent_pose_for_jump_from_goal(
+            goal, self.agent_id, self.desired_object_distance
+        )
 
         self._is_jumping = True
 
@@ -1086,16 +1107,16 @@ class SurfacePolicy(InformedPolicy):
     def __init__(
         self,
         alpha,
-        desired_object_distance=0.025,
+        desired_object_distance: float,
         **kwargs,
     ) -> None:
         """Initialize policy.
 
         Args:
-            desired_object_distance: Distance to maintain from the surface; used for
-                touch_object and move-forward. Defaults to 0.025.
             alpha: to what degree should the move_tangentially direction be the
                 same as the last step or totally random? 0~same as before, 1~random walk
+            desired_object_distance: Distance to maintain from the surface; used for
+                touch_object, move-forward, and jumping to a goal.
             **kwargs: ?
         """
         super().__init__(**kwargs)

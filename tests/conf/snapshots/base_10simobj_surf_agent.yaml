@@ -52,7 +52,6 @@ experiment:
             elapsed_steps_factor: 10
             min_post_goal_success_steps: 5
             x_percent_scale_factor: 0.75
-            desired_object_distance: 0.025
       sensor_modules:
         sensor_module_0:
           _target_: tbp.monty.frameworks.models.sensor_modules.CameraSM
