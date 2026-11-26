@@ -12,6 +12,8 @@ import json
 import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 import hydra
@@ -80,3 +82,12 @@ class MontyRunTest(unittest.TestCase):
             exp_log = json.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
+
+    def test_print_cfg_skips_experiment(self) -> None:
+        self.cfg.print_cfg = True
+
+        with redirect_stdout(StringIO()) as stdout:
+            main(self.cfg)
+
+        self.assertIn("print_cfg: true", stdout.getvalue())
+        self.assertFalse(any(Path(self.output_dir).iterdir()))

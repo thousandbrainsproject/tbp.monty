@@ -24,6 +24,8 @@ and replace `run_name` with the name of the benchmark experiment. All benchmark 
 python run.py experiment=randrot_10distinctobj_surf_agent
 ```
 
+Add `print_cfg=true` to print the composed configuration and exit before starting the simulator.
+
 > 👍 Go Ahead and Run the Command Above!
 >
 > If you run the `randrot_10distinctobj_surf_agent` experiment using the command above, you will be able to follow along with all the following data analysis guides since we use this as an example.
