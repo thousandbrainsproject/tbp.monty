@@ -69,7 +69,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.models.sensor_modules import CameraSM
 from tbp.monty.frameworks.sensors import Resolution2D, SensorConfig, SensorID
-from tbp.monty.geometry import Rotation, SurfacePoseVectors
+from tbp.monty.geometry import Rotation, SurfaceNormal, SurfacePoseVectors
 from tbp.monty.hydra import instantiate_experiment
 from tbp.monty.math import EulerAnglesXYZ, VectorXYZ
 from tbp.monty.simulators.mujoco.agents import DistantAgent
@@ -944,10 +944,7 @@ class AdvancedPolicyTest(unittest.TestCase):
 
         target_info = {
             "target_loc": np.array(target_location_on_object),
-            # Identity pose rotated such that the surface normal points along +y
-            "target_surface_pose": Rotation.from_euler("z", 90, degrees=True).apply(
-                np.eye(3)
-            ),
+            "target_surface_normal": np.array([0.0, 1.0, 0.0]),
             "hypothesis_to_test": {
                 "graph_id": "dummy_object",
                 "location": np.array([0.1, 0.1, 0.1]),
@@ -1244,7 +1241,9 @@ class JumpToGoalTest(ParametrizedTestCase):
         policy = JumpToGoal(JUMP_AGENT_ID, JUMP_SENSOR_ID, desired_object_distance=0.03)
         goal = Mock(
             location=np.array(JUMP_OBJECT_POSITION),
-            morphological_features={"pose_vectors": SurfacePoseVectors(np.eye(3))},
+            morphological_features={
+                "pose_vectors": SurfaceNormal(np.array([1.0, 0.0, 0.0]))
+            },
         )
         jump_result = policy(
             ctx=Mock(),

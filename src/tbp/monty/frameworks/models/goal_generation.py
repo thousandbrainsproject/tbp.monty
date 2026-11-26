@@ -20,7 +20,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     GoalGenerator,
 )
 from tbp.monty.frameworks.utils.communication_utils import get_percept_from_channel
-from tbp.monty.geometry import SurfacePoseVectors
+from tbp.monty.geometry import SurfaceNormal
 
 if TYPE_CHECKING:
     from tbp.monty.frameworks.models.graph_matching import GraphLM
@@ -691,14 +691,14 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         return target_loc_id
 
     def _get_target_loc_info(self, target_loc_id):
-        """Given a target location ID, get the target location and pose vectors.
+        """Given a target location ID, get the target location and surface normal.
 
         Note:
             Currently assumes we are computing with the MLH graph.
 
         Returns:
             A dictionary containing the hypothesis to test, the target location and
-            surface pose vectors of the target point on the object.
+            surface normal of the target point on the object.
         """
         mlh = self.parent_lm._get_current_mlh()
         mlh_id = mlh["graph_id"]
@@ -707,14 +707,14 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
         target_graph = target_object[sensor_channel_name]
         target_loc = target_graph.pos[target_loc_id]
-        target_surface_pose = target_graph.get_values_for_feature("pose_vectors")[
-            target_loc_id
-        ].reshape(3, 3)
+        target_surface_normal = target_graph.get_values_for_feature("pose_vectors")[
+            target_loc_id, :3
+        ]
 
         return {
             "hypothesis_to_test": mlh,
             "target_loc": target_loc,
-            "target_surface_pose": target_surface_pose,
+            "target_surface_normal": target_surface_normal,
         }
 
     def _compute_goal_for_target_loc(
@@ -723,12 +723,12 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         """Specify a Goal for the motor-actuator.
 
         Based on a target location (in object-centric coordinates) and the associated
-        surface pose vectors of that location, specify a Goal.
+        surface normal of that location, specify a Goal.
 
         Args:
             observations: The current observations, which should include the sensory
                 input.
-            target_info: A dictionary containing the target location and surface pose
+            target_info: A dictionary containing the target location and surface normal
                 of the target point on the object.
             goal_confidence: The confidence of the Goal, which should be in the
                 range [0, 1]. This is used by receiving modules to weigh the
@@ -751,8 +751,8 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
             displacement
         )
 
-        target_surface_pose_global_frame = object_rot.apply(
-            target_info["target_surface_pose"]
+        target_surface_normal_global_frame = object_rot.apply(
+            target_info["target_surface_normal"]
         )
 
         # Extra metadata for logging. 'achieved' and
@@ -767,7 +767,7 @@ class EvidenceGoalGenerator(GraphGoalGenerator):
         return Goal(
             location=np.array(target_location_global_frame),
             morphological_features={
-                "pose_vectors": SurfacePoseVectors(target_surface_pose_global_frame),
+                "pose_vectors": SurfaceNormal(target_surface_normal_global_frame),
                 "pose_fully_defined": None,
                 "on_object": 1,
             },

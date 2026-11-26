@@ -20,7 +20,7 @@ from hypothesis.extra.numpy import arrays
 
 from tbp.monty.cmp import AttentionRegion, Goal, Message, encode_goal, location_mean
 from tbp.monty.frameworks.models.buffer import BufferEncoder
-from tbp.monty.geometry import GazeDirection, Rotation
+from tbp.monty.geometry import GazeDirection, Rotation, SurfaceNormal
 from tests.strategies.arrays import (
     float_array_n_by_3,
     float_array_not_1d,
@@ -120,7 +120,7 @@ class CMPAttributeValidationTest(unittest.TestCase):
 
         self.assertEqual(
             str(raised.exception),
-            "pose_vectors must be an instance of SurfacePoseVectors, "
+            "pose_vectors must be an instance of SurfacePoseVectors, SurfaceNormal, "
             "OrientationMatrix, or GazeDirection but type is "
             f"{type(self.message_args['morphological_features']['pose_vectors'])}",
         )

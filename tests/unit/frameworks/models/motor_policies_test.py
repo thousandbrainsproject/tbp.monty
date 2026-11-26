@@ -53,17 +53,17 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.frameworks.utils.spatial_arithmetics import normalize
-from tbp.monty.geometry import Rotation, SurfacePoseVectors
+from tbp.monty.geometry import Rotation, SurfaceNormal, SurfacePoseVectors
 from tbp.monty.math import DEFAULT_TOLERANCE, VectorXYZ
 from tests.unit.frameworks.models.fakes.cmp import FakeMessage
 from tests.unit.frameworks.utils.spatial_arithmetics_test import (
+    nonzero_magnitude_vectors,
     quaternions,
-    rotation_matrix,
     vectors_3d,
 )
 
 AGENT_ID = AgentID("agent_id_0")
-DEFAULT_SURFACE_POSE_VECTORS = SurfacePoseVectors(np.eye(3))
+DEFAULT_SURFACE_NORMAL = SurfaceNormal(np.array([1.0, 0.0, 0.0]))
 
 
 class SurfacePolicyCurvatureInformedTest(unittest.TestCase):
@@ -245,13 +245,15 @@ class JumpToGoalTest(ParametrizedTestCase):
 
     @given(
         goal_location=vectors_3d(min_value=-1, max_value=1, dtype=np.float64),
-        goal_pose=rotation_matrix,
+        goal_normal=nonzero_magnitude_vectors(
+            min_value=-1, max_value=1, dtype=np.float64
+        ),
         desired_object_distance=st.floats(min_value=0.01, max_value=1.0),
     )
     def test_generates_actions_that_align_forward_axis_with_inverse_of_goal_normal(
         self,
         goal_location: np.ndarray,
-        goal_pose: np.ndarray,
+        goal_normal: np.ndarray,
         desired_object_distance: float,
     ) -> None:
         policy = JumpToGoal(
@@ -259,11 +261,11 @@ class JumpToGoalTest(ParametrizedTestCase):
             sensor_id=SensorID("view_finder"),
             desired_object_distance=desired_object_distance,
         )
-        goal_pose = np.array([normalize(row) for row in goal_pose])
+        goal_normal = normalize(goal_normal)
         goal = Goal(
             location=goal_location,
             morphological_features={
-                "pose_vectors": SurfacePoseVectors(goal_pose),
+                "pose_vectors": SurfaceNormal(goal_normal),
                 "pose_fully_defined": True,
             },
             non_morphological_features=None,
@@ -355,7 +357,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         goal = Mock(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": DEFAULT_SURFACE_POSE_VECTORS,
+                "pose_vectors": DEFAULT_SURFACE_NORMAL,
             },
         )
         policy = JumpToGoal(
@@ -373,7 +375,7 @@ class JumpToGoalTest(ParametrizedTestCase):
             Mock(
                 location=np.zeros(3),
                 morphological_features={
-                    "pose_vectors": DEFAULT_SURFACE_POSE_VECTORS,
+                    "pose_vectors": DEFAULT_SURFACE_NORMAL,
                 },
             )
             if has_post_jump_goal
@@ -413,13 +415,15 @@ class JumpToGoalTest(ParametrizedTestCase):
 
     @given(
         goal_location=vectors_3d(min_value=-1, max_value=1, dtype=np.float64),
-        goal_pose=rotation_matrix,
+        goal_normal=nonzero_magnitude_vectors(
+            min_value=-1, max_value=1, dtype=np.float64
+        ),
         desired_object_distance=st.floats(min_value=0.01, max_value=1.0),
     )
     def test_returns_new_jump_actions_status_in_progress_if_undo_is_not_needed_after_jump_and_goal_is_provided(  # noqa: E501
         self,
         goal_location: np.ndarray,
-        goal_pose: np.ndarray,
+        goal_normal: np.ndarray,
         desired_object_distance: float,
     ) -> None:
         policy = JumpToGoal(
@@ -430,14 +434,14 @@ class JumpToGoalTest(ParametrizedTestCase):
         first_goal = Mock(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": DEFAULT_SURFACE_POSE_VECTORS,
+                "pose_vectors": DEFAULT_SURFACE_NORMAL,
             },
         )
-        goal_pose = np.array([normalize(row) for row in goal_pose])
+        goal_normal = normalize(goal_normal)
         second_goal = Mock(
             location=goal_location,
             morphological_features={
-                "pose_vectors": SurfacePoseVectors(goal_pose),
+                "pose_vectors": SurfaceNormal(goal_normal),
             },
         )
 
@@ -507,7 +511,7 @@ class JumpToGoalTest(ParametrizedTestCase):
         goal = Mock(
             location=np.zeros(3),
             morphological_features={
-                "pose_vectors": DEFAULT_SURFACE_POSE_VECTORS,
+                "pose_vectors": DEFAULT_SURFACE_NORMAL,
             },
         )
 
