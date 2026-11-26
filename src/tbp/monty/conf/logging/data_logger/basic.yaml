@@ -1,0 +1,3 @@
+_target_: tbp.monty.frameworks.loggers.graph_matching_loggers.BasicGraphMatchingLogger
+handlers:
+  - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
