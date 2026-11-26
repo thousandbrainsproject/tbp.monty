@@ -47,6 +47,29 @@ python run_parallel.py experiment=supervised_pre_training_cows_large_monolithic
 
 For more details, see [Running Benchmarks](https://docs.thousandbrains.org/docs/running-benchmarks) and [Benchmark Experiments](https://docs.thousandbrains.org/docs/benchmark-experiments) in the documentation.
 
+### Selecting a YCB object set
+
+YCB benchmark environment interfaces select an ordered object list from
+`object_set/ycb`. The options are `ycb/all_77`, `ycb/distinct_10`, and
+`ycb/similar_10`. An object set changes `object_names` within the selected
+training or evaluation interface.
+
+For example, inspect the training interface for the base pretraining experiment
+with all 77 objects selected.
+
+```sh
+uv run python run.py experiment=supervised_pre_training_base \
+  object_set@experiment.config.train_env_interface_args=ycb/all_77 \
+  --cfg job --package experiment.config.train_env_interface_args
+```
+
+Use `object_set@experiment.config.eval_env_interface_args` for evaluation
+interfaces that select a YCB object set. Choose objects covered by the
+pretrained models loaded by the experiment. You can still set
+`experiment.config.train_env_interface_args.object_names` or
+`experiment.config.eval_env_interface_args.object_names` directly for a custom
+list.
+
 ## Tests
 
 The `test` folder contains Monty test configurations.
