@@ -9,13 +9,19 @@
 
 
 import unittest
+from pathlib import Path
 
+import hydra
 import pandas as pd
+import pytest
+import yaml
 
 from tbp.monty.frameworks.run_parallel import (
+    main,
     parse_episode_spec,
     per_lm_stats,
 )
+from tests import HYDRA_ROOT
 
 
 class PerLMStatsTest(unittest.TestCase):
@@ -71,6 +77,7 @@ class ParseEpisodeSpecTest(unittest.TestCase):
 
     def test_single_index_valid(self):
         self.assertEqual(parse_episode_spec("3", total=6), [3])
+        self.assertEqual(parse_episode_spec(3, total=6), [3])
 
     def test_single_index_out_of_bounds_raises(self):
         with self.assertRaisesRegex(ValueError, "not a valid index"):
@@ -116,6 +123,9 @@ class ParseEpisodeSpecTest(unittest.TestCase):
             parse_episode_spec("0,3,5:8", total=10),
             [0, 3, 5, 6, 7],
         )
+        self.assertEqual(
+            parse_episode_spec([3, "5:8", 0, 3], total=10), [0, 3, 5, 6, 7]
+        )
 
     def test_duplicates_eliminated_and_sorted(self):
         self.assertEqual(
@@ -141,6 +151,12 @@ class ParseEpisodeSpecTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not a valid selection"):
             parse_episode_spec("0,foo,2", total=10)
 
+    def test_invalid_typed_selection(self):
+        for selection in (True, [], [0, ""], [0, False]):
+            with self.subTest(selection=selection):
+                with self.assertRaisesRegex(ValueError, "not a valid selection"):
+                    parse_episode_spec(selection, total=10)
+
     def test_total_zero_all_is_empty(self):
         self.assertEqual(parse_episode_spec("all", total=0), [])
 
@@ -154,3 +170,62 @@ class ParseEpisodeSpecTest(unittest.TestCase):
             parse_episode_spec(":1", total=0)
         with self.assertRaises(ValueError):
             parse_episode_spec("0:", total=0)
+
+
+@pytest.mark.parametrize(
+    ("experiment", "selection", "mode", "count"),
+    [
+        ("supervised_pre_training", "0", "train", 1),
+        ("eval", '"0"', "eval", 1),
+        ("eval", '[0,"1:3"]', "eval", 3),
+    ],
+)
+def test_parallel_print_cfg_emits_selected_episode_yaml(
+    experiment: str,
+    selection: str,
+    mode: str,
+    count: int,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    for key in ("MONTY_DATA", "MONTY_LOGS", "MONTY_MODELS"):
+        monkeypatch.setenv(key, str(tmp_path))
+
+    with hydra.initialize_config_dir(version_base=None, config_dir=str(HYDRA_ROOT)):
+        config = hydra.compose(
+            config_name="experiment",
+            overrides=[
+                f"experiment=test/{experiment}",
+                f"episodes={selection}",
+                "print_cfg=true",
+            ],
+        )
+
+    main(config)
+    printed = capsys.readouterr().out
+    main(config)
+    assert capsys.readouterr().out == printed
+
+    original, *episodes = yaml.safe_load_all(printed)
+    assert original["print_cfg"] is True
+    assert len(episodes) == count
+    for episode in episodes:
+        episode_config = episode["config"]
+        assert episode_config[f"do_{mode}"] is True
+        assert Path(episode_config["logging"]["output_dir"]).is_relative_to(tmp_path)
+        assert episode_config["monty_config"]["monty_class"].endswith(
+            ".MontyForGraphMatching"
+        )
+
+    args = episodes[0]["config"][f"{mode}_env_interface_args"]
+    assert set(args["object_names"]) == {"capsule3DSolid"}
+    sampler = args["object_init_sampler"]
+    assert sampler["_target_"].endswith(".Predefined")
+    if mode == "eval":
+        assert [episode["config"]["episode"] for episode in episodes] == list(
+            range(count)
+        )
+        assert sampler["rotations"] == [[0.0, 30.0, 0.0]]
+
+    assert not any(tmp_path.iterdir())

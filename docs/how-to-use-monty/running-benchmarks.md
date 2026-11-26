@@ -66,3 +66,14 @@ print_unsupervised_stats(train_stats, epoch_len=10) # 10 is the number of object
 If your benchmarks ran on the standardized infrastructure, and your code affected any of the benchmark results, you should update the benchmark results table [here](../overview/benchmark-experiments.md) in the same PR. See our guide on [contributing to documentation](../contributing/documentation.md) for instructions on how to edit documentation.
 
 If your benchmarks ran on your local machine, please include the before and after data as part of the Pull Request description.
+
+# Inspect Parallel Episode Configurations
+
+For a single Hydra run, set `print_cfg=true` to print the composed configuration and selected parallel episode configurations as separate YAML documents. This mode exits without starting workers. Episode indices are zero-based.
+
+```shell
+uv run python run_parallel.py experiment=supervised_pre_training_base \
+  episodes=0 print_cfg=true > episodes.yaml
+```
+
+For multiple episodes, use a list such as `'episodes=[0,"2:4"]'` to select indices 0, 2, and 3. The existing range and comma-separated string syntax also works, including `'episodes="0,2:4"'`. The first YAML document is the composed experiment, followed by the configurations for the selected episodes. Hydra multirun adds launcher messages to stdout.
