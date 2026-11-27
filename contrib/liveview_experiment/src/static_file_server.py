@@ -127,7 +127,8 @@ class StaticFileServer:
         )
 
     async def _serve_local_static(self, request: Any) -> Any:
-        """Serve files from local static directory."""        if not self._local_static_path:
+        """Serve files from local static directory."""
+        if not self._local_static_path:
             return Response(status_code=404, content="Not found")
 
         path = request.path_params.get("path", "")

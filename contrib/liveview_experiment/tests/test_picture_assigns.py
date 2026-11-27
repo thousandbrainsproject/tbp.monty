@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import sys
 from pathlib import Path
@@ -10,6 +11,11 @@ import pytest
 
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
+
+# These cases drive the LiveView itself, which needs pyview — it lives in the
+# dashboard's venv, not in the experiment's environment. Skipped, not failed,
+# there: the module has nothing to say without its framework.
+pytest.importorskip("pyview")
 
 from contrib.liveview_experiment.src import frame_files
 from contrib.liveview_experiment.src.liveview_experiment import ExperimentLiveView, picture
@@ -86,3 +92,33 @@ def _state_with(images: SensorImages):
             return []
 
     return State()
+
+
+class TestServingThem:
+    """The route the page's <img src> goes to."""
+
+    class Request:
+        def __init__(self, name: str) -> None:
+            self.path_params = {"name": name}
+
+    def test_a_published_picture_is_served_as_png(self, frames: Path) -> None:
+        from starlette.responses import FileResponse
+
+        from contrib.liveview_experiment.src.static_file_server import StaticFileServer
+
+        url = picture("camera", TINY_PNG, 3, "run")
+        response = asyncio.run(_serve(StaticFileServer(), url.rsplit("/", 1)[-1]))
+
+        assert isinstance(response, FileResponse)
+        assert response.media_type == "image/png"
+
+    def test_an_unknown_name_is_a_404_not_a_traceback(self) -> None:
+        from contrib.liveview_experiment.src.static_file_server import StaticFileServer
+
+        response = asyncio.run(_serve(StaticFileServer(), "../etc/passwd"))
+
+        assert response.status_code == 404
+
+
+async def _serve(server, name: str):
+    return await server._serve_frame(TestServingThem.Request(name))
