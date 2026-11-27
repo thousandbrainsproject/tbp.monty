@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -65,6 +66,14 @@ class ExperimentStateManager:
             experiment_mode="train",
         )
         self.connected_sockets: set[LiveViewSocket[ExperimentState]] = set()
+        # When each socket arrived. A websocket that closes cleanly calls
+        # `unregister_socket`; a tab that is suspended, a laptop that slept, or
+        # a connection that went half-open never does, and its socket keeps a
+        # copy of the last page it was rendered — pictures included — for as
+        # long as the process lives. `prune_sockets` is the bound.
+        self._socket_arrival: dict[LiveViewSocket[ExperimentState], float] = {}
+        self._socket_ttl_seconds: float = 6 * 60 * 60
+        self._max_sockets: int = 64
         if TYPE_CHECKING:
             self.liveview_instance: ExperimentLiveView | None = None
         else:
@@ -165,6 +174,7 @@ class ExperimentStateManager:
             True if the socket was registered successfully.
         """
         self.connected_sockets.add(socket)
+        self._socket_arrival[socket] = time.time()
         logger.info(
             "Registered socket for route '%s', total connected: %d",
             self.route_path,
@@ -179,11 +189,62 @@ class ExperimentStateManager:
             socket: The LiveView socket to unregister.
         """
         self.connected_sockets.discard(socket)
+        self._socket_arrival.pop(socket, None)
         logger.info(
             "Unregistered socket for route '%s', total connected: %d",
             self.route_path,
             len(self.connected_sockets),
         )
+
+    def prune_sockets(self, now: float | None = None) -> int:
+        """Drop sockets that are too old or too many, and say how many went.
+
+        A websocket that closes cleanly unregisters itself. One that does not —
+        a suspended tab, a sleeping laptop, a half-open connection — keeps the
+        last page it was rendered against, and that page carries the sensor
+        pictures: a dashboard left open for hours used to reach gigabytes this
+        way (see ``frame_files`` for the other half of that fix).
+
+        The rule is deliberately dull and runs before every broadcast: a socket
+        older than its TTL goes, and beyond the cap the oldest go first. Nothing
+        that is being read is ever dropped — only what nobody has confirmed for
+        hours, or what was pushed out by fresher connections.
+
+        Args:
+            now: The clock, for a test that does not want to wait six hours.
+
+        Returns:
+            How many sockets were dropped.
+        """
+        now = time.time() if now is None else now
+        stale = [
+            socket
+            for socket, arrived in self._socket_arrival.items()
+            if now - arrived > self._socket_ttl_seconds
+        ]
+
+        survivors = sorted(
+            (socket for socket in self.connected_sockets if socket not in stale),
+            key=lambda socket: self._socket_arrival.get(socket, 0.0),
+            reverse=True,
+        )
+        excess = survivors[self._max_sockets :]
+
+        dropped = stale + excess
+        for socket in dropped:
+            self.unregister_socket(socket)
+
+        if dropped:
+            logger.warning(
+                "Dropped %d socket(s) on route '%s' (%d stale, %d over the cap of %d); %d remain",
+                len(dropped),
+                self.route_path,
+                len(stale),
+                len(excess),
+                self._max_sockets,
+                len(self.connected_sockets),
+            )
+        return len(dropped)
 
     async def broadcast_update(self, force: bool = False) -> None:
         """Broadcast an update signal to all registered sockets via PyView pubsub.
@@ -200,6 +261,7 @@ class ExperimentStateManager:
                 self, throttle_seconds=self._broadcast_throttle_seconds
             )
 
+        self.prune_sockets()
         await self._broadcast_manager.broadcast_if_needed(force=force)
 
     def update_metric(

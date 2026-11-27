@@ -11,6 +11,8 @@ from starlette.responses import FileResponse, Response
 from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
 
+from . import frame_files
+
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, MutableMapping
 
@@ -86,6 +88,10 @@ class StaticFileServer:
         # This ensures /static/assets/app.js is handled before the generic route
         app.routes.insert(0, Route("/static/assets/app.js", self._serve_app_js))
 
+        # Sensor pictures, as files: see `frame_files`. Registered before the
+        # generic mount so /frames/... is never mistaken for /static/...
+        app.routes.insert(0, Route("/frames/{name}", self._serve_frame))
+
         # Mount static files directory to serve CSS, JS, and other assets
         # Try to find PyView's static directory
         pyview_path = Path(pyview.__file__).parent
@@ -103,9 +109,25 @@ class StaticFileServer:
         else:
             logger.warning("PyView static directory not found at: %s", static_path)
 
+    async def _serve_frame(self, request: Any) -> Any:
+        """Serve one sensor picture, by the name the page was given.
+
+        The name is checked by `frame_files.resolve/1`: a request cannot walk
+        out of the pictures directory, and a name that is not a file there is a
+        404 rather than a traceback.
+        """
+        picture = frame_files.resolve(request.path_params.get("name", ""))
+        if picture is None:
+            return Response(status_code=404, content="Not found")
+
+        return FileResponse(
+            picture,
+            media_type="image/png",
+            headers={"cache-control": "public, max-age=3600"},
+        )
+
     async def _serve_local_static(self, request: Any) -> Any:
-        """Serve files from local static directory."""
-        if not self._local_static_path:
+        """Serve files from local static directory."""        if not self._local_static_path:
             return Response(status_code=404, content="Not found")
 
         path = request.path_params.get("path", "")

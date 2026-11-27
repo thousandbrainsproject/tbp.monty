@@ -474,18 +474,18 @@
             <!-- Sensor Images Side by Side -->
             {% if publisher.has_sensor_images %}
             <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;">
-                {% if publisher.camera_image_b64 %}
+                {% if publisher.camera_image_src %}
                 <div style="flex: 1; min-width: 200px;">
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Camera Image</div>
-                    <img src="data:image/png;base64,{{ publisher.camera_image_b64 }}" 
+                    <img src="{{ publisher.camera_image_src }}" 
                          alt="Camera view" 
                          style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
                 </div>
                 {% endif %}
-                {% if publisher.depth_image_b64 %}
+                {% if publisher.depth_image_src %}
                 <div style="flex: 1; min-width: 200px;">
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Depth Image</div>
-                    <img src="data:image/png;base64,{{ publisher.depth_image_b64 }}" 
+                    <img src="{{ publisher.depth_image_src }}" 
                          alt="Depth view" 
                          style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
                 </div>
@@ -552,18 +552,18 @@
                 </span>
             </div>
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                {% if camera_image_b64 %}
+                {% if camera_image_src %}
                 <div style="flex: 1; min-width: 200px;">
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Camera Image</div>
-                    <img src="data:image/png;base64,{{ camera_image_b64 }}" 
+                    <img src="{{ camera_image_src }}" 
                          alt="Camera view" 
                          style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
                 </div>
                 {% endif %}
-                {% if depth_image_b64 %}
+                {% if depth_image_src %}
                 <div style="flex: 1; min-width: 200px;">
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Depth Image</div>
-                    <img src="data:image/png;base64,{{ depth_image_b64 }}" 
+                    <img src="{{ depth_image_src }}" 
                          alt="Depth view" 
                          style="width: 100%; max-width: 300px; border: 1px solid #e5e7eb; border-radius: 4px;" />
                 </div>

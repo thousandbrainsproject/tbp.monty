@@ -18,6 +18,7 @@ from pyview.vendor.ibis.loaders import FileReloader
 
 from .experiment_state import ExperimentState
 from .state_normalizer import StateNormalizer
+from . import frame_files
 
 if TYPE_CHECKING:
     from .liveview_types import MessagePayload, TemplateAssigns
@@ -27,6 +28,34 @@ if TYPE_CHECKING:
     from .state_manager import ExperimentStateManager
 
 logger = logging.getLogger(__name__)
+
+
+def picture(kind: str, encoded: str | None, step: int, run_name: str) -> str | None:
+    """One sensor picture, as the `src` the page puts in an `<img>`.
+
+    Every update carries these fields to every socket, so a blob is a cost paid
+    per update per socket: a 1.2 MB view-finder PNG in the page is 1.2 MB of
+    markup for every tick, and a socket that stops reading keeps its copy.
+    `frame_files.publish_base64` writes the picture once and answers a URL of
+    sixty bytes. The blob survives only as the fallback — a read-only home —
+    because a page that draws nothing is worse than one that costs more.
+
+    The answer is a finished string because the template language here (ibis)
+    has no `or`/`~` to build one in an attribute.
+
+    Args:
+        kind: "camera" or "depth" — the picture's part of its file name.
+        encoded: The picture as base64 PNG, or None when this update has none.
+        step: The step it came from.
+        run_name: The publisher, so two runs do not overwrite each other.
+
+    Returns:
+        A URL, a `data:` URL, or None when there is no picture to show.
+    """
+    url = frame_files.publish_base64(kind, encoded, step or 0, run_name)
+    if url:
+        return url
+    return f"data:image/png;base64,{encoded}" if encoded else None
 
 
 class ExperimentLiveView(LiveView[ExperimentState]):
@@ -444,7 +473,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
         """
         sensor_images = viz_state.sensor_images
         new_points = viz_state.points_since(stream_cursor)
-
+        camera_src = picture("camera", sensor_images.camera_image, sensor_images.step, run_name)
+        depth_src = picture("depth", sensor_images.depth_image, sensor_images.step, run_name)
         current_max = viz_state.current_max_evidence
         return {
             "run_name": run_name,
@@ -460,6 +490,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
             "current_max_evidence_value": (
                 f"{current_max[1]:.3f}" if current_max is not None else ""
             ),
+            "camera_image_src": camera_src,
+            "depth_image_src": depth_src,
             "camera_image_b64": sensor_images.camera_image,
             "depth_image_b64": sensor_images.depth_image,
             "sensor_image_step": sensor_images.step,
@@ -489,6 +521,8 @@ class ExperimentLiveView(LiveView[ExperimentState]):
                 "current_max_evidence_object"
             ],
             "current_max_evidence_value": first_publisher["current_max_evidence_value"],
+            "camera_image_src": first_publisher["camera_image_src"],
+            "depth_image_src": first_publisher["depth_image_src"],
             "camera_image_b64": first_publisher["camera_image_b64"],
             "depth_image_b64": first_publisher["depth_image_b64"],
             "sensor_image_step": first_publisher["sensor_image_step"],
